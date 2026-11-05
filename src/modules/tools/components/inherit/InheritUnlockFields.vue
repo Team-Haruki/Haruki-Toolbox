@@ -114,7 +114,7 @@ function onEnter(event: KeyboardEvent) {
           :to="passwordSettingsRoute"
           target="_blank"
           rel="noopener"
-          class="inline-flex shrink-0 items-center gap-1 font-medium text-primary underline-offset-4 hover:underline"
+          class="inline-flex shrink-0 items-center gap-1 font-medium text-primary underline-offset-4 hover:underline pointer-coarse:-my-3 pointer-coarse:-mx-1.5 pointer-coarse:px-1.5 pointer-coarse:py-3"
           data-testid="inherit-unlock-forgot-password"
         >
           {{ t("tools.uploadData.inheritJob.confirm.forgotPassword") }}

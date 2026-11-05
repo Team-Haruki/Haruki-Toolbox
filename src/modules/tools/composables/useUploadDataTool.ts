@@ -13,7 +13,9 @@ export function useUploadDataTool() {
   const { t } = useI18n()
   const userStore = useUserStore()
 
-  const fileDataType = ref<UploadDataType>("mysekai")
+  // Suite (the account data every feature reads) is the primary upload;
+  // MySekai is an explicit choice.
+  const fileDataType = ref<UploadDataType>("suite")
   const selectedFile = ref<File | null>(null)
   const selectedFileName = ref("")
   const isSubmittingFile = ref(false)
@@ -51,6 +53,17 @@ export function useUploadDataTool() {
     { immediate: true },
   )
 
+  /** Forgets the last upload's outcome: it was about another file, account or data type. */
+  function resetUploadOutcome() {
+    if (isSubmittingFile.value) return
+    uploadProgress.value = 0
+    uploadStatus.value = ""
+  }
+
+  // A "success" bar left over from the previous target reads as the current
+  // one's state: drop it when the target changes or the tab becomes unusable.
+  watch([selectedAccountKey, fileDataType, disabledReasonKind], resetUploadOutcome)
+
   function onFileChange(event: Event) {
     const target = event.target
     if (!(target instanceof HTMLInputElement)) {
@@ -60,8 +73,7 @@ export function useUploadDataTool() {
       return
     }
     fileInputElement.value = target
-    uploadProgress.value = 0
-    uploadStatus.value = ""
+    resetUploadOutcome()
     selectedFile.value = target.files?.[0] ?? null
     selectedFileName.value = selectedFile.value?.name ?? ""
   }
@@ -179,6 +191,7 @@ export function useUploadDataTool() {
     canSelectMySekaiDataType,
     loadUploadTargets,
     onFileChange,
+    resetUploadOutcome,
     submitFileUpload,
   }
 }

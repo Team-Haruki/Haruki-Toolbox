@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from "vue"
+import { computed, nextTick, reactive, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { toast } from "vue-sonner"
 import {
@@ -28,7 +28,8 @@ import { toInheritApiError } from "@/modules/tools/api/inherit"
 import type { InheritNewPasswordMode } from "@/modules/tools/lib/inherit-job"
 import { isVaultCodeLive, resolveUnlockMode, type InheritVaultEntry } from "@/modules/tools/lib/inherit-vault"
 import { describeInheritApiError, describeJobWarning, formatInheritRemaining } from "@/modules/tools/lib/inherit-messages"
-import { useInheritUnlock } from "@/modules/tools/composables/useInheritUnlock"
+import { focusInvalidField } from "@/lib/form-focus"
+import { unlockFieldId, useInheritUnlock } from "@/modules/tools/composables/useInheritUnlock"
 import type { InheritVaultController } from "@/modules/tools/composables/useInheritVault"
 import InheritNewCodeCard from "@/modules/tools/components/inherit/InheritNewCodeCard.vue"
 import InheritUnlockFields from "@/modules/tools/components/inherit/InheritUnlockFields.vue"
@@ -90,8 +91,19 @@ function openUnlock(kind: UnlockAction, entry: InheritVaultEntry) {
   action.open = true
 }
 
+const UNLOCK_ID_PREFIX = "inherit-vault-unlock"
+
+/** The dialog stays open with the message next to its field: put the caret there too. */
+function focusInvalidUnlockField() {
+  const field = unlock.firstInvalidField()
+  if (field) focusInvalidField(unlockFieldId(UNLOCK_ID_PREFIX, field))
+}
+
 async function runUnlock() {
-  if (!unlock.validate()) throw new Error("")
+  if (!unlock.validate()) {
+    focusInvalidUnlockField()
+    throw new Error("")
+  }
   try {
     if (action.kind === "reveal") {
       await props.vault.reveal(action.entryId, unlock.toInput())
@@ -103,6 +115,8 @@ async function runUnlock() {
   } catch (error) {
     const problem = toInheritApiError(error)
     unlock.absorb(problem)
+    await nextTick()
+    focusInvalidUnlockField()
     throw problem
   }
 }
@@ -133,17 +147,19 @@ function openReset() {
 async function runReset() {
   reset.passwordError = ""
   reset.ackError = ""
-  if (!reset.ack) {
-    reset.ackError = t("tools.uploadData.inheritErrors.reset_confirmation_required")
-    throw new Error("")
-  }
   if (reset.needsPassword && !reset.password) {
     reset.passwordError = t("tools.uploadData.inheritErrors.password_required")
+    focusInvalidField("inherit-vault-reset-password")
+    throw new Error("")
+  }
+  if (!reset.ack) {
+    reset.ackError = t("tools.uploadData.inheritErrors.reset_confirmation_required")
+    focusInvalidField("inherit-vault-reset-ack")
     throw new Error("")
   }
   try {
     const destroyed = await props.vault.reset(reset.needsPassword ? reset.password : undefined)
-    toast.success(t("tools.uploadData.inheritVault.reset.done", { count: destroyed }))
+    toast.success(t("tools.uploadData.inheritVault.reset.done", { count: destroyed }, destroyed))
   } catch (error) {
     const problem = toInheritApiError(error)
     // An identity with a password always has to confirm with it, even when
@@ -151,11 +167,16 @@ async function runReset() {
     if (problem.code === "password_required" || problem.code === "password_invalid") {
       reset.needsPassword = true
       reset.passwordError = describeInheritApiError(t, problem)
+      await nextTick()
+      focusInvalidField("inherit-vault-reset-password")
       throw new Error("", { cause: error })
     }
     throw problem
   }
 }
+
+/** "{count} records" with the English plural forms; zh has one form. */
+const resetRecords = computed(() => t("tools.uploadData.inheritVault.reset.records", { count: entries.value.length }, entries.value.length))
 
 function describeDialogError(error: unknown): string {
   // Field-level problems are already shown next to their field.
@@ -321,7 +342,8 @@ defineExpose({ openReset })
       </ul>
     </CardContent>
 
-    <CardFooter v-if="keyStatus?.initialized" class="justify-end">
+    <!-- Nothing to destroy in an empty vault; a forgotten PIN reaches the reset from the confirm step. -->
+    <CardFooter v-if="keyStatus?.initialized && entries.length > 0" class="justify-end">
       <Button type="button" variant="ghost" size="sm" class="text-destructive hover:text-destructive" @click="openReset">
         {{ t("tools.uploadData.inheritVault.actions.reset") }}
       </Button>
@@ -352,7 +374,7 @@ defineExpose({ openReset })
       </fieldset>
       <InheritUnlockFields
         :state="unlock.state"
-        id-prefix="inherit-vault-unlock"
+        :id-prefix="UNLOCK_ID_PREFIX"
         @update="updateUnlockField"
         @reset-vault="openReset"
       />
@@ -372,7 +394,7 @@ defineExpose({ openReset })
   <ConfirmDialog
     v-model:open="reset.open"
     :title="t('tools.uploadData.inheritVault.reset.title')"
-    :description="t('tools.uploadData.inheritVault.reset.description', { count: entries.length })"
+    :description="t('tools.uploadData.inheritVault.reset.description', { records: resetRecords })"
     :confirm-label="t('tools.uploadData.inheritVault.reset.confirm')"
     destructive
     :on-confirm="runReset"

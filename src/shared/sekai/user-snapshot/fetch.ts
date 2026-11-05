@@ -34,6 +34,24 @@ const defaultDependencies: UserSuiteFetchDependencies = {
   writeCache: writeUserSuiteSubsetCache,
 }
 
+/**
+ * Whether a reload brought newer data than what was on screen. The upload
+ * time is the truth: a 200 that re-downloads the same snapshot (the backend
+ * did not answer 304) is "already up to date", not "updated to …". Without a
+ * previous snapshot (first load, recovery from an error) any download counts
+ * as a change; a cache hit never does unless the upload time moved.
+ */
+export function resolveSuiteReloadChanged(
+  previousUploadTime: number | null,
+  remoteUploadTime: number | null,
+  cacheHit: boolean,
+): boolean {
+  if (previousUploadTime == null || remoteUploadTime == null) {
+    return !cacheHit
+  }
+  return remoteUploadTime !== previousUploadTime
+}
+
 const inflightRequests = new Map<string, Promise<UserSuiteFetchResult>>()
 
 export async function fetchUserSuiteWithCache(

@@ -53,7 +53,7 @@ const {
 
     <Card>
       <CardHeader>
-        <CardTitle>{{ t("tickets.create.title") }}</CardTitle>
+        <CardTitle as="h1">{{ t("tickets.create.title") }}</CardTitle>
         <CardDescription>{{ t("tickets.create.description") }}</CardDescription>
       </CardHeader>
       <CardContent class="flex flex-col gap-5">

@@ -1,12 +1,64 @@
-import { describe, expect, it } from "bun:test"
+import { afterEach, describe, expect, it } from "bun:test"
+import { setI18nLocale } from "@/shared/i18n"
 import {
+  DATE_FORMAT_PRESETS,
   formatDateCN,
   formatDateKey,
   formatDateTimeCN,
+  formatLocalizedDate,
+  formatLocalizedDateRange,
+  formatLocalizedDateTime,
   formatWithZone,
+  resolveDateFormatOptions,
   resolveSekaiServerTimeZone,
   toValidDate,
 } from "@/lib/date-time"
+
+describe("date format presets", () => {
+  // Local time, so the expectations hold in any zone.
+  const at = new Date(2026, 9, 1, 16, 5, 7)
+  const end = new Date(2026, 10, 8, 20, 0, 0)
+
+  afterEach(async () => {
+    await setI18nLocale("zh-CN")
+  })
+
+  it("resolves preset names and passes raw options through", () => {
+    expect(resolveDateFormatOptions("date")).toBe(DATE_FORMAT_PRESETS.date)
+    expect(resolveDateFormatOptions({ dateStyle: "medium" })).toEqual({ dateStyle: "medium" })
+    expect(resolveDateFormatOptions(undefined)).toBeUndefined()
+  })
+
+  it("prints the zh-CN shapes", () => {
+    expect(formatLocalizedDate(at, "date")).toBe("2026/10/01")
+    expect(formatLocalizedDateTime(at, "dateTime")).toBe("2026/10/01 16:05")
+    expect(formatLocalizedDateTime(at, "dateTimeSeconds")).toBe("2026/10/01 16:05:07")
+    expect(formatLocalizedDate(at, "monthDay")).toBe("10/01")
+    expect(formatLocalizedDateRange(at, end)).toBe("2026/10/01 – 2026/11/08")
+    expect(formatLocalizedDateRange(at, end, "dateTime")).toBe("2026/10/01 16:05 – 2026/11/08 20:00")
+  })
+
+  it("prints midnight as 00:00 on the 24 h clock", () => {
+    expect(formatLocalizedDateTime(new Date(2026, 9, 1, 0, 0), "dateTime")).toBe("2026/10/01 00:00")
+  })
+
+  it("follows the active locale", async () => {
+    await setI18nLocale("en-US")
+    expect(formatLocalizedDate(at, "date")).toBe("10/01/2026")
+    expect(formatLocalizedDateTime(at, "dateTime")).toBe("10/01/2026, 16:05")
+    expect(formatLocalizedDate(at, "monthDay")).toBe("10/01")
+  })
+
+  it("keeps the fallback per end of a range", () => {
+    expect(formatLocalizedDateRange(at, null)).toBe("2026/10/01 – —")
+    expect(formatLocalizedDateRange("nope", end, "date", "?")).toBe("? – 2026/11/08")
+  })
+
+  it("accepts a preset in formatWithZone", () => {
+    const result = formatWithZone(Date.UTC(2026, 0, 1, 3, 0), "jp", "dateTime", { locale: "zh-CN", localZone: "Asia/Tokyo" })
+    expect(result.local).toBe("2026/01/01 12:00")
+  })
+})
 
 describe("date-time helpers", () => {
   it("toValidDate returns null for nullish and invalid inputs", () => {

@@ -22,8 +22,9 @@ export function isTrackerError(error: unknown): error is Error & { status?: numb
  * User-facing description of a rank-border load failure: transport errors
  * and known backend messages keep their translations, a tracker error gets
  * the localized `fallback` headline (normally `rankBorder.result.loadErrorHint`)
- * with its raw text kept as the small detail line, and `status` 5xx / 429
- * map to the shared transport texts.
+ * with its raw text kept as the small detail line, `status` 404 means the
+ * event is simply not tracked (no network advice), and 5xx / 429 map to the
+ * shared transport texts.
  */
 export function describeTrackerError(error: unknown, fallback: string): ErrorDescription {
   if (!isTrackerError(error)) {
@@ -31,6 +32,9 @@ export function describeTrackerError(error: unknown, fallback: string): ErrorDes
   }
   const detail = error.message.trim() || undefined
   const status = error.status
+  if (status === 404) {
+    return { message: translate("rankBorder.result.notTracked"), detail }
+  }
   if (status === 429) {
     return { message: translate("core.errors.rateLimited", { status }), detail }
   }

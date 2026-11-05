@@ -214,7 +214,7 @@ export function useRiskManagement() {
   }
 
   function formatDate(value: string) {
-    return formatLocalizedDateTime(value, undefined, t("adminRisk.common.fallback"))
+    return formatLocalizedDateTime(value, "dateTime", t("adminRisk.common.fallback"))
   }
 
   watch(eventPageSize, () => {

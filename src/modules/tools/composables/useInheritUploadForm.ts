@@ -60,7 +60,7 @@ export function useInheritUploadForm(hasVerifiedQQ: Ref<boolean>) {
       : new TextEncoder().encode(inheritPassword.value).length > 64
         ? t("tools.uploadData.inheritTab.newPassword.tooLong")
         : newPasswordMode.value === "reuse" && !isReusableInheritPassword(inheritPassword.value)
-          ? t("tools.uploadData.inheritTab.newPassword.reuseInvalid")
+          ? t("tools.uploadData.inheritTab.newPassword.reuseBlocked")
           : ""
     const firstInvalid = (["inheritId", "inheritPassword"] as const).find((field) => fieldErrors[field])
     if (firstInvalid) {

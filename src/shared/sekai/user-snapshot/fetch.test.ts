@@ -124,3 +124,24 @@ describe("fetchCachedUserSuite", () => {
     }))).rejects.toThrow()
   })
 })
+
+describe("resolveSuiteReloadChanged", () => {
+  test("a re-download of the same snapshot is not a change", async () => {
+    const { resolveSuiteReloadChanged } = await import("./fetch")
+    expect(resolveSuiteReloadChanged(1_762_300_800, 1_762_300_800, false)).toBe(false)
+  })
+
+  test("a newer upload time is a change, from a download or a revalidated cache", async () => {
+    const { resolveSuiteReloadChanged } = await import("./fetch")
+    expect(resolveSuiteReloadChanged(1_762_300_800, 1_762_387_200, false)).toBe(true)
+    expect(resolveSuiteReloadChanged(1_762_300_800, 1_762_387_200, true)).toBe(true)
+  })
+
+  test("without a previous snapshot or a remote upload time only a download counts", async () => {
+    const { resolveSuiteReloadChanged } = await import("./fetch")
+    expect(resolveSuiteReloadChanged(null, 1_762_300_800, false)).toBe(true)
+    expect(resolveSuiteReloadChanged(null, 1_762_300_800, true)).toBe(false)
+    expect(resolveSuiteReloadChanged(1_762_300_800, null, false)).toBe(true)
+    expect(resolveSuiteReloadChanged(1_762_300_800, null, true)).toBe(false)
+  })
+})

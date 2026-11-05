@@ -488,7 +488,7 @@ function removeAllModuleRows() {
         <CardHeader class="border-b px-3 py-4 sm:px-5 xl:px-6">
           <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div class="min-w-0 space-y-1.5">
-              <CardTitle class="flex items-center gap-2 text-xl">
+              <CardTitle as="h1" class="flex items-center gap-2 text-xl">
                 <FileSliders class="size-5" />
                 {{ t("tools.clientConfigGenerator.title") }}
               </CardTitle>

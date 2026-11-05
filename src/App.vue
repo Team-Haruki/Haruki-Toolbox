@@ -1,7 +1,7 @@
 <template>
   <router-view></router-view>
   <PointerEffects />
-  <Toaster position="top-right" richColors/>
+  <Toaster :position="toastPosition" :offset="TOAST_OFFSET" :mobile-offset="TOAST_MOBILE_OFFSET" richColors/>
 </template>
 
 <script setup lang="ts">
@@ -28,6 +28,17 @@ import {
 } from "vue"
 import {Toaster} from "@/components/ui/sonner";
 import PointerEffects from "@/shared/components/PointerEffects.vue"
+import { useMediaQuery } from "@vueuse/core"
+
+// Toasts sit top-right on desktop, below the 52 px sticky header (sonner's
+// default 32 px offset put them over the header's search / settings buttons).
+// Touch devices and phone-width viewports get them bottom-center instead, so
+// a toast fired on load no longer covers the page title; the mobile offset
+// clears the home-indicator safe area.
+const compactToasts = useMediaQuery("(pointer: coarse), (max-width: 639px)")
+const toastPosition = computed(() => (compactToasts.value ? "bottom-center" : "top-right"))
+const TOAST_OFFSET = { top: 68, right: 24, bottom: 24 }
+const TOAST_MOBILE_OFFSET = { bottom: "calc(16px + env(safe-area-inset-bottom))", left: 16, right: 16 }
 
 const userStore = useUserStore()
 const route = useRoute()
@@ -164,9 +175,13 @@ async function syncUserSettings(userId: string) {
     }
     userStore.setSettingsSyncState("failed")
     logger.error("Failed to sync settings", e)
-    toast.warning(t("core.sync.failedTitle"), {
-      description: extractErrorMessage(e, t("core.sync.failedDescription")),
-    })
+    // The retries above run silently; a backend that stays unreachable is
+    // reported once per tab, not on every page that re-triggers the sync.
+    if (claimSessionOnce("settings-sync-failed")) {
+      toast.warning(t("core.sync.failedTitle"), {
+        description: extractErrorMessage(e, t("core.sync.failedDescription")),
+      })
+    }
   } finally {
     if (requestId !== latestSyncRequestId.value) return
     syncingUserId.value = null

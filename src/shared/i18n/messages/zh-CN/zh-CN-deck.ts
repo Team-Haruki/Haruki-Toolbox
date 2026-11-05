@@ -413,7 +413,7 @@ export default {
       "blocked": {
         "noAccount": "还没有绑定游戏账号，绑定后才能开始推荐。",
         "selectAccount": "请先选择一个游戏账号。",
-        "dataMissing": "所选账号还没有上传游戏数据，请先前往数据上传页上传。"
+        "dataMissing": "所选账号还没有上传游戏数据，请先前往上传数据页上传。"
       },
       "phases": {
         "preparing-data": "正在准备游戏数据…",
@@ -446,7 +446,7 @@ export default {
       "algorithmElapsed": "{algorithm} 搜索：{seconds} 秒",
       "empty": "暂无推荐结果。",
       "missingUserDataTitle": "还没有可用于组卡的游戏数据",
-      "missingUserDataDescription": "所选游戏账号尚未上传账号数据（Suite）。请先前往数据上传页上传，然后再回来重试。所有组卡模式都只需要 Suite：烤森组卡用到的烤森门、画布和玩偶加成也来自 Suite，不需要上传烤森数据（MySekai）。",
+      "missingUserDataDescription": "所选游戏账号尚未上传账号数据（Suite）。请先前往上传数据页上传，然后再回来重试。所有组卡模式都只需要 Suite：烤森组卡用到的烤森门、画布和玩偶加成也来自 Suite，不需要上传烤森数据（MySekai）。",
       "uploadDataAction": "前往上传数据",
       "deckTitle": "卡组 #{index}",
       "score": "Live分数 {score}",
@@ -551,7 +551,7 @@ export default {
     "sections": {
       "setup": {
         "title": "账号与活动",
-        "description": "选择已绑定账号、数据服务器和活动；连接世界活动可选择章节角色。"
+        "description": "选择已绑定账号、区服和活动；连接世界活动可选择章节角色。"
       }
     },
     "form": {
@@ -627,6 +627,7 @@ export default {
       "clear": "清空规划",
       "hourLabel": "{hour} 时",
       "dragHint": "单击填充一格，按住拖动可框选多天 × 多小时的时间段批量填充；用同一笔刷再次框选即为擦除。格内数字为每小时周回数。",
+      "touchHint": "轻点填充一格；长按后拖动可框选多天 × 多小时的时间段；横向滑动查看其他小时。用同一笔刷再次涂抹即为擦除。",
       "playsPerHour": "{count} 周/时"
     },
     "batch": {

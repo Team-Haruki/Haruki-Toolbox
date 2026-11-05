@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { cn } from "@/lib/utils"
+import PageHeader from "@/shared/components/PageHeader.vue"
+import { useCatalogRegionQuerySync, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 
 /**
  * Standard column for catalog list pages: title row with right-aligned
- * actions, a toolbar row (region + search), the filter panel, the results
- * and a footer (pagination). Keeps every catalog on the same container
- * width and header rhythm.
+ * actions (the shared `PageHeader`), a toolbar row (region + search), the
+ * filter panel, the results and a footer (pagination). Keeps every catalog
+ * on the same container width and header rhythm.
  */
 const props = withDefaults(defineProps<{
   title: string
@@ -15,19 +17,19 @@ const props = withDefaults(defineProps<{
   description: null,
   class: undefined,
 })
+
+// The address bar names the server in use (`?region=tw`), so a copied list
+// link (filters included) opens the same data for the recipient.
+useCatalogRegionQuerySync(useEffectiveCatalogRegion().region)
 </script>
 
 <template>
   <div :class="cn('mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4', props.class)">
-    <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div class="min-w-0">
-        <h1 class="text-2xl font-bold">{{ title }}</h1>
-        <p v-if="description" class="text-sm text-muted-foreground">{{ description }}</p>
-      </div>
-      <div v-if="$slots.actions" class="flex flex-wrap items-center gap-2">
+    <PageHeader :title="title" :description="description">
+      <template v-if="$slots.actions" #actions>
         <slot name="actions" />
-      </div>
-    </header>
+      </template>
+    </PageHeader>
 
     <!-- One row on every viewport: search stretches, the region select keeps its width. -->
     <div v-if="$slots.toolbar" class="flex flex-row items-center gap-2 sm:gap-3">

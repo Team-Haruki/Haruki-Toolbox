@@ -45,8 +45,14 @@ export function useSystemConfig() {
   // The parsed config the confirm dialog applies; set when the dialog opens.
   let pendingRuntimeConfig: RuntimeConfig | null = null
 
-  const apiKeysDirty = computed(() => apiKeysJson.value !== JSON.stringify(apiKeys.value, null, 2))
-  const runtimeDirty = computed(() => runtimeJson.value !== JSON.stringify(runtimeConfig.value, null, 2))
+  // Nothing is dirty without a loaded baseline: while loading or after a
+  // failed load the editor holds no server state to differ from.
+  const apiKeysDirty = computed(() =>
+    !apiKeysLoading.value && !apiKeysLoadError.value && apiKeysJson.value !== JSON.stringify(apiKeys.value, null, 2)
+  )
+  const runtimeDirty = computed(() =>
+    !runtimeLoading.value && !runtimeLoadError.value && runtimeJson.value !== JSON.stringify(runtimeConfig.value, null, 2)
+  )
 
   const deviceFlowEnabled = computed(() => readRuntimeSwitch(runtimeConfig.value, RUNTIME_SWITCH_KEYS.oauth2DeviceFlow))
   const deviceFlowDialogOpen = ref(false)

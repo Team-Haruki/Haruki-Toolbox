@@ -20,6 +20,7 @@
     --color-accent-foreground: var(--accent-foreground);
     --color-destructive: var(--destructive);
     --color-destructive-foreground: var(--destructive-foreground);
+    --color-destructive-tint-foreground: var(--destructive-tint-foreground);
     --color-border: var(--border);
     --color-input: var(--input);
     --color-ring: var(--ring);
@@ -73,11 +74,17 @@
     --secondary: oklch(0.967 0.003 264.542);
     --secondary-foreground: oklch(0.21 0.034 264.665);
     --muted: oklch(0.967 0.003 264.542);
-    --muted-foreground: oklch(0.551 0.027 264.364);
+    /* L 0.53 (was 0.551): 4.8:1 on --muted, 5.1 on --background, 5.3 on --card
+     * (0.551 was 4.39:1 on --muted, under AA for the muted-on-muted text). */
+    --muted-foreground: oklch(0.53 0.027 264.364);
     --accent: oklch(0.955 0.02 183);
     --accent-foreground: oklch(0.38 0.075 183);
     --destructive: oklch(0.577 0.245 27.325);
     --destructive-foreground: oklch(0.577 0.245 27.325);
+    /* Destructive *text* on a destructive tint (alert bodies, badges):
+     * --destructive is a button fill and only reaches ~4.2:1 as 14 px text on
+     * bg-destructive/5; this one is 6.9:1 there and 5.2–5.7:1 on bg-destructive/15. */
+    --destructive-tint-foreground: oklch(0.47 0.195 27.5);
     --border: oklch(0.928 0.006 264.531);
     --input: oklch(0.928 0.006 264.531);
     --ring: oklch(0.65 0.09 183);
@@ -112,6 +119,8 @@
     --accent: oklch(0.32 0.04 200);
     --accent-foreground: oklch(0.92 0.06 183);
     --destructive: oklch(0.704 0.191 22.216);
+    /* 7.4:1 on the dark bg-destructive/5 tint, 6.5:1 on bg-destructive/15. */
+    --destructive-tint-foreground: oklch(0.81 0.114 22);
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
     --ring: oklch(0.72 0.09 183);

@@ -66,8 +66,18 @@ export function resolveCatalogStatus(
  */
 export const CATALOG_PERMANENT_END_THRESHOLD_MS = 10 * 365 * 24 * 3_600_000
 
+/**
+ * A timestamp more than ten years out is a placeholder, not a date: master
+ * data marks undecided starts (unreleased CN banners) and open ends (permanent
+ * pools) with a year-2099 sentinel. Such a value must never be printed as a
+ * date or counted down to.
+ */
+export function isCatalogPlaceholderDate(value: number | null | undefined, nowMs: number): boolean {
+  return value != null && Number.isFinite(value) && value - nowMs > CATALOG_PERMANENT_END_THRESHOLD_MS
+}
+
 export function isCatalogPermanentEnd(endAt: number | null | undefined, nowMs: number): boolean {
-  return endAt != null && Number.isFinite(endAt) && endAt - nowMs > CATALOG_PERMANENT_END_THRESHOLD_MS
+  return isCatalogPlaceholderDate(endAt, nowMs)
 }
 
 export function isCatalogStatus(value: unknown): value is CatalogStatus {

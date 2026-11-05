@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { isNarrowViewport } from "@/composables/useCatalogViewPreference"
 import CatalogDetailShell from "@/shared/components/catalog/CatalogDetailShell.vue"
+import { applyCatalogRegionQuery } from "@/shared/sekai/catalog-region"
 import SekaiAttrIcon from "@/shared/components/SekaiAttrIcon.vue"
 import SekaiRarityStars from "@/shared/components/SekaiRarityStars.vue"
 import { resolveSekaiSupplyLabel } from "@/shared/sekai/labels"
@@ -36,6 +37,8 @@ const cardId = computed(() => {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null
 })
 
+// A shared link names its server (`?region=`): apply it before the detail reads the region.
+applyCatalogRegionQuery()
 const detail = useCardDetail(cardId)
 const { hideUnreleased, blurUnreleased } = useUnreleasedContentDisplay()
 
@@ -134,6 +137,7 @@ const sectionsOpen = !isNarrowViewport()
         <div class="flex min-w-0 flex-col gap-4">
           <CardInfoSection
             :card="card"
+            :region="detail.region.value"
             :character="detail.character.value"
             :unit="detail.unit.value"
             :support-unit="detail.supportUnit.value"

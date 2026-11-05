@@ -139,7 +139,7 @@ defineExpose({ open, expanded })
   <section class="grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-muted/20 p-3" data-slot="catalog-filter-panel">
     <button
       type="button"
-      class="flex min-h-9 items-center gap-2 text-left text-sm font-medium"
+      class="flex min-h-9 items-center gap-2 text-left text-sm font-medium pointer-coarse:-my-1 pointer-coarse:min-h-10"
       :aria-expanded="isOpen"
       :aria-haspopup="useSheet ? 'dialog' : undefined"
       @click="toggle"
@@ -192,8 +192,9 @@ defineExpose({ open, expanded })
         </div>
       </div>
 
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <p class="text-xs text-muted-foreground">{{ countLabel }}</p>
+      <!-- No count here: the results bar right under the panel already
+           prints it (the header shows it only while collapsed). -->
+      <div class="flex flex-wrap items-center justify-end gap-2">
         <Button
           type="button"
           variant="ghost"

@@ -19,12 +19,18 @@ export const buttonVariants = cva(
         ghost:
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
+        // The one off-token colour: the Afdian sponsorship call to action.
+        brand:
+          "bg-pink-600 text-white shadow-xs hover:bg-pink-700 focus-visible:ring-pink-600/30 dark:bg-pink-600 dark:hover:bg-pink-500",
       },
+      // Coarse pointers (touch) get a 40 px minimum hit box on every size;
+      // `h-*` call-site overrides still shrink the control on desktop, but
+      // `min-h-*` wins on touch so a compact row stays tappable.
       size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-        icon: "size-9",
+        default: "h-9 px-4 py-2 has-[>svg]:px-3 pointer-coarse:min-h-10 pointer-coarse:min-w-10",
+        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5 pointer-coarse:min-h-10 pointer-coarse:min-w-10",
+        lg: "h-10 rounded-md px-6 has-[>svg]:px-4 pointer-coarse:min-h-10 pointer-coarse:min-w-10",
+        icon: "size-9 pointer-coarse:min-h-10 pointer-coarse:min-w-10",
       },
     },
     defaultVariants: {

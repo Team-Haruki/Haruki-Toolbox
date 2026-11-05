@@ -15,6 +15,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
+import PageHeader from "@/shared/components/PageHeader.vue"
+import CatalogTimeZoneHint from "@/shared/components/catalog/CatalogTimeZoneHint.vue"
 import CatalogFilterPanel from "@/shared/components/catalog/CatalogFilterPanel.vue"
 import type { CatalogActiveChip } from "@/shared/components/catalog/CatalogFilterPanel.vue"
 import CatalogPagination from "@/shared/components/catalog/CatalogPagination.vue"
@@ -502,25 +504,26 @@ const paginationAnchor = ref<HTMLElement | null>(null)
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center gap-4">
-    <!-- Header -->
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold">{{ t("cardBox.title") }}</h1>
-        <p class="text-sm text-muted-foreground">{{ t("cardBox.description") }}</p>
-      </div>
-      <div class="flex flex-col items-start gap-1.5 sm:items-end">
-        <GameAccountSelect capability="suite" />
-        <!-- Same placement as the profile page: the data time and its refresh sit together. -->
-        <div v-if="suiteStatus !== 'idle'" class="flex items-center gap-1 text-xs text-muted-foreground">
-          <span v-if="uploadTimeText">{{ t("uploadedGameData.uploadedAt", { time: uploadTimeText }) }}</span>
-          <Button variant="ghost" size="sm" class="h-6 gap-1 px-1.5 text-xs text-muted-foreground" :disabled="isLoading || refreshing" @click="refresh">
-            <LucideRefreshCw :class="['size-3.5', refreshing ? 'animate-spin' : '']" />
-            {{ t("cardBox.refresh") }}
-          </Button>
+  <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4">
+    <!-- Top-aligned like every other page: a short state (error, empty) must
+    not float the title to the middle of the viewport. -->
+    <PageHeader :title="t('cardBox.title')" :description="t('cardBox.description')">
+      <template #actions>
+        <div class="flex flex-col items-start gap-1.5 sm:items-end">
+          <GameAccountSelect capability="suite" />
+          <!-- Same placement as the profile page: the data time (local, with
+               the zone tag) and its refresh sit together. -->
+          <div v-if="suiteStatus !== 'idle'" class="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+            <span v-if="uploadTimeText">{{ t("uploadedGameData.uploadedAt", { time: uploadTimeText }) }}</span>
+            <CatalogTimeZoneHint v-if="uploadTimeText && selectedAccount" :region="selectedAccount.server" />
+            <Button variant="ghost" size="sm" class="h-7 gap-1 px-2 text-xs text-muted-foreground" :disabled="isLoading || refreshing" @click="refresh">
+              <LucideRefreshCw :class="['size-3.5', refreshing ? 'animate-spin' : '']" />
+              {{ t("cardBox.refresh") }}
+            </Button>
+          </div>
         </div>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- No account selected -->
     <Card v-if="suiteStatus === 'idle'">

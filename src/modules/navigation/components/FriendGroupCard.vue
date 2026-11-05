@@ -60,7 +60,7 @@ function handleTouch() {
                 :href="item.url || undefined"
                 :target="item.url ? '_blank' : undefined"
                 :rel="item.url ? 'noopener noreferrer' : undefined"
-                class="text-white font-bold text-lg truncate drop-shadow-md hover:underline"
+                class="block min-w-0 truncate rounded text-white font-bold text-lg drop-shadow-md outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-white/70"
                 @click.stop
               >
                 {{ item.name }}

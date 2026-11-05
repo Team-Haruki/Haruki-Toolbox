@@ -88,3 +88,11 @@ export function normalizeChunkSize(value: number) {
 export function isRegionType(value: unknown): value is RegionType {
   return isSekaiRegion(value)
 }
+
+/**
+ * Whether the quick-install URL scheme has somewhere to go: iPhone, iPad
+ * (which reports itself as a Mac in Safari) or a Mac running the same app.
+ */
+export function isApplePlatform(userAgent: string): boolean {
+  return /iPhone|iPad|iPod|Macintosh|Mac OS X/i.test(userAgent)
+}

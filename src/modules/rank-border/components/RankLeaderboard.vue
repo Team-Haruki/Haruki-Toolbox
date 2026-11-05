@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
+import EmptyState from "@/shared/components/EmptyState.vue"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import { useRankBorderContext } from "../composables/rank-border-context"
 import {
@@ -254,7 +255,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section ref="listRoot" class="grid min-w-0 gap-3 rounded-md border bg-muted/10 p-2.5 sm:p-3">
+  <section ref="listRoot" class="grid min-w-0 gap-3 rounded-lg border bg-muted/10 p-2.5 sm:p-3">
     <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
       <div class="min-w-0">
         <h2 class="truncate text-base font-semibold">{{ selectedEvent?.label ?? t("rankBorder.sections.lines") }}</h2>
@@ -276,10 +277,11 @@ onBeforeUnmount(() => {
       />
     </div>
 
-    <div v-if="!hasTop100Data" class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-      {{ t("rankBorder.result.emptyLines") }}
+    <!-- The empty placeholder yields to the error card: "nothing collected yet" under "could not load" would contradict it. -->
+    <div v-if="!hasTop100Data && !tracker.error.value" class="rounded-md border border-dashed">
+      <EmptyState :title="t('rankBorder.result.emptyLines')" size="sm" />
     </div>
-    <div v-else class="rank-border-table-shell rounded-md border bg-background/80">
+    <div v-else-if="hasTop100Data" class="rank-border-table-shell rounded-md border bg-background/80">
       <div class="rank-border-table-header rank-border-top-header">
         <span>{{ t("rankBorder.table.rank") }}</span>
         <span>{{ t("rankBorder.table.player") }}</span>
@@ -584,29 +586,42 @@ onBeforeUnmount(() => {
   min-width: 100%;
 }
 
+/* The scroller is an inline-size container so the name can be capped at the
+   visible width (100cqw, minus the leader card beside it): a long name ends
+   in an ellipsis instead of running under the score block, while the honor
+   strip may still overflow and keep the track scrollable. */
+.rank-border-player-scroll {
+  container-type: inline-size;
+}
+
 .rank-border-player-copy {
+  --rank-border-player-copy-max: 100cqw;
   display: grid;
   width: max-content;
   min-width: 0;
+  max-width: var(--rank-border-player-copy-max);
   justify-items: start;
   gap: 0.375rem;
   text-align: left;
 }
 
+.rank-border-player-track--assets .rank-border-player-copy {
+  --rank-border-player-copy-max: calc(100cqw - 3.5rem - 0.5rem);
+}
+
 .rank-border-player-name {
-  display: inline-flex;
-  width: max-content;
+  display: block;
+  width: auto;
   justify-self: start;
-  min-width: max-content;
-  max-width: none;
-  align-items: baseline;
-  justify-content: flex-start;
-  overflow: visible;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   color: var(--foreground);
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.35;
   text-align: left;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -704,6 +719,10 @@ onBeforeUnmount(() => {
 
   .rank-border-player-track--assets {
     grid-template-columns: auto max-content;
+  }
+
+  .rank-border-player-track--assets .rank-border-player-copy {
+    --rank-border-player-copy-max: calc(100cqw - 2.65rem - 0.5rem);
   }
 
   .rank-border-player-name {

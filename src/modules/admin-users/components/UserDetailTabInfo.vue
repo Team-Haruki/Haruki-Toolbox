@@ -176,15 +176,16 @@ const confirmDialog = computed(() => {
         <div class="bg-muted/30 p-4 rounded-lg border flex flex-col justify-center">
           <div class="flex items-center justify-between mb-1">
             <span class="text-muted-foreground text-xs">{{ t("adminUsers.detail.info.email") }}</span>
+            <!-- Negative margins keep the row height; the hit box grows to 40 px on touch. -->
             <Button
               variant="ghost"
-              size="sm"
-              class="h-5 px-1.5 text-[10px]"
+              size="icon"
+              class="-my-1.5 size-7 pointer-coarse:-my-3 pointer-coarse:size-10"
               :title="t('adminUsers.common.edit')"
               :aria-label="t('adminUsers.common.edit')"
               @click="emit('open-email-edit')"
             >
-              <LucidePencil class="w-3 h-3" />
+              <LucidePencil class="size-3.5" />
             </Button>
           </div>
           <div class="font-medium text-sm truncate" :title="user.userData.emailInfo?.email || t('adminUsers.common.unbound')">

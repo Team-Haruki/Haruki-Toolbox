@@ -18,12 +18,14 @@ export const badgeVariants = cva(
         secondary: "bg-secondary text-secondary-foreground",
         outline: "border border-border bg-transparent text-foreground",
         muted: "bg-muted text-muted-foreground",
-        destructive: "bg-destructive/15 text-destructive dark:text-red-300",
+        // Light text is `-800` for the warm hues and the destructive tint token:
+        // `-700` / `text-destructive` sit at 3.6–4.5:1 on their 15 % tint.
+        destructive: "bg-destructive/15 text-destructive-tint-foreground",
         emerald: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
         violet: "bg-violet-500/15 text-violet-700 dark:text-violet-300",
-        orange: "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+        orange: "bg-orange-500/15 text-orange-800 dark:text-orange-300",
         sky: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
-        amber: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+        amber: "bg-amber-500/15 text-amber-800 dark:text-amber-300",
         rose: "bg-rose-500/15 text-rose-700 dark:text-rose-300",
         fuchsia: "bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-300",
         cyan: "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300",

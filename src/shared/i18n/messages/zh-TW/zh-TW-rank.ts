@@ -25,22 +25,22 @@ export default {
     "comparison": {
       "label": "對比",
       "title": "對比中心",
-      "hint": "最多同時疊加 {max} 個對比物件，趨勢圖與指標表同步展示。",
+      "hint": "最多同時疊加 {max} 個對比對象，趨勢圖與指標表同步展示。",
       "none": "無對比",
       "customPlaceholder": "如 T500",
       "playerPlaceholder": "輸入玩家 ID",
       "addRank": "對比 T100 / 檔線",
       "targetPickerPlaceholder": "選擇榜位或檔線",
       "targetPickerSearch": "搜尋排名 / 玩家名 / 檔線...",
-      "targetPickerEmpty": "榜單資料載入後可選擇對比物件",
-      "emptyHint": "還沒有對比物件。從上方選擇 T100 榜位 / 檔線，或輸入玩家 ID 新增，趨勢圖會疊加對比線並生成指標對比表。",
+      "targetPickerEmpty": "榜單資料載入後可選擇對比對象",
+      "emptyHint": "還沒有對比對象。從上方選擇 T100 榜位 / 檔線，或輸入玩家 ID 新增，趨勢圖會疊加對比線並生成指標對比表。",
       "addPlayer": "對比玩家",
       "add": "新增",
       "remove": "移除 {label}",
-      "limitReached": "最多同時對比 {max} 個物件",
-      "duplicateTarget": "該物件已在對比列表中",
-      "selfTarget": "頁面主體本身不能作為對比物件",
-      "tableTarget": "物件",
+      "limitReached": "最多同時對比 {max} 個對象",
+      "duplicateTarget": "該對象已在對比列表中",
+      "selfTarget": "頁面主體本身不能作為對比對象",
+      "tableTarget": "對象",
       "tableActions": "操作",
       "current": "當前",
       "apply": "對比",
@@ -67,7 +67,8 @@ export default {
       "backToList": "返回榜線列表",
       "copyLink": "複製連結",
       "linkCopied": "詳情連結已複製",
-      "expandChart": "放大檢視"
+      "expandChart": "放大檢視",
+      "login": "去登入"
     },
     "sections": {
       "query": "查詢條件",
@@ -98,7 +99,7 @@ export default {
       "event": "活動",
       "loadingEvents": "正在準備活動...",
       "eventPlaceholder": "請選擇活動",
-      "eventSearchPlaceholder": "搜尋活動名、#ID、型別或資源名...",
+      "eventSearchPlaceholder": "搜尋活動名、#ID、類型或資源名...",
       "eventEmpty": "沒有找到活動。",
       "worldBloomCharacter": "WL 章節角色",
       "worldBloomCharacterPlaceholder": "請選擇章節角色",
@@ -126,10 +127,12 @@ export default {
       "interval": "增長區間：{value}",
       "topScore": "最高分",
       "coverage": "採集範圍",
-      "trackerCadence": "跟隨資料更新"
+      "trackerCadence": "跟隨資料更新",
+      "staleWarning": "榜線採集服務已有 {age} 沒有新資料，下方顯示的是最近一次採集結果，請以遊戲內資訊為準。"
     },
     "detailIssues": {
       "title": "部分資料暫時無法更新，頁面顯示的是最近一次成功的資料。",
+      "titleNoData": "榜線資料載入失敗，請稍後重試。",
       "overview": "榜單概覽",
       "comparisons": "對比：{names}",
       "realtime": "即時推送已斷開，正在重連",
@@ -143,7 +146,10 @@ export default {
       "waitingWs": "等待即時推送",
       "loginRequired": "登入後開啟自動重新整理",
       "pollingLoginForLive": "定時重新整理中，登入後可即時推送",
-      "replaying": "回放中"
+      "replaying": "回放中",
+      "stale": "資料已 {age}未更新",
+      "outdated": "採集已中斷，{age}未更新",
+      "ended": "活動已結束"
     },
     "time": {
       "secondsAgo": "{value} 秒前",
@@ -169,7 +175,9 @@ export default {
     "result": {
       "loadErrorTitle": "榜線資料載入失敗",
       "loadErrorHint": "請檢查網路連線後重試；如果多次失敗，可能是榜線採集服務暫時不可用。",
-      "emptyLines": "即時連線準備好後會在這裡顯示榜線，也可以點選重新整理資料立即拉取。",
+      "emptyLines": "當前活動還沒有采集到榜線資料，可以稍後點選「重新整理資料」再試。",
+      "notTracked": "該活動沒有被榜線採集服務追蹤，暫時沒有可顯示的資料。",
+      "updatedAgo": "更新於",
       "emptySegments": "暫未採集到 T100 以外的檔線點。",
       "emptyLiveCard": "點選榜線行，或選擇綁定帳號查詢後顯示即時卡片。",
       "waitingLiveData": "等待即時資料",

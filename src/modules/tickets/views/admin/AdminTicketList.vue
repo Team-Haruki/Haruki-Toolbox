@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n"
+import { useMediaQuery } from "@vueuse/core"
 import { formatLocalizedDate } from "@/lib/date-time"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -56,8 +57,12 @@ import { useAdminTicketList } from "@/modules/tickets/composables/useAdminTicket
 
 const { t, locale } = useI18n()
 
+// Phones get one stacked row per ticket instead of a two-column table
+// (v-if, not CSS, so each subject exists once in the DOM).
+const isPhone = useMediaQuery("(max-width: 639px)")
+
 function formatTicketDate(iso?: string) {
-  return formatLocalizedDate(iso, { year: "numeric", month: "2-digit", day: "2-digit" }, t("tickets.common.dateFallback"))
+  return formatLocalizedDate(iso, "date", t("tickets.common.dateFallback"))
 }
 
 const {
@@ -75,7 +80,9 @@ const {
   hasActiveFilters,
   ticketNotificationsEnabled,
   ticketNotificationsLoading,
+  ticketNotificationsError,
   ticketNotificationsSaving,
+  loadTicketNotificationPreference,
   ticketNotificationRecipients,
   ticketNotificationRecipientsLoading,
   ticketNotificationRecipientsSavingUserId,
@@ -131,6 +138,13 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
                 {{ t("tickets.adminList.notifications.label") }}
               </Label>
               <p class="text-xs text-muted-foreground">{{ t("tickets.adminList.notifications.description") }}</p>
+              <!-- A secondary widget: its load failure stays inline (no toast). -->
+              <p v-if="ticketNotificationsError && !ticketNotificationsLoading" class="mt-1 text-xs text-destructive" role="alert">
+                {{ t("tickets.adminList.notifications.loadFailedTitle") }}：{{ ticketNotificationsError.message }}
+                <button type="button" class="ml-1 inline-flex min-h-8 items-center underline underline-offset-4 pointer-coarse:min-h-10" @click="loadTicketNotificationPreference">
+                  {{ t("core.loadError.retry") }}
+                </button>
+              </p>
             </div>
             <LucideLoader2
               v-if="ticketNotificationsLoading || ticketNotificationsSaving"
@@ -140,7 +154,7 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
               id="ticket-notification-toggle"
               class="shrink-0"
               :model-value="ticketNotificationsEnabled"
-              :disabled="ticketNotificationsLoading || ticketNotificationsSaving"
+              :disabled="ticketNotificationsLoading || ticketNotificationsSaving || !!ticketNotificationsError"
               @update:model-value="setTicketNotificationsEnabled"
             />
           </div>
@@ -157,14 +171,17 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
           </div>
         </div>
 
-        <form class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_auto_auto_auto_auto] xl:items-center" novalidate @submit.prevent="applySearch">
+        <!-- Keyed off the card's width (not the viewport): at 1280 with both sidebars
+             open the column is ~740 px, where the one-row layout would overflow. -->
+        <form class="@container/filters" novalidate @submit.prevent="applySearch">
+        <div class="grid grid-cols-1 gap-3 @md/filters:grid-cols-2 @3xl/filters:grid-cols-[1fr_auto_auto_auto_auto] @3xl/filters:items-center">
           <div class="relative">
             <LucideSearch class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input v-model="search" :placeholder="t('tickets.adminList.searchPlaceholder')" :aria-label="t('tickets.adminList.searchPlaceholder')" class="pl-9" />
           </div>
           <Label id="admin-ticket-quick-filter-label" for="admin-ticket-quick-filter" class="sr-only">{{ t("tickets.adminList.quickFilters.all") }}</Label>
           <Select id="admin-ticket-quick-filter" :key="locale" v-model="quickFilter">
-            <SelectTrigger class="w-full xl:w-44" aria-labelledby="admin-ticket-quick-filter-label">
+            <SelectTrigger class="w-full @3xl/filters:w-44" aria-labelledby="admin-ticket-quick-filter-label">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -175,7 +192,7 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
           </Select>
           <Label id="admin-ticket-status-filter-label" for="admin-ticket-status-filter" class="sr-only">{{ t("tickets.filters.allStatus") }}</Label>
           <Select id="admin-ticket-status-filter" :key="locale" v-model="statusFilter">
-            <SelectTrigger class="w-full xl:w-40" aria-labelledby="admin-ticket-status-filter-label">
+            <SelectTrigger class="w-full @3xl/filters:w-40" aria-labelledby="admin-ticket-status-filter-label">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -186,7 +203,7 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
           </Select>
           <Label id="admin-ticket-priority-filter-label" for="admin-ticket-priority-filter" class="sr-only">{{ t("tickets.filters.allPriorities") }}</Label>
           <Select id="admin-ticket-priority-filter" :key="locale" v-model="priorityFilter">
-            <SelectTrigger class="w-full xl:w-40" aria-labelledby="admin-ticket-priority-filter-label">
+            <SelectTrigger class="w-full @3xl/filters:w-40" aria-labelledby="admin-ticket-priority-filter-label">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -205,6 +222,7 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
               {{ t("admin.filters.reset") }}
             </Button>
           </div>
+        </div>
         </form>
       </CardContent>
     </Card>
@@ -319,15 +337,43 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
         />
       </template>
       <template v-else>
+        <ul v-if="isPhone && tickets.length > 0" class="divide-y" :aria-label="t('tickets.adminList.table.subject')">
+          <li v-for="ticketItem in tickets" :key="ticketItem.ticketId">
+            <button
+              type="button"
+              class="flex w-full flex-col gap-1.5 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
+              @click="openTicket(ticketItem.ticketId)"
+            >
+              <span class="line-clamp-2 text-sm font-medium">{{ ticketItem.subject }}</span>
+              <span class="flex flex-wrap items-center gap-1.5">
+                <span :class="['inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium', ticketStatusBadgeClass(ticketItem.status)]">
+                  <component :is="ticketStatusIcon(ticketItem.status)" class="w-3.5 h-3.5" />
+                  {{ ticketStatusLabel(ticketItem.status) }}
+                </span>
+                <span :class="['inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium', ticketPriorityBadgeClass(ticketItem.priority)]">
+                  <component :is="ticketPriorityIcon(ticketItem.priority)" class="w-3.5 h-3.5" />
+                  {{ ticketPriorityLabel(ticketItem.priority) }}
+                </span>
+              </span>
+              <span class="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+                <span class="min-w-0 truncate">{{ ticketItem.creatorUserName || ticketItem.creatorUserId }}</span>
+                <span class="shrink-0 tabular-nums">· {{ formatTicketDate(ticketItem.updatedAt) }}</span>
+              </span>
+            </button>
+          </li>
+        </ul>
+
+        <!-- Columns are keyed off the card's width (@container), not the viewport. -->
+        <div v-else class="@container/tickets">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>{{ t("tickets.adminList.table.subject") }}</TableHead>
               <TableHead>{{ t("tickets.adminList.table.status") }}</TableHead>
-              <TableHead>{{ t("tickets.adminList.table.priority") }}</TableHead>
-              <TableHead class="hidden md:table-cell">{{ t("tickets.adminList.table.creator") }}</TableHead>
-              <TableHead class="hidden lg:table-cell">{{ t("tickets.adminList.table.assignee") }}</TableHead>
-              <TableHead class="hidden xl:table-cell">{{ t("tickets.adminList.table.lastMessage") }}</TableHead>
+              <TableHead class="hidden @2xl/tickets:table-cell">{{ t("tickets.adminList.table.priority") }}</TableHead>
+              <TableHead class="hidden @xl/tickets:table-cell">{{ t("tickets.adminList.table.creator") }}</TableHead>
+              <TableHead class="hidden @4xl/tickets:table-cell">{{ t("tickets.adminList.table.assignee") }}</TableHead>
+              <TableHead class="hidden @5xl/tickets:table-cell">{{ t("tickets.adminList.table.lastMessage") }}</TableHead>
               <TableHead>{{ t("tickets.adminList.table.updatedAt") }}</TableHead>
             </TableRow>
           </TableHeader>
@@ -341,8 +387,8 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
               @click="openTicket(ticketItem.ticketId)"
               @keydown="handleRowKeydown($event, ticketItem.ticketId)"
             >
-              <TableCell class="font-medium max-w-[260px]">
-                <div class="truncate">{{ ticketItem.subject }}</div>
+              <TableCell class="max-w-[14rem] font-medium @4xl/tickets:max-w-xs">
+                <div class="truncate" :title="ticketItem.subject">{{ ticketItem.subject }}</div>
                 <div class="text-xs text-muted-foreground truncate">{{ ticketItem.ticketId }}</div>
               </TableCell>
               <TableCell>
@@ -351,17 +397,19 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
                   {{ ticketStatusLabel(ticketItem.status) }}
                 </span>
               </TableCell>
-              <TableCell>
+              <TableCell class="hidden @2xl/tickets:table-cell">
                 <span :class="['inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium', ticketPriorityBadgeClass(ticketItem.priority)]">
                   <component :is="ticketPriorityIcon(ticketItem.priority)" class="w-3.5 h-3.5" />
                   {{ ticketPriorityLabel(ticketItem.priority) }}
                 </span>
               </TableCell>
-              <TableCell class="hidden md:table-cell text-muted-foreground">{{ ticketItem.creatorUserName || ticketItem.creatorUserId }}</TableCell>
-              <TableCell class="hidden lg:table-cell text-muted-foreground">
-                {{ ticketItem.assigneeAdminName || ticketItem.assigneeAdminId || t("tickets.adminList.unassigned") }}
+              <TableCell class="hidden @xl/tickets:table-cell max-w-[10rem] text-muted-foreground">
+                <div class="truncate" :title="ticketItem.creatorUserName || ticketItem.creatorUserId">{{ ticketItem.creatorUserName || ticketItem.creatorUserId }}</div>
               </TableCell>
-              <TableCell class="hidden xl:table-cell max-w-[280px]">
+              <TableCell class="hidden @4xl/tickets:table-cell max-w-[10rem] text-muted-foreground">
+                <div class="truncate">{{ ticketItem.assigneeAdminName || ticketItem.assigneeAdminId || t("tickets.adminList.unassigned") }}</div>
+              </TableCell>
+              <TableCell class="hidden @5xl/tickets:table-cell max-w-[280px]">
                 <div v-if="ticketItem.lastMessagePreview" class="flex items-center gap-2 text-sm text-muted-foreground">
                   <LucideMessageSquare class="w-4 h-4 shrink-0" />
                   <span v-if="ticketItem.lastMessageSenderRole" class="shrink-0">
@@ -374,7 +422,7 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
                 </div>
                 <div v-else class="text-sm text-muted-foreground">{{ t("tickets.adminList.lastMessage.none") }}</div>
               </TableCell>
-              <TableCell class="text-muted-foreground text-sm tabular-nums">{{ formatTicketDate(ticketItem.updatedAt) }}</TableCell>
+              <TableCell class="whitespace-nowrap text-muted-foreground text-sm tabular-nums">{{ formatTicketDate(ticketItem.updatedAt) }}</TableCell>
             </TableRow>
             <TableRow v-if="tickets.length === 0">
               <TableCell :colspan="7" class="p-0">
@@ -386,6 +434,7 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
             </TableRow>
           </TableBody>
         </Table>
+        </div>
       </template>
 
       <!-- Pagination footer -->

@@ -2,7 +2,9 @@
 import type { Component } from "vue"
 import { LucideSearchX } from "lucide-vue-next"
 import { Card, CardContent } from "@/components/ui/card"
+import EmptyState from "@/shared/components/EmptyState.vue"
 
+/** `EmptyState` in a Card, with a "no results" icon, for catalog lists and detail pages. */
 withDefaults(defineProps<{
   message: string
   hint?: string | null
@@ -15,13 +17,12 @@ withDefaults(defineProps<{
 
 <template>
   <Card data-slot="catalog-empty-state">
-    <CardContent class="flex flex-col items-center gap-3 py-12 text-center">
-      <component :is="icon ?? LucideSearchX" class="size-8 text-muted-foreground/60" aria-hidden="true" />
-      <div class="space-y-1">
-        <p class="text-sm text-muted-foreground">{{ message }}</p>
-        <p v-if="hint" class="text-xs text-muted-foreground/80">{{ hint }}</p>
-      </div>
-      <slot name="action" />
+    <CardContent>
+      <EmptyState :title="message" :description="hint" :icon="icon ?? LucideSearchX">
+        <template #action>
+          <slot name="action" />
+        </template>
+      </EmptyState>
     </CardContent>
   </Card>
 </template>

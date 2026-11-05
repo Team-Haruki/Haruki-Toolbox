@@ -6,40 +6,31 @@ import {
   ExternalLink,
   Heart,
   Info,
-  Sparkles,
   Users,
 } from "lucide-vue-next"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import PageHeader from "@/shared/components/PageHeader.vue"
+import { formatLocalizedDate, formatLocalizedDateTime } from "@/lib/date-time"
 import { useSponsors } from "@/modules/sponsor/composables/useSponsors"
 import { groupSponsorsByCategory, sponsorStatus } from "@/modules/sponsor/lib/categories"
 import type { SponsorSupporter } from "@/modules/sponsor/types"
 
 const AFDIAN_URL = "https://afdian.com/a/seiunx"
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const { supporters, summary, loading, loadFailed } = useSponsors()
 
 const hasSupporters = computed(() => supporters.value.length > 0)
 
-const dateFormatter = computed(() => new Intl.DateTimeFormat(locale.value, {
-  dateStyle: "medium",
-}))
-
-const dateTimeFormatter = computed(() => new Intl.DateTimeFormat(locale.value, {
-  dateStyle: "medium",
-  timeStyle: "medium",
-}))
-
+// A failed request shows "—": nothing is pending, the number is unknown.
 const heroStats = computed(() => {
   const stats: { key: string; label: string; value: string }[] = [
     {
       key: "supporters",
       label: t("sponsor.summary.supporters"),
-      value: summary.value.supporterCount > 0
-        ? String(summary.value.supporterCount)
-        : t("sponsor.summary.pending"),
+      value: loadFailed.value || loading.value ? "—" : String(summary.value.supporterCount),
     },
   ]
 
@@ -57,27 +48,11 @@ type SponsorSection = {
   supporters: SponsorSupporter[]
 }
 
-function utcOffsetLabel(date: Date) {
-  const offsetMinutes = -date.getTimezoneOffset()
-  const sign = offsetMinutes >= 0 ? "+" : "-"
-  const absoluteMinutes = Math.abs(offsetMinutes)
-  const hours = String(Math.floor(absoluteMinutes / 60)).padStart(2, "0")
-  const minutes = String(absoluteMinutes % 60).padStart(2, "0")
-
-  return `UTC${sign}${hours}:${minutes}`
-}
-
 const generatedAtLabel = computed(() => {
   if (!summary.value.generatedAt) {
     return ""
   }
-
-  const date = new Date(summary.value.generatedAt)
-  if (Number.isNaN(date.valueOf())) {
-    return summary.value.generatedAt
-  }
-
-  return `${dateTimeFormatter.value.format(date)} (${utcOffsetLabel(date)})`
+  return formatLocalizedDateTime(summary.value.generatedAt, "dateTime", summary.value.generatedAt)
 })
 
 // The backend decides each supporter's category and already orders them by
@@ -106,12 +81,7 @@ function fallbackInitial(sponsor: SponsorSupporter) {
 }
 
 function formatDate(value: string) {
-  const date = new Date(value)
-  if (!value || Number.isNaN(date.valueOf())) {
-    return t("sponsor.supporter.recent")
-  }
-
-  return dateFormatter.value.format(date)
+  return formatLocalizedDate(value, "date", t("sponsor.supporter.recent"))
 }
 
 function sponsorSubtitle(sponsor: SponsorSupporter) {
@@ -129,28 +99,20 @@ function sponsorStatusLabel(sponsor: SponsorSupporter) {
 
 <template>
   <div class="w-full flex-1 px-0 py-4">
-    <div class="mx-auto flex w-full max-w-5xl flex-col gap-8">
+    <div class="mx-auto flex w-full max-w-6xl flex-col gap-8">
       <!-- Hero -->
       <section
         class="flex flex-col gap-4 border-b pb-8 pt-2 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500 md:pt-4"
       >
-        <p class="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-pink-600 dark:text-pink-300">
-          <span class="h-px w-8 bg-current opacity-60" aria-hidden="true" />
-          <Sparkles class="h-3.5 w-3.5" />
-          {{ t("sponsor.hero.badge") }}
-        </p>
-        <h1 class="text-3xl font-extrabold tracking-tight sm:text-4xl">
-          {{ t("sponsor.hero.title") }}
-        </h1>
-        <p class="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-          {{ t("sponsor.hero.description") }}
-        </p>
+        <!-- The app page header (not the editorial one of /about, /privacy, /tos). -->
+        <PageHeader :eyebrow="t('sponsor.hero.badge')" :title="t('sponsor.hero.title')" :description="t('sponsor.hero.description')" />
 
         <div class="mt-1 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div class="flex flex-wrap gap-3">
             <Button
               as-child
-              class="h-11 bg-pink-600 px-5 font-semibold text-white transition-colors hover:bg-pink-700"
+              variant="brand"
+              class="h-11 px-5 font-semibold"
             >
               <a :href="AFDIAN_URL" target="_blank" rel="noopener noreferrer">
                 <Heart class="h-4 w-4 fill-current" />

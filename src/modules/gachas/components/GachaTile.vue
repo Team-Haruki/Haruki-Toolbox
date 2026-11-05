@@ -2,9 +2,9 @@
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { Card, CardContent } from "@/components/ui/card"
-import { formatLocalizedDate } from "@/lib/date-time"
+import { DATE_RANGE_SEPARATOR, formatLocalizedDate } from "@/lib/date-time"
 import CatalogStatusBadge from "@/shared/components/catalog/CatalogStatusBadge.vue"
-import { isCatalogPermanentEnd } from "@/shared/components/catalog/types"
+import { isCatalogPlaceholderDate } from "@/shared/components/catalog/types"
 import GachaAssetImage from "@/modules/gachas/components/GachaAssetImage.vue"
 import GachaPickupAvatars from "@/modules/gachas/components/GachaPickupAvatars.vue"
 import GachaTypeBadge from "@/modules/gachas/components/GachaTypeBadge.vue"
@@ -21,15 +21,24 @@ const { t } = useI18n()
 const blur = computed(() => props.tile.unreleased && props.blurUnreleased)
 
 function formatDate(value: number | null): string {
-  return formatLocalizedDate(value, { year: "numeric", month: "2-digit", day: "2-digit" }, t("gachas.common.dateFallback"))
+  return formatLocalizedDate(value, "date", t("gachas.common.dateFallback"))
 }
 
-/** "2099/12/31" on a permanent pool reads as a typo; say "permanent" instead. */
+/**
+ * Year-2099 sentinels never print as dates: an undecided start (unreleased
+ * CN pools) reads "TBD", and the open end of a permanent pool "permanent".
+ */
+const startLabel = computed(() => (
+  isCatalogPlaceholderDate(props.tile.gacha.startAt, Date.now())
+    ? t("catalog.status.tbd")
+    : formatDate(props.tile.gacha.startAt)
+))
 const endLabel = computed(() => (
-  isCatalogPermanentEnd(props.tile.gacha.endAt, Date.now())
+  isCatalogPlaceholderDate(props.tile.gacha.endAt, Date.now())
     ? t("catalog.status.permanent")
     : formatDate(props.tile.gacha.endAt)
 ))
+const period = computed(() => `${startLabel.value}${DATE_RANGE_SEPARATOR}${endLabel.value}`)
 </script>
 
 <template>
@@ -56,11 +65,16 @@ const endLabel = computed(() => (
           <GachaTypeBadge :gacha-type="tile.gacha.gachaType" size="sm" />
           <CatalogStatusBadge :status="tile.status" :until-ms="tile.untilMs" size="sm" />
         </div>
+        <!-- The date wraps; the avatar strip keeps its width so the +N pill
+             is never pushed under the card's clipped edge. -->
         <div class="mt-auto flex items-end justify-between gap-2 pt-0.5">
-          <p class="text-xs text-muted-foreground tabular-nums">
-            {{ formatDate(tile.gacha.startAt) }} – {{ endLabel }}
-          </p>
-          <GachaPickupAvatars :characters="tile.pickupCharacters" :extra-count="tile.extraPickupCount" size="xs" />
+          <p class="min-w-0 text-xs text-muted-foreground tabular-nums">{{ period }}</p>
+          <GachaPickupAvatars
+            :characters="tile.pickupCharacters"
+            :extra-count="tile.extraPickupCount"
+            size="xs"
+            class="shrink-0"
+          />
         </div>
       </CardContent>
     </Card>

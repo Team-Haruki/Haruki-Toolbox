@@ -27,7 +27,7 @@ export default {
       "dataRegion": "資料區服",
       "mode": "組卡模式",
       "target": "組卡目標",
-      "liveType": "Live 型別",
+      "liveType": "Live 類型",
       "algorithm": "搜尋演算法",
       "algorithmDefaultHint": "一般保持預設即可。",
       "algorithmHint": "預設演算法會隨組卡場景自動選擇：分數目標使用 DFS 精確搜尋（可證明最優），World Bloom 等複雜場景使用 DFS-GA，烤森使用強化學習。手動勾選後將保持你的選擇；同時啟用多個演算法可交叉驗證結果，但整體耗時更長。",
@@ -35,7 +35,7 @@ export default {
       "executionModeLimitedHint": "當前裝置記憶體有限，多個演算法會逐個執行，結果不變，只是耗時更長。",
       "event": "活動",
       "eventPlaceholder": "請選擇活動",
-      "eventSearchPlaceholder": "搜尋活動名、#ID、型別、拼音或羅馬音...",
+      "eventSearchPlaceholder": "搜尋活動名、#ID、類型、拼音或羅馬音...",
       "eventEmpty": "沒有找到活動。",
       "character": "角色",
       "characterPlaceholder": "請選擇角色",
@@ -130,7 +130,7 @@ export default {
       "marathon": "馬拉松",
       "cheerfulCarnival": "歡樂嘉年華",
       "worldBloom": "連線世界",
-      "unknown": "未知型別"
+      "unknown": "未知類型"
     },
     "eventAttrs": {
       "happy": "快樂",
@@ -168,11 +168,11 @@ export default {
       "eventSimulation": {
         "memoryEventHint": "五屬性基礎加成均為 25%，本團原生角色合計 75%；人類團不包含團屬虛擬歌手，Virtual Singer 按六位虛擬歌手計算。保留精通加成，不附加當期卡加成。",
         "title": "模擬活動",
-        "description": "用自定義活動型別、屬性和團體進行推薦，不依賴已發布活動。",
+        "description": "用自定義活動類型、屬性和團體進行推薦，不依賴已發布活動。",
         "unavailable": "當前模式不使用活動資訊，模擬活動不可用。",
         "realEventDisabled": "已開啟模擬活動，真實活動選擇不會參與推薦。",
         "activeHint": "模擬活動會覆蓋真實活動 ID，推薦會按當前模擬條件計算。",
-        "type": "活動型別",
+        "type": "活動類型",
         "attr": "屬性",
         "unit": "團體",
         "worldBloomTurn": "章節",
@@ -195,11 +195,11 @@ export default {
         "followSelfPlaceholder": "跟隨當前卡組",
         "scoreUpLowerBound": "最低實效",
         "scoreUpLowerBoundPlaceholder": "不限制",
-        "disabled": "當前 Live 型別不會使用協力參數。",
+        "disabled": "當前 Live 類型不會使用協力參數。",
         "invalid": "協力參數需要填寫大於等於 0 的數字。"
       },
       "filters": {
-        "title": "高階過濾",
+        "title": "進階過濾",
         "description": "按角色、團體或屬性限制可用卡牌。",
         "none": "不限制",
         "selectedCount": "已選 {count} 項",
@@ -413,7 +413,7 @@ export default {
       "blocked": {
         "noAccount": "還沒有綁定遊戲帳號，綁定後才能開始推薦。",
         "selectAccount": "請先選擇一個遊戲帳號。",
-        "dataMissing": "所選帳號還沒有上傳遊戲資料，請先前往資料上傳頁上傳。"
+        "dataMissing": "所選帳號還沒有上傳遊戲資料，請先前往上傳資料頁上傳。"
       },
       "phases": {
         "preparing-data": "正在準備遊戲資料…",
@@ -446,7 +446,7 @@ export default {
       "algorithmElapsed": "{algorithm} 搜尋：{seconds} 秒",
       "empty": "暫無推薦結果。",
       "missingUserDataTitle": "還沒有可用於組卡的遊戲資料",
-      "missingUserDataDescription": "所選遊戲帳號尚未上傳帳號資料（Suite）。請先前往資料上傳頁上傳，然後再回來重試。所有組卡模式都只需要 Suite：烤森組卡用到的烤森門、畫布和玩偶加成也來自 Suite，不需要上傳烤森資料（MySekai）。",
+      "missingUserDataDescription": "所選遊戲帳號尚未上傳帳號資料（Suite）。請先前往上傳資料頁上傳，然後再回來重試。所有組卡模式都只需要 Suite：烤森組卡用到的烤森門、畫布和玩偶加成也來自 Suite，不需要上傳烤森資料（MySekai）。",
       "uploadDataAction": "前往上傳資料",
       "deckTitle": "卡組 #{index}",
       "score": "Live分數 {score}",
@@ -551,7 +551,7 @@ export default {
     "sections": {
       "setup": {
         "title": "帳號與活動",
-        "description": "選擇已綁定帳號、資料伺服器和活動；連線世界活動可選擇章節角色。"
+        "description": "選擇已綁定帳號、區服和活動；連線世界活動可選擇章節角色。"
       }
     },
     "form": {
@@ -627,6 +627,7 @@ export default {
       "clear": "清空規劃",
       "hourLabel": "{hour} 時",
       "dragHint": "單擊填充一格，按住拖動可框選多天 × 多小時的時間段批次填充；用同一筆刷再次框選即為擦除。格內數字為每小時週迴數。",
+      "touchHint": "輕點填充一格；長按後拖動可框選多天 × 多小時的時間段；橫向滑動檢視其他小時。用同一筆刷再次塗抹即為擦除。",
       "playsPerHour": "{count} 周/時"
     },
     "batch": {

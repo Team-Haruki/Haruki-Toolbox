@@ -168,11 +168,7 @@ function toChecked(value: unknown): boolean {
 }
 
 function formatDate(value: string) {
-  return formatLocalizedDate(
-    value,
-    { year: "numeric", month: "2-digit", day: "2-digit" },
-    t("userSettings.gameBinding.grants.fallback")
-  )
+  return formatLocalizedDate(value, "date", t("userSettings.gameBinding.grants.fallback"))
 }
 
 function handleDataTypeChange(value: unknown) {
@@ -320,18 +316,20 @@ const revokeDescription = computed(() => {
               <fieldset class="space-y-1.5" :aria-describedby="props.fieldErrors.permissions ? ERROR_IDS.permissions : undefined">
                 <legend class="text-sm font-medium">{{ t("userSettings.gameBinding.grants.form.permissions") }}</legend>
                 <div class="flex flex-wrap gap-4">
-                  <label class="flex min-h-9 items-center gap-2 text-sm">
+                  <label class="flex min-h-9 items-center gap-2 text-sm pointer-coarse:min-h-10">
                     <Checkbox
                       :id="FIELD_IDS.permissions"
+                      class="pointer-coarse:relative pointer-coarse:after:absolute pointer-coarse:after:-inset-3 pointer-coarse:after:content-['']"
                       :model-value="props.canRead"
                       :aria-invalid="props.fieldErrors.permissions ? 'true' : undefined"
                       @update:model-value="handleReadChange"
                     />
                     <span>{{ permissionLabel("read") }}</span>
                   </label>
-                  <label class="flex min-h-9 items-center gap-2 text-sm" :class="{ 'text-muted-foreground': !writeAllowedForDataType }">
+                  <label class="flex min-h-9 items-center gap-2 text-sm pointer-coarse:min-h-10" :class="{ 'text-muted-foreground': !writeAllowedForDataType }">
                     <Checkbox
                       id="grant-permission-write"
+                      class="pointer-coarse:relative pointer-coarse:after:absolute pointer-coarse:after:-inset-3 pointer-coarse:after:content-['']"
                       :model-value="props.canWrite"
                       :disabled="!writeAllowedForDataType"
                       :aria-invalid="props.fieldErrors.permissions ? 'true' : undefined"

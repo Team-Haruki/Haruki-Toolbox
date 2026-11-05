@@ -192,10 +192,12 @@ function formatRoundCount(value: number) {
   }).format(Math.max(0, Math.round(value)))
 }
 
+// 24 h clock everywhere: an "AM/PM" suffix is what overflowed the en-US cells.
 function formatHourPoint(timestamp: number) {
   return new Date(timestamp * 1000).toLocaleTimeString(getI18nLocale(), {
     hour: "2-digit",
     minute: "2-digit",
+    hourCycle: "h23",
   })
 }
 
@@ -208,6 +210,7 @@ function formatRecordTime(timestamp: number) {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
+    hourCycle: "h23",
   })
 }
 
@@ -591,10 +594,13 @@ const { edgeClass: updateLogEdgeClass } = useScrollEdges(updateLogScroller)
   font-variant-numeric: tabular-nums;
 }
 
-/* The column track sum; narrower screens scroll the whole table sideways. */
+/* Columns size to their content and the table grows past the scroller instead
+   of clipping its last column; the scroller (with its edge fade) takes care
+   of whatever does not fit. */
 .rank-border-update-log__table {
   display: grid;
-  min-width: 23rem;
+  width: max-content;
+  min-width: 100%;
   max-height: 24rem;
   grid-template-rows: auto minmax(0, 1fr);
 }
@@ -602,7 +608,7 @@ const { edgeClass: updateLogEdgeClass } = useScrollEdges(updateLogScroller)
 .rank-border-update-log__header,
 .rank-border-update-log__row {
   display: grid;
-  grid-template-columns: 4.6rem 3.5rem 5.5rem minmax(7.25rem, 1fr);
+  grid-template-columns: max-content max-content max-content minmax(max-content, 1fr);
   gap: 0.5rem;
   align-items: center;
   min-width: 0;

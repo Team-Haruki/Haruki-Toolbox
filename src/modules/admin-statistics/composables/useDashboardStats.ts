@@ -10,6 +10,7 @@ import { formatLocalizedDate } from "@/lib/date-time"
 import { describeError, type ErrorDescription } from "@/lib/error-utils"
 import { getDashboard, getTimeseries } from "@/modules/admin-statistics/api/dashboard"
 import { toBreakdownItems } from "@/modules/admin-statistics/lib/dashboard-breakdown"
+import { assertDashboardPayload } from "@/modules/admin-statistics/lib/dashboard-payload"
 import {
   resolveUploadDataTypeLabel,
   resolveUploadMethodLabel,
@@ -50,7 +51,9 @@ export function useDashboardStats() {
     loading.value = true
     dashboardError.value = null
     try {
-      const data = await getDashboard()
+      // A 200 with another shape must not reach the render: it lands in the
+      // same inline error state as a failed request.
+      const data = assertDashboardPayload(await getDashboard())
       if (requestId !== latestDashboardRequest) return
       dashboard.value = data
     } catch (error: unknown) {

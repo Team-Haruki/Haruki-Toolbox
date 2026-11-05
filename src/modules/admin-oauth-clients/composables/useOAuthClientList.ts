@@ -1,39 +1,37 @@
 import { ref } from "vue"
-import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import type { OAuthClient } from "@/types/admin"
-import { extractErrorMessage } from "@/lib/error-utils"
+import { describeError, type ErrorDescription } from "@/lib/error-utils"
 import { getOAuthClients } from "@/modules/admin-oauth-clients/api/client"
 
 type LoadClientsOptions = {
   throwOnError?: boolean
-  notifyOnError?: boolean
 }
 
 export function useOAuthClientList() {
   const { t } = useI18n()
   const loading = ref(true)
   const clients = ref<OAuthClient[]>([])
+  // A failed list load renders inline (LoadErrorState + retry) in place of
+  // the list: an empty state would read as "no clients".
+  const loadError = ref<ErrorDescription | null>(null)
   let latestLoadRequestId = 0
 
   async function loadClients(options: LoadClientsOptions = {}) {
     const requestId = ++latestLoadRequestId
-    const notifyOnError = options.notifyOnError ?? true
     loading.value = true
+    loadError.value = null
     try {
       const data = await getOAuthClients({ page_size: 200 })
       if (requestId !== latestLoadRequestId) return
       clients.value = data.items
     } catch (error: unknown) {
       if (requestId !== latestLoadRequestId) return
-      if (notifyOnError) {
-        toast.error(t("adminOAuthClients.toast.loadClientsFailedTitle"), {
-          description: extractErrorMessage(error, t("adminOAuthClients.toast.actionFailedFallback")),
-        })
-      }
       if (options.throwOnError) {
+        // A refresh after a row action: the action's dialog reports it.
         throw error
       }
+      loadError.value = describeError(error, t("adminOAuthClients.toast.actionFailedFallback"))
     } finally {
       if (requestId !== latestLoadRequestId) return
       loading.value = false
@@ -42,6 +40,7 @@ export function useOAuthClientList() {
 
   return {
     loading,
+    loadError,
     clients,
     loadClients,
   }

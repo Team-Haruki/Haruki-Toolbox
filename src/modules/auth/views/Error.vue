@@ -2,7 +2,7 @@
 import { computed, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
-import { AlertTriangle, Loader2, LogIn, RefreshCw } from "lucide-vue-next"
+import { AlertTriangle, CheckCircle2, Home, Loader2, LogIn, RefreshCw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -58,6 +58,14 @@ const detailsText = computed(() => {
 const showMissingId = computed(() => !loading.value && !loadError.value && !errorId.value)
 const showResolvedError = computed(() => !loading.value && !loadError.value && !!errorId.value)
 
+// Kratos sends an already signed-in user here from /login: nothing failed,
+// so the page reads as a notice and leads home instead of back into login.
+const alreadySignedIn = computed(() => flowError.value?.id?.trim() === "session_already_available")
+
+async function goHome() {
+  await router.push("/")
+}
+
 async function loadKratosError() {
   if (!errorId.value) {
     loadError.value = ""
@@ -100,10 +108,13 @@ watch(
     <Card class="w-full max-w-2xl">
       <CardHeader>
         <CardTitle class="flex items-center gap-2">
-          <AlertTriangle class="h-6 w-6" />
-          {{ t("auth.error.title") }}
+          <CheckCircle2 v-if="alreadySignedIn" class="h-6 w-6 text-primary" />
+          <AlertTriangle v-else class="h-6 w-6" />
+          {{ alreadySignedIn ? t("auth.error.alreadySignedInTitle") : t("auth.error.title") }}
         </CardTitle>
-        <CardDescription>{{ t("auth.error.description") }}</CardDescription>
+        <CardDescription>
+          {{ alreadySignedIn ? t("auth.error.alreadySignedInDescription") : t("auth.error.description") }}
+        </CardDescription>
       </CardHeader>
       <CardContent class="space-y-4">
         <div v-if="loading" class="flex items-center justify-center py-8 text-muted-foreground">
@@ -138,7 +149,12 @@ watch(
         </div>
 
         <div v-else-if="showResolvedError" class="space-y-4">
-          <div class="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          <div
+            :class="alreadySignedIn
+              ? 'rounded-md border border-blue-300 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-300'
+              : 'rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive'"
+            :role="alreadySignedIn ? 'status' : 'alert'"
+          >
             <p data-testid="kratos-error-explanation">{{ explanation }}</p>
           </div>
 
@@ -163,7 +179,13 @@ watch(
             </div>
           </details>
 
-          <div class="flex flex-col gap-2 sm:flex-row">
+          <div v-if="alreadySignedIn" class="flex flex-col gap-2 sm:flex-row">
+            <Button class="flex-1" @click="goHome">
+              <Home class="mr-2 h-4 w-4" />
+              {{ t("auth.error.backToHome") }}
+            </Button>
+          </div>
+          <div v-else class="flex flex-col gap-2 sm:flex-row">
             <Button class="flex-1" @click="goLogin">
               <LogIn class="mr-2 h-4 w-4" />
               {{ t("auth.error.backToLogin") }}

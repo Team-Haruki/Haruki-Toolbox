@@ -33,6 +33,8 @@ const {
   reload,
   summary,
   summaryLoading,
+  summaryError,
+  loadSummary,
   detailOpen,
   detailAlert,
   openDetail,
@@ -61,8 +63,10 @@ function openActionFromDetail(alert: BotSecurityAlert, action: BotSecurityAlertA
     <BotSecuritySummaryStrip
       :loading="summaryLoading"
       :summary="summary"
+      :error="summaryError"
       :kind-label="kindLabel"
       @select-kind="filterByOpenKind"
+      @retry="loadSummary"
     />
 
     <BotSecurityFiltersCard

@@ -14,6 +14,8 @@ import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
+import PageHeader from "@/shared/components/PageHeader.vue"
+import CatalogTimeZoneHint from "@/shared/components/catalog/CatalogTimeZoneHint.vue"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
 import { formatCompactNumber } from "@/lib/number-format"
 import { useSettingsStore } from "@/shared/stores/settings"
@@ -27,6 +29,7 @@ import {
   MUSIC_DIFFICULTIES,
   MUSIC_DIFFICULTY_COLORS,
   isMusicDifficulty,
+  resolveMusicDifficultyChipClass,
   type MusicDifficulty,
 } from "../lib/music-difficulties"
 import {
@@ -433,24 +436,25 @@ const { refreshing, refresh } = useSuiteRefresh([
 </script>
 
 <template>
-  <div class="mx-auto flex w-full min-w-0 max-w-6xl flex-1 flex-col justify-center gap-4 py-4">
-    <!-- Header -->
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold">{{ t("musicProgress.title") }}</h1>
-        <p class="text-sm text-muted-foreground">{{ t("musicProgress.description") }}</p>
-      </div>
-      <div class="flex flex-col items-start gap-1.5 sm:items-end">
-        <GameAccountSelect capability="suite" />
-        <div v-if="suite.status.value !== 'idle'" class="flex items-center gap-1 text-xs text-muted-foreground">
-          <span v-if="uploadTimeLabel">{{ t("uploadedGameData.uploadedAt", { time: uploadTimeLabel }) }}</span>
-          <Button variant="ghost" size="sm" class="h-6 gap-1 px-1.5 text-xs text-muted-foreground" :disabled="showSkeleton || refreshing" @click="refresh">
-            <LucideRefreshCw :class="['size-3.5', refreshing ? 'animate-spin' : '']" />
-            {{ t("musicProgress.refresh") }}
-          </Button>
+  <div class="mx-auto flex w-full min-w-0 max-w-6xl flex-1 flex-col gap-4 py-4">
+    <!-- Top-aligned like every other page: a short state (error, empty) must
+    not float the title to the middle of the viewport. -->
+    <PageHeader :title="t('musicProgress.title')" :description="t('musicProgress.description')">
+      <template #actions>
+        <div class="flex flex-col items-start gap-1.5 sm:items-end">
+          <GameAccountSelect capability="suite" />
+          <!-- The data time is local time: the zone tag says so, like the catalog pages. -->
+          <div v-if="suite.status.value !== 'idle'" class="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+            <span v-if="uploadTimeLabel">{{ t("uploadedGameData.uploadedAt", { time: uploadTimeLabel }) }}</span>
+            <CatalogTimeZoneHint v-if="uploadTimeLabel && selectedAccount" :region="selectedAccount.server" />
+            <Button variant="ghost" size="sm" class="h-7 gap-1 px-2 text-xs text-muted-foreground" :disabled="showSkeleton || refreshing" @click="refresh">
+              <LucideRefreshCw :class="['size-3.5', refreshing ? 'animate-spin' : '']" />
+              {{ t("musicProgress.refresh") }}
+            </Button>
+          </div>
         </div>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- No account selected -->
     <Card v-if="suite.status.value === 'idle'">
@@ -514,10 +518,7 @@ const { refreshing, refresh } = useSuiteRefresh([
       <Card v-if="activeProgress">
         <CardHeader class="pb-2">
           <CardTitle class="flex flex-wrap items-center gap-x-3 gap-y-1 text-base">
-            <span
-              class="inline-flex w-16 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[11px] font-semibold text-white"
-              :style="{ backgroundColor: activeColor }"
-            >
+            <span :class="[resolveMusicDifficultyChipClass(activeDifficulty), 'w-16 px-1 py-1']">
               {{ difficultyLabel(activeDifficulty) }}
             </span>
             <span>{{ t("musicProgress.levelsTitle") }}</span>

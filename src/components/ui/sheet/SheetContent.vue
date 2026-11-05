@@ -56,8 +56,9 @@ const { t } = useI18n()
     >
       <slot />
 
+      <!-- Touch: ::after grows the 32px square to a 40px hit box. -->
       <DialogClose
-        class="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute top-2.5 right-2.5 inline-flex size-8 items-center justify-center rounded-md opacity-70 transition-opacity hover:bg-accent hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none"
+        class="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute top-2.5 right-2.5 inline-flex size-8 items-center justify-center rounded-md opacity-70 transition-opacity hover:bg-accent hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none pointer-coarse:after:absolute pointer-coarse:after:-top-2 pointer-coarse:after:-left-2 pointer-coarse:after:right-0 pointer-coarse:after:bottom-0 pointer-coarse:after:content-['']"
         :aria-label="t('common.close')"
       >
         <X class="size-4" />

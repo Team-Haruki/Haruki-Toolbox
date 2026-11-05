@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test"
 import type { InheritApiError } from "@/modules/tools/api/inherit"
-import { createInheritUnlock } from "@/modules/tools/composables/useInheritUnlock"
+import { createInheritUnlock, unlockFieldId } from "@/modules/tools/composables/useInheritUnlock"
 
 const t = (key: string) => key
 
@@ -66,5 +66,33 @@ describe("inherit unlock fields", () => {
     expect(unlock.state.needsPrevious).toBe(false)
     expect(unlock.validate()).toBe(true)
     expect(unlock.toInput()).toEqual({ password: "new-pw" })
+  })
+})
+
+describe("inherit unlock focus target", () => {
+  it("names the first invalid field in reading order", () => {
+    const unlock = createInheritUnlock(t)
+    unlock.configure("pin", false)
+    expect(unlock.firstInvalidField()).toBeNull()
+    unlock.validate()
+    expect(unlock.firstInvalidField()).toBe("secret")
+    unlock.state.secret = "12345678"
+    unlock.state.repeat = "1234"
+    unlock.validate()
+    expect(unlock.firstInvalidField()).toBe("repeat")
+
+    unlock.configure("password", true)
+    unlock.absorb(refusal("vault_password_changed", 409))
+    unlock.state.secret = "pw"
+    unlock.validate()
+    expect(unlock.firstInvalidField()).toBe("previousPassword")
+    unlock.absorb(refusal("password_invalid", 400))
+    expect(unlock.firstInvalidField()).toBe("secret")
+  })
+
+  it("maps fields to the ids the inputs carry", () => {
+    expect(unlockFieldId("inherit-confirm", "secret")).toBe("inherit-confirm-secret")
+    expect(unlockFieldId("inherit-confirm", "repeat")).toBe("inherit-confirm-repeat")
+    expect(unlockFieldId("inherit-vault-unlock", "previousPassword")).toBe("inherit-vault-unlock-previous")
   })
 })

@@ -94,7 +94,7 @@ function normalizeRouteValue(value: unknown): string {
   <div class="w-full flex-1 flex items-center justify-center px-0 py-4">
     <Card class="w-full max-w-md">
       <CardHeader>
-        <CardTitle class="flex items-center gap-2">
+        <CardTitle as="h1" class="flex items-center gap-2">
           <Bot class="h-6 w-6" />
           {{ t("botNeo.title") }}
         </CardTitle>

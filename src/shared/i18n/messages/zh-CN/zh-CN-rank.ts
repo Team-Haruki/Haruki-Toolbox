@@ -67,7 +67,8 @@ export default {
       "backToList": "返回榜线列表",
       "copyLink": "复制链接",
       "linkCopied": "详情链接已复制",
-      "expandChart": "放大查看"
+      "expandChart": "放大查看",
+      "login": "去登录"
     },
     "sections": {
       "query": "查询条件",
@@ -126,10 +127,12 @@ export default {
       "interval": "增长区间：{value}",
       "topScore": "最高分",
       "coverage": "采集范围",
-      "trackerCadence": "跟随数据更新"
+      "trackerCadence": "跟随数据更新",
+      "staleWarning": "榜线采集服务已有 {age} 没有新数据，下方显示的是最近一次采集结果，请以游戏内信息为准。"
     },
     "detailIssues": {
       "title": "部分数据暂时无法更新，页面显示的是最近一次成功的数据。",
+      "titleNoData": "榜线数据加载失败，请稍后重试。",
       "overview": "榜单概览",
       "comparisons": "对比：{names}",
       "realtime": "实时推送已断开，正在重连",
@@ -143,7 +146,10 @@ export default {
       "waitingWs": "等待实时推送",
       "loginRequired": "登录后开启自动刷新",
       "pollingLoginForLive": "定时刷新中，登录后可实时推送",
-      "replaying": "回放中"
+      "replaying": "回放中",
+      "stale": "数据已 {age}未更新",
+      "outdated": "采集已中断，{age}未更新",
+      "ended": "活动已结束"
     },
     "time": {
       "secondsAgo": "{value} 秒前",
@@ -169,7 +175,9 @@ export default {
     "result": {
       "loadErrorTitle": "榜线数据加载失败",
       "loadErrorHint": "请检查网络连接后重试；如果多次失败，可能是榜线采集服务暂时不可用。",
-      "emptyLines": "实时连接准备好后会在这里显示榜线，也可以点击刷新数据立即拉取。",
+      "emptyLines": "当前活动还没有采集到榜线数据，可以稍后点击「刷新数据」再试。",
+      "notTracked": "该活动没有被榜线采集服务追踪，暂时没有可显示的数据。",
+      "updatedAgo": "更新于",
       "emptySegments": "暂未采集到 T100 以外的档线点。",
       "emptyLiveCard": "点击榜线行，或选择绑定账号查询后显示实时卡片。",
       "waitingLiveData": "等待实时数据",

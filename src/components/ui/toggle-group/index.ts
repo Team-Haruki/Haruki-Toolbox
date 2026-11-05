@@ -22,14 +22,15 @@ export const toggleGroupVariants = cva("", {
   },
 })
 
+// Touch devices get a 40 px minimum hit box on every variant and size (the
+// desktop `h-7`/`h-8` stay): the filter rows and segmented controls are
+// tapped far more often than they are clicked.
 export const toggleGroupItemVariants = cva(
-  "inline-flex items-center justify-center gap-1.5 whitespace-nowrap font-medium transition-colors outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_img]:pointer-events-none",
+  "inline-flex items-center justify-center gap-1.5 whitespace-nowrap font-medium transition-colors outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 pointer-coarse:min-h-10 pointer-coarse:min-w-10 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_img]:pointer-events-none",
   {
     variants: {
       variant: {
-        // Touch devices get a 36 px tall pill (`size="sm"` is 28 px): the
-        // filter rows are tapped far more often than they are clicked.
-        chip: "rounded-full border border-border bg-transparent text-foreground hover:bg-muted data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground [@media(pointer:coarse)]:min-h-9 [@media(pointer:coarse)]:px-3",
+        chip: "rounded-full border border-border bg-transparent text-foreground hover:bg-muted data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground pointer-coarse:px-3",
         segment: "rounded-[calc(var(--radius-md)-2px)] border border-transparent text-muted-foreground hover:text-foreground data-[state=on]:bg-muted data-[state=on]:text-foreground data-[state=on]:shadow-xs",
       },
       size: {

@@ -32,6 +32,8 @@ import {
 import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
 import { formatGameAccountLabel } from "@/lib/game-account-display"
 import GameAccountOption from "@/shared/components/GameAccountOption.vue"
+import CatalogTimeZoneHint from "@/shared/components/catalog/CatalogTimeZoneHint.vue"
+import PageHeader from "@/shared/components/PageHeader.vue"
 import { SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES } from "@/shared/sekai/worker-protocol"
 import { useEventPlannerStore, type EventPlannerPlan } from "../stores/event-planner"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
@@ -539,14 +541,11 @@ function formatInteger(value: number) {
 <template>
   <div class="flex min-w-0 w-full flex-1 flex-col items-center justify-center px-0 py-4">
     <div class="mx-auto min-w-0 w-full max-w-7xl space-y-3 sm:space-y-4">
-      <div>
-        <h1 class="text-2xl font-bold">{{ t("eventPlanner.title") }}</h1>
-        <p class="text-sm text-muted-foreground">{{ t("eventPlanner.description") }}</p>
-      </div>
+      <PageHeader :title="t('eventPlanner.title')" :description="t('eventPlanner.description')" class="px-3 sm:px-0" />
 
       <!-- Setup -->
-      <Card>
-        <CardHeader class="pb-3">
+      <Card size="compact">
+        <CardHeader>
           <CardTitle class="text-base">{{ t("eventPlanner.sections.setup.title") }}</CardTitle>
           <CardDescription>{{ t("eventPlanner.sections.setup.description") }}</CardDescription>
         </CardHeader>
@@ -650,9 +649,10 @@ function formatInteger(value: number) {
       </Card>
 
       <!-- Summary -->
+      <!-- Five tiles: on phones the odd one (daily pace) spans the row instead of sitting alone. -->
       <div class="grid grid-cols-2 gap-2 sm:grid-cols-5">
-        <Card v-for="item in summaryItems" :key="item.key">
-          <CardContent class="p-3">
+        <Card v-for="item in summaryItems" :key="item.key" size="compact" class="last:col-span-2 sm:last:col-span-1">
+          <CardContent>
             <div class="text-xs text-muted-foreground">{{ item.label }}</div>
             <div
               :class="[
@@ -670,8 +670,8 @@ function formatInteger(value: number) {
       </p>
 
       <!-- Brushes -->
-      <Card>
-        <CardHeader class="pb-3">
+      <Card size="compact">
+        <CardHeader>
           <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
             <span>{{ t("eventPlanner.brushes.title") }}</span>
             <Button size="sm" class="h-8" :disabled="!selectedEventId || !selectedAccount" @click="openBrushDialog()">
@@ -684,7 +684,7 @@ function formatInteger(value: number) {
           <button
             type="button"
             :class="[
-              'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors',
+              'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors pointer-coarse:min-h-10',
               activeTool === PLANNER_REST_BRUSH_ID
                 ? 'border-primary ring-2 ring-primary/30'
                 : 'border-border hover:bg-muted/40',
@@ -698,7 +698,7 @@ function formatInteger(value: number) {
           <button
             type="button"
             :class="[
-              'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors',
+              'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors pointer-coarse:min-h-10',
               activeTool === ERASER_TOOL_ID
                 ? 'border-primary ring-2 ring-primary/30'
                 : 'border-border hover:bg-muted/40',
@@ -785,10 +785,14 @@ function formatInteger(value: number) {
       </Card>
 
       <!-- Calendar -->
-      <Card>
-        <CardHeader class="pb-3">
+      <Card size="compact">
+        <CardHeader>
           <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
-            <span>{{ t("eventPlanner.calendar.title") }}</span>
+            <span class="flex flex-wrap items-center gap-2">
+              {{ t("eventPlanner.calendar.title") }}
+              <!-- Hours are the viewer's wall clock; the tag names both zones so JST 15:00 is not read as local. -->
+              <CatalogTimeZoneHint :region="dataRegion" />
+            </span>
             <span class="flex flex-wrap items-center gap-2 text-xs font-normal text-muted-foreground">
               <span class="tabular-nums">
                 {{ t("eventPlanner.summary.plannedHours", {

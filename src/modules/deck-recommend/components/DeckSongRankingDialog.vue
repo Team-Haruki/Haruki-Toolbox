@@ -21,7 +21,7 @@ import {
 import { readSekaiMusicMetas } from "@/shared/sekai/cache"
 import { useMusicAliasMatches } from "@/shared/sekai/music-alias"
 import type { SekaiRegion } from "@/types"
-import { MUSIC_DIFFICULTY_COLORS } from "@/modules/music-library"
+import { isMusicDifficulty, resolveMusicDifficultyChipClass } from "@/modules/music-library/lib/music-difficulties"
 import {
   buildPlannerMusicDurations,
   buildPlannerSongRanking,
@@ -122,8 +122,10 @@ function difficultyLabel(value: string): string {
   return t(`musicLibrary.difficulty.${value}`)
 }
 
-function difficultyColor(value: string): string {
-  return MUSIC_DIFFICULTY_COLORS[value as keyof typeof MUSIC_DIFFICULTY_COLORS] ?? "#64748b"
+function difficultyChipClass(value: string): string {
+  return isMusicDifficulty(value)
+    ? resolveMusicDifficultyChipClass(value)
+    : "inline-flex items-center rounded bg-muted text-xs font-semibold text-muted-foreground"
 }
 
 function formatInteger(value: number): string {
@@ -176,8 +178,9 @@ function formatInteger(value: number): string {
               <th class="px-2 py-1.5 text-left font-medium">{{ t("eventPlanner.dialog.columns.song") }}</th>
               <th class="px-2 py-1.5 text-left font-medium">{{ t("eventPlanner.dialog.columns.difficulty") }}</th>
               <th class="px-2 py-1.5 text-right font-medium">{{ t("eventPlanner.dialog.columns.eventPoint") }}</th>
-              <th class="px-2 py-1.5 text-right font-medium">{{ t("eventPlanner.dialog.columns.playsPerHour") }}</th>
-              <th class="px-2 py-1.5 text-right font-medium">{{ t("eventPlanner.dialog.columns.pointsPerHour") }}</th>
+              <!-- Plays/h is derived from song length; on a phone it yields its column so the ranking key (PT/h) stays visible. -->
+              <th class="hidden whitespace-nowrap px-2 py-1.5 text-right font-medium sm:table-cell">{{ t("eventPlanner.dialog.columns.playsPerHour") }}</th>
+              <th class="whitespace-nowrap px-2 py-1.5 text-right font-medium">{{ t("eventPlanner.dialog.columns.pointsPerHour") }}</th>
             </tr>
           </thead>
           <tbody>
@@ -186,17 +189,14 @@ function formatInteger(value: number): string {
               :key="`${row.musicId}:${row.difficulty}`"
               class="border-b border-border/40 last:border-b-0"
             >
-              <td class="max-w-52 truncate px-2 py-1.5">{{ row.title }}</td>
+              <td class="max-w-36 truncate px-2 py-1.5 sm:max-w-52">{{ row.title }}</td>
               <td class="px-2 py-1.5">
-                <span
-                  class="inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold text-white"
-                  :style="{ backgroundColor: difficultyColor(row.difficulty) }"
-                >
+                <span :class="[difficultyChipClass(row.difficulty), 'px-1.5 py-0.5']">
                   {{ difficultyLabel(row.difficulty) }}
                 </span>
               </td>
               <td class="px-2 py-1.5 text-right tabular-nums">{{ formatInteger(row.eventPoint) }}</td>
-              <td class="px-2 py-1.5 text-right tabular-nums">{{ row.playsPerHour }}</td>
+              <td class="hidden px-2 py-1.5 text-right tabular-nums sm:table-cell">{{ row.playsPerHour }}</td>
               <td class="px-2 py-1.5 text-right font-semibold tabular-nums">{{ formatInteger(row.pointsPerHour) }}</td>
             </tr>
             <tr v-if="filteredRanking.length === 0">

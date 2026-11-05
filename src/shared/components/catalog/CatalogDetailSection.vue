@@ -73,10 +73,12 @@ defineExpose({ open: () => { open.value = true } })
     <CardHeader :class="bodyVisible ? 'pb-0' : 'pb-0'">
       <CardTitle class="flex flex-wrap items-center gap-2 text-base">
         <component :is="icon" v-if="icon" class="size-4.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <!-- The whole title row toggles; on touch it grows to a 40 px row
+             (negative margins keep the card's visual padding). -->
         <button
           v-if="collapsible"
           type="button"
-          class="flex min-w-0 flex-1 items-center gap-2 text-left"
+          class="flex min-w-0 flex-1 items-center gap-2 text-left pointer-coarse:-my-2 pointer-coarse:min-h-10"
           :aria-expanded="open"
           @click="toggle"
         >

@@ -25,6 +25,13 @@ export interface InheritUnlockState {
 
 type Translate = (key: string, params?: Record<string, unknown>) => string
 
+export type InheritUnlockField = "secret" | "repeat" | "previousPassword"
+
+/** The input id InheritUnlockFields gives `field` under `idPrefix`; validation focuses it. */
+export function unlockFieldId(idPrefix: string, field: InheritUnlockField): string {
+  return field === "previousPassword" ? `${idPrefix}-previous` : `${idPrefix}-${field}`
+}
+
 /**
  * The step-up secret of the job confirmation and every vault action: the
  * Toolbox sign-in password, or the vault PIN for identities without one, and
@@ -99,6 +106,14 @@ export function createInheritUnlock(t: Translate) {
     return !state.secretError && !state.repeatError && !state.previousError
   }
 
+  /** The first field with an error, in reading order; null when the form is clean. */
+  function firstInvalidField(): InheritUnlockField | null {
+    if (state.secretError) return "secret"
+    if (state.repeatError) return "repeat"
+    if (state.previousError) return "previousPassword"
+    return null
+  }
+
   function toInput(): InheritUnlockInput {
     if (state.kind === "pin") return { vaultPin: state.secret }
     return state.needsPrevious && state.previousPassword
@@ -133,7 +148,7 @@ export function createInheritUnlock(t: Translate) {
     }
   }
 
-  return { state, configure, reset, validate, toInput, absorb }
+  return { state, configure, reset, validate, firstInvalidField, toInput, absorb }
 }
 
 export type InheritUnlockController = ReturnType<typeof useInheritUnlock>

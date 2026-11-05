@@ -192,7 +192,7 @@ const detailRows = computed(() => {
                 <RouterLink
                   v-if="ownerId(log)"
                   :to="`/admin/users/${ownerId(log)}`"
-                  class="flex flex-col hover:underline text-primary"
+                  class="flex flex-col justify-center hover:underline text-primary pointer-coarse:min-h-10"
                 >
                   <span class="font-medium text-sm">{{ log.userName || ownerId(log) }}</span>
                   <span v-if="log.gameUserId" class="text-xs text-muted-foreground/80">
@@ -215,7 +215,7 @@ const detailRows = computed(() => {
                 <template v-else-if="actorOf(log).kind === 'delegate'">
                   <RouterLink
                     :to="`/admin/users/${actorOf(log).actorUserId}`"
-                    class="flex flex-col hover:underline text-primary"
+                    class="flex flex-col justify-center hover:underline text-primary pointer-coarse:min-h-10"
                   >
                     <span class="font-medium">{{ actorOf(log).actorUserId }}</span>
                     <span class="text-xs text-muted-foreground/80">

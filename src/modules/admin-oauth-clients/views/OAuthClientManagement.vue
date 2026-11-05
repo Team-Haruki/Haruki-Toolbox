@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import {
   OAuthClientCreateDialog,
   OAuthClientEditDialog,
@@ -151,6 +152,7 @@ const {
   deleteWebhook,
   copySecret,
   loadClients,
+  loadError,
 } = useOAuthClientManagement()
 
 const filteredClients = computed(() => {
@@ -198,7 +200,7 @@ function resetFilters() {
         </SelectContent>
       </Select>
       <div class="flex items-center justify-between gap-2 sm:ml-auto sm:justify-end">
-        <span class="text-xs tabular-nums text-muted-foreground">
+        <span v-if="!loadError" class="text-xs tabular-nums text-muted-foreground">
           {{ t("adminOAuthClients.list.count", { count: filteredClients.length }, filteredClients.length) }}
         </span>
         <div class="flex items-center gap-2">
@@ -247,6 +249,16 @@ function resetFilters() {
 
     <div v-if="loading" class="grid gap-3 xl:grid-cols-2">
       <Skeleton v-for="i in 4" :key="i" class="h-32 w-full rounded-lg" />
+    </div>
+    <!-- A failed load is not an empty list: say so inline, with a retry. -->
+    <div v-else-if="loadError" class="rounded-lg border">
+      <LoadErrorState
+        :title="t('adminOAuthClients.toast.loadClientsFailedTitle')"
+        :description="loadError.message"
+        :detail="loadError.detail"
+        :retrying="loading"
+        @retry="loadClients()"
+      />
     </div>
     <div
       v-else-if="clients.length === 0"

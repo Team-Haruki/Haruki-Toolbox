@@ -70,7 +70,7 @@ const formTitle = computed(() =>
 
 function formatDate(value: string | undefined) {
   return value
-    ? formatLocalizedDate(value, { year: "numeric", month: "2-digit", day: "2-digit" }, t("adminOAuthClients.common.fallback"))
+    ? formatLocalizedDate(value, "date", t("adminOAuthClients.common.fallback"))
     : t("adminOAuthClients.common.fallback")
 }
 </script>

@@ -4,7 +4,7 @@ import { LucideChevronRight, LucideTicket } from "lucide-vue-next"
 import type { SekaiRegion } from "@/types"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import { Badge } from "@/components/ui/badge"
-import { formatLocalizedDate } from "@/lib/date-time"
+import { formatLocalizedDateRange } from "@/lib/date-time"
 import CatalogDetailSection from "@/shared/components/catalog/CatalogDetailSection.vue"
 import SekaiAssetImage from "@/shared/components/SekaiAssetImage.vue"
 import { resolveSekaiGachaTypeLabel } from "@/shared/sekai/labels"
@@ -34,8 +34,7 @@ function typeLabel(gacha: CatalogGachaSummary): string | null {
 }
 
 function period(gacha: CatalogGachaSummary): string {
-  const format = (value: number | null) => formatLocalizedDate(value, { dateStyle: "medium" }, "?")
-  return `${format(gacha.startAt)} – ${format(gacha.endAt)}`
+  return formatLocalizedDateRange(gacha.startAt, gacha.endAt, "date", "?")
 }
 </script>
 

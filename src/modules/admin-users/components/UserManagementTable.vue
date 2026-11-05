@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
+import { useMediaQuery } from "@vueuse/core"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -41,6 +42,11 @@ const emit = defineEmits<{
   (e: "retry"): void
 }>()
 
+// Phones get one stacked row per user instead of a two-column table. Rendered
+// with v-if (not CSS) so a name exists once in the DOM for tests and readers.
+const isPhone = useMediaQuery("(max-width: 639px)")
+const stacked = computed(() => isPhone.value && !props.loading && !props.error && props.users.length > 0)
+
 const selectAllState = computed<boolean | "indeterminate">(() => {
   if (props.selectedIds.length === 0) return false
   if (props.selectedIds.length === props.users.length) return true
@@ -48,7 +54,15 @@ const selectAllState = computed<boolean | "indeterminate">(() => {
 })
 
 function formatCreatedAt(iso?: string) {
-  return formatDate(iso, { year: "numeric", month: "2-digit", day: "2-digit" })
+  return formatDate(iso)
+}
+
+function statusLabel(user: AdminUser) {
+  return user.banned
+    ? t("adminUsers.status.banned")
+    : user.deleted
+      ? t("adminUsers.status.deleted")
+      : t("adminUsers.status.normal")
 }
 
 function isSelected(userId: string) {
@@ -64,6 +78,42 @@ function handleRowKeydown(event: KeyboardEvent, userId: string) {
 </script>
 
 <template>
+  <ul v-if="stacked" class="divide-y" :aria-label="t('adminUsers.management.table.columns.username')">
+    <li v-for="user in users" :key="`stacked-${user.userId}`" class="flex items-start gap-3 px-4 py-3">
+      <label class="flex min-h-10 shrink-0 items-center" :aria-label="user.name">
+        <Checkbox :model-value="isSelected(user.userId)" @update:model-value="emit('toggleSelect', user.userId)" />
+      </label>
+      <button
+        type="button"
+        class="flex min-w-0 flex-1 flex-col gap-1 text-left"
+        @click="emit('goToUser', user.userId)"
+      >
+        <span class="truncate text-sm font-medium" :title="user.name">{{ user.name }}</span>
+        <span class="truncate text-xs text-muted-foreground" :title="user.email || undefined">{{ user.email || "—" }}</span>
+        <span class="flex flex-wrap items-center gap-1.5 pt-0.5">
+          <span class="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+            {{ roleLabel(user.role, t) }}
+          </span>
+          <span
+            :class="[
+              'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+              user.banned
+                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                : user.deleted
+                  ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                  : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+            ]"
+          >
+            {{ statusLabel(user) }}
+          </span>
+        </span>
+      </button>
+    </li>
+  </ul>
+
+  <!-- Columns are keyed off the card's width (@container), not the viewport: at 1280
+       with both sidebars open the content column is ~740 px. -->
+  <div v-else class="@container/users">
   <Table>
     <TableHeader>
       <TableRow>
@@ -74,11 +124,11 @@ function handleRowKeydown(event: KeyboardEvent, userId: string) {
           />
         </TableHead>
         <TableHead>{{ t("adminUsers.management.table.columns.username") }}</TableHead>
-        <TableHead class="hidden md:table-cell">{{ t("adminUsers.management.table.columns.email") }}</TableHead>
+        <TableHead class="hidden @2xl/users:table-cell">{{ t("adminUsers.management.table.columns.email") }}</TableHead>
         <TableHead>{{ t("adminUsers.management.table.columns.role") }}</TableHead>
-        <TableHead>{{ t("adminUsers.management.table.columns.allowCN") }}</TableHead>
+        <TableHead class="hidden @4xl/users:table-cell">{{ t("adminUsers.management.table.columns.allowCN") }}</TableHead>
         <TableHead>{{ t("adminUsers.management.table.columns.status") }}</TableHead>
-        <TableHead class="hidden lg:table-cell">{{ t("adminUsers.management.table.columns.createdAt") }}</TableHead>
+        <TableHead class="hidden @4xl/users:table-cell">{{ t("adminUsers.management.table.columns.createdAt") }}</TableHead>
       </TableRow>
     </TableHeader>
     <TableBody>
@@ -87,11 +137,11 @@ function handleRowKeydown(event: KeyboardEvent, userId: string) {
         <TableRow v-for="i in 5" :key="`skeleton-${i}`" class="hover:bg-transparent">
           <TableCell><Skeleton class="h-4 w-4 rounded" /></TableCell>
           <TableCell><Skeleton class="h-4 w-24" /></TableCell>
-          <TableCell class="hidden md:table-cell"><Skeleton class="h-4 w-40" /></TableCell>
+          <TableCell class="hidden @2xl/users:table-cell"><Skeleton class="h-4 w-40" /></TableCell>
           <TableCell><Skeleton class="h-5 w-20 rounded-full" /></TableCell>
+          <TableCell class="hidden @4xl/users:table-cell"><Skeleton class="h-5 w-16 rounded-full" /></TableCell>
           <TableCell><Skeleton class="h-5 w-16 rounded-full" /></TableCell>
-          <TableCell><Skeleton class="h-5 w-16 rounded-full" /></TableCell>
-          <TableCell class="hidden lg:table-cell"><Skeleton class="h-4 w-20" /></TableCell>
+          <TableCell class="hidden @4xl/users:table-cell"><Skeleton class="h-4 w-20" /></TableCell>
         </TableRow>
       </template>
       <template v-else>
@@ -110,9 +160,11 @@ function handleRowKeydown(event: KeyboardEvent, userId: string) {
               class="pointer-events-none"
             />
           </TableCell>
-          <TableCell class="font-medium">{{ user.name }}</TableCell>
-          <TableCell class="hidden md:table-cell text-muted-foreground">
-            {{ user.email || "—" }}
+          <TableCell class="max-w-[10rem] font-medium @4xl/users:max-w-[14rem]">
+            <div class="truncate" :title="user.name">{{ user.name }}</div>
+          </TableCell>
+          <TableCell class="hidden @2xl/users:table-cell max-w-[12rem] text-muted-foreground @4xl/users:max-w-xs">
+            <div class="truncate" :title="user.email || undefined">{{ user.email || "—" }}</div>
           </TableCell>
           <TableCell>
             <span
@@ -131,7 +183,7 @@ function handleRowKeydown(event: KeyboardEvent, userId: string) {
               {{ roleLabel(user.role, t) }}
             </span>
           </TableCell>
-          <TableCell>
+          <TableCell class="hidden @4xl/users:table-cell">
             <span
               v-if="getAllowCNMysekai(user) !== undefined"
               :class="[
@@ -161,16 +213,10 @@ function handleRowKeydown(event: KeyboardEvent, userId: string) {
               <LucideBan v-if="user.banned" class="w-3.5 h-3.5" />
               <LucideTrash2 v-else-if="user.deleted" class="w-3.5 h-3.5" />
               <LucideCheckCircle2 v-else class="w-3.5 h-3.5" />
-              {{
-                user.banned
-                  ? t("adminUsers.status.banned")
-                  : user.deleted
-                    ? t("adminUsers.status.deleted")
-                    : t("adminUsers.status.normal")
-              }}
+              {{ statusLabel(user) }}
             </span>
           </TableCell>
-          <TableCell class="hidden lg:table-cell text-muted-foreground text-sm">
+          <TableCell class="hidden @4xl/users:table-cell whitespace-nowrap text-muted-foreground text-sm tabular-nums">
             {{ formatCreatedAt(user.createdAt) }}
           </TableCell>
         </TableRow>
@@ -197,4 +243,5 @@ function handleRowKeydown(event: KeyboardEvent, userId: string) {
       </template>
     </TableBody>
   </Table>
+  </div>
 </template>

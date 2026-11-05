@@ -6,7 +6,7 @@ import { X } from "lucide-vue-next"
 import {
   DialogClose,
   DialogContent,
-
+  DialogDescription,
   DialogOverlay,
   DialogPortal,
   useForwardPropsEmits,
@@ -14,10 +14,14 @@ import {
 import { useI18n } from "vue-i18n"
 import { cn } from "@/lib/utils"
 
-const props = defineProps<DialogContentProps & { class?: HTMLAttributes["class"] }>()
+const props = defineProps<DialogContentProps & {
+  class?: HTMLAttributes["class"]
+  /** Screen-reader-only description for dialogs without a visible `DialogDescription` (see DialogContent). */
+  description?: string
+}>()
 const emits = defineEmits<DialogContentEmits>()
 
-const delegatedProps = reactiveOmit(props, "class")
+const delegatedProps = reactiveOmit(props, "class", "description")
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
 const { t } = useI18n()
@@ -46,10 +50,15 @@ const { t } = useI18n()
           }
         }"
       >
+        <DialogDescription v-if="props.description" class="sr-only">
+          {{ props.description }}
+        </DialogDescription>
+
         <slot />
 
+        <!-- Touch: ::after grows the 32px square to a 40px hit box. -->
         <DialogClose
-          class="absolute top-2 right-2 inline-flex size-8 items-center justify-center rounded-md transition-colors hover:bg-secondary sm:top-3 sm:right-3"
+          class="absolute top-2 right-2 inline-flex size-8 items-center justify-center rounded-md transition-colors hover:bg-secondary sm:top-3 sm:right-3 pointer-coarse:after:absolute pointer-coarse:after:-top-2 pointer-coarse:after:-left-2 pointer-coarse:after:right-0 pointer-coarse:after:bottom-0 pointer-coarse:after:content-['']"
           :aria-label="t('common.close')"
         >
           <X class="w-4 h-4" />

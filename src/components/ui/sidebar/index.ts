@@ -44,9 +44,11 @@ export const sidebarMenuButtonVariants = cva(
         outline:
           "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
       },
+      // Touch (the mobile Sheet renders these rows, and tablets show the
+      // collapsed icon rail): 40 px minimum rows; desktop keeps h-8 / h-7.
       size: {
-        default: "h-8 text-sm",
-        sm: "h-7 text-xs",
+        default: "h-8 text-sm pointer-coarse:min-h-10 pointer-coarse:group-data-[collapsible=icon]:size-10!",
+        sm: "h-7 text-xs pointer-coarse:min-h-10 pointer-coarse:group-data-[collapsible=icon]:size-10!",
         lg: "h-12 text-sm group-data-[collapsible=icon]:p-0!",
       },
     },

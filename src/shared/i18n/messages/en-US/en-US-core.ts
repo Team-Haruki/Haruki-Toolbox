@@ -4,17 +4,17 @@ export default {
   "uploadedGameData": {
     "missingTitle": "Game data has not been uploaded",
     "missing": {
-      "suite": "This game account has never uploaded its game data (Suite, the full account data). Upload it on the \"Upload data\" page first, then come back and refresh.",
-      "mysekai": "This game account has never uploaded its MySekai data. Upload it on the \"Upload data\" page first, then come back and refresh.",
-      "profile": "There is no data for this game account yet, so the realtime profile cannot be read. Upload game data once on the \"Upload data\" page, then come back and refresh."
+      "suite": "This game account has never uploaded its game data (Suite, the full account data). Upload it on the “Upload data” page first, then come back and refresh.",
+      "mysekai": "This game account has never uploaded its MySekai data. Upload it on the “Upload data” page first, then come back and refresh.",
+      "profile": "There is no data for this game account yet, so the realtime profile cannot be read. Upload game data once on the “Upload data” page, then come back and refresh."
     },
-    "missingGranted": "The owner of this account has not uploaded any game data yet. Ask them to upload it; if they allowed you to upload on their behalf, you can do so on the \"Upload data\" page.",
-    "uploadAction": "Go to data upload",
+    "missingGranted": "The owner of this account has not uploaded any game data yet. Ask them to upload it; if they allowed you to upload on their behalf, you can do so on the “Upload data” page.",
+    "uploadAction": "Go to the Upload data page",
     "uploadedAt": "Data uploaded at {time}",
     "grantLapsed": "Access to this account has expired or been revoked. Ask the owner to grant it again.",
     "refreshUpToDate": "Data is already up to date",
     "refreshUpdated": "Updated to {time}",
-    "missingAccounts": "{count} bound accounts have no uploaded game data. Go to the data upload page to upload it.",
+    "missingAccounts": "{count} bound accounts have no uploaded game data. Go to the Upload data page to upload it.",
     "otherFailures": "Another {count} accounts could not be loaded. Try again later."
   },
   "app": {
@@ -27,6 +27,8 @@ export default {
     "confirm": "Confirm",
     "close": "Close",
     "back": "Back",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "tip": "Tip",
     "actionFailed": "The action failed. Try again later.",
     "postSuccessWarningTitle": "Operation succeeded with warnings",
@@ -39,6 +41,7 @@ export default {
   },
   "backendMessages": {
     "notAuthenticated": "You are not signed in, or your session has expired. Sign in again and retry.",
+    "forbidden": "You do not have permission to access this content. If you think that is a mistake, contact an administrator.",
     "uploadNotAllowed": "Your account is not allowed to upload data for this game account. Use the account that owns the binding, or ask the owner to grant you upload access.",
     "writeGrantExpired": "The upload access the owner granted you has expired or been revoked. Ask the owner to grant it again, or upload for a game account you own.",
     "bindingAccessDenied": "You do not have access to this game account's data. If the account was shared with you, the grant may have expired or been revoked; ask the owner to grant it again.",
@@ -93,6 +96,7 @@ export default {
       "cancel": "Cancel",
       "loadingFlow": "Loading sign-in page…",
       "restartFlow": "Start again",
+      "triggerUnavailable": "Passkeys are not available right now. Use another method to continue.",
       "loadFlowFailed": "The {flow} has expired or cannot be reached right now. Use the button below to start again.",
       "serviceUnavailable": "The sign-in service cannot be reached right now. Try again later (code {status}).",
       "flowNames": {
@@ -130,7 +134,7 @@ export default {
         "1010009": "Use authenticator app",
         "1010010": "Use a backup recovery code",
         "1010011": "Sign in with a security key",
-        "1010012": "Get your security key (USB key, fingerprint reader, ...) ready and press Continue.",
+        "1010012": "Get your security key (USB key, fingerprint reader, …) ready and press Continue.",
         "1010013": "Continue",
         "1010014": "A code was sent to the address you provided. If it doesn't arrive, check the address and try again.",
         "1010015": "Send sign-in code",
@@ -385,6 +389,8 @@ export default {
     "login": {
       "title": "Sign in to Haruki Toolbox",
       "description": "Use your email and password to sign in",
+      "descriptionMfa": "Complete the second step to finish signing in",
+      "descriptionRefresh": "Enter your password again to confirm it is you",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
       "passwordLabel": "Password",
@@ -454,6 +460,9 @@ export default {
       "description": "The sign-in service returned an error. Go back to the sign-in page and start again; if it keeps happening, try again later.",
       "retry": "Reload",
       "backToLogin": "Back to sign in",
+      "backToHome": "Back to home",
+      "alreadySignedInTitle": "You are already signed in",
+      "alreadySignedInDescription": "This account is signed in already; there is nothing more to do here.",
       "missingIdDescription": "The link has no error ID, so the cause cannot be looked up. Go back to the sign-in page and start again.",
       "loadFailedDescription": "The error details could not be loaded. Check your connection and try again.",
       "fallbackDescription": "The sign-in service could not complete this step. Go back to the sign-in page and start again.",
@@ -504,7 +513,7 @@ export default {
       "onboarding": {
         "title": "Three steps to start",
         "step1": "Register and sign in",
-        "step2": "Bind and verify your game account under \"{link}\"",
+        "step2": "Bind and verify your game account under “{link}”",
         "step2Link": "Game account management",
         "step3": "{link} your game data once with the iOS module / HarukiProxy",
         "step3Link": "Upload",
@@ -548,9 +557,9 @@ export default {
     }
   },
   "cardBox": {
-    "title": "My Cards",
+    "title": "My cards",
     "description": "View your game account's card collection progress",
-    "entryLink": "My Cards",
+    "entryLink": "My cards",
     "noAccountHint": "Bind and select a game account to view your cards.",
     "refresh": "Refresh",
     "loadError": "Failed to load your card collection data",
@@ -597,7 +606,7 @@ export default {
     }
   },
   "eventRecords": {
-    "title": "Event Records",
+    "title": "Event records",
     "description": "View your game account's event participation records",
     "idle": "Select a game account to view your event records.",
     "loading": "Loading uploaded data and event data…",
@@ -674,6 +683,7 @@ export default {
       "title": "Score rank rewards by song",
       "description": "Score rank is progressive (C → B → A → S): each song has one current rank, and reaching a higher rank also pays the lower ones. Any live mode (solo, multi, ...) counts. The current rank follows the achievement records in your uploaded data.",
       "summary": "Obtained: {obtained} · Remaining: {remaining} · {complete} / {total} songs complete",
+      "totalHint": "This total counts every song in the library; the per-difficulty totals above count only songs that have that chart.",
       "none": "none",
       "filter": {
         "label": "Show",
@@ -758,7 +768,7 @@ export default {
   },
   "costumes": {
     "dressup": {
-      "title": "Costume Dressup",
+      "title": "Costume dressup",
       "description": "Mix and match character costumes, accessories and hairstyles in 3D",
       "region": "Server",
       "character": "Character",
@@ -869,7 +879,7 @@ export default {
     }
   },
   "playerProfile": {
-    "title": "My Profile",
+    "title": "My profile",
     "description": "View your game account's profile",
     "source": {
       "realtime": "Live data",
@@ -928,6 +938,10 @@ export default {
       "title": "Card Collection by Character",
       "summary": "{owned}/{total} collected · {percent}%",
       "empty": "No card data yet"
+    },
+    "partialUpload": {
+      "title": "These sections need uploaded game data",
+      "description": "Card collection, challenge live and the event point trend come from your uploaded account data (Suite). Upload it once on the Upload Data page and these sections fill in."
     }
   },
   "training": {
@@ -1058,7 +1072,8 @@ export default {
       "canUpgrade": "Ready to upgrade",
       "nextLevel": "Next level",
       "nextBonus": "Next bonus",
-      "showAll": "All levels"
+      "showAll": "All levels",
+      "materialsLegend": "Materials: have / need"
     },
     "leader": {
       "title": "Leader counts",
@@ -1141,9 +1156,9 @@ export default {
     "groups": {
       "recommendAndAbout": "Recommended & About",
       "friendshipRecommendation": "Friend recommendations",
-      "eventRankingTools": "Event Ranking Tools",
-      "projectSekai": "Project SEKAI Tools",
-      "accountManagement": "Account & Management",
+      "eventRankingTools": "Event ranking tools",
+      "projectSekai": "Project SEKAI tools",
+      "accountManagement": "Account & management",
       "harukiBot": "HarukiBot",
       "sekaiCatalog": "Sekai catalog",
       "sekaiPlayer": "My game data"
@@ -1152,18 +1167,18 @@ export default {
       "friendGroups": "Recommended groups",
       "friendLinks": "Friend links",
       "sponsors": "Sponsors",
-      "deckRecommend": "Deck recommend",
+      "deckRecommend": "Deck recommendation",
       "eventPlanner": "Event planner",
       "rankBorder": "Rank border",
       "about": "About",
       "ptCalculator": "Score control",
-      "uploadData": "Data upload",
+      "uploadData": "Upload data",
       "sekaiStation": "Sekai Station",
       "botNeoRegistration": "HarukiBot NEO registration",
       "musicLibrary": "Music catalog",
       "cards": "Card catalog",
       "events": "Event catalog",
-      "cardBox": "My Cards",
+      "cardBox": "My cards",
       "eventRecords": "Event records",
       "musicProgress": "Music progress",
       "gachas": "Gacha catalog",
@@ -1213,7 +1228,7 @@ export default {
     "friendGroups": "Recommended groups",
     "friendLinks": "Friend links",
     "sponsors": "Sponsors",
-    "deckRecommend": "Deck recommend",
+    "deckRecommend": "Deck recommendation",
     "rankBorder": "Rank border",
     "rankBorderDetail": "Rank border detail",
     "ptCalculator": "Event Pt calculator",
@@ -1230,10 +1245,10 @@ export default {
     "userIdentitySettings": "Sign-in & security",
     "userIdentityProfileSettings": "Profile settings",
     "userIdentityPasswordSettings": "Change password",
-    "userIdentityMfaSettings": "MFA settings",
+    "userIdentityMfaSettings": "Two-step verification",
     "userIdentitySocialSettings": "Social login settings",
     "userIdentitySessionSettings": "Signed-in devices",
-    "gameAccountBindings": "Game account bindings",
+    "gameAccountBindings": "Game account management",
     "harukiBotAuthorization": "HarukiBot data authorization",
     "oauthAuthorizations": "Authorized apps",
     "oauthLogin": "Continue sign in",
@@ -1253,7 +1268,7 @@ export default {
     "cards": {
       "list": "Card catalog",
       "detail": "Card detail",
-      "box": "My Cards"
+      "box": "My cards"
     },
     "events": {
       "list": "Event catalog",
@@ -1355,7 +1370,7 @@ export default {
       },
       "results": {
         "count": "{count} songs",
-        "empty": "No songs match the current filters.",
+        "empty": "No songs match the current filters",
         "aliasSearching": "Matching aliases..."
       },
       "downloading": "Downloading game database... {progress}%",
@@ -1572,7 +1587,7 @@ export default {
       "resetFilters": "Reset filters",
       "loadFailed": "Failed to load event data.",
       "retry": "Retry",
-      "empty": "No events match the current filters."
+      "empty": "No events match the current filters"
     },
     "detail": {
       "back": "Back to event catalog",
@@ -1598,7 +1613,7 @@ export default {
       "cardsEmpty": "No cards for this event.",
       "links": {
         "rankBorder": "View rank border",
-        "deckRecommend": "Event deck recommend",
+        "deckRecommend": "View deck recommendation",
         "story": "Play story"
       }
     }
@@ -1635,8 +1650,8 @@ export default {
       "label": "Image loading route",
       "help": "Used for game assets such as card thumbnails. The first visit picks the lower-latency route, and opening settings re-checks them.",
       "placeholder": "Select a route",
-      "global": "Recommended overseas",
-      "chinaCdn": "China - Tencent Cloud CDN",
+      "global": "Overseas",
+      "chinaCdn": "Mainland China (Tencent Cloud)",
       "checking": "Checking",
       "unknown": "Not checked",
       "failed": "Unreachable",
@@ -1689,7 +1704,7 @@ export default {
       "updating": "Updating..."
     },
     "userData": {
-      "description": "These are this browser's copies of the data your game accounts have uploaded. \"Refresh\" checks the server for a newer upload; \"Profile\" fetches the latest information straight from the game server.",
+      "description": "These are this browser's copies of the data your game accounts have uploaded. “Refresh” checks the server for a newer upload; “Profile” fetches the latest information straight from the game server.",
       "account": "Account",
       "accountPlaceholder": "Select a bound account",
       "noAccount": "No game account is bound to the current Toolbox account.",
@@ -1758,6 +1773,8 @@ export default {
       "timeout": "The request timed out. Try again later.",
       "rateLimited": "Too many requests. Wait a moment and try again.",
       "serverUnavailable": "The server is temporarily unavailable. Try again later (code {status}).",
+      "forbidden": "You do not have permission to access this content. If you think that is a mistake, contact an administrator.",
+      "unexpectedPayload": "The server returned data in an unexpected format. Reload to try again; if it keeps happening, contact an administrator.",
       "detail": "Details: {detail}"
     },
     "loadError": {
@@ -1871,7 +1888,8 @@ export default {
       "showUnreleased": "Show unreleased content",
       "endsIn": "{time} left",
       "startsIn": "Starts in {time}",
-      "permanent": "Permanent"
+      "permanent": "Permanent",
+      "tbd": "TBD"
     },
     "countdown": {
       "toStart": "Starts in",
@@ -1889,6 +1907,8 @@ export default {
       "notFound": "This entry is not in the current server's data. Try another server.",
       "loadError": "Failed to load details",
       "assetName": "Internal name",
+      "copyAssetName": "Copy internal name",
+      "assetNameCopied": "Internal name copied",
       "period": "Period",
       "viewAllCount": "View all ({count})",
       "zoom": "Click to enlarge",

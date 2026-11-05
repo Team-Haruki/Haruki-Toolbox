@@ -16,7 +16,9 @@ import {
 import {
   canCancelJob,
   isTerminalJobStatus,
+  jobMomentBetween,
   type InheritJob,
+  type InheritJobMoment,
   type InheritNewCode,
 } from "@/modules/tools/lib/inherit-job"
 import {
@@ -77,10 +79,26 @@ export function useInheritJob(userId: () => string | null | undefined) {
    */
   const newCode = shallowRef<InheritNewCode | null>(null)
   const codeAcknowledged = ref(false)
+  /**
+   * The latest turn of the followed job worth bringing into view (the panel
+   * replacing the form, the preview waiting for the owner, the new code).
+   * `seq` makes two turns of the same kind distinguishable to a watcher.
+   */
+  const moment = shallowRef<{ kind: InheritJobMoment; seq: number } | null>(null)
+  /**
+   * The stored job could not be fetched for a reason other than it being
+   * gone (backend unreachable, a 5xx): the record is kept for a retry.
+   */
+  const resumeError = shallowRef<InheritApiError | null>(null)
 
   let connection: InheritJobConnection | null = null
   let storedCreatedAt = 0
   let celebratedJobId = ""
+  let momentSeq = 0
+
+  function mark(kind: InheritJobMoment) {
+    moment.value = { kind, seq: ++momentSeq }
+  }
 
   // The retired "remember" option kept the code in plaintext; drop any copy.
   clearLegacyInheritStorage()
@@ -100,8 +118,10 @@ export function useInheritJob(userId: () => string | null | undefined) {
   function applyJob(next: InheritJob) {
     const previous = job.value
     if (previous && previous.id !== next.id) return
+    const turn = jobMomentBetween(previous, next)
     job.value = next
     if (next.newCode) newCode.value = next.newCode
+    if (turn) mark(turn)
     if (next.status === "succeeded" && celebratedJobId !== next.id && previous?.status !== "succeeded") {
       celebratedJobId = next.id
       // The uid is resolved server-side: the deck page's "no data uploaded"
@@ -156,6 +176,7 @@ export function useInheritJob(userId: () => string | null | undefined) {
       const snapshot = await fetchInheritJob(stored.jobId)
       // Signed out or switched account while the request was out.
       if (userId() !== owner || job.value) return
+      resumeError.value = null
       storedCreatedAt = stored.createdAt
       codeAcknowledged.value = stored.codeAcknowledged
       // A finished job whose new code was acknowledged has nothing left to show.
@@ -168,10 +189,24 @@ export function useInheritJob(userId: () => string | null | undefined) {
       if (snapshot.newCode) newCode.value = snapshot.newCode
       if (!isTerminalJobStatus(snapshot.status)) connect(snapshot.id)
     } catch (error) {
-      if (toInheritApiError(error).code === "job_not_found") clearActiveInheritJob()
+      const problem = toInheritApiError(error)
+      if (problem.code === "job_not_found") {
+        clearActiveInheritJob()
+      } else if (userId() === owner && !job.value) {
+        // Not gone, just unreachable: say so instead of showing a blank form
+        // over a job that may still be running.
+        resumeError.value = problem
+      }
     } finally {
       resuming.value = false
     }
+  }
+
+  /** Tries again to pick up the stored job after `resumeError`. */
+  async function retryResume() {
+    if (resuming.value) return
+    resumeError.value = null
+    await resume()
   }
 
   /** Starts following `next` from a clean slate: the job this page just created, or the one it reattached to. */
@@ -182,10 +217,12 @@ export function useInheritJob(userId: () => string | null | undefined) {
     newCode.value = null
     codeAcknowledged.value = false
     expired.value = false
+    resumeError.value = null
     celebratedJobId = ""
     storedCreatedAt = createdAt
     applyJob(next)
     persist()
+    mark("created")
     if (!isTerminalJobStatus(next.status)) connect(next.id)
   }
 
@@ -328,6 +365,7 @@ export function useInheritJob(userId: () => string | null | undefined) {
         codeAcknowledged.value = false
         connectionState.value = "closed"
       }
+      resumeError.value = null
       if (owner) void resume()
     },
     { immediate: true },
@@ -351,12 +389,15 @@ export function useInheritJob(userId: () => string | null | undefined) {
     commandPending,
     resuming,
     expired,
+    moment,
+    resumeError,
     isActive,
     canDismiss,
     create,
     confirm,
     cancel,
     refresh,
+    retryResume,
     acknowledgeCode,
     dismiss,
   }

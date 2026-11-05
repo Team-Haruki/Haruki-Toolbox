@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { goBackOr, hasInAppHistory } from "@/lib/router-back"
 import { useDocumentTitle } from "@/composables/useDocumentTitle"
+import { useCatalogRegionQuerySync, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import CatalogEmptyState from "./CatalogEmptyState.vue"
 import CatalogErrorState from "./CatalogErrorState.vue"
 import CatalogRegionSelect from "./CatalogRegionSelect.vue"
@@ -53,6 +54,10 @@ const router = useRouter()
 
 useDocumentTitle(computed(() => props.title))
 
+// The address bar names the server in use (`?region=tw`), so a copied detail
+// link opens the same entity for the recipient.
+useCatalogRegionQuerySync(useEffectiveCatalogRegion().region)
+
 /** Track the route so in-component navigation re-checks the history state. */
 const canGoBack = computed(() => route.fullPath.length > 0 && hasInAppHistory())
 
@@ -70,12 +75,14 @@ const showContent = computed(() => !props.loading && !props.error && !props.notF
         <LucideArrowLeft class="size-4" />
         {{ canGoBack ? t("common.back") : t("catalog.detail.backToList", { list: listTitle }) }}
       </Button>
-      <!-- The title clamps to two lines on phones instead of vanishing
-           behind the actions; the actions wrap onto their own row there. -->
+      <!-- One line: the crumb only orients (the h1 below carries the full
+           title), so a long Japanese title truncates instead of growing the
+           row; the actions wrap onto their own row on phones. The list link
+           is a 40 px target on touch. -->
       <nav class="flex min-w-0 flex-1 items-center gap-1 overflow-hidden text-sm text-muted-foreground" :aria-label="t('catalog.detail.breadcrumb')">
-        <RouterLink :to="listRoute" class="shrink-0 transition-colors hover:text-foreground">{{ listTitle }}</RouterLink>
+        <RouterLink :to="listRoute" class="inline-flex shrink-0 items-center transition-colors hover:text-foreground pointer-coarse:min-h-10">{{ listTitle }}</RouterLink>
         <LucideChevronRight class="size-3.5 shrink-0" aria-hidden="true" />
-        <span class="line-clamp-2 min-w-0 font-medium break-words text-foreground sm:line-clamp-1">{{ title ?? (entityId != null ? `#${entityId}` : "…") }}</span>
+        <span class="min-w-0 truncate font-medium text-foreground">{{ title ?? (entityId != null ? `#${entityId}` : "…") }}</span>
       </nav>
       <div v-if="$slots.actions" class="flex basis-full flex-wrap items-center gap-2 sm:ml-auto sm:basis-auto sm:shrink-0">
         <slot name="actions" />

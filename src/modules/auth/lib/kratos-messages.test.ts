@@ -101,7 +101,7 @@ describe("localizeKratosMessage", () => {
 
   test("interpolates numeric and named context", () => {
     expect(localizeKratosMessage({ id: 4000032, text: "The password must be at least 8 characters long, but got 3.", context: { min_length: 8, actual_length: 3 } })).toBe("密码太短，至少需要 8 个字符。")
-    expect(localizeKratosMessage({ id: 1050020, text: "Remove passkey \"k@example.com\"", context: { display_name: "k@example.com" } })).toBe("移除通行密钥“k@example.com”")
+    expect(localizeKratosMessage({ id: 1050020, text: "Remove passkey \"k@example.com\"", context: { display_name: "k@example.com" } })).toBe("移除通行密钥「k@example.com」")
     expect(localizeKratosMessage({ id: 1060004, text: "A recovery code has been sent to k***@example.com.", context: { masked_address: "k***@example.com" } })).toContain("k***@example.com")
   })
 

@@ -16,6 +16,8 @@ declare module 'vue-router' {
          * rendered (see useCatalogScrollMemory); the router must not scroll.
          */
         scrollMemory?: boolean
+        /** `/settings` renders the home page and opens the settings dialog on arrival. */
+        openSettings?: boolean
     }
 }
 

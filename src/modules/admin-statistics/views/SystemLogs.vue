@@ -33,6 +33,7 @@ import {
   LucideScrollText,
 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
+import { useMediaQuery } from "@vueuse/core"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import AdminPagination from "@/modules/admin/components/AdminPagination.vue"
 import { useSystemLogs } from "@/modules/admin-statistics/composables/useSystemLogs"
@@ -72,6 +73,10 @@ const {
   resultColor,
   formatTime,
 } = useSystemLogs()
+
+// Phones get one stacked row per log instead of a three-column table (v-if,
+// not CSS, so each entry exists once in the DOM).
+const isPhone = useMediaQuery("(max-width: 639px)")
 
 const summaryCards = computed(() => [
   { key: "total", label: t("adminStatistics.systemLogs.summary.total"), value: summary.value?.total, color: "text-foreground" },
@@ -174,14 +179,41 @@ function handleRowKeydown(event: KeyboardEvent, log: SystemLog) {
           </div>
         </template>
         <template v-else>
+          <!-- Phones: one stacked row per log; the whole row opens the detail. -->
+          <ul v-if="isPhone" class="divide-y" :aria-label="t('adminStatistics.systemLogs.table.action')">
+            <li v-for="log in logs" :key="`stacked-${log.id}`">
+              <button
+                type="button"
+                class="flex w-full flex-col gap-1 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
+                :title="t('adminStatistics.systemLogs.table.openDetail')"
+                @click="showDetail(log.id)"
+              >
+                <span class="flex items-center gap-2">
+                  <span :class="['inline-flex items-center gap-1 whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium', resultColor(log.result)]">
+                    <LucideCheckCircle v-if="log.result === 'success'" class="w-3 h-3 shrink-0" />
+                    <LucideXCircle v-else class="w-3 h-3 shrink-0" />
+                    {{ log.result === 'success' ? t('adminStatistics.common.success') : t('adminStatistics.common.failure') }}
+                  </span>
+                  <span class="min-w-0 truncate text-xs text-muted-foreground tabular-nums">{{ formatTime(log.eventTime) }}</span>
+                </span>
+                <span class="truncate font-mono text-sm" :title="log.action">{{ log.action }}</span>
+                <span class="truncate font-mono text-xs text-muted-foreground">
+                  {{ log.method || t("adminStatistics.common.fallback") }} {{ log.path || "" }}
+                </span>
+              </button>
+            </li>
+          </ul>
+
+          <!-- Columns are keyed off the card's width (@container), not the viewport. -->
+          <div v-else class="@container/logs">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead class="w-24 pl-4">{{ t("adminStatistics.systemLogs.table.result") }}</TableHead>
                 <TableHead>{{ t("adminStatistics.systemLogs.table.time") }}</TableHead>
                 <TableHead>{{ t("adminStatistics.systemLogs.table.action") }}</TableHead>
-                <TableHead class="hidden md:table-cell">{{ t("adminStatistics.systemLogs.table.request") }}</TableHead>
-                <TableHead class="hidden lg:table-cell">{{ t("adminStatistics.systemLogs.table.user") }}</TableHead>
+                <TableHead class="hidden @3xl/logs:table-cell">{{ t("adminStatistics.systemLogs.table.request") }}</TableHead>
+                <TableHead class="hidden @4xl/logs:table-cell">{{ t("adminStatistics.systemLogs.table.user") }}</TableHead>
                 <TableHead :class="['w-12 pr-4', STICKY_ACTIONS]">
                   <span class="sr-only">{{ t("adminStatistics.systemLogs.detail.title") }}</span>
                 </TableHead>
@@ -209,10 +241,10 @@ function handleRowKeydown(event: KeyboardEvent, log: SystemLog) {
                   {{ formatTime(log.eventTime) }}
                 </TableCell>
                 <TableCell class="max-w-[220px] truncate font-mono text-sm" :title="log.action">{{ log.action }}</TableCell>
-                <TableCell class="hidden md:table-cell max-w-[260px] truncate text-muted-foreground text-sm font-mono" :title="`${log.method || ''} ${log.path || ''}`.trim()">
+                <TableCell class="hidden @3xl/logs:table-cell max-w-[260px] truncate text-muted-foreground text-sm font-mono" :title="`${log.method || ''} ${log.path || ''}`.trim()">
                   {{ log.method || t("adminStatistics.common.fallback") }} {{ log.path || "" }}
                 </TableCell>
-                <TableCell class="hidden lg:table-cell text-muted-foreground text-sm">
+                <TableCell class="hidden @4xl/logs:table-cell text-muted-foreground text-sm">
                   {{ log.actorUserId || t("adminStatistics.common.fallback") }}
                   <span v-if="log.actorRole" class="text-xs opacity-60">({{ log.actorRole }})</span>
                 </TableCell>
@@ -231,6 +263,7 @@ function handleRowKeydown(event: KeyboardEvent, log: SystemLog) {
               </TableRow>
             </TableBody>
           </Table>
+          </div>
         </template>
 
         <div v-if="!loadError" class="border-t px-4 py-3">

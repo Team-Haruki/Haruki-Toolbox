@@ -71,7 +71,7 @@ export default {
   },
   "adminConfig": {
     "publicApiKeys": {
-      "title": "Public API Keys",
+      "title": "Public API keys",
       "description": "Manage public API key configuration (super admins only)."
     },
     "runtime": {
@@ -97,12 +97,12 @@ export default {
       }
     },
     "toast": {
-      "loadApiKeysFailedTitle": "Failed to load Public API Keys",
+      "loadApiKeysFailedTitle": "Failed to load public API keys",
       "loadRuntimeFailedTitle": "Failed to load runtime configuration",
-      "apiKeysUpdated":"Public API Keys updated",
+      "apiKeysUpdated": "Public API keys updated",
       "runtimeUpdated": "Runtime configuration updated",
       "invalidJson": "Invalid JSON format",
-      "invalidApiKeysSchema": "Public API Keys must be a JSON object of string values",
+      "invalidApiKeysSchema": "Public API keys must be a JSON object of string values",
       "invalidRuntimeSchema": "Runtime configuration must be a JSON object",
       "saveFailedTitle": "Failed to save",
       "saveFailedFallback": "Save failed",
@@ -146,7 +146,7 @@ export default {
       "resolveAction": "Mark as resolved",
       "resolveDialog": {
         "title": "Mark as resolved",
-        "description": "Mark event \"{action}\" (ID {id}) as resolved? It will no longer show as open.",
+        "description": "Mark event “{action}” (ID {id}) as resolved? It will no longer show as open.",
         "confirm": "Mark as resolved"
       },
       "empty": "No risk events",
@@ -263,7 +263,7 @@ export default {
       "byKind": "Open alerts by kind",
       "noOpen": "No open alerts",
       "unavailable": "Summary unavailable",
-      "filterByKind": "Show open \"{kind}\" alerts"
+      "filterByKind": "Show open “{kind}” alerts"
     },
     "filters": {
       "title": "Filters",
@@ -533,8 +533,8 @@ export default {
       "devicePolicy": {
         "title": "Device code policy",
         "firstParty": "First-party client",
-        "firstPartyHelp": "Shows an \"Official\" badge on the device authorization page.",
-        "firstPartyPublicHelp": "Only applies to confidential clients; public clients never show the \"Official\" badge.",
+        "firstPartyHelp": "Shows an “Official” badge on the device authorization page.",
+        "firstPartyPublicHelp": "Only applies to confidential clients; public clients never show the “Official” badge.",
         "allowWrite": "Allow game-data:write over device code",
         "allowWriteHelp": "Only for public clients that register game-data:write.",
         "maxCodesPer10m": "Device codes per 10 minutes",
@@ -725,7 +725,7 @@ export default {
         "postLogoutRequiresRedirectUris": "A client without redirect URIs cannot register post-logout redirect URIs; clear them",
         "offlineAccessRequiresRefreshToken": "offline_access requires the refresh token grant type",
         "deviceRequiresUserRead": "Device code clients must register user:read (the device page shows the authorized account)",
-        "deviceWriteRequiresPublicClient": "\"Allow game-data:write over device code\" only applies to public clients with device code and game-data:write",
+        "deviceWriteRequiresPublicClient": "“Allow game-data:write over device code” only applies to public clients with device code and game-data:write",
         "invalidDevicePolicy": "Device codes per 10 minutes must be a whole number from 1 to 600"
       },
       "apiErrors": {
@@ -887,11 +887,11 @@ export default {
       "target": "Set sponsor access for {name} ({id}).",
       "access": "Access setting",
       "grantedHelp": "Confirm past sponsorship and grant permanent frames. No Afdian link is required; this does not add a public sponsor wall entry.",
-      "blockedHelp": "Disable sponsor frames, including after another order verification. Preserve orders, identity links and frame choices.",
+      "blockedHelp": "Disables sponsor frames even if another order is verified later. Orders, identity links and frame choices are kept.",
       "automaticHelp": "Clear the manual override and use sponsorship records for the linked Afdian account.",
       "note": "Administrative note (required)",
       "noteHint": "Record the sponsorship source, evidence or reason for this change. Only admins can see it.",
-      "noteRequired": "Enter a note of up to 1000 UTF-8 bytes.",
+      "noteRequired": "Enter a note of up to 1000 characters.",
       "save": "Save access",
       "saved": "Sponsor access updated",
       "loadFailed": "Could not load sponsor users. Please retry."
@@ -1374,7 +1374,7 @@ export default {
     "status": {
       "normal": "Normal",
       "banned": "Banned",
-      "deleted": "Legacy soft deletion"
+      "deleted": "Deleted (legacy)"
     },
     "common": {
       "actions": "Actions",

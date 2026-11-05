@@ -223,32 +223,39 @@ function retry() {
             :key="row.key"
             :class="['rounded-md border', row.hasBond ? '' : 'opacity-50']"
           >
-            <div class="flex items-center gap-3 p-2.5">
-              <!-- Left character with their rank -->
-              <div class="flex w-32 shrink-0 items-center gap-2 sm:w-44">
-                <span
-                  class="shrink-0 rounded-full p-0.5"
-                  :style="row.colorCode1 ? { backgroundColor: row.colorCode1 } : {}"
-                >
-                  <img
-                    v-if="row.iconUrl1"
-                    :src="row.iconUrl1"
-                    alt=""
-                    class="size-9 rounded-full"
-                    loading="lazy"
+            <!-- Two rows: the pair with the level between them, then the
+                 progress bar across the full card width. The bar and its
+                 "N EXP to next level" line used to sit between two fixed
+                 side columns and ran one character per line on phones. -->
+            <div class="flex flex-col gap-2 p-2.5">
+              <!-- Below `sm` the level drops under the pair (`order-last
+                   basis-full`): two names, two ranks and "牵绊 Lv.25" do not
+                   share 330 px without cutting the names to one character. -->
+              <div class="flex flex-wrap items-center gap-2">
+                <!-- Left character with their rank -->
+                <div class="flex min-w-0 flex-1 items-center gap-2">
+                  <span
+                    class="shrink-0 rounded-full p-0.5"
+                    :style="row.colorCode1 ? { backgroundColor: row.colorCode1 } : {}"
                   >
-                </span>
-                <div class="min-w-0">
-                  <p class="truncate text-xs" :title="row.name1">{{ row.name1 }}</p>
-                  <p class="text-[11px] tabular-nums text-muted-foreground">
-                    {{ t("training.bonds.charaRank", { rank: row.charaRank1 }) }}
-                  </p>
+                    <img
+                      v-if="row.iconUrl1"
+                      :src="row.iconUrl1"
+                      alt=""
+                      class="size-9 rounded-full"
+                      loading="lazy"
+                    >
+                  </span>
+                  <div class="min-w-0">
+                    <p class="truncate text-xs" :title="row.name1">{{ row.name1 }}</p>
+                    <p class="whitespace-nowrap text-[11px] tabular-nums text-muted-foreground">
+                      {{ t("training.bonds.charaRank", { rank: row.charaRank1 }) }}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              <!-- Bond level + progress in the middle -->
-              <div class="flex min-w-0 flex-1 flex-col items-center gap-1">
-                <div class="flex items-center gap-1.5">
+                <!-- Bond level in the middle (own line on phones), never wrapped -->
+                <div class="order-last flex basis-full shrink-0 items-center justify-center gap-1.5 whitespace-nowrap sm:order-none sm:basis-auto">
                   <LucideHeart class="size-3.5 shrink-0 text-rose-400" />
                   <span v-if="row.hasBond" class="text-sm font-semibold tabular-nums">
                     {{ t("training.bonds.level", { level: row.bondLevel }) }}
@@ -257,65 +264,67 @@ function retry() {
                     {{ t("training.bonds.notOwned") }}
                   </span>
                 </div>
-                <template v-if="row.hasBond">
-                  <div v-if="row.progressPercent != null" class="w-full max-w-56">
-                    <div class="h-1.5 w-full overflow-hidden rounded-full bg-primary/15" :style="row.barTrackStyle">
-                      <div
-                        class="h-full rounded-full bg-primary transition-all"
-                        :style="[{ width: `${row.progressPercent}%` }, row.barFillStyle ?? {}]"
-                      />
-                    </div>
-                    <p v-if="row.needExp != null" class="mt-0.5 text-center text-[11px] tabular-nums text-muted-foreground">
-                      {{ t("training.bonds.needExp", { exp: formatNumber(row.needExp) }) }}
+
+                <!-- Right character mirrored with their rank -->
+                <div class="flex min-w-0 flex-1 items-center justify-end gap-2">
+                  <div class="min-w-0 text-right">
+                    <p class="truncate text-xs" :title="row.name2">{{ row.name2 }}</p>
+                    <p class="whitespace-nowrap text-[11px] tabular-nums text-muted-foreground">
+                      {{ t("training.bonds.charaRank", { rank: row.charaRank2 }) }}
                     </p>
                   </div>
-                  <p v-else-if="row.atMaxLevel" class="text-[11px] font-medium text-amber-500">
-                    {{ t("training.bonds.maxLevel") }}
-                  </p>
-                </template>
+                  <span
+                    class="shrink-0 rounded-full p-0.5"
+                    :style="row.colorCode2 ? { backgroundColor: row.colorCode2 } : {}"
+                  >
+                    <img
+                      v-if="row.iconUrl2"
+                      :src="row.iconUrl2"
+                      alt=""
+                      class="size-9 rounded-full"
+                      loading="lazy"
+                    >
+                  </span>
+                </div>
+
+                <button
+                  v-if="row.rewardRanks.length > 0"
+                  type="button"
+                  class="-my-1 inline-flex shrink-0 items-center justify-center rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground pointer-coarse:min-h-10 pointer-coarse:min-w-10"
+                  :aria-label="t('training.bonds.showRewards')"
+                  :title="t('training.bonds.showRewards')"
+                  @click="dialogRowKey = row.key"
+                >
+                  <LucideChevronRight class="size-4" />
+                </button>
               </div>
 
-              <!-- Right character mirrored with their rank -->
-              <div class="flex w-32 shrink-0 items-center justify-end gap-2 sm:w-44">
-                <div class="min-w-0 text-right">
-                  <p class="truncate text-xs" :title="row.name2">{{ row.name2 }}</p>
-                  <p class="text-[11px] tabular-nums text-muted-foreground">
-                    {{ t("training.bonds.charaRank", { rank: row.charaRank2 }) }}
+              <template v-if="row.hasBond">
+                <div v-if="row.progressPercent != null" class="flex flex-col gap-0.5">
+                  <div class="h-1.5 w-full overflow-hidden rounded-full bg-primary/15" :style="row.barTrackStyle">
+                    <div
+                      class="h-full rounded-full bg-primary transition-all"
+                      :style="[{ width: `${row.progressPercent}%` }, row.barFillStyle ?? {}]"
+                    />
+                  </div>
+                  <p v-if="row.needExp != null" class="text-center text-[11px] tabular-nums text-muted-foreground">
+                    {{ t("training.bonds.needExp", { exp: formatNumber(row.needExp) }) }}
                   </p>
                 </div>
-                <span
-                  class="shrink-0 rounded-full p-0.5"
-                  :style="row.colorCode2 ? { backgroundColor: row.colorCode2 } : {}"
-                >
-                  <img
-                    v-if="row.iconUrl2"
-                    :src="row.iconUrl2"
-                    alt=""
-                    class="size-9 rounded-full"
-                    loading="lazy"
-                  >
-                </span>
-              </div>
-
-              <button
-                v-if="row.rewardRanks.length > 0"
-                type="button"
-                class="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                :aria-label="t('training.bonds.showRewards')"
-                :title="t('training.bonds.showRewards')"
-                @click="dialogRowKey = row.key"
-              >
-                <LucideChevronRight class="size-4" />
-              </button>
+                <p v-else-if="row.atMaxLevel" class="text-center text-[11px] font-medium text-amber-500">
+                  {{ t("training.bonds.maxLevel") }}
+                </p>
+              </template>
             </div>
           </div>
         </div>
 
         <!-- Per-level rewards dialog -->
         <Dialog :open="dialogRow != null" @update:open="handleDialogOpenChange">
-          <DialogContent class="max-h-[85vh] gap-3 overflow-y-auto sm:max-w-xl">
+          <DialogContent class="max-h-[85vh] gap-3 overflow-y-auto sm:max-w-xl" :description="t('training.bonds.rewardsTitle')">
+            <!-- `pr-8` keeps the level out from under the close button. -->
             <DialogHeader v-if="dialogRow">
-              <DialogTitle class="flex items-center gap-2 text-base">
+              <DialogTitle class="flex items-center gap-2 pr-8 text-base">
                 <img
                   v-if="dialogRow.iconUrl1"
                   :src="dialogRow.iconUrl1"

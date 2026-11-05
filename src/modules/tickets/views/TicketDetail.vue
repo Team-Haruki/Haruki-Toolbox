@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue"
+import { useMediaQuery } from "@vueuse/core"
 import { useI18n } from "vue-i18n"
 import { formatLocalizedDateTime } from "@/lib/date-time"
 import {
@@ -55,8 +56,12 @@ const {
 } = useTicketDetail(() => props.ticketId)
 
 const closeDialogOpen = ref(false)
+// Phone keyboards have no Shift+Enter: on a coarse pointer Enter stays a
+// newline and only the send button sends, so the "Enter to send" hint goes too.
+const coarsePointer = useMediaQuery("(pointer: coarse)")
 
 function handleComposeEnter(event: KeyboardEvent) {
+  if (coarsePointer.value) return
   // Ignore the Enter that confirms an IME composition (e.g. picking a pinyin
   // candidate); otherwise an unfinished message would be sent prematurely.
   if (event.isComposing || event.keyCode === 229) return
@@ -65,13 +70,7 @@ function handleComposeEnter(event: KeyboardEvent) {
 }
 
 function formatDateTime(value?: string) {
-  return formatLocalizedDateTime(value, {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }, t("tickets.common.dateFallback"))
+  return formatLocalizedDateTime(value, "dateTime", t("tickets.common.dateFallback"))
 }
 
 function formatCategory(category: string) {
@@ -93,7 +92,7 @@ function senderName(message: TicketMessage) {
 </script>
 
 <template>
-  <div class="w-full max-w-3xl mx-auto flex min-w-0 flex-col gap-4 h-full">
+  <div class="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-4">
     <Button variant="ghost" size="sm" class="self-start" @click="goBackToTicketList">
       <LucideArrowLeft class="w-4 h-4 mr-1" /> {{ t("tickets.detail.backButton") }}
     </Button>
@@ -112,10 +111,15 @@ function senderName(message: TicketMessage) {
               <CardTitle class="break-words line-clamp-3" :title="ticket.subject">{{ ticket.subject }}</CardTitle>
               <CardDescription class="mt-1 break-all">{{ ticket.ticketId }}</CardDescription>
             </div>
-            <span :class="['inline-flex items-center gap-1 text-sm font-medium flex-shrink-0', ticketStatusTextClass(ticket.status)]">
-              <component :is="ticketStatusIcon(ticket.status)" class="w-4 h-4" />
-              {{ ticketStatusLabel(ticket.status) }}
-            </span>
+            <div class="flex shrink-0 flex-wrap items-center gap-3">
+              <span :class="['inline-flex items-center gap-1 text-sm font-medium', ticketStatusTextClass(ticket.status)]">
+                <component :is="ticketStatusIcon(ticket.status)" class="w-4 h-4" />
+                {{ ticketStatusLabel(ticket.status) }}
+              </span>
+              <Button v-if="isOpen" variant="outline" size="sm" :disabled="closing" class="text-destructive" @click="closeDialogOpen = true">
+                <LucideXCircle class="w-4 h-4 mr-1" /> {{ t("tickets.detail.closeButton") }}
+              </Button>
+            </div>
           </div>
           <div class="rounded-md bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
             {{ ticketUserStatusHint(ticket.status) }}
@@ -144,10 +148,10 @@ function senderName(message: TicketMessage) {
         </CardHeader>
       </Card>
 
-      <!-- Message list -->
-      <Card class="flex-1 flex min-w-0 flex-col min-h-0">
-        <CardContent class="flex-1 flex flex-col p-0 min-h-0">
-          <div ref="messageContainer" class="flex-1 overflow-y-auto p-4 space-y-4 max-h-96">
+      <!-- Message list: sized to its content, the thread scrolls past 24 rem -->
+      <Card class="flex min-w-0 flex-col">
+        <CardContent class="flex flex-col p-0">
+          <div ref="messageContainer" class="max-h-96 space-y-4 overflow-y-auto p-4">
             <template v-if="messages.length > 0">
               <div
                 v-for="msg in messages"
@@ -228,7 +232,8 @@ function senderName(message: TicketMessage) {
               </Button>
             </div>
             <div class="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-              <span>{{ t("tickets.detail.composeHint") }}</span>
+              <span v-if="!coarsePointer">{{ t("tickets.detail.composeHint") }}</span>
+              <span v-else aria-hidden="true" />
               <span
                 v-if="justSent"
                 class="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400"
@@ -250,12 +255,7 @@ function senderName(message: TicketMessage) {
         </CardContent>
       </Card>
 
-      <!-- Close action -->
-      <div v-if="isOpen" class="flex justify-end">
-        <Button variant="outline" size="sm" :disabled="closing" class="text-destructive" @click="closeDialogOpen = true">
-          <LucideXCircle class="w-4 h-4 mr-1" /> {{ t("tickets.detail.closeButton") }}
-        </Button>
-        <ConfirmDialog
+      <ConfirmDialog
           v-model:open="closeDialogOpen"
           :title="t('tickets.detail.closeDialog.title')"
           :description="t('tickets.detail.closeDialog.description')"
@@ -263,8 +263,7 @@ function senderName(message: TicketMessage) {
           :cancel-label="t('tickets.detail.closeDialog.cancel')"
           destructive
           :on-confirm="handleClose"
-        />
-      </div>
+      />
     </template>
 
     <Card v-else-if="notFound">

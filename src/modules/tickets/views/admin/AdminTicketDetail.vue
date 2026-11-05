@@ -76,13 +76,7 @@ function handleComposeEnter(event: KeyboardEvent) {
 }
 
 function formatDateTime(value?: string) {
-  return formatLocalizedDateTime(value, {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }, t("tickets.common.dateFallback"))
+  return formatLocalizedDateTime(value, "dateTime", t("tickets.common.dateFallback"))
 }
 
 function formatCategory(category: string) {

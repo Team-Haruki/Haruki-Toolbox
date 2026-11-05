@@ -115,7 +115,8 @@ test.describe("Toolbox sponsor access management", () => {
     await panel.getByRole("textbox", { name: "查询用户", exact: true }).fill("Paged Fan 20")
     await panel.getByRole("button", { name: "查询用户", exact: true }).click()
     await expect(panel).toContainText("共 1 条")
-    await expect(panel.getByRole("button", { name: "上一页" })).toBeDisabled()
+    // One page of results needs no pager.
+    await expect(panel.getByRole("button", { name: "上一页" })).toHaveCount(0)
   })
 
   test("mobile manager and editor fit long identifiers", async ({ page }, testInfo) => {

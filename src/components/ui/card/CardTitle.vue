@@ -2,16 +2,25 @@
 import type { HTMLAttributes } from "vue"
 import { cn } from "@/lib/utils"
 
-const props = defineProps<{
+/**
+ * `as` lets a card that is the whole page (calculators, registration,
+ * ticket creation) expose its title as the page's h1 without a separate
+ * header; the default stays h3 for cards inside a page.
+ */
+withDefaults(defineProps<{
   class?: HTMLAttributes["class"]
-}>()
+  as?: "h1" | "h2" | "h3" | "h4" | "div"
+}>(), {
+  as: "h3",
+})
 </script>
 
 <template>
-  <h3
+  <component
+    :is="as"
     data-slot="card-title"
-    :class="cn('leading-none font-semibold', props.class)"
+    :class="cn('leading-none font-semibold', $props.class)"
   >
     <slot />
-  </h3>
+  </component>
 </template>

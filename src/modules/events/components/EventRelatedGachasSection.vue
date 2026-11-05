@@ -5,7 +5,7 @@ import { LucideTicket } from "lucide-vue-next"
 import type { SekaiRegion } from "@/types"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { formatLocalizedDate } from "@/lib/date-time"
+import { formatLocalizedDateRange } from "@/lib/date-time"
 import CatalogDetailSection from "@/shared/components/catalog/CatalogDetailSection.vue"
 import CatalogErrorState from "@/shared/components/catalog/CatalogErrorState.vue"
 import CatalogStatusBadge from "@/shared/components/catalog/CatalogStatusBadge.vue"
@@ -42,8 +42,6 @@ const emit = defineEmits<{ retry: [] }>()
 
 const { t, te } = useI18n()
 
-const dateFormat: Intl.DateTimeFormatOptions = { year: "numeric", month: "2-digit", day: "2-digit" }
-
 const rows = computed(() => props.result.gachas.map((gacha) => {
   const status = resolveCatalogStatus(gacha.startAt, gacha.endAt, props.nowMs)
   const fallback = t("events.common.dateFallback")
@@ -53,7 +51,7 @@ const rows = computed(() => props.result.gachas.map((gacha) => {
     typeLabel: resolveSekaiGachaTypeLabel({ t, te }, gacha.gachaType),
     status,
     untilMs: status === "upcoming" ? gacha.startAt : status === "ongoing" ? gacha.endAt : null,
-    period: `${formatLocalizedDate(gacha.startAt, dateFormat, fallback)} – ${formatLocalizedDate(gacha.endAt, dateFormat, fallback)}`,
+    period: formatLocalizedDateRange(gacha.startAt, gacha.endAt, "date", fallback),
   }
 }))
 

@@ -26,7 +26,7 @@ useSekaiStationConnection()
             :href="SEKAI_STATION_SITE_URL"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center gap-1 rounded-sm font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            class="inline-flex items-center gap-1 rounded-sm font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50 pointer-coarse:-my-2.5 pointer-coarse:py-2.5"
           >
             {{ t("sekaiStation.viewOnSekaiStation") }}
             <LucideExternalLink class="size-3.5 shrink-0" aria-hidden="true" />

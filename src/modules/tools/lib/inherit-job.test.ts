@@ -8,9 +8,11 @@ import {
   isNewCodeUnsaved,
   isReusableInheritPassword,
   isValidVaultPin,
+  jobMomentBetween,
   normalizeInheritJob,
   readRunningJobId,
   remainingParts,
+  splitUnreachedSteps,
   stepDurationMs,
   type InheritJob,
 } from "@/modules/tools/lib/inherit-job"
@@ -178,5 +180,42 @@ describe("readRunningJobId", () => {
   it("ignores a job id on any other refusal", () => {
     expect(readRunningJobId("rate_limited", { code: "rate_limited", job_id: "job-7" })).toBe("")
     expect(readRunningJobId("", { job_id: "job-7" })).toBe("")
+  })
+})
+
+describe("job moments", () => {
+  const NEW_CODE = { inherit_id: "NEWCODE987654321", password: "pw", expires_at: "2026-10-31T00:00:00Z" }
+
+  it("notices the preview arriving and the new code, once each, within one job", () => {
+    const running = job({ status: "running" })
+    const awaiting = job({ status: "awaiting_confirm" })
+    expect(jobMomentBetween(running, awaiting)).toBe("awaiting_confirm")
+    expect(jobMomentBetween(awaiting, awaiting)).toBeNull()
+    const withCode = job({ status: "running", new_code: NEW_CODE })
+    expect(jobMomentBetween(awaiting, withCode)).toBe("new_code")
+    expect(jobMomentBetween(withCode, job({ status: "succeeded", new_code: NEW_CODE }))).toBeNull()
+  })
+
+  it("stays quiet for a job the page only just picked up", () => {
+    const awaiting = job({ status: "awaiting_confirm" })
+    expect(jobMomentBetween(null, awaiting)).toBeNull()
+    expect(jobMomentBetween(job({ id: "job-0" }), awaiting)).toBeNull()
+  })
+})
+
+describe("splitUnreachedSteps", () => {
+  it("folds the untouched tail of a stopped job", () => {
+    const stopped = job({ status: "failed", steps: withSteps({ bootstrap: "done", preview: "failed" }) })
+    const { shown, hidden } = splitUnreachedSteps(stopped)
+    expect(shown.map((step) => step.name)).toEqual(["bootstrap", "preview"])
+    expect(hidden).toHaveLength(INHERIT_JOB_STEPS.length - 2)
+  })
+
+  it("hides nothing while the job runs or when every step ran", () => {
+    const running = job({ status: "running", steps: withSteps({ bootstrap: "done", preview: "running" }) })
+    expect(splitUnreachedSteps(running).hidden).toEqual([])
+    const done = job({ status: "succeeded", steps: INHERIT_JOB_STEPS.map((name) => ({ name, status: name === "fetch_mysekai" ? "skipped" : "done" })) })
+    expect(splitUnreachedSteps(done).hidden).toEqual([])
+    expect(splitUnreachedSteps(done).shown).toHaveLength(INHERIT_JOB_STEPS.length)
   })
 })

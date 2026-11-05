@@ -53,7 +53,7 @@ export class ScriptLog {
     this.root = document.createElement("aside");
     this.root.className = "script-log";
     this.root.innerHTML = `<div class="sl-head">
-        <input class="sl-search" type="search" placeholder="${esc(labels.searchPlaceholder)}" spellcheck="false" />
+        <input class="sl-search" type="search" placeholder="${esc(labels.searchPlaceholder)}" aria-label="${esc(labels.searchPlaceholder)}" spellcheck="false" />
         <span class="sl-count"></span>
       </div>
       <div class="sl-bar"><i></i></div>
@@ -85,7 +85,8 @@ export class ScriptLog {
         if (!t) return;
         const id = t.TalkCharacters?.[0]?.Character2dId;
         const icon = (id != null && icons[id]) || MOB_ICON;
-        const el = document.createElement("div");
+        const el = document.createElement("button");
+        el.type = "button";
         el.className = "sl-cell";
         el.innerHTML = `<img class="sl-icon" src="${iconDir}${icon}" alt="" loading="lazy" />
           <div class="sl-name">${esc(t.WindowDisplayName)}</div><div class="sl-body"></div>`;
@@ -96,7 +97,8 @@ export class ScriptLog {
       } else if (s.Action === Action.SpecialEffect) {
         const e = scn.SpecialEffectData[s.ReferenceIndex];
         if (e?.EffectType !== SpecialEffectType.Telop || !e.StringVal) return;
-        const el = document.createElement("div");
+        const el = document.createElement("button");
+        el.type = "button";
         el.className = "sl-place";
         el.textContent = e.StringVal;
         this.entries.push({ seq, el, name: "", body: e.StringVal, talk: false });
@@ -131,6 +133,12 @@ export class ScriptLog {
     return !this.root.classList.contains("hidden");
   }
 
+  /** The line playing now (name empty for a place telop), or null before the first. */
+  currentLine(): { name: string; body: string } | null {
+    const e = this.entries[this.current];
+    return e ? { name: e.name, body: e.body } : null;
+  }
+
   // Mark the entry at or before snippet `seq` as current; later ones as future.
   setProgress(seq: number) {
     this.lastSeq = seq;
@@ -142,6 +150,8 @@ export class ScriptLog {
     this.entries.forEach((e, i) => {
       e.el.classList.toggle("cur", i === cur);
       e.el.classList.toggle("future", i > cur);
+      if (i === cur) e.el.setAttribute("aria-current", "true");
+      else e.el.removeAttribute("aria-current");
       if (e.talk && i <= cur) talkNo++;
     });
     this.countEl.textContent = this.input.value ? this.countEl.textContent : `${talkNo} / ${this.talks}`;

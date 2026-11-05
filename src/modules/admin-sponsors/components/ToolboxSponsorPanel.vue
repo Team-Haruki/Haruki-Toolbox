@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import { useI18n } from "vue-i18n"
-import { Loader2, UserPlus } from "lucide-vue-next"
+import { Loader2, RefreshCw, UserPlus } from "lucide-vue-next"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,8 +13,17 @@ import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import { formatLocalizedDateTime } from "@/lib/date-time"
 import { useToolboxSponsors } from "@/modules/admin-sponsors/composables/useToolboxSponsors"
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 const { items, total, page, query, loading, error, adding, candidateQuery, candidates, candidateTotal, candidatePage, searching, candidateError, searched, editing, target, access, note, load, openAdd, search, edit, save } = useToolboxSponsors()
+
+const PAGE_SIZE = 20
+const pageCount = computed(() => Math.max(1, Math.ceil(total.value / PAGE_SIZE)))
+
+/** A verification method the bundle does not know yet shows its raw value rather than a key. */
+function verificationLabel(method: string) {
+  const key = `adminSponsors.toolbox.${method}`
+  return te(key) ? t(key) : method
+}
 </script>
 
 <template>
@@ -26,10 +36,13 @@ const { items, total, page, query, loading, error, adding, candidateQuery, candi
       <Button class="w-full shrink-0 self-start sm:w-auto" size="sm" @click="openAdd"><UserPlus class="mr-2 size-4" />{{ t("adminSponsors.toolbox.add") }}</Button>
     </CardHeader>
     <CardContent class="space-y-4">
+      <!-- On phones the search field takes its own row so the placeholder stays readable. -->
       <form class="flex flex-wrap gap-2" @submit.prevent="load(1)">
-        <Input v-model="query" class="min-w-0 flex-1 basis-48" :maxlength="128" :aria-label="t('adminSponsors.toolbox.search')" :placeholder="t('adminSponsors.toolbox.searchHint')" />
+        <Input v-model="query" class="min-w-0 flex-1 basis-full sm:basis-48" :maxlength="128" :aria-label="t('adminSponsors.toolbox.search')" :placeholder="t('adminSponsors.toolbox.searchHint')" />
         <Button type="submit" variant="outline" :disabled="loading">{{ t("adminSponsors.toolbox.search") }}</Button>
-        <Button variant="ghost" type="button" :disabled="loading" @click="load()">{{ t("adminSponsors.actions.refresh") }}</Button>
+        <Button variant="outline" size="icon" type="button" :disabled="loading" :title="t('adminSponsors.actions.refresh')" :aria-label="t('adminSponsors.actions.refresh')" @click="load()">
+          <RefreshCw :class="['size-4', loading ? 'animate-spin' : '']" />
+        </Button>
       </form>
       <p v-if="loading" role="status" class="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 class="size-4 animate-spin" />{{ t("adminSponsors.toolbox.loading") }}</p>
       <LoadErrorState v-else-if="error" :description="error.message" :detail="error.detail" @retry="load()" />
@@ -41,21 +54,22 @@ const { items, total, page, query, loading, error, adding, candidateQuery, candi
               <span class="break-all font-medium">{{ item.name }}</span>
               <Badge :variant="item.eligible ? 'default' : 'secondary'">{{ t(`adminSponsors.toolbox.${item.banned ? 'banned' : item.eligible ? 'eligible' : 'ineligible'}`) }}</Badge>
               <Badge v-if="item.accessOverride" variant="outline">{{ t(`adminSponsors.toolbox.${item.accessOverride}`) }}</Badge>
-              <Badge v-if="item.verificationMethod" variant="outline">{{ t(`adminSponsors.toolbox.${item.verificationMethod}`) }}</Badge>
+              <Badge v-if="item.verificationMethod" variant="outline">{{ verificationLabel(item.verificationMethod) }}</Badge>
             </div>
             <p class="break-all text-xs text-muted-foreground">{{ t("adminSponsors.toolbox.userId", { id: item.userId }) }} · {{ item.email }}</p>
             <p v-if="item.afdianUserId" class="break-all text-xs text-muted-foreground">{{ t("adminSponsors.toolbox.afdianId", { id: item.afdianUserId }) }}</p>
             <p v-if="item.note" class="whitespace-pre-wrap break-words text-sm">{{ item.note }}</p>
-            <p v-if="item.updatedAt" class="break-all text-xs text-muted-foreground">{{ t("adminSponsors.toolbox.updated", { actor: item.updatedBy, date: formatLocalizedDateTime(item.updatedAt) }) }}</p>
+            <p v-if="item.updatedAt" class="break-all text-xs text-muted-foreground">{{ t("adminSponsors.toolbox.updated", { actor: item.updatedBy, date: formatLocalizedDateTime(item.updatedAt, "dateTime") }) }}</p>
           </div>
           <Button variant="outline" size="sm" class="self-start" @click="edit(item)">{{ t("adminSponsors.toolbox.manage") }}</Button>
         </div>
         <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
           <span class="text-muted-foreground">{{ t("admin.pagination.total", { total }) }}</span>
-          <div class="flex items-center gap-2">
+          <!-- One page needs no pager. -->
+          <div v-if="total > PAGE_SIZE" class="flex items-center gap-2">
             <Button variant="outline" size="sm" :disabled="page <= 1" @click="load(page - 1)">{{ t("admin.pagination.prevPage") }}</Button>
-            <span>{{ page }}</span>
-            <Button variant="outline" size="sm" :disabled="page * 20 >= total" @click="load(page + 1)">{{ t("admin.pagination.nextPage") }}</Button>
+            <span class="tabular-nums">{{ page }} / {{ pageCount }}</span>
+            <Button variant="outline" size="sm" :disabled="page >= pageCount" @click="load(page + 1)">{{ t("admin.pagination.nextPage") }}</Button>
           </div>
         </div>
       </template>

@@ -29,6 +29,7 @@ import { useMusicAliasMatches } from "@/shared/sekai/music-alias"
 import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { handleSekaiImageError } from "@/shared/sekai/image-recovery"
+import { resolveMusicDifficultyChipClass } from "@/modules/music-library/lib/music-difficulties"
 import {
   MUSIC_CHARACTER_FILTER_SCOPES,
   MUSIC_DIFFICULTIES,
@@ -349,10 +350,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
             v-if="selectedDifficultyOption"
             class="flex flex-row items-center gap-1.5 @sm:flex-col @sm:items-start @sm:gap-1"
           >
-            <span
-              class="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white"
-              :style="{ backgroundColor: selectedDifficultyOption.color }"
-            >
+            <span :class="[resolveMusicDifficultyChipClass(selectedDifficultyOption.value), 'px-1.5 py-0.5']">
               {{ selectedDifficultyOption.label }}
             </span>
             <span class="text-[11px] leading-none tabular-nums text-muted-foreground">
@@ -366,10 +364,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
         <SelectContent>
           <SelectItem v-for="option in difficultyOptions" :key="option.value" :value="option.value">
             <span class="flex items-center gap-2">
-              <span
-                class="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white"
-                :style="{ backgroundColor: option.color }"
-              >
+              <span :class="[resolveMusicDifficultyChipClass(option.value), 'px-1.5 py-0.5']">
                 {{ option.label }}
               </span>
               <span class="text-xs tabular-nums text-muted-foreground">
@@ -579,8 +574,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
                   <span
                     v-for="item in entryDifficultyBadges(entry)"
                     :key="item.difficulty"
-                    class="inline-flex min-w-6 cursor-pointer items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold text-white hover:opacity-80"
-                    :style="{ backgroundColor: item.color }"
+                    :class="[resolveMusicDifficultyChipClass(item.difficulty), 'min-w-6 cursor-pointer px-1 py-0.5 hover:opacity-80']"
                     :title="difficultyLabel(item.difficulty)"
                     @click.stop="selectEntry(entry, item.difficulty)"
                   >

@@ -4,11 +4,11 @@ import { useI18n } from "vue-i18n"
 import { LucideBookOpen, LucideChartLine, LucideLayoutGrid } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { formatLocalizedDate } from "@/lib/date-time"
+import { formatLocalizedDateRange } from "@/lib/date-time"
 import CatalogDetailShell from "@/shared/components/catalog/CatalogDetailShell.vue"
 import CatalogStatusBadge from "@/shared/components/catalog/CatalogStatusBadge.vue"
 import SekaiUnitLogo from "@/shared/components/SekaiUnitLogo.vue"
-import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
+import { applyCatalogRegionQuery, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import { useSettingsStore } from "@/shared/stores/settings"
 import EventBonusSection from "@/modules/events/components/EventBonusSection.vue"
 import EventCardsSection from "@/modules/events/components/EventCardsSection.vue"
@@ -31,6 +31,8 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const settingsStore = useSettingsStore()
+// A shared link names its server (`?region=`): apply it before the region is read.
+applyCatalogRegionQuery()
 const { region } = useEffectiveCatalogRegion()
 const assetEndpoint = computed(() => settingsStore.currentAssetEndpoint)
 
@@ -44,14 +46,9 @@ const { event, status, now } = detail
 
 const listRoute = { name: "events.list" } as const
 
-const dateFormat: Intl.DateTimeFormatOptions = { year: "numeric", month: "2-digit", day: "2-digit" }
-const subtitle = computed(() => {
-  if (!event.value) {
-    return null
-  }
-  const fallback = t("events.common.dateFallback")
-  return `${formatLocalizedDate(event.value.startAt, dateFormat, fallback)} – ${formatLocalizedDate(event.value.aggregateAt, dateFormat, fallback)}`
-})
+const subtitle = computed(() => (event.value
+  ? formatLocalizedDateRange(event.value.startAt, event.value.aggregateAt, "date", t("events.common.dateFallback"))
+  : null))
 
 const rankBorderLink = computed(() => (
   event.value && status.value

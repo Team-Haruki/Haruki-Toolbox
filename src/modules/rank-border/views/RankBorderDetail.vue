@@ -27,6 +27,7 @@ import {
   summarizePlannerCells,
   useEventPlannerStore,
 } from "@/modules/deck-recommend"
+import { formatLocalizedDateTime } from "@/lib/date-time"
 import { formatNumberCN } from "@/lib/number-format"
 import { resolveSekaiRegionLabel } from "@/lib/sekai-region"
 import { getI18nLocale } from "@/shared/i18n"
@@ -189,13 +190,24 @@ const isLineTarget = computed(() => params.value?.target.kind === "line")
 const intervalSeconds = computed(() => params.value?.intervalSeconds ?? 3600)
 
 const intervalOptions = computed(() => [
-  { value: "900", label: t("rankBorder.intervals.minutes", { value: 15 }) },
-  { value: "3600", label: t("rankBorder.intervals.hours", { value: 1 }) },
-  { value: "21600", label: t("rankBorder.intervals.hours", { value: 6 }) },
-  { value: "86400", label: t("rankBorder.intervals.hours", { value: 24 }) },
+  { value: "900", label: t("rankBorder.intervals.minutes", { value: 15 }, 15) },
+  { value: "3600", label: t("rankBorder.intervals.hours", { value: 1 }, 1) },
+  { value: "21600", label: t("rankBorder.intervals.hours", { value: 6 }, 6) },
+  { value: "86400", label: t("rankBorder.intervals.hours", { value: 24 }, 24) },
 ])
 
-const eventLabel = computed(() => masterData.selectedEvent.value?.label ?? `#${params.value?.eventId ?? "?"}`)
+// While master data resolves the header says so instead of showing a raw "#184".
+const eventLabel = computed(() =>
+  masterData.selectedEvent.value?.label
+  ?? (masterData.loading.value ? t("rankBorder.fields.loadingEvents") : `#${params.value?.eventId ?? "?"}`),
+)
+
+// First load vs refresh: "showing the last successful data" is only true once there is some.
+const detailIssuesTitle = computed(() =>
+  current.value != null || primaryStats.value.latest != null
+    ? t("rankBorder.detailIssues.title")
+    : t("rankBorder.detailIssues.titleNoData"),
+)
 const regionLabel = computed(() => params.value ? resolveSekaiRegionLabel(params.value.region, t) : "")
 
 const eventStartAt = computed(() => {
@@ -661,12 +673,13 @@ function formatLoopCount(value: number | null | undefined) {
   return `${new Intl.NumberFormat(getI18nLocale(), { maximumFractionDigits: 0 }).format(Math.max(0, Math.round(value)))}/h`
 }
 
+// Tracker samples are 10 s apart, so the second matters here.
 function formatTimestamp(timestamp: number | null | undefined) {
   if (!timestamp) {
     return "-"
   }
 
-  return new Date(timestamp * 1000).toLocaleString()
+  return formatLocalizedDateTime(timestamp * 1000, "dateTimeSeconds", "-")
 }
 
 function formatCompactNumber(value: number) {
@@ -691,6 +704,7 @@ function formatPoint(record: RankBorderTracePoint, metric: RankBorderChartMetric
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
+    hourCycle: "h23",
   })
   if (metric === "rank") {
     return t("rankBorder.result.chartPointRank", { time, value: formatRank(record.rank) })
@@ -703,8 +717,8 @@ function formatPoint(record: RankBorderTracePoint, metric: RankBorderChartMetric
 
 function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain) {
   const options: Intl.DateTimeFormatOptions = isSameLocalDay(timeDomain.start, timeDomain.end)
-    ? { hour: "2-digit", minute: "2-digit" }
-    : { month: "numeric", day: "numeric", hour: "2-digit" }
+    ? { hour: "2-digit", minute: "2-digit", hourCycle: "h23" }
+    : { month: "numeric", day: "numeric", hour: "2-digit", hourCycle: "h23" }
   return new Date(timestamp * 1000).toLocaleString(getI18nLocale(), options)
 }
 </script>
@@ -718,7 +732,9 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
           <ArrowLeft class="size-4" />
           {{ t("rankBorder.actions.backToList") }}
         </Button>
-        <div v-if="params" class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+        <!-- Phones: the event name takes its own full-width line under the actions instead of
+             being squeezed to one character between the back button and the controls. -->
+        <div v-if="params" class="order-last w-full min-w-0 text-sm text-muted-foreground sm:order-none sm:w-auto sm:flex-1 sm:truncate">
           <span class="font-medium text-foreground">{{ eventLabel }}</span>
           <span v-if="regionLabel"> · {{ regionLabel }}</span>
         </div>
@@ -765,7 +781,7 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
           role="status"
           class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100"
         >
-          <span class="font-medium">{{ t("rankBorder.detailIssues.title") }}</span>
+          <span class="font-medium">{{ detailIssuesTitle }}</span>
           <span v-if="issues.overview">{{ t("rankBorder.detailIssues.overview") }}</span>
           <span v-if="issues.comparisons.length > 0">{{ t("rankBorder.detailIssues.comparisons", { names: issues.comparisons.join(", ") }) }}</span>
           <span v-if="issues.realtime">{{ t("rankBorder.detailIssues.realtime") }}</span>
@@ -776,7 +792,7 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
         </div>
         <div class="rank-border-detail-top">
         <!-- Hero -->
-        <Card class="gap-0 py-0">
+        <Card size="compact" class="gap-0 py-0">
           <CardContent class="grid gap-3 p-3 sm:p-4">
             <div v-if="error && !current && !notRanked" class="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
               <p>{{ error === "not_found" ? t(params.target.kind === "user" ? "rankBorder.result.userNotFound" : "rankBorder.result.rankNotFound") : error }}</p>
@@ -840,9 +856,10 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
                 :model-value="traceSource"
                 @update:model-value="(value) => (value === 'player' || value === 'border') && setTraceSource(value)"
               >
+                <!-- Triggers fill the list: 32 px with a mouse, 40 px on touch (the primitive's coarse-pointer minimum). -->
                 <TabsList class="h-8">
-                  <TabsTrigger value="player" class="h-7 px-2.5 text-xs">{{ t("rankBorder.sections.playerTracking") }}</TabsTrigger>
-                  <TabsTrigger value="border" class="h-7 px-2.5 text-xs">{{ t("rankBorder.sections.borderTracking") }}</TabsTrigger>
+                  <TabsTrigger value="player" class="px-2.5 text-xs">{{ t("rankBorder.sections.playerTracking") }}</TabsTrigger>
+                  <TabsTrigger value="border" class="px-2.5 text-xs">{{ t("rankBorder.sections.borderTracking") }}</TabsTrigger>
                 </TabsList>
               </Tabs>
               <RefreshCcw v-if="borderTraceLoading" class="size-3.5 animate-spin text-muted-foreground" />

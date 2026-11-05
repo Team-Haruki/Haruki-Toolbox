@@ -22,7 +22,7 @@ defineProps<{
 const { t } = useI18n()
 
 function formatDate(value: number | null): string {
-  return formatLocalizedDate(value, { year: "numeric", month: "2-digit", day: "2-digit" }, t("gachas.common.dateFallback"))
+  return formatLocalizedDate(value, "date", t("gachas.common.dateFallback"))
 }
 </script>
 

@@ -9,13 +9,7 @@ import { getScopeLabel, isKnownScope } from "@/modules/user-settings/api/oauth2"
 import { useOAuthAuthorizations } from "@/modules/user-settings/composables/useOAuthAuthorizations"
 import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 
 const { t } = useI18n()
 const {
@@ -37,48 +31,33 @@ const {
 } = useOAuthAuthorizations()
 
 // After a revoke the clicked button is gone with its row; focus returns to
-// the card heading so keyboard and screen-reader users do not land on <body>.
-const headingRef = ref<HTMLElement | null>(null)
+// the list toolbar so keyboard and screen-reader users do not land on <body>.
+const toolbarRef = ref<HTMLElement | null>(null)
 
 function restoreFocus() {
   void nextTick(() => {
-    headingRef.value?.focus()
+    toolbarRef.value?.focus()
   })
 }
 
 function formatDate(iso: string): string {
-  return formatLocalizedDateTime(iso, {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }, iso)
+  return formatLocalizedDateTime(iso, "dateTime", iso)
 }
 </script>
 
 <template>
   <Card class="w-full">
     <CardHeader>
-      <div class="flex items-start justify-between gap-3">
-        <!-- Native wrapper so the focus target after a revoke is a real element. -->
-        <div ref="headingRef" tabindex="-1" class="min-w-0 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
-          <CardTitle class="flex items-center gap-2">
-            <KeyRound class="h-6 w-6" />
-            {{ t("userSettings.oauthAuthorizations.title") }}
-          </CardTitle>
-          <CardDescription>{{ t("userSettings.oauthAuthorizations.description") }}</CardDescription>
-        </div>
+      <!-- Native wrapper so the focus target after a revoke is a real element. -->
+      <div ref="toolbarRef" tabindex="-1" class="flex items-center justify-end rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
         <Button
-          variant="ghost"
-          size="icon"
-          class="shrink-0 text-muted-foreground"
+          variant="outline"
+          size="sm"
           :disabled="isLoading"
-          :title="t('userSettings.oauthAuthorizations.refresh')"
-          :aria-label="t('userSettings.oauthAuthorizations.refresh')"
           @click="fetchAuthorizations()"
         >
-          <RefreshCw class="h-4 w-4" :class="isLoading ? 'animate-spin' : ''" />
+          <RefreshCw class="h-4 w-4" :class="isLoading ? 'animate-spin' : ''" aria-hidden="true" />
+          {{ t("userSettings.oauthAuthorizations.refresh") }}
         </Button>
       </div>
     </CardHeader>

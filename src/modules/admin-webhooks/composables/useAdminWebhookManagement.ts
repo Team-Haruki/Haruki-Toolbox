@@ -6,6 +6,7 @@ import { copyTextToClipboard, isClipboardSupported } from "@/lib/clipboard"
 import { formatLocalizedDateTime } from "@/lib/date-time"
 import { focusInvalidField } from "@/lib/form-focus"
 import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
+import { describeError, type ErrorDescription } from "@/lib/error-utils"
 import {
   createAdminWebhookEndpoint,
   deleteAdminWebhookEndpoint,
@@ -61,6 +62,10 @@ export function useAdminWebhookManagement() {
 
   const settingsLoading = ref(true)
   const settingsSaving = ref(false)
+  // Load failures render inline in their card (LoadErrorState + retry); the
+  // defaults below are placeholders and are never shown as server state.
+  const settingsError = ref<ErrorDescription | null>(null)
+  const endpointsError = ref<ErrorDescription | null>(null)
   const settings = ref<AdminWebhookSettings>({
     enabled: false,
     jwtSecretConfigured: false,
@@ -158,14 +163,11 @@ export function useAdminWebhookManagement() {
 
   async function loadSettings() {
     settingsLoading.value = true
+    settingsError.value = null
     try {
       applySettings(await getAdminWebhookSettings())
     } catch (error: unknown) {
-      toastErrorWithExtractedMessage(
-        t("adminWebhooks.toast.loadSettingsFailedTitle"),
-        error,
-        t("adminWebhooks.toast.loadFailedFallback")
-      )
+      settingsError.value = describeError(error, t("adminWebhooks.toast.loadFailedFallback"))
     } finally {
       settingsLoading.value = false
     }
@@ -173,17 +175,14 @@ export function useAdminWebhookManagement() {
 
   async function loadEndpoints() {
     endpointsLoading.value = true
+    endpointsError.value = null
     try {
       const response = await listAdminWebhookEndpoints()
       endpoints.value = response.items
       endpointsGeneratedAt.value = response.generatedAt
       endpointsTotal.value = response.total
     } catch (error: unknown) {
-      toastErrorWithExtractedMessage(
-        t("adminWebhooks.toast.loadEndpointsFailedTitle"),
-        error,
-        t("adminWebhooks.toast.loadFailedFallback")
-      )
+      endpointsError.value = describeError(error, t("adminWebhooks.toast.loadFailedFallback"))
     } finally {
       endpointsLoading.value = false
     }
@@ -448,7 +447,7 @@ export function useAdminWebhookManagement() {
   }
 
   function formatDate(value?: string) {
-    return formatLocalizedDateTime(value, undefined, t("adminWebhooks.common.fallback"))
+    return formatLocalizedDateTime(value, "dateTime", t("adminWebhooks.common.fallback"))
   }
 
   function serverLabel(value: string) {
@@ -476,6 +475,7 @@ export function useAdminWebhookManagement() {
     canMutate,
     settingsLoading,
     settingsSaving,
+    settingsError,
     settings,
     settingsEnabled,
     settingsDirty,
@@ -483,6 +483,9 @@ export function useAdminWebhookManagement() {
     jwtSecretError,
     disableConfirmOpen,
     endpointsLoading,
+    endpointsError,
+    loadSettings,
+    loadEndpoints,
     endpoints,
     endpointsGeneratedAt,
     endpointsTotal,

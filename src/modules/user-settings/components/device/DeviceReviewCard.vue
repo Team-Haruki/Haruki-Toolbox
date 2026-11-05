@@ -204,7 +204,8 @@ const RISK_BADGE: Record<DeviceScopeRisk, "muted" | "amber" | "sky" | "destructi
         :data-highlighted="ackHighlighted ? 'true' : undefined"
       >
         <!-- The label is the touch target: the whole row toggles the box on phones. -->
-        <Checkbox :id="ACK_ID" v-model="acknowledged" class="mt-0.5 size-5 sm:size-4" :disabled="busy" />
+        <!-- 20 px box + 10 px invisible ring = the 40 px touch target on coarse pointers. -->
+        <Checkbox :id="ACK_ID" v-model="acknowledged" class="mt-0.5 size-5 sm:size-4 pointer-coarse:relative pointer-coarse:after:absolute pointer-coarse:after:-inset-2.5 pointer-coarse:after:content-['']" :disabled="busy" />
         <Label :for="ACK_ID" class="min-h-6 flex-1 cursor-pointer py-0.5 leading-snug font-normal">{{ t("oauth.device.review.acknowledge") }}</Label>
       </div>
 

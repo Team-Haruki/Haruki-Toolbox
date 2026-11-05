@@ -9,6 +9,7 @@ import {
   AccordionContent
 } from "@/components/ui/accordion"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import PageHeader from "@/shared/components/PageHeader.vue"
 import { describeError } from "@/lib/error-utils"
 import { useFriendGroups } from "@/modules/navigation/composables/useFriendGroups"
 
@@ -20,30 +21,23 @@ const errorDescription = computed(() =>
 </script>
 
 <template>
-  <div class="w-full flex-1 px-0 py-4 space-y-6">
-    <!-- Header intro -->
-    <div class="space-y-2 max-w-5xl mx-auto">
-      <h1 class="text-3xl font-bold tracking-tight">{{ t("navigationPages.friendGroups.title") }}</h1>
-      <p class="text-muted-foreground">
-        {{ t("navigationPages.friendGroups.description") }}
-      </p>
-    </div>
+  <div class="mx-auto w-full max-w-6xl flex-1 space-y-6 px-0 py-4">
+    <PageHeader :title="t('navigationPages.friendGroups.title')" :description="t('navigationPages.friendGroups.description')" />
 
-    <div v-if="loading" class="max-w-5xl mx-auto text-center py-10 text-muted-foreground">
+    <div v-if="loading" class="text-center py-10 text-muted-foreground">
       {{ t("navigationPages.friendGroups.loading") }}
     </div>
 
     <!-- Backend failure: distinct from a genuinely empty list -->
-    <div v-else-if="errorDescription" class="max-w-5xl mx-auto">
-      <LoadErrorState
-        :description="errorDescription.message"
-        :detail="errorDescription.detail"
-        :retrying="loading"
-        @retry="reload"
-      />
-    </div>
+    <LoadErrorState
+      v-else-if="errorDescription"
+      :description="errorDescription.message"
+      :detail="errorDescription.detail"
+      :retrying="loading"
+      @retry="reload"
+    />
 
-    <div v-else-if="groupData.length === 0" class="max-w-5xl mx-auto text-center py-10 text-muted-foreground">
+    <div v-else-if="groupData.length === 0" class="text-center py-10 text-muted-foreground">
       {{ t("navigationPages.friendGroups.empty") }}
     </div>
 
@@ -51,7 +45,7 @@ const errorDescription = computed(() =>
         v-else
         v-model="openGroups"
         type="multiple"
-        class="w-full max-w-5xl mx-auto"
+        class="w-full"
         collapsible
     >
       <AccordionItem
@@ -61,7 +55,7 @@ const errorDescription = computed(() =>
       >
       <AccordionTrigger>{{ group.group }}</AccordionTrigger>
       <AccordionContent>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto p-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
           <FriendGroupCard
               v-for="(item, index) in group.groupList"
               :key="`${group.group}-${item.name}-${index}`"

@@ -6,7 +6,7 @@ const missingSnapshotRoutes = [
   "/events/records", "/music/progress", "/cards/box", "/profile/me",
   "/training/challenge", "/training/power", "/training/area",
   "/training/bonds", "/training/leader", "/training/missions",
-].map((path) => ({ path, linkName: /前往数据上传页|Go to data upload/ }))
+].map((path) => ({ path, linkName: /前往上传数据页|Go to the Upload data page/ }))
 
 for (const route of authGatedRoutes) {
   test(`unauthenticated visit to ${route} redirects to login`, async ({ page }) => {
@@ -156,7 +156,7 @@ test("account selector groups granted accounts and filters them by capability", 
   await expect(trigger).toContainText("987654321")
   await expect(trigger).toContainText(/授权|Granted/)
   await expect(page.getByText(/该账号的主人还没有上传游戏数据|The owner of this account has not uploaded/)).toBeVisible()
-  await expect(page.getByRole("link", { name: /前往数据上传页|Go to data upload/ })).toBeVisible()
+  await expect(page.getByRole("link", { name: /前往上传数据页|Go to the Upload data page/ })).toBeVisible()
 })
 
 for (const platform of [null, "discord"] as const) {
@@ -208,6 +208,6 @@ for (const failure of [
     })
     await page.goto("/events/records")
     await expect(page.getByRole("button", { name: /重试|Retry/, exact: true })).toBeVisible()
-    await expect(page.getByRole("link", { name: /前往数据上传页|Go to data upload/ })).toHaveCount(0)
+    await expect(page.getByRole("link", { name: /前往上传数据页|Go to the Upload data page/ })).toHaveCount(0)
   })
 }

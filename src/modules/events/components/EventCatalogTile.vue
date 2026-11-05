@@ -2,7 +2,7 @@
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import type { SekaiRegion } from "@/types"
-import { formatLocalizedDate } from "@/lib/date-time"
+import { DATE_RANGE_SEPARATOR, formatLocalizedDate, toValidDate } from "@/lib/date-time"
 import CatalogStatusBadge from "@/shared/components/catalog/CatalogStatusBadge.vue"
 import type { CatalogStatus } from "@/shared/components/catalog/types"
 import SekaiAttrIcon from "@/shared/components/SekaiAttrIcon.vue"
@@ -37,10 +37,15 @@ const { t } = useI18n()
 const status = computed<CatalogStatus>(() => resolveEventCatalogStatus(props.event, props.nowMs))
 const untilMs = computed(() => resolveEventStatusUntil(props.event, status.value))
 
-const dateFormat: Intl.DateTimeFormatOptions = { year: "numeric", month: "2-digit", day: "2-digit" }
+// "2026/10/31 – 11/08": the end drops its year when it matches the start,
+// so the range fits one line of a phone tile (two full dates ran to three
+// lines beside the attribute icons) and the end date is never truncated.
 const period = computed(() => {
   const fallback = t("events.common.dateFallback")
-  return `${formatLocalizedDate(props.event.startAt, dateFormat, fallback)} – ${formatLocalizedDate(props.event.aggregateAt, dateFormat, fallback)}`
+  const start = toValidDate(props.event.startAt)
+  const end = toValidDate(props.event.aggregateAt)
+  const sameYear = start != null && end != null && start.getFullYear() === end.getFullYear()
+  return `${formatLocalizedDate(props.event.startAt, "date", fallback)}${DATE_RANGE_SEPARATOR}${formatLocalizedDate(props.event.aggregateAt, sameYear ? "monthDay" : "date", fallback)}`
 })
 
 const to = computed(() => ({ name: "events.detail", params: { eventId: String(props.event.id) } }))
@@ -78,8 +83,10 @@ const to = computed(() => ({ name: "events.detail", params: { eventId: String(pr
         <EventTypeBadge :event-type="event.eventType" size="sm" />
         <CatalogStatusBadge :status="status" :until-ms="untilMs" size="sm" />
       </div>
-      <div class="mt-auto flex items-center justify-between gap-2 text-[11px] text-muted-foreground tabular-nums">
-        <span class="truncate">{{ period }}</span>
+      <!-- The period wraps onto two lines in the narrow phone grid rather
+           than truncating away the end date (the gacha tile does the same). -->
+      <div class="mt-auto flex items-end justify-between gap-2 text-[11px] leading-tight text-muted-foreground tabular-nums">
+        <span class="min-w-0">{{ period }}</span>
         <span v-if="bonusAttrs.length > 0" class="flex shrink-0 items-center gap-0.5">
           <SekaiAttrIcon v-for="attr in bonusAttrs" :key="attr" :attr="attr" size="xs" />
         </span>

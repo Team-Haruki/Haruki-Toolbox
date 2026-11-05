@@ -14,6 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { RouterLink } from "vue-router"
 import { Button } from "@/components/ui/button"
 import { LucideInfo } from "lucide-vue-next"
+import PageHeader from "@/shared/components/PageHeader.vue"
 
 const {
   data,
@@ -79,28 +80,25 @@ const {
 </script>
 
 <template>
-  <div class="w-full flex-1 flex flex-col items-center justify-center gap-4 px-0 py-4">
-    <Alert variant="default" class="flex items-start gap-2 w-full max-w-2xl bg-muted/20">
-      <LucideInfo class="h-4 w-4 shrink-0 mt-0.5 text-blue-500" />
-      <div class="space-y-1 w-full">
+  <div class="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-0 py-4">
+    <PageHeader
+      size="compact"
+      :title="t('userSettings.gameBinding.title')"
+      :description="t('userSettings.gameBinding.description')"
+    />
+
+    <!-- One notice: the binding rule and what HarukiBot does with these bindings. -->
+    <Alert variant="default" class="flex w-full items-start gap-2 bg-muted/20">
+      <LucideInfo class="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
+      <div class="w-full space-y-2">
         <AlertTitle>{{ t("userSettings.gameBinding.alert.title") }}</AlertTitle>
-        <AlertDescription class="space-y-1.5 leading-relaxed text-muted-foreground mt-2">
+        <AlertDescription class="space-y-1.5 leading-relaxed text-muted-foreground">
           <p>{{ t("userSettings.gameBinding.alert.line1") }}</p>
           <p>{{ t("userSettings.gameBinding.alert.line2") }}</p>
         </AlertDescription>
-      </div>
-    </Alert>
-
-    <Alert variant="default" class="flex items-start gap-2 w-full max-w-2xl bg-muted/20">
-      <LucideInfo class="h-4 w-4 shrink-0 mt-0.5 text-blue-500" />
-      <div class="space-y-2 w-full">
-        <AlertTitle>{{ t("userSettings.gameBinding.harukiBotGuide.title") }}</AlertTitle>
-        <AlertDescription class="leading-relaxed text-muted-foreground">
-          {{ t("userSettings.gameBinding.harukiBotGuide.description") }}
-        </AlertDescription>
-        <Button as-child variant="outline" size="sm" class="max-w-full whitespace-normal h-auto min-h-8">
-          <RouterLink to="/user/harukibot-authorization">
-            {{ t("userSettings.gameBinding.harukiBotGuide.action") }}
+        <Button as-child variant="outline" size="sm" class="h-auto min-h-8 max-w-full whitespace-normal">
+          <RouterLink :to="{ name: 'user.harukiBotAuthorization' }">
+            {{ t("userSettings.gameBinding.alert.action") }}
           </RouterLink>
         </Button>
       </div>

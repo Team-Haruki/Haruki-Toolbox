@@ -4,7 +4,9 @@ import { useI18n } from "vue-i18n"
 import { useRoute } from "vue-router"
 import { LucideRefreshCw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
+import CatalogTimeZoneHint from "@/shared/components/catalog/CatalogTimeZoneHint.vue"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
+import PageHeader from "@/shared/components/PageHeader.vue"
 import { useScrollEdges, scrollChildIntoView } from "@/composables/useScrollEdges"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { useAccountUploadTime, useGameAccountSelection } from "@/shared/sekai/user-snapshot/use-user-suite"
@@ -80,29 +82,32 @@ watch(() => route.name, () => {
 </script>
 
 <template>
-  <div class="mx-auto flex w-full min-w-0 max-w-6xl flex-1 flex-col justify-center gap-4">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold">{{ t("training.layout.title") }}</h1>
-        <p class="text-sm text-muted-foreground">{{ t("training.layout.description") }}</p>
-      </div>
-      <div class="flex flex-col items-start gap-1.5 sm:items-end">
-        <GameAccountSelect capability="suite" />
-        <div v-if="selectedAccount" class="flex items-center gap-1 text-xs text-muted-foreground">
-          <span v-if="uploadTimeText">{{ t("uploadedGameData.uploadedAt", { time: uploadTimeText }) }}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            class="h-6 gap-1 px-1.5 text-xs text-muted-foreground"
-            :disabled="refreshHandler == null || refreshing"
-            @click="refresh"
-          >
-            <LucideRefreshCw :class="['size-3.5', refreshing ? 'animate-spin' : '']" />
-            {{ t("training.layout.refresh") }}
-          </Button>
+  <div class="mx-auto flex w-full min-w-0 max-w-6xl flex-1 flex-col gap-4">
+    <!-- Top-aligned like every other page: a short state (error, empty) must
+    not float the title to the middle of the viewport. -->
+    <PageHeader :title="t('training.layout.title')" :description="t('training.layout.description')">
+      <template #actions>
+        <div class="flex flex-col items-start gap-1.5 sm:items-end">
+          <GameAccountSelect capability="suite" />
+          <!-- The upload time is local time: the zone tag says so (and names
+               the account's server zone), like the catalog pages. -->
+          <div v-if="selectedAccount" class="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+            <span v-if="uploadTimeText">{{ t("uploadedGameData.uploadedAt", { time: uploadTimeText }) }}</span>
+            <CatalogTimeZoneHint v-if="uploadTimeText" :region="selectedAccount.server" />
+            <Button
+              variant="ghost"
+              size="sm"
+              class="h-7 gap-1 px-2 text-xs text-muted-foreground"
+              :disabled="refreshHandler == null || refreshing"
+              @click="refresh"
+            >
+              <LucideRefreshCw :class="['size-3.5', refreshing ? 'animate-spin' : '']" />
+              {{ t("training.layout.refresh") }}
+            </Button>
+          </div>
         </div>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- One scrolling row on phones instead of wrapping into two. -->
     <div :class="['relative -mx-1', edgeClass]">
@@ -115,7 +120,7 @@ watch(() => route.name, () => {
           v-for="tab in tabs"
           :key="tab.name"
           :to="{ name: tab.name }"
-          class="shrink-0 whitespace-nowrap rounded-t-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          class="shrink-0 whitespace-nowrap rounded-t-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground pointer-coarse:min-h-10 pointer-coarse:inline-flex pointer-coarse:items-center"
           active-class="border-b-2 border-primary font-medium text-foreground"
         >
           {{ t(tab.labelKey) }}

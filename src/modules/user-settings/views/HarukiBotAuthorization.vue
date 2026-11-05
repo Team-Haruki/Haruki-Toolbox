@@ -7,18 +7,20 @@ import {
   IMAuthorization,
   IMBindingSettings,
 } from "@/modules/user-settings/components/settings"
+import PageHeader from "@/shared/components/PageHeader.vue"
 
 const { t } = useI18n()
 </script>
 
 <template>
-  <div class="w-full flex-1 flex flex-col items-center justify-center gap-4 px-0 py-4">
-    <div class="w-full max-w-2xl space-y-1">
-      <h2 class="text-lg font-semibold">{{ t("userSettings.sections.harukiBotTitle") }}</h2>
-      <p class="text-sm text-muted-foreground">{{ t("userSettings.sections.harukiBotDescription") }}</p>
-    </div>
+  <div class="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-0 py-4">
+    <PageHeader
+      size="compact"
+      :title="t('userSettings.sections.harukiBotTitle')"
+      :description="t('userSettings.sections.harukiBotDescription')"
+    />
 
-    <div class="w-full max-w-2xl flex flex-col gap-4">
+    <div class="flex w-full flex-col gap-4">
       <Alert variant="default" class="flex items-start gap-2 bg-muted/20">
         <LucideInfo class="h-4 w-4 shrink-0 mt-0.5 text-blue-500" />
         <div class="space-y-2 w-full">

@@ -11,8 +11,12 @@ export const alertVariants = cva(
     variants: {
       variant: {
         default: "bg-card text-card-foreground",
+        // Body, links and icon use the darker (light) / lighter (dark)
+        // `--destructive-tint-foreground` token: plain `--destructive` is a
+        // button colour and only reaches ~4.2:1 as 14 px text on the usual
+        // `bg-destructive/5` tint (see src/style.css).
         destructive:
-          "text-destructive bg-card [&>svg]:text-current *:data-[slot=alert-description]:text-destructive/90",
+          "text-destructive-tint-foreground bg-card [&>svg]:text-current *:data-[slot=alert-description]:text-destructive-tint-foreground [&_a]:text-current",
       },
     },
     defaultVariants: {

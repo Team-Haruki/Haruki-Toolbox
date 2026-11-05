@@ -4,6 +4,7 @@ import { getUserOAuthAuthorizations } from "@/modules/admin-users/api/oauth"
 import { getSocialPlatform } from "@/modules/admin-users/api/social"
 import { getUserActivity, getUserDetail } from "@/modules/admin-users/api/user"
 import { describeError, isNotFoundError } from "@/lib/error-utils"
+import { assertUserDetailPayload } from "@/modules/admin-users/lib/user-detail-payload"
 import { translate } from "@/shared/i18n"
 import type { LoaderRunOptions } from "./useAdminUserDetailActionTypes"
 import type { LoadOptions } from "./useAdminUserDetailAsync"
@@ -58,7 +59,8 @@ export function createAdminUserDetailLoaders({ userId, state, runLoad }: CreateL
       refs.userNotFound.value = false
       refs.userLoadError.value = null
     }
-    await runLoad(refs.loading, () => getUserDetail(userId()), {
+    // A 200 with another shape is an error like any other (inline, retryable).
+    await runLoad(refs.loading, async () => assertUserDetailPayload(await getUserDetail(userId())), {
       errorTitle: translate("adminUsers.detail.toast.loadUserFailedTitle"),
       ...toLoadOptions(options),
       notifyOnError: inline ? false : options?.notifyOnError,

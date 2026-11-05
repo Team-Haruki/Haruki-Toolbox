@@ -289,7 +289,7 @@ function formatPercentValue(value: number) {
           <p class="max-w-sm text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.result.idlePlaceholder") }}</p>
         </div>
 
-        <Card v-if="showResultCard" class="min-w-0 gap-3 rounded-lg py-3 xl:gap-4 xl:py-4">
+        <Card v-if="showResultCard" size="compact" class="@container/result min-w-0 gap-3 py-3 xl:gap-4 xl:py-4">
           <CardHeader class="px-2 sm:px-4 xl:px-6">
             <CardTitle class="text-base">{{ t("deckRecommend.result.title") }}</CardTitle>
             <CardDescription>
@@ -415,12 +415,15 @@ function formatPercentValue(value: number) {
             >
               <section class="overflow-hidden rounded-md border bg-background/80 shadow-sm">
                 <CollapsibleTrigger as-child>
+                  <!-- The thumbnail strip sits beside the text only once the result pane itself is
+                       wide enough (container query, not viewport: with the sidebar open the pane is
+                       ~540 px at 1280); below that it stacks under the metrics. -->
                   <button
                     type="button"
-                    class="relative grid w-full gap-2 p-2.5 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-start sm:gap-3 sm:p-3"
+                    class="relative grid w-full gap-2 p-2.5 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:gap-3 sm:p-3 @[44rem]/result:grid-cols-[minmax(0,1fr)_minmax(16rem,26rem)_auto] @[44rem]/result:items-start"
                   >
                     <div class="min-w-0 space-y-2">
-                      <div class="flex min-w-0 flex-wrap items-center gap-2 pr-7 md:pr-0">
+                      <div class="flex min-w-0 flex-wrap items-center gap-2 pr-7 @[44rem]/result:pr-0">
                         <span class="shrink-0 text-sm font-semibold text-foreground">
                           {{ t("deckRecommend.result.deckTitle", { index: deckView.index + 1 }) }}
                         </span>
@@ -429,7 +432,7 @@ function formatPercentValue(value: number) {
                             v-for="algorithm in deckSourceAlgorithms(deckView.deck)"
                             :key="algorithm"
                             :class="[
-                              'rounded-md border px-1.5 py-0.5 text-[11px] font-medium',
+                              'whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[11px] font-medium',
                               algorithmTagClass(algorithm),
                             ]"
                           >
@@ -457,7 +460,7 @@ function formatPercentValue(value: number) {
 
                     <div
                       v-if="!open"
-                      class="grid w-full max-w-[41rem] grid-cols-5 content-center justify-items-center gap-0.5 self-end justify-self-center rounded bg-muted/20 p-0.5 ring-1 ring-border/60 sm:gap-1 sm:rounded-md md:w-[26rem] md:max-w-full md:justify-self-end"
+                      class="grid w-full max-w-[41rem] grid-cols-5 content-center justify-items-center gap-0.5 self-end justify-self-center rounded bg-muted/20 p-0.5 ring-1 ring-border/60 sm:gap-1 sm:rounded-md @[44rem]/result:max-w-none @[44rem]/result:justify-self-end"
                     >
                       <CardThumbnail
                         v-for="cardView in deckView.cards"
@@ -469,7 +472,7 @@ function formatPercentValue(value: number) {
 
                     <LucideChevronDown
                       :class="[
-                        'absolute right-2 top-2 size-5 text-muted-foreground transition-transform duration-200 sm:right-3 sm:top-3 md:static md:mt-1 md:self-start md:justify-self-end',
+                        'absolute right-2 top-2 size-5 text-muted-foreground transition-transform duration-200 sm:right-3 sm:top-3 @[44rem]/result:static @[44rem]/result:mt-1 @[44rem]/result:self-start @[44rem]/result:justify-self-end',
                         open ? 'rotate-180' : '',
                       ]"
                     />

@@ -2,7 +2,7 @@
 // Namespaces: rankBorder
 export default {
   "rankBorder": {
-    "title": "Rank Border",
+    "title": "Rank border",
     "description": "Check event rank borders and growth speed; players inside the top 100 can also see their own realtime rank.",
     "notice": {
       "title": "Data range",
@@ -19,8 +19,8 @@ export default {
       "worldBloom": "World Link chapter"
     },
     "intervals": {
-      "minutes": "{value} minutes",
-      "hours": "{value} hours"
+      "minutes": "{value} minute | {value} minutes",
+      "hours": "{value} hour | {value} hours"
     },
     "comparison": {
       "label": "Compare",
@@ -67,7 +67,8 @@ export default {
       "backToList": "Back to leaderboard",
       "copyLink": "Copy link",
       "linkCopied": "Detail link copied",
-      "expandChart": "Expand chart"
+      "expandChart": "Expand chart",
+      "login": "Log in"
     },
     "sections": {
       "query": "Query settings",
@@ -126,10 +127,12 @@ export default {
       "interval": "Growth interval: {value}",
       "topScore": "Top score",
       "coverage": "Tracked range",
-      "trackerCadence": "Follow data updates"
+      "trackerCadence": "Follow data updates",
+      "staleWarning": "The rank border collection service has sent no new data for {age}; the list below is the last collected result. Check in-game information."
     },
     "detailIssues": {
       "title": "Some data could not be updated; showing the last successful data.",
+      "titleNoData": "Couldn't load the leaderboard data. Please try again later.",
       "overview": "Leaderboard overview",
       "comparisons": "Comparisons: {names}",
       "realtime": "Live updates disconnected, reconnecting",
@@ -143,7 +146,10 @@ export default {
       "waitingWs": "Waiting for live push",
       "loginRequired": "Log in to enable auto refresh",
       "pollingLoginForLive": "Refreshing periodically; log in for live updates",
-      "replaying": "Replaying"
+      "replaying": "Replaying",
+      "stale": "No new data for {age}",
+      "outdated": "Collection stopped, no data for {age}",
+      "ended": "Event ended"
     },
     "time": {
       "secondsAgo": "{value}s ago",
@@ -169,7 +175,9 @@ export default {
     "result": {
       "loadErrorTitle": "Couldn't load leaderboard data",
       "loadErrorHint": "Check your connection and retry. If this keeps failing, the rank border collection service may be temporarily unavailable.",
-      "emptyLines": "Live borders appear here when the connection is ready. You can also refresh data immediately.",
+      "emptyLines": "No rank border data has been collected for this event yet. Try “Refresh data” again later.",
+      "notTracked": "This event is not tracked by the rank border collection service, so there is nothing to show yet.",
+      "updatedAgo": "Updated",
       "emptySegments": "No border points beyond T100 have been collected yet.",
       "emptyLiveCard": "Click a border row or query a bound account to show the realtime card.",
       "waitingLiveData": "Waiting for live data",

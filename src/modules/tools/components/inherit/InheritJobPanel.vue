@@ -67,9 +67,12 @@ const STATUS_VARIANT = {
   succeeded: "emerald",
   failed: "destructive",
   cancelled: "muted",
+  expired: "muted",
 } as const
 
 const terminal = computed(() => isTerminalJobStatus(props.job.status))
+// An expired record is not "in progress" any more, whatever its last snapshot said.
+const statusKey = computed<keyof typeof STATUS_VARIANT>(() => props.expired && !terminal.value ? "expired" : props.job.status)
 const showCancel = computed(() => props.job.status === "running" && canCancelJob(props.job))
 const codeUnsaved = computed(() => isNewCodeUnsaved(props.job))
 const codeInVault = computed(() => findJobStep(props.job, "vault_store_code")?.status === "done")
@@ -118,16 +121,24 @@ function dismiss() {
 </script>
 
 <template>
-  <Card data-testid="inherit-job" :data-job-status="job.status">
+  <Card
+    id="inherit-job"
+    tabindex="-1"
+    class="scroll-mt-20 outline-none"
+    aria-labelledby="inherit-job-title"
+    data-testid="inherit-job"
+    :data-job-status="job.status"
+    :data-expired="expired ? 'true' : undefined"
+  >
     <CardHeader class="gap-2">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <CardTitle class="flex items-center gap-2">
+        <CardTitle id="inherit-job-title" class="flex items-center gap-2">
           <ServerCog class="size-5" />
           {{ t("tools.uploadData.inheritJob.title") }}
         </CardTitle>
         <div class="flex items-center gap-1.5">
-          <Badge :variant="STATUS_VARIANT[job.status]" data-testid="inherit-job-status">
-            {{ t(`tools.uploadData.inheritJob.status.${job.status}`) }}
+          <Badge :variant="STATUS_VARIANT[statusKey]" data-testid="inherit-job-status" :data-status="statusKey">
+            {{ t(`tools.uploadData.inheritJob.status.${statusKey}`) }}
           </Badge>
           <Badge
             v-if="!terminal && !expired"
@@ -231,7 +242,7 @@ function dismiss() {
         <AlertDescription>{{ t("tools.uploadData.inheritJob.expired") }}</AlertDescription>
       </Alert>
 
-      <InheritJobSteps :job="job" />
+      <InheritJobSteps :job="job" :frozen="expired" />
     </CardContent>
 
     <CardFooter class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

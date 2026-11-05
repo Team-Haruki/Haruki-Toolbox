@@ -33,6 +33,9 @@ export const LIVE_FLASH_MAX_AGE_SECONDS = 5
 /** Preset filter chips for the CN feed (CN-server QQ Multi Live rooms) */
 export const PRESET_TAGS: readonly string[] = ["🦐", "🐉", "🍕", "虾", "龙", "Sage", "清火"]
 
+/** i18n name (`sekaiStation.settings.tagNames.<key>`) of the emoji-only presets, for their accessible label and tooltip. */
+export const PRESET_TAG_NAME_KEYS: Readonly<Record<string, string>> = { "🦐": "shrimp", "🐉": "dragon", "🍕": "pizza" }
+
 export const EXPIRE_SECONDS = { min: 10, max: 600, default: 300 } as const
 export const FONT_SIZE = { min: 12, max: 20, default: 14 } as const
 export const LINE_HEIGHT = { min: 1.2, max: 2, default: 1.5 } as const

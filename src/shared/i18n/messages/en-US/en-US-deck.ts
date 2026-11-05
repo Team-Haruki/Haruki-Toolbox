@@ -2,7 +2,7 @@
 // Namespaces: deckRecommend, eventPlanner
 export default {
   "deckRecommend": {
-    "title": "Deck Recommendation",
+    "title": "Deck recommendation",
     "description": "Choose account, data region, mode, and song parameters to get the best possible event deck recommendation.",
     "select": {
       "loading": "Preparing data..."
@@ -88,11 +88,11 @@ export default {
       "musicAlgorithm": "Music & Algorithms"
     },
     "modes": {
-      "event": "Event deck",
-      "challenge": "Challenge deck",
-      "bonus": "Bonus deck",
-      "mysekai": "MySekai deck",
-      "max": "Strongest deck"
+      "event": "Event",
+      "challenge": "Challenge",
+      "bonus": "Bonus",
+      "mysekai": "MySekai",
+      "max": "Strongest"
     },
     "targets": {
       "score": "Score",
@@ -413,7 +413,7 @@ export default {
       "blocked": {
         "noAccount": "No game account is bound yet; bind one to run a recommendation.",
         "selectAccount": "Select a game account first.",
-        "dataMissing": "The selected account has no uploaded game data. Upload it from the data upload page first."
+        "dataMissing": "The selected account has no uploaded game data. Upload it on the Upload data page first."
       },
       "phases": {
         "preparing-data": "Preparing game data…",
@@ -446,7 +446,7 @@ export default {
       "algorithmElapsed": "{algorithm} search: {seconds} s",
       "empty": "No recommendation result yet.",
       "missingUserDataTitle": "No game data is available for deck building",
-      "missingUserDataDescription": "The selected game account has not uploaded its account data (Suite) yet. Upload it on the data upload page, then return here and try again. Every deck mode needs only Suite: the gate, canvas and fixture bonuses MySekai mode uses come from Suite too, so no MySekai upload is needed.",
+      "missingUserDataDescription": "The selected game account has not uploaded its account data (Suite) yet. Upload it on the Upload data page, then return here and try again. Every deck mode needs only Suite: the gate, canvas and fixture bonuses MySekai mode uses come from Suite too, so no MySekai upload is needed.",
       "uploadDataAction": "Upload data",
       "deckTitle": "Deck #{index}",
       "score": "score {score}",
@@ -514,7 +514,7 @@ export default {
     "errors": {
       "unknown": "Recommendation failed. Try again later; if it keeps failing, open a ticket.",
       "notEnoughCards": "Not enough cards: only {count} cards remain after filtering, but at least 5 are needed. Relax the rarity/attribute filters.",
-      "currentDeckIncomplete": "The current team read from the game has fewer than 5 cards. Turn off \"use current team\", or build a full team in the game and upload your data again.",
+      "currentDeckIncomplete": "The current team read from the game has fewer than 5 cards. Turn off “use current team”, or build a full team in the game and upload your data again.",
       "musicRequired": "Select a song and a difficulty first.",
       "bonusTargetsRequired": "Enter at least one target bonus.",
       "skillOrderRequired": "Fill in the complete skill order, or switch back to automatic skill order.",
@@ -546,12 +546,12 @@ export default {
     }
   },
   "eventPlanner": {
-    "title": "Event Planner",
-    "description": "Paint the event calendar with points-per-hour brushes and track the gap to your target PT in real time. A \"brush\" is one deck + song and its Pt per hour; painting it onto the calendar adds up the total Pt.",
+    "title": "Event planner",
+    "description": "Paint the event calendar with points-per-hour brushes and track the gap to your target PT in real time. A “brush” is one deck + song and its Pt per hour; painting it onto the calendar adds up the total Pt.",
     "sections": {
       "setup": {
         "title": "Account & Event",
-        "description": "Pick a bound account, the data server and the event; World Link events can select a chapter character."
+        "description": "Pick a bound account, the region and the event; World Link events can select a chapter character."
       }
     },
     "form": {
@@ -584,15 +584,15 @@ export default {
       "playsTitle": "Loops per hour",
       "boostTitle": "Boost fires spent per play",
       "boostOption": "{count} fire ×{multiplier}",
-      "empty": "No brushes yet — click \"New brush\" to build a deck and pick a song."
+      "empty": "No brushes yet — click “New brush” to build a deck and pick a song."
     },
     "dialog": {
       "title": "New Hourly-Rate Brush",
       "description": "Build a deck straight from the selected event, then pick a song from the PT ranking.",
       "runDeck": "Build deck for event",
       "useSavedConfig": "Use the deck page's detailed settings",
-      "savedConfigHint": "Deck parameters (algorithms, teammates, area item / character rank overrides, fixed/excluded cards, training config, …) follow the deck recommend page's saved settings; tweak them there and rebuild here.",
-      "openDeckRecommend": "Open deck recommend to adjust",
+      "savedConfigHint": "Deck parameters (algorithms, teammates, area item / character rank overrides, fixed/excluded cards, training config, …) follow the Deck recommendation page's saved settings; tweak them there and rebuild here.",
+      "openDeckRecommend": "Open Deck recommendation to adjust",
       "running": "Building...",
       "deckTitle": "Recommended deck",
       "deckPower": "Power",
@@ -627,6 +627,7 @@ export default {
       "clear": "Clear plan",
       "hourLabel": "{hour}:00",
       "dragHint": "Click to fill one cell, or drag to batch-fill a rectangle of days × hours; selecting with the same brush again erases. Cell numbers are loops per hour.",
+      "touchHint": "Tap to fill one cell; press and hold, then drag to select a block of days × hours; swipe sideways to reach other hours. Painting with the same brush again erases.",
       "playsPerHour": "{count} loops/h"
     },
     "batch": {

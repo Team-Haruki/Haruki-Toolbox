@@ -51,9 +51,9 @@ export function useOAuthClientManagement() {
     }))
   )
 
-  const { loading, clients, loadClients } = useOAuthClientList()
+  const { loading, loadError, clients, loadClients } = useOAuthClientList()
   async function refreshClientsStrict() {
-    await loadClients({ throwOnError: true, notifyOnError: false })
+    await loadClients({ throwOnError: true })
   }
   const { secretDisplayOpen, displayedSecret, showSecret, copySecret } = useOAuthClientSecretDialog()
   const {
@@ -289,5 +289,6 @@ export function useOAuthClientManagement() {
     deleteWebhook,
     copySecret,
     loadClients,
+    loadError,
   }
 }

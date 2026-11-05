@@ -3,7 +3,7 @@ import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import type { SekaiRegion } from "@/types"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { formatWithZone } from "@/lib/date-time"
+import { formatWithZone, type DateFormatOptions } from "@/lib/date-time"
 import { resolveSekaiRegionLabel } from "@/lib/sekai-region"
 import { cn } from "@/lib/utils"
 
@@ -12,15 +12,18 @@ import { cn } from "@/lib/utils"
  * server zone (a JP event viewed from Shanghai), the server time is one
  * hover away on pointer devices and printed as a second muted line on touch
  * devices, where there is nothing to hover.
+ *
+ * `options` takes a `date-time` preset name (`dateTime` by default: minute
+ * precision, 24 h clock) or a raw `Intl.DateTimeFormatOptions` object.
  */
 const props = withDefaults(defineProps<{
   value: number | string | null | undefined
   region: SekaiRegion
-  options?: Intl.DateTimeFormatOptions
+  options?: DateFormatOptions
   fallback?: string
   class?: string
 }>(), {
-  options: undefined,
+  options: "dateTime",
   fallback: "—",
   class: undefined,
 })

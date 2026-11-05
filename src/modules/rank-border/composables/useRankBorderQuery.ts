@@ -2,8 +2,10 @@ import { computed, ref, watch } from "vue"
 import type { AcceptableValue } from "reka-ui"
 import { useI18n } from "vue-i18n"
 import type { ComboboxOption } from "@/components/ui/combobox"
+import { formatLocalizedDateTime } from "@/lib/date-time"
 import { formatGameAccountLabel } from "@/lib/game-account-display"
 import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
+import { resolveInitialRankBorderRegion } from "../lib/initial-region"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useUserStore } from "@/shared/stores/user"
 import type { SekaiRegion } from "@/types"
@@ -50,7 +52,16 @@ export function useRankBorderQuery() {
   const persistedState = readPersistedState()
 
   const trackerEndpoint = ref(resolveInitialTrackerEndpoint(persistedState.endpoint))
-  const selectedRegion = ref<SekaiRegion>(persistedState.region ?? "cn")
+  // First visit: the same server the catalog pages open on (bound account in
+  // follow mode, else the configured region) rather than a hard-coded one.
+  const defaultBinding = (userStore.gameAccountBindings ?? []).find((account) => account.isDefault === true)
+    ?? userStore.gameAccountBindings?.[0]
+  const selectedRegion = ref<SekaiRegion>(resolveInitialRankBorderRegion({
+    persisted: persistedState.region,
+    mode: settingsStore.sekaiCatalogRegionMode,
+    catalogRegion: settingsStore.sekaiCatalogRegion,
+    accountServer: defaultBinding?.server ?? null,
+  }))
   const selectedEventId = ref<string | null>(persistedState.eventId ?? null)
   const mode = ref<RankBorderMode>(persistedState.mode ?? "normal")
   const selectedWorldBloomCharacterId = ref<string | null>(persistedState.worldBloomCharacterId ?? null)
@@ -162,10 +173,10 @@ export function useRankBorderQuery() {
   })
 
   const intervalOptions = computed(() => [
-    { value: "900", label: t("rankBorder.intervals.minutes", { value: 15 }) },
-    { value: "3600", label: t("rankBorder.intervals.hours", { value: 1 }) },
-    { value: "21600", label: t("rankBorder.intervals.hours", { value: 6 }) },
-    { value: "86400", label: t("rankBorder.intervals.hours", { value: 24 }) },
+    { value: "900", label: t("rankBorder.intervals.minutes", { value: 15 }, 15) },
+    { value: "3600", label: t("rankBorder.intervals.hours", { value: 1 }, 1) },
+    { value: "21600", label: t("rankBorder.intervals.hours", { value: 6 }, 6) },
+    { value: "86400", label: t("rankBorder.intervals.hours", { value: 24 }, 24) },
   ])
 
   watch(
@@ -349,7 +360,7 @@ export function useRankBorderQuery() {
       return "-"
     }
 
-    return new Date(timestamp * 1000).toLocaleString()
+    return formatLocalizedDateTime(timestamp * 1000, "dateTime", "-")
   }
 
   return {

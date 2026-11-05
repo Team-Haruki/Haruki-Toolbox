@@ -24,14 +24,18 @@ import {
 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import FieldError from "@/shared/components/FieldError.vue"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import AdminWebhookStatusBadge from "./AdminWebhookStatusBadge.vue"
 import { WEBHOOK_JWT_SECRET_FIELD_ID } from "@/modules/admin-webhooks/composables/useAdminWebhookManagement"
+import type { ErrorDescription } from "@/lib/error-utils"
 import type { AdminWebhookSettings } from "@/types/admin"
 
 const props = defineProps<{
   canMutate: boolean
   settingsLoading: boolean
   settingsSaving: boolean
+  /** A failed load; shown in place of the values, which would otherwise be defaults. */
+  error?: ErrorDescription | null
   settings: AdminWebhookSettings
   settingsEnabled: boolean
   /** False when nothing differs from the saved settings; the save button is then disabled. */
@@ -42,6 +46,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: "save-settings"): void
+  (event: "retry"): void
   (event: "update:settingsEnabled", value: boolean): void
   (event: "update:jwtSecretInput", value: string): void
 }>()
@@ -63,6 +68,14 @@ const { t } = useI18n()
         </div>
         <Skeleton class="h-36 w-full rounded-lg" />
       </template>
+      <LoadErrorState
+        v-else-if="props.error"
+        :title="t('adminWebhooks.toast.loadSettingsFailedTitle')"
+        :description="props.error.message"
+        :detail="props.error.detail"
+        :retrying="props.settingsLoading"
+        @retry="emit('retry')"
+      />
       <template v-else>
         <Alert v-if="!props.canMutate" variant="default">
           <LucideInfo />

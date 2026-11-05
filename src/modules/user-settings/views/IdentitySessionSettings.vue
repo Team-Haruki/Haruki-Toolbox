@@ -3,16 +3,11 @@ import { computed, onMounted, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { RouterLink, useRoute } from "vue-router"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardTitle,
-  CardHeader,
-  CardContent,
-  CardDescription
-} from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { formatLocalizedDateTime } from "@/lib/date-time"
 import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import PageHeader from "@/shared/components/PageHeader.vue"
 import { describeKratosError } from "@/modules/auth/lib/kratos-messages"
 import { KratosRequestError } from "@/modules/auth/lib/kratos-errors"
 import {
@@ -23,7 +18,7 @@ import {
   type KratosSessionInfo
 } from "@/modules/auth/lib/kratos"
 import { describeUserAgent } from "@/modules/user-settings/lib/user-agent"
-import { Laptop2, Loader2, LogIn, RefreshCw, ShieldX } from "lucide-vue-next"
+import { Loader2, LogIn, RefreshCw, ShieldX } from "lucide-vue-next"
 
 const { t } = useI18n()
 const route = useRoute()
@@ -44,7 +39,7 @@ const hasOtherSessions = computed(() => otherSessions.value.length > 0)
 const loginRoute = computed(() => ({ name: "user.login", query: { redirect: route.fullPath } }))
 
 function formatDateTime(value: string | undefined): string {
-  return formatLocalizedDateTime(value, undefined, "—")
+  return formatLocalizedDateTime(value, "dateTime", "—")
 }
 
 function readDeviceLabel(session: KratosSessionInfo): string {
@@ -151,15 +146,15 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="w-full flex-1 flex flex-col items-center justify-center gap-6 px-0 py-4">
-    <Card class="w-full max-w-3xl">
-      <CardHeader>
-        <CardTitle class="flex items-center gap-2">
-          <Laptop2 class="h-6 w-6" />
-          {{ t("userSettings.sessions.page.title") }}
-        </CardTitle>
-        <CardDescription>{{ t("userSettings.sessions.page.description") }}</CardDescription>
-      </CardHeader>
+  <div class="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-0 py-4">
+    <PageHeader
+      size="compact"
+      :title="t('userSettings.sessions.page.title')"
+      :description="t('userSettings.sessions.page.description')"
+      :back="{ name: 'user.settings' }"
+      :back-label="t('userSettings.kratosFlow.redirect.backToSettings')"
+    />
+    <Card class="w-full">
       <CardContent class="space-y-4">
         <div class="flex flex-col gap-2 sm:flex-row">
           <Button variant="outline" class="sm:w-auto" :disabled="loading" @click="loadSessions">

@@ -1,53 +1,134 @@
-/* Story player shell: the story browser (left), the stage (the
-   pjsk-scenario-player library, which brings its own styles) and the script
-   overview (right). The row keeps a 1280-wide design and the runtime zooms it
-   to the host, so sizes here are design pixels. Everything is scoped under
-   .story-player. */
+/* Story player shell: the story browser, the stage (the pjsk-scenario-player
+   library, which brings its own styles for everything inside the stage) and
+   the script overview. The panels are ordinary page chrome in the app's
+   theme tokens at their natural size; only the stage scales. The runtime
+   sets the layout (data-layout: wide | mid | stack), the stage width
+   (--sp-stage-w) and the panel height (--sp-panel-h). Everything is scoped
+   under .story-player. */
 
 .story-player {
-  /* Chinese/Korean text: the CN/TW/KR clients' faces (Source Han Sans Bold for EB,
-     Medium for DB), self-hosted as StoryHanSans so every device renders the same;
-     system faces only for characters outside the served slices. */
+  /* Chinese/Korean story titles: the CN/TW/KR clients' faces (Source Han Sans
+     Bold / Medium), self-hosted as StoryHanSans so every device renders the
+     same; system faces only for characters outside the served slices. */
   --cn-bold: "StoryHanSans", "Source Han Sans SC", "Noto Sans SC", "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
   --cn-text: "StoryHanSans", "Source Han Sans SC", "Noto Sans SC", "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
   --ko-text: "StoryHanSans", "Source Han Sans K", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-  /* the fixed-size stage must not widen the page; the runtime zooms it to fit */
+  --sp-radius: var(--radius, 0.625rem);
+  /* the stage must not widen the page */
   contain: inline-size;
   display: block;
   width: 100%;
-  color-scheme: dark;
-  color: #e6e6e6;
+  color: var(--foreground);
   font-family: system-ui, -apple-system, "PingFang SC", "Hiragino Sans", sans-serif;
 }
 .story-player *, .story-player *::before, .story-player *::after { box-sizing: border-box; }
+.story-player button { font: inherit; color: inherit; }
+.story-player :is(button, input):focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+/* ── row ─────────────────────────────────────────────────────────────── */
+.story-player .sp-row { display: grid; gap: 12px; align-items: stretch; scroll-margin-top: 64px; }
+.story-player[data-layout="wide"] .sp-row { grid-template-columns: var(--sp-cols, 280px 1fr); grid-template-areas: "browser main log"; }
+.story-player[data-layout="wide"][data-log="off"] .sp-row { grid-template-areas: "browser main"; }
+.story-player[data-layout="mid"] .sp-row { grid-template-columns: var(--sp-cols, 1fr 300px); grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas: "main tabs" "main panel"; }
+.story-player[data-layout="stack"] .sp-row { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+.story-player .sp-main { grid-area: main; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.story-player .story-browser { grid-area: browser; }
+.story-player[data-layout="wide"] .script-log { grid-area: log; }
+.story-player[data-layout="mid"] .story-browser,
+.story-player[data-layout="mid"] .script-log { grid-area: panel; }
+.story-player[data-layout="mid"] .sp-tabs { grid-area: tabs; }
+.story-player[data-layout="stack"] .sp-main { order: 0; }
+.story-player[data-layout="stack"] .sp-tabs { order: 1; }
+.story-player[data-layout="stack"] .story-browser,
+.story-player[data-layout="stack"] .script-log { order: 2; }
+/* the panels scroll inside: as tall as the stage column, or a share of a phone's viewport */
+.story-player .story-browser, .story-player .script-log { height: var(--sp-panel-h, 520px); }
+/* one side panel at a time where they share a slot */
+.story-player:not([data-layout="wide"])[data-panel="log"] .story-browser,
+.story-player:not([data-layout="wide"])[data-panel="browser"] .script-log { display: none; }
 
 /* the player fills the box and scales its 1280x720 stage to it */
-.story-player .sp-stage-box { position: relative; flex: none; width: 1280px; border-radius: 8px; overflow: hidden;
-  box-shadow: 0 0 0 1px #2c2f37; }
-.story-player .sp-row { display: flex; gap: 12px; align-items: flex-start; }
+.story-player .sp-stage-box { position: relative; width: var(--sp-stage-w, 100%); max-width: 100%; aspect-ratio: 16 / 9;
+  border-radius: var(--sp-radius); overflow: hidden; background: #000; box-shadow: 0 0 0 1px var(--border); }
+.story-player[data-layout="stack"] .sp-stage-box { width: 100%; }
+/* (the library's own fullscreen overlay keeps its fixed, viewport-sized box) */
+.story-player .sp-stage-box .pjsk-player:not(.pjsk-pseudo-fs) { position: absolute; inset: 0; width: 100%; height: 100%; aspect-ratio: auto; }
+/* the keyboard target: Space / Enter advance (see story-runtime) */
+.story-player .pjsk-player:focus-visible { outline: 3px solid var(--ring); outline-offset: -3px; }
 
-/* Story browser (left): the game's story select look — segmented pill tabs,
-   unit icons, white rounded cells (episode: 第N話 + title, thumbnail right),
-   rgb(68,68,102) text, pink for the current item. Collapses to a rail. */
-.story-player .story-browser { position: relative; width: 340px; height: 720px; flex: none; display: flex; flex-direction: column;
-  background: rgb(58,58,88); border: 1px solid #2c2f37; border-radius: 8px; overflow: hidden; }
-.story-player .story-browser.collapsed { width: 44px; }
-.story-player .sb-toggle { position: absolute; top: 10px; right: 8px; z-index: 2; width: 28px; height: 28px; border: 0; border-radius: 50%;
-  background: #fff; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,34,.3); }
-.story-player .sb-toggle::after { content: ""; position: absolute; left: 10px; top: 9px; width: 8px; height: 10px; background: rgb(68,68,102);
+/* ── panel tabs (mid: above the side panel; stack: under the stage) ───── */
+.story-player .sp-tabs { display: none; padding: 3px; border-radius: 999px; background: var(--muted); }
+.story-player:not([data-layout="wide"]) .sp-tabs { display: flex; }
+.story-player .sp-tabs button { flex: 1; height: 34px; border: 0; border-radius: 999px; background: none; cursor: pointer; padding: 0 12px;
+  font-weight: 600; font-size: 13px; color: var(--muted-foreground); white-space: nowrap; }
+.story-player .sp-tabs button.on { background: var(--background); color: var(--foreground); box-shadow: 0 1px 2px rgb(0 0 0 / 0.12); }
+.story-player .sp-tabs button:disabled { opacity: .5; cursor: default; }
+
+/* ── control row under a small stage (replaces the in-stage ⋯ menu) ───── */
+.story-player .sp-controls { display: none; flex-wrap: wrap; gap: 6px; }
+.story-player[data-menu="row"] .sp-controls { display: flex; }
+.story-player .sp-controls button { flex: 1 1 auto; min-width: 0; height: 36px; padding: 0 10px; border: 1px solid var(--border);
+  border-radius: calc(var(--sp-radius) - 2px); background: var(--card); color: var(--card-foreground); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; font-weight: 500; white-space: nowrap; }
+.story-player .sp-controls button svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round; }
+.story-player .sp-controls button.on { background: var(--primary); border-color: var(--primary); color: var(--primary-foreground); }
+.story-player .sp-controls button:hover:not(.on) { background: var(--accent); }
+/* the in-stage menu is hidden while the row stands in for it */
+.story-player[data-menu="row"] .pjsk-menu,
+.story-player[data-menu="row"] .pjsk-menu-panel { display: none; }
+/* …and scaled up to 40px targets where it is used on a small stage */
+.story-player .pjsk-menu, .story-player .pjsk-menu-panel { transform: scale(var(--sp-menu-scale, 1)); transform-origin: 100% 0; }
+.story-player .pjsk-smp-close { transform: scale(var(--sp-close-scale, 1)); transform-origin: 100% 0; }
+/* native fullscreen on a phone held upright (landscape lock refused): draw the stage sideways */
+.story-player .pjsk-player.sp-rotate .pjsk-stage { transform: var(--sp-rot) !important; }
+
+/* ── current line under a phone stage (readable size; a tap advances) ─── */
+.story-player .sp-line { display: none; width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--border);
+  border-radius: var(--sp-radius); background: var(--card); color: var(--card-foreground); text-align: left; cursor: pointer;
+  flex-direction: column; gap: 2px; }
+.story-player[data-layout="stack"] .sp-line { display: flex; }
+.story-player .sp-line b { font-size: 13px; font-weight: 700; color: var(--primary); }
+.story-player .sp-line span { font-size: 15px; line-height: 1.5; white-space: pre-line; }
+.story-player .sp-line.hint { color: var(--muted-foreground); }
+.story-player .sp-line.hint span { font-size: 13px; }
+.story-player[data-script="zh"] .sp-line b { font-family: var(--cn-bold); }
+.story-player[data-script="zh"] .sp-line span { font-family: var(--cn-text); }
+.story-player[data-script="ko"] .sp-line :is(b, span) { font-family: var(--ko-text); }
+
+/* ── story browser ───────────────────────────────────────────────────── */
+.story-player .story-browser { position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column;
+  background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--sp-radius); overflow: hidden; }
+.story-player[data-layout="wide"] .story-browser.collapsed { width: 44px; }
+.story-player .sb-toggle { position: absolute; top: 8px; right: 8px; z-index: 2; width: 28px; height: 28px; border: 1px solid var(--border);
+  border-radius: 50%; background: var(--background); cursor: pointer; display: none; }
+.story-player[data-layout="wide"] .sb-toggle { display: block; }
+.story-player .sb-toggle::after { content: ""; position: absolute; left: 9px; top: 8px; width: 7px; height: 10px; background: var(--muted-foreground);
   clip-path: polygon(100% 0, 0 50%, 100% 100%); }
 .story-player .collapsed .sb-toggle::after { clip-path: polygon(0 0, 100% 50%, 0 100%); left: 11px; }
 .story-player .sb-rail { display: none; }
-.story-player .collapsed .sb-rail { display: block; position: absolute; top: 52px; left: 0; right: 0; bottom: 0; cursor: pointer; box-sizing: content-box;
-  width: 1em; margin: 0 auto; padding-top: 10px; word-break: break-all; text-align: center;
-  font: 700 16px/1.35 var(--cn-bold); color: rgb(223,223,234); }
-.story-player .collapsed .sb-main { display: none; }
-.story-player .sb-main { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 10px 12px 0; gap: 10px; }
-.story-player .sb-tabs { display: flex; margin-right: 34px; padding: 3px; border-radius: 17px; background: rgba(235,235,242,.25); }
-.story-player .sb-tabs button { flex: 1; height: 28px; border: 0; border-radius: 14px; background: none; cursor: pointer; padding: 0;
-  font: 700 13px var(--cn-bold); color: rgb(223,223,234); white-space: nowrap; }
-.story-player .sb-tabs button.on { background: #fff; color: rgb(68,68,102); box-shadow: 0 1px 3px rgba(0,0,34,.3); }
-.story-player .sb-units { display: flex; justify-content: space-between; }
+.story-player[data-layout="wide"] .collapsed .sb-rail { display: block; position: absolute; top: 48px; left: 0; right: 0; bottom: 0; cursor: pointer;
+  box-sizing: content-box; width: 1em; margin: 0 auto; padding-top: 10px; word-break: break-all; text-align: center;
+  font: 600 14px/1.35 var(--cn-bold); color: var(--muted-foreground); }
+.story-player[data-layout="wide"] .collapsed .sb-main { display: none; }
+.story-player .sb-main { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 10px 10px 0; gap: 8px; }
+.story-player .sb-tabs { display: flex; padding: 3px; border-radius: 999px; background: var(--muted); }
+.story-player[data-layout="wide"] .sb-tabs { margin-right: 32px; }
+.story-player .sb-tabs button { flex: 1; min-width: 0; height: 30px; border: 0; border-radius: 999px; background: none; cursor: pointer; padding: 0;
+  font-weight: 600; font-size: 13px; color: var(--muted-foreground); white-space: nowrap; }
+.story-player .sb-tabs button.on { background: var(--background); color: var(--foreground); box-shadow: 0 1px 2px rgb(0 0 0 / 0.12); }
+.story-player .sb-units { display: flex; align-items: center; justify-content: space-between; gap: 2px; }
+.story-player .sb-units button { width: 36px; height: 36px; padding: 2px; border: 2px solid transparent; border-radius: 10px;
+  background: none; cursor: pointer; opacity: .55; position: relative; }
+.story-player .sb-units button img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.story-player .sb-units button.vs img { background: #33ccbb; border-radius: 6px; padding: 4px; }
+.story-player .sb-units button.on { opacity: 1; border-color: var(--primary); }
+.story-player .sb-units button:hover { opacity: .85; }
+/* the icon is gone on both hosts: a short text stands in */
+.story-player .sb-units button.noimg img { display: none; }
+.story-player .sb-units button.noimg::after { content: attr(data-short); font-size: 10px; font-weight: 700; color: var(--muted-foreground); }
+.story-player .sb-unit-name { margin: -4px 0 0; font-size: 12px; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* card stories / area talks: character filter (talk-log icons), scrolls sideways */
 .story-player .sb-chars { display: flex; gap: 4px; overflow-x: auto; overscroll-behavior: contain; margin: -4px 0 0; padding: 2px 0 4px;
   scrollbar-width: thin; }
@@ -55,81 +136,71 @@
 .story-player .sb-chars button { flex: none; width: 36px; height: 36px; padding: 0; border: 2px solid transparent; border-radius: 50%;
   background: none; cursor: pointer; opacity: .6; }
 .story-player .sb-chars button img { display: block; width: 100%; height: 100%; border-radius: 50%; }
-.story-player .sb-chars button.on { opacity: 1; border-color: rgb(255,119,170); }
-.story-player .sb-units button { width: 38px; height: 38px; padding: 3px; border: 2px solid transparent; border-radius: 10px;
-  background: none; cursor: pointer; opacity: .55; }
-.story-player .sb-units button img { display: block; width: 100%; height: 100%; }
-.story-player .sb-units button.vs img { background: #33ccbb; border-radius: 6px; padding: 4px; box-sizing: border-box; }
-.story-player .sb-units button.on { opacity: 1; border-color: rgb(255,119,170); }
-.story-player .sb-search { height: 32px; padding: 0 14px; border: 0; border-radius: 16px; outline: none; background: #fff;
-  color: rgb(68,68,102); font: 13px "StoryJpMedium", var(--cn-bold); box-shadow: 0 2px 4px rgba(0,0,34,.25); }
-.story-player .sb-search::placeholder { color: rgb(167,167,188); }
-.story-player .sb-list { flex: 1; overflow-y: auto; overscroll-behavior: contain; margin: 0 -8px 0 0; padding: 0 6px 12px 0; }
-.story-player .sb-list::-webkit-scrollbar { width: 6px; }
-.story-player .sb-list::-webkit-scrollbar-track { background: rgba(255,255,255,.2); border-radius: 3px; }
-.story-player .sb-list::-webkit-scrollbar-thumb { background: #fff; border-radius: 3px; }
-.story-player .sb-empty { padding: 30px 10px; text-align: center; font: 13px/1.7 var(--cn-bold); color: rgb(223,223,234); }
-.story-player .sb-story { margin-bottom: 8px; border-radius: 12px; background: #fff; color: rgb(68,68,102); overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0,0,34,.25); }
-.story-player .sb-story.cur { box-shadow: 0 0 0 2px rgb(255,119,170), 0 2px 4px rgba(0,0,34,.25); }
-.story-player .sb-head { display: flex; align-items: center; gap: 10px; padding: 8px 10px; cursor: pointer; }
-.story-player .sb-logo { width: 96px; height: 48px; object-fit: contain; flex: none; }
-.story-player .sb-thumb { width: 48px; height: 48px; border-radius: 8px; flex: none; }
+.story-player .sb-chars button.on { opacity: 1; border-color: var(--primary); }
+.story-player .sb-search { height: 34px; padding: 0 12px; border: 1px solid var(--input); border-radius: calc(var(--sp-radius) - 2px);
+  background: var(--background); color: var(--foreground); font-size: 13px; font-family: "StoryJpMedium", var(--cn-bold); }
+.story-player .sb-search::placeholder { color: var(--muted-foreground); }
+.story-player .sb-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0 -6px 0 0; padding: 0 6px 10px 0;
+  scrollbar-width: thin; }
+.story-player .sb-empty { padding: 28px 10px; text-align: center; font-size: 13px; line-height: 1.7; color: var(--muted-foreground); }
+.story-player .sb-empty button { display: inline-flex; align-items: center; height: 32px; margin-top: 8px; padding: 0 14px; border: 1px solid var(--border);
+  border-radius: calc(var(--sp-radius) - 2px); background: var(--background); color: var(--foreground); font-size: 13px; font-weight: 500; cursor: pointer; }
+.story-player .sb-story { margin-bottom: 6px; border: 1px solid var(--border); border-radius: calc(var(--sp-radius) - 2px); background: var(--background);
+  overflow: hidden; }
+.story-player .sb-story.cur { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.story-player .sb-head { display: flex; width: 100%; align-items: center; gap: 10px; padding: 7px 10px; border: 0; background: none; text-align: left; cursor: pointer; }
+.story-player .sb-head:hover { background: var(--accent); }
+.story-player .sb-logo { width: 88px; height: 44px; object-fit: contain; flex: none; }
+.story-player .sb-thumb { width: 44px; height: 44px; border-radius: 8px; flex: none; }
 .story-player .sb-uicon { width: 36px; height: 36px; flex: none; }
 .story-player .sb-title { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.story-player .sb-title b { font: 13px/1.3 "StoryJpBold", var(--cn-bold); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.story-player .sb-title small { font: 11px "StoryJpMedium", sans-serif; color: rgb(167,167,188); }
-.story-player .sb-caret { flex: none; width: 8px; height: 8px; border-right: 2px solid rgb(167,167,188); border-bottom: 2px solid rgb(167,167,188);
+.story-player .sb-title b { font: 700 13px/1.3 "StoryJpBold", var(--cn-bold); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.story-player .sb-title small { font-size: 12px; color: var(--muted-foreground); }
+.story-player .sb-jp { display: inline-block; vertical-align: 1px; margin-left: 4px; padding: 0 4px; border-radius: 4px; font-size: 10px; font-weight: 600;
+  line-height: 16px; color: var(--muted-foreground); background: var(--muted); }
+.story-player .sb-caret { flex: none; width: 8px; height: 8px; border-right: 2px solid var(--muted-foreground); border-bottom: 2px solid var(--muted-foreground);
   transform: rotate(45deg); margin: -4px 4px 0 0; transition: transform .15s; }
 .story-player .sb-story.open .sb-caret { transform: rotate(-135deg); margin-top: 4px; }
-.story-player .sb-eps { border-top: 1px solid rgb(235,235,242); background: rgb(246,246,250); }
-.story-player .sb-ep { position: relative; display: flex; align-items: center; gap: 8px; padding: 7px 10px 7px 14px; cursor: pointer;
-  border-bottom: 1px solid rgb(235,235,242); }
+.story-player .sb-eps { border-top: 1px solid var(--border); background: var(--card); }
+.story-player .sb-ep { position: relative; display: flex; width: 100%; align-items: center; gap: 8px; padding: 7px 10px 7px 14px; cursor: pointer;
+  border: 0; border-bottom: 1px solid var(--border); background: none; text-align: left; }
 .story-player .sb-ep:last-child { border-bottom: 0; }
-.story-player .sb-ep:hover { background: #fff; }
-.story-player .sb-ep.cur { color: rgb(255,119,170); background: #fff; }
-.story-player .sb-ep.cur::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: rgb(255,119,170); }
-.story-player .sb-ep.missing { opacity: .4; cursor: not-allowed; }
+.story-player .sb-ep:hover { background: var(--accent); }
+.story-player .sb-ep.cur { color: var(--primary); background: var(--accent); }
+.story-player .sb-ep.cur::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--primary); }
+.story-player .sb-ep:disabled { opacity: .45; cursor: not-allowed; }
 .story-player .sb-ep-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.story-player .sb-ep-text small { font: 11px "StoryJpBold", var(--cn-bold); color: rgb(167,167,188); }
-.story-player .sb-ep.cur .sb-ep-text small { color: rgb(255,119,170); }
-.story-player .sb-ep-text span { font: 13px/1.3 "StoryJpMedium", var(--cn-bold); }
-.story-player .sb-ep img { width: 80px; height: 45px; object-fit: cover; border-radius: 6px; flex: none; }
+.story-player .sb-ep-text small { font: 700 12px "StoryJpBold", var(--cn-bold); color: var(--muted-foreground); }
+.story-player .sb-ep.cur .sb-ep-text small { color: var(--primary); }
+.story-player .sb-ep-text span { font: 500 13px/1.3 "StoryJpMedium", var(--cn-bold); }
+.story-player .sb-ep img { width: 72px; height: 40px; object-fit: cover; border-radius: 6px; flex: none; }
 
-/* Script overview (right): the game's talk log (TalkLogWindowDialog / Cell)
-   at half the reference size — base rgba(68,68,102,.8), icon chr_ts_*_g2
-   104→52, name RodinNTLG EB rgb(223,223,234), body DB white, both with the
-   scenario outline rgba(68,68,102,.6), 2px→1px rule rgb(167,167,188),
-   6px white .2 scrollbar. Later lines are dimmed; the current one is marked. */
-.story-player .script-log { width: 400px; height: 720px; flex: none; display: flex; flex-direction: column;
-  background: rgb(58,58,88); border: 1px solid #2c2f37; border-radius: 8px; overflow: hidden; box-sizing: border-box; }
+/* ── script overview (the talk log) ──────────────────────────────────── */
+.story-player .script-log { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--card); color: var(--card-foreground);
+  border: 1px solid var(--border); border-radius: var(--sp-radius); overflow: hidden; }
 .story-player .script-log.hidden { display: none; }
-.story-player .sl-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px 10px; }
-.story-player .sl-search { flex: 1; min-width: 0; height: 34px; padding: 0 14px; border: 0; border-radius: 17px; outline: none;
-  background: #fff; color: rgb(68,68,102); font: 14px var(--cn-bold);
-  box-shadow: 0 2px 4px rgba(0,0,34,.25); }
-.story-player .sl-search::placeholder { color: rgb(167,167,188); }
-.story-player .sl-count { flex: none; font: 700 13px var(--cn-bold); color: rgb(223,223,234); }
-.story-player .sl-bar { height: 3px; margin: 0 14px 6px; border-radius: 2px; background: rgba(255,255,255,.2); }
-.story-player .sl-bar i { display: block; height: 100%; width: 0; border-radius: 2px; background: rgb(255,119,170); transition: width .3s; }
-.story-player .sl-list { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
-.story-player .sl-list::-webkit-scrollbar { width: 6px; }
-.story-player .sl-list::-webkit-scrollbar-track { background: rgba(255,255,255,.2); border-radius: 3px; margin: 12px 0; }
-.story-player .sl-list::-webkit-scrollbar-thumb { background: #fff; border-radius: 3px; }
-.story-player .sl-cell { position: relative; display: grid; grid-template-columns: 52px 1fr; column-gap: 14px; row-gap: 4px;
-  padding: 12px 12px 12px 18px; border-bottom: 1px solid rgb(167,167,188); cursor: pointer;
-  -webkit-text-stroke: 3.6px rgba(68,68,102,.6); paint-order: stroke fill; }
-.story-player .sl-cell:hover { background: rgba(255,255,255,.06); }
-.story-player .sl-icon { grid-row: 1 / span 2; width: 52px; height: 52px; }
-.story-player .sl-name { font: 16px/1.2 "StoryJpBold", system-ui, sans-serif; color: rgb(223,223,234); align-self: end; }
-.story-player .sl-body { font: 16px/1.45 "StoryJpMedium", system-ui, sans-serif; color: #fff; white-space: pre-line; }
-.story-player .sl-body mark { background: none; color: rgb(255,119,170); }
-.story-player .sl-place { padding: 10px 18px; border-bottom: 1px solid rgb(167,167,188); cursor: pointer;
-  font: 14px "StoryJpMedium", system-ui, sans-serif; color: rgb(223,223,234); background: rgba(68,68,102,.8); }
-.story-player .sl-place::before { content: "▸ "; color: rgb(255,119,170); }
-.story-player .sl-cell.future, .story-player .sl-place.future { opacity: .45; }
-.story-player .sl-cell.cur { background: rgba(255,255,255,.12); }
-.story-player .sl-cell.cur::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: rgb(255,119,170); }
+.story-player .sl-head { display: flex; align-items: center; gap: 8px; padding: 10px 10px 8px; }
+.story-player .sl-search { flex: 1; min-width: 0; height: 34px; padding: 0 12px; border: 1px solid var(--input); border-radius: calc(var(--sp-radius) - 2px);
+  background: var(--background); color: var(--foreground); font-size: 13px; font-family: var(--cn-bold); }
+.story-player .sl-search::placeholder { color: var(--muted-foreground); }
+.story-player .sl-count { flex: none; font-size: 12px; font-weight: 600; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+.story-player .sl-bar { height: 3px; margin: 0 10px 4px; border-radius: 2px; background: var(--muted); }
+.story-player .sl-bar i { display: block; height: 100%; width: 0; border-radius: 2px; background: var(--primary); transition: width .3s; }
+.story-player .sl-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.story-player .sl-cell { position: relative; display: grid; width: 100%; grid-template-columns: 40px 1fr; column-gap: 10px; row-gap: 2px;
+  padding: 10px 10px 10px 14px; border: 0; border-bottom: 1px solid var(--border); background: none; text-align: left; cursor: pointer; }
+.story-player .sl-cell:hover { background: var(--accent); }
+.story-player .sl-icon { grid-row: 1 / span 2; width: 40px; height: 40px; border-radius: 50%; }
+.story-player .sl-name { font: 700 13px/1.2 "StoryJpBold", system-ui, sans-serif; color: var(--muted-foreground); align-self: end; }
+.story-player .sl-body { font: 500 14px/1.45 "StoryJpMedium", system-ui, sans-serif; color: var(--card-foreground); white-space: pre-line; }
+.story-player .sl-body mark { background: color-mix(in oklab, var(--primary) 25%, transparent); color: inherit; border-radius: 2px; }
+.story-player .sl-place { display: block; width: 100%; padding: 8px 14px; border: 0; border-bottom: 1px solid var(--border); cursor: pointer; text-align: left;
+  font: 600 13px "StoryJpMedium", system-ui, sans-serif; color: var(--muted-foreground); background: var(--muted); }
+.story-player .sl-place::before { content: "▸ "; color: var(--primary); }
+.story-player .sl-cell.future, .story-player .sl-place.future { opacity: .55; }
+.story-player .sl-cell.cur { background: var(--accent); opacity: 1; }
+.story-player .sl-cell.cur .sl-name { color: var(--primary); }
+.story-player .sl-cell.cur::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--primary); }
 
 /* Script overview in other scripts: Rodin covers kana, JIS kanji and Latin
    only; Chinese and Korean lines use the CN/TW/KR clients' Source Han Sans
@@ -139,26 +210,6 @@
 .story-player[data-script="ko"] .sl-name { font-family: var(--ko-text); font-weight: 700; }
 .story-player[data-script="ko"] .sl-body, .story-player[data-script="ko"] .sl-place { font-family: var(--ko-text); font-weight: 500; }
 
-
-/* On the player root (so they stay in fullscreen): the fullscreen toggle,
-   shown on phones and while fullscreen, and the credit line, top centre and
-   clear of the toggle and the menu. */
-.story-player .sp-fs-btn { display: none; position: absolute; left: 10px; top: 10px; z-index: 11; width: 36px; height: 36px; padding: 7px;
-  border: 0; border-radius: 50%; background: rgba(68,68,102,.72); color: #fff; cursor: pointer; opacity: .85;
-  box-shadow: 0 1px 4px rgba(0,0,34,.35); }
-.story-player .sp-fs-btn:hover { opacity: 1; }
-.story-player .sp-fs-btn svg { display: block; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2.2;
-  stroke-linecap: round; stroke-linejoin: round; }
-.story-player.narrow .sp-fs-btn { display: block; left: 6px; top: 6px; width: 28px; height: 28px; padding: 5px; }
-.story-player.fs .sp-fs-btn { display: block; left: 10px; top: 10px; width: 36px; height: 36px; padding: 7px; }
-.story-player .pjsk-player:has(.pjsk-stage.ui-hidden) .sp-fs-btn { visibility: hidden; }
-.story-player .sp-credit { position: absolute; left: 50%; top: 6px; z-index: 11; transform: translateX(-50%);
-  width: max-content; white-space: nowrap; pointer-events: none;
-  font: 500 12px/1.3 system-ui, -apple-system, "PingFang SC", "Hiragino Sans", sans-serif;
-  color: rgba(255,255,255,.6); text-shadow: 0 1px 2px rgba(0,0,0,.65); letter-spacing: .01em; }
-.story-player.narrow:not(.fs) .sp-credit { top: 4px; color: rgba(255,255,255,.5); }
-.story-player .sp-tabs { display: none; }
-
 /* Story browser titles in Chinese / Korean: the clients' Han Sans, not Rodin
    with per-glyph fallback. */
 .story-player[data-titles="zh"] .sb-title b, .story-player[data-titles="zh"] .sb-ep-text small { font-family: var(--cn-bold); font-weight: 700; }
@@ -166,24 +217,46 @@
 .story-player[data-titles="ko"] .sb-title b, .story-player[data-titles="ko"] .sb-ep-text small { font-family: var(--ko-text); font-weight: 700; }
 .story-player[data-titles="ko"] .sb-ep-text span { font-family: var(--ko-text); font-weight: 500; }
 
-/* Narrow hosts: the stage on top at full width, then tabs switching between
-   the story browser and the talk log, keeping their 400px design width zoomed
-   to the screen so text and icons keep the desktop / game proportions. */
-.story-player.narrow .sp-row { flex-direction: column; align-items: stretch; gap: 10px; }
-.story-player.narrow .sp-stage-box { order: 0; width: 100%; }
-.story-player.narrow .sp-tabs,
-.story-player.narrow .story-browser,
-.story-player.narrow .script-log { zoom: var(--sp-panel-zoom, 1); width: 400px; align-self: center; }
-.story-player.narrow .sp-tabs { order: 1; display: flex; padding: 3px; border-radius: 17px; background: rgb(58,58,88); }
-.story-player.narrow .sp-tabs button { flex: 1; height: 28px; border: 0; border-radius: 14px; background: none; cursor: pointer; padding: 0;
-  font: 700 13px var(--cn-bold); color: rgb(223,223,234); white-space: nowrap; }
-.story-player.narrow .sp-tabs button.on { background: #fff; color: rgb(68,68,102); box-shadow: 0 1px 3px rgba(0,0,34,.3); }
-.story-player.narrow .story-browser,
-.story-player.narrow .script-log { order: 2; height: var(--sp-panel-height, 560px); }
-.story-player.narrow[data-panel="log"] .story-browser,
-.story-player.narrow[data-panel="browser"] .script-log { display: none; }
-.story-player.narrow .sb-toggle,
-.story-player.narrow .sb-rail { display: none; }
-.story-player.narrow .story-browser.collapsed .sb-main { display: flex; }
-.story-player.narrow .story-browser.collapsed { width: 400px; }
-.story-player.narrow .sb-tabs { margin-right: 0; }
+/* ── on the player root (so they stay in fullscreen) ─────────────────── */
+/* the fullscreen toggle: shown with the control row and while fullscreen */
+.story-player .sp-fs-btn { display: none; position: absolute; left: 8px; top: 8px; z-index: 11; width: 36px; height: 36px; padding: 7px;
+  border: 0; border-radius: 50%; background: rgba(68,68,102,.72); color: #fff; cursor: pointer; opacity: .85;
+  box-shadow: 0 1px 4px rgba(0,0,34,.35); }
+.story-player .sp-fs-btn:hover { opacity: 1; }
+.story-player .sp-fs-btn svg { display: block; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2.2;
+  stroke-linecap: round; stroke-linejoin: round; }
+.story-player[data-menu="row"] .sp-fs-btn, .story-player.fs .sp-fs-btn { display: block; }
+.story-player .pjsk-player:has(.pjsk-stage.ui-hidden) .sp-fs-btn { visibility: hidden; }
+/* the credit line, top centre, clear of the corner buttons; two lines on a narrow stage */
+.story-player .sp-credit { position: absolute; left: 50%; top: 6px; z-index: 11; transform: translateX(-50%);
+  width: max-content; max-width: 100%; white-space: nowrap; pointer-events: none; text-align: center;
+  font: 500 12px/1.3 system-ui, -apple-system, "PingFang SC", "Hiragino Sans", sans-serif;
+  color: rgba(255,255,255,.6); text-shadow: 0 1px 2px rgba(0,0,0,.65); letter-spacing: .01em; }
+.story-player .sp-credit.wrap { white-space: normal; }
+.story-player .sp-credit[hidden] { display: none; }
+.story-player[data-layout="stack"]:not(.fs) .sp-credit { top: 4px; color: rgba(255,255,255,.5); }
+/* the library's overlay text (pick prompt, errors, progress) is set in stage px and
+   zoomed by at most 0.6 on a small stage: larger design sizes keep it readable there */
+.story-player .pjsk-status { font-size: 24px; line-height: 1.4; max-width: 900px; text-align: center; white-space: pre-line; }
+.story-player .pjsk-status.pjsk-warn { font-size: 24px; }
+.story-player .pjsk-loading { font-size: 22px; }
+.story-player .pjsk-progress-text { font-size: 18px; }
+/* a small stage: the start / retry buttons keep 40px targets (stage px, scaled by 0.6 at most there) */
+.story-player[data-menu="row"] .pjsk-actions button, .story-player[data-menu="row"] .pjsk-start { min-height: 68px; }
+
+/* ── touch: 40px targets ─────────────────────────────────────────────── */
+@media (pointer: coarse) {
+  .story-player .sp-tabs button, .story-player .sb-tabs button { height: 40px; }
+  .story-player .sp-tabs, .story-player .sb-tabs { padding: 2px; }
+  .story-player .sb-units button, .story-player .sb-chars button, .story-player .sb-uicon { width: 40px; height: 40px; }
+  .story-player .sb-search, .story-player .sl-search { height: 40px; }
+  .story-player .sb-toggle { width: 40px; height: 40px; }
+  .story-player .sb-toggle::after { left: 15px; top: 14px; }
+  .story-player .sb-head { min-height: 48px; }
+  .story-player .sb-ep { min-height: 44px; }
+  .story-player .sb-empty button { height: 40px; }
+  .story-player .sp-controls button { height: 40px; }
+  .story-player .sp-fs-btn, .story-player[data-menu="row"] .sp-fs-btn, .story-player.fs .sp-fs-btn { width: 40px; height: 40px; padding: 9px; }
+  .story-player .sl-cell { padding-top: 8px; padding-bottom: 8px; min-height: 44px; }
+  .story-player .sl-place { min-height: 40px; padding-top: 11px; padding-bottom: 11px; }
+}

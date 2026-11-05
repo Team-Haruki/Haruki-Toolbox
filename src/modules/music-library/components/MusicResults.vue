@@ -20,15 +20,20 @@ defineProps<{
 
 <template>
   <template v-if="skeleton">
-    <!-- Sized like MusicTile: jacket, title, date line and the level pill row. -->
+    <!-- Shaped like MusicTile: jacket, a two-line title, the date line and
+         five level pills (the usual chart count), so the real tile lands on
+         the same outline instead of three equal bars. -->
     <CatalogEntityGrid v-if="view === 'grid'" columns="wide">
       <div v-for="index in 8" :key="index" class="flex flex-col gap-2 rounded-lg border p-2.5 sm:p-3">
         <Skeleton class="aspect-square w-full rounded-md" />
         <div class="space-y-1">
-          <Skeleton class="h-5 w-3/4" />
-          <Skeleton class="h-4 w-1/2" />
+          <Skeleton class="h-4 w-11/12" />
+          <Skeleton class="h-4 w-2/3" />
+          <Skeleton class="mt-1.5 h-3.5 w-1/2" />
         </div>
-        <Skeleton class="h-7 w-full" />
+        <div class="mt-auto flex gap-1 max-sm:gap-0.5" aria-hidden="true">
+          <Skeleton v-for="pill in 5" :key="pill" class="h-6 w-7 rounded max-sm:w-5" />
+        </div>
       </div>
     </CatalogEntityGrid>
     <div v-else class="divide-y overflow-hidden rounded-lg border">

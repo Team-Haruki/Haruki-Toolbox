@@ -261,7 +261,7 @@ export default {
         "linkText": "點選檢視",
         "nonZhWarning": "本教程僅有簡體中文版本"
       },
-      "qxScriptWarning": "Quantumult X 不支援指令碼上傳模式",
+      "qxScriptWarning": "Quantumult X 不支援腳本上傳模式",
       "cnRestriction": "由於相關法律法規限制，本站不提供國服的烤森（MySekai）功能的安裝。",
       "installButton": "快速安裝模組",
       "installHint": "點選後會自動開啟你選的代理軟體並匯入模組",
@@ -269,7 +269,7 @@ export default {
       "copyLabel": {
         "uploadCode": "上傳碼",
         "moduleUrl": "模組 URL",
-        "scriptUrl": "指令碼 URL"
+        "scriptUrl": "腳本 URL"
       },
       "steps": {
         "configure": {
@@ -300,7 +300,7 @@ export default {
         },
         "mode": {
           "title": "選擇上傳資料方式",
-          "description": "「指令碼上傳」可與其他 Bot 的模組同時使用，但偶爾不穩定；「代理上傳」更穩定，但同一時間只能裝一個工具箱模組。不確定選「代理上傳」。",
+          "description": "「腳本上傳」可與其他 Bot 的模組同時使用，但偶爾不穩定；「代理上傳」更穩定，但同一時間只能裝一個工具箱模組。不確定選「代理上傳」。",
           "placeholder": "請選擇上傳方式"
         },
         "chunk": {
@@ -328,6 +328,7 @@ export default {
         "regenerate": "重新生成",
         "generate": "生成上傳碼",
         "loginRequired": "請先登入",
+        "loginAction": "去登入",
         "regenerateDialog": {
           "title": "重新生成上傳碼？",
           "description": "舊的上傳碼會立即失效，已安裝的模組需要用新 URL 重新安裝才能繼續上傳。",
@@ -338,7 +339,7 @@ export default {
         "title": "生成的 URL",
         "description": "可以複製 URL 手動安裝，或點選下方按鈕快速安裝",
         "moduleUrl": "模組 URL",
-        "scriptUrl": "指令碼 URL"
+        "scriptUrl": "腳本 URL"
       },
       "software": {
         "surge": "Surge",
@@ -353,7 +354,7 @@ export default {
       },
       "modeOptions": {
         "proxy": "代理上傳",
-        "script": "指令碼上傳"
+        "script": "腳本上傳"
       },
       "region": {
         "jp": "日服",
@@ -389,9 +390,10 @@ export default {
         "clipboardUnsupported": "當前環境不支援剪貼簿操作",
         "copySuccess": "{label}已複製到剪貼簿",
         "copyFailed": "複製到剪貼簿失敗，請檢查瀏覽器權限設定",
-        "qxScriptFallback": "Quantumult X 不支援指令碼上傳模式，已切換為代理模式",
+        "qxScriptFallback": "Quantumult X 不支援腳本上傳模式，已切換為代理模式",
         "unsupportedClient": "不支援的客戶端",
-        "installUnsupported": "當前環境不支援快速安裝"
+        "installUnsupported": "當前環境不支援快速安裝",
+        "installNeedsIos": "快速安裝需要在 iPhone / iPad 上開啟本頁。電腦上請複製模組 URL，在代理軟體裡手動新增。"
       }
     },
     "uploadData": {
@@ -414,17 +416,17 @@ export default {
         "ios": "iOS 模組（iPhone/iPad）",
         "proxy": "HarukiProxy（Android/電腦）",
         "inherit": "引繼碼（備用）",
-        "file": "檔案上傳（高階）"
+        "file": "檔案上傳（進階）"
       },
       "proxyTab": {
         "upgradeWarning": {
-          "title": "舊版 HarukiProxy 上傳已下線",
-          "deadline": "舊版 HarukiProxy（v1/v2）上傳功能已於北京時間 2026/11/01 00:00:00（UTC+8）下線，現已無法上傳資料到工具箱。",
-          "upgrade": "請務必及時更換到 v3 版本。",
+          "title": "舊版 HarukiProxy（v1/v2）已停止上傳",
+          "deadline": "舊版上傳功能已於 2026 年 11 月 1 日 0 點（北京時間）下線，現已無法上傳資料到工具箱。",
+          "upgrade": "請更換到 v3 版本。",
           "release": "本公告發布時的最新版本：HarukiProxy {version}",
           "windowsDownload": "Windows x64 下載（暫無教程）",
           "androidDownload": "Android arm64 下載（有光速虛擬機器教程）",
-          "feedback": "v3 版本可能仍然存在一些 bug。如果遇到問題，請及時反饋，以便修復。"
+          "feedback": "v3 版本可能仍有一些問題。如果遇到問題，請及時反饋，以便修復。"
         },
         "title": "HarukiProxy（Android / 電腦）",
         "description": "在 Android 手機或電腦上執行 HarukiProxy，進遊戲時資料會自動上傳到工具箱。",
@@ -432,6 +434,9 @@ export default {
           "install": "下載並安裝 v3 版本；Android 使用者可參考下方光速虛擬機器教程。",
           "bind": "先在「遊戲帳號管理」綁定並驗證要上傳的遊戲帳號。",
           "run": "開啟 HarukiProxy 後進入遊戲主頁一次，首頁「我的帳號」會顯示上傳時間。"
+        },
+        "downloads": {
+          "title": "下載 HarukiProxy v3"
         },
         "tutorialButton": "檢視 Android v3 光速虛擬機器教程"
       },
@@ -474,8 +479,9 @@ export default {
       },
       "fileTab": {
         "title": "手動上傳檔案",
-        "description": "上傳你用 HarukiProxy 或 iOS 模組儲存下來的資料檔案。不知道怎麼獲取檔案？看上方「其他上傳方式」。",
+        "description": "上傳你用 HarukiProxy 或 iOS 模組儲存下來的資料檔案。一般不需要手動上傳：「iOS 模組」和「HarukiProxy」標籤頁裡的方式會自動上傳。",
         "unavailableTitle": "無法使用",
+        "loginRequiredTitle": "需要登入",
         "forbiddenTitle": "操作已被禁止",
         "forbiddenDescription": "由於相關法律法規限制，不允許進行此操作",
         "fields": {
@@ -535,8 +541,7 @@ export default {
           "reuseHint": "新引繼碼使用你剛輸入的密碼，方便記憶。",
           "random": "隨機生成",
           "randomHint": "生成 12 位字母與數字組成的隨機密碼。",
-          "reuseBlocked": "這個密碼不能沿用：需為 8–16 個半形字母、數字或符號，且不含空格。請選擇「隨機生成」。",
-          "reuseInvalid": "沿用的密碼需為 8–16 個半形字母、數字或符號（不含空格），請改選「隨機生成」",
+          "reuseBlocked": "這個密碼不能沿用：需為 8–16 個半形字母、數字或符號，且不含空格，請改選「隨機生成」",
           "tooLong": "引繼密碼過長"
         },
         "alerts": {
@@ -547,7 +552,7 @@ export default {
           },
           "flow": {
             "title": "流程",
-            "step1": "先只讀取帳號資訊（不會使用引繼碼），請核對暱稱和等級。日服引繼碼 24 小時內有效，只能使用一次。",
+            "step1": "先只讀取帳號資訊（不會使用引繼碼），請核對暱稱和等級。引繼碼 24 小時內有效，只能使用一次。",
             "step2": "核對無誤後，輸入 Haruki 工具箱登入密碼確認（用 Google、Apple 或通行密鑰登入的帳號改用保險庫 PIN），才會執行引繼。確認前隨時可以取消，引繼碼仍然有效。",
             "step3": "執行後立即簽發新的引繼碼並顯示在本頁，同時加密儲存到下方的引繼碼保險庫，24 小時內可以再次檢視。",
             "step4": "最後獲取並儲存遊戲資料。即使這一步失敗，新引繼碼也會保留。"
@@ -562,7 +567,10 @@ export default {
           }
         },
         "submit": "讀取帳號資訊",
-        "submitting": "正在讀取帳號資訊…"
+        "submitting": "正在讀取帳號資訊…",
+        "toast": {
+          "readFailedTitle": "無法讀取帳號資訊"
+        }
       },
       "inheritJob": {
         "title": "引繼進度",
@@ -572,7 +580,8 @@ export default {
           "awaiting_confirm": "等待確認",
           "succeeded": "已完成",
           "failed": "失敗",
-          "cancelled": "已取消"
+          "cancelled": "已取消",
+          "expired": "已過期"
         },
         "connection": {
           "connecting": "正在連線",
@@ -596,19 +605,19 @@ export default {
           "done": "完成"
         },
         "substeps": {
-          "cookies": "獲取訪問憑證",
+          "cookies": "準備連線",
           "version": "獲取遊戲版本",
           "inherit_check": "查詢帳號（不使用引繼碼）",
           "inherit_execute": "執行引繼",
           "auth": "登入",
           "issue_code": "簽發引繼碼",
           "suite": "帳號資料",
-          "suite_followup": "後續請求",
-          "home_refresh": "重新整理主頁",
-          "home_refresh_final": "最終重新整理",
-          "maintenance_check": "檢查維護狀態",
+          "suite_followup": "同步剩餘資料",
+          "home_refresh": "同步主頁資料",
+          "home_refresh_final": "完成同步",
+          "maintenance_check": "確認遊戲可用",
           "mysekai": "烤森資料",
-          "mysekai_followup": "後續請求",
+          "mysekai_followup": "同步剩餘烤森資料",
           "version_refresh": "重新獲取遊戲版本"
         },
         "stepStatus": {
@@ -617,9 +626,24 @@ export default {
           "done": "完成",
           "failed": "失敗",
           "skipped": "跳過",
-          "warning": "部分失敗"
+          "warning": "部分失敗",
+          "unknown": "結果未知"
         },
         "consumesCode": "從這一步起會使用引繼碼",
+        "unreached": {
+          "show": "還有 {count} 步沒有執行，展開檢視",
+          "hide": "收起沒有執行的 {count} 步"
+        },
+        "announce": {
+          "created": "已開始讀取帳號資訊，進度顯示在下方。",
+          "awaiting_confirm": "帳號資訊已讀取，請核對並確認。",
+          "new_code": "新的引繼碼已簽發，請記下。"
+        },
+        "resumeFailed": {
+          "title": "有一次引繼可能正在進行，但暫時無法連線",
+          "description": "{reason}連線恢復後會繼續顯示它的進度；也可以直接重新提交，工具箱會接回正在進行的引繼。",
+          "retry": "重試連線"
+        },
         "codeValidity": {
           "valid": "你輸入的引繼碼沒有被使用，仍然有效。",
           "used": "你輸入的引繼碼已被使用，不能再用。",
@@ -642,8 +666,8 @@ export default {
           "game_maintenance": "遊戲伺服器正在維護，請維護結束後再試。",
           "game_unavailable": "暫時無法連線遊戲伺服器，請稍後再試。",
           "game_error": "遊戲伺服器返回了錯誤，請稍後再試。",
-          "game_version_outdated": "遊戲剛更新了資料版本，Toolbox 還沒同步上，請稍後再試。",
-          "game_version_outdated_after_transfer": "遊戲剛更新了資料版本，Toolbox 還沒同步上，沒能獲取遊戲資料。新引繼碼（如已簽發）顯示在本頁，稍後可以用新引繼碼重新上傳。",
+          "game_version_outdated": "遊戲剛更新了資料版本，工具箱還沒同步上，請稍後再試。",
+          "game_version_outdated_after_transfer": "遊戲剛更新了資料版本，工具箱還沒同步上，沒能獲取遊戲資料。新引繼碼（如已簽發）顯示在本頁，稍後可以用新引繼碼重新上傳。",
           "execute_uncertain": "執行引繼時網路中斷，無法確定引繼碼是否已被使用。請先不要在其他裝置上使用這組引繼碼，並檢視下方保險庫：如果裡面出現了這個帳號，說明引繼已完成，可以在那裡檢視或重新簽發引繼碼。",
           "login_failed": "引繼已完成，登入資訊已存入保險庫，但登入遊戲失敗。請稍後在下方保險庫中點「重新簽發」，獲取新的引繼碼。",
           "fetch_failed": "獲取遊戲資料失敗。新引繼碼（如已簽發）顯示在本頁，並已儲存在保險庫中。",
@@ -657,7 +681,7 @@ export default {
           "issue_code_failed": "沒能簽發新的引繼碼。登入資訊已存入保險庫，請馬上在下方保險庫中點「重新簽發」：這是你回到帳號的唯一方式。",
           "vault_db_unavailable": "資料庫暫時不可用，登入資訊已臨時儲存，稍後會自動轉存，不影響使用。",
           "vault_store_failed": "登入資訊或新引繼碼沒能存入保險庫。請務必現在就記下本頁顯示的新引繼碼。",
-          "game_version_outdated": "遊戲剛更新了資料版本，Toolbox 還沒同步上，所以這一步沒有成功。"
+          "game_version_outdated": "遊戲剛更新了資料版本，工具箱還沒同步上，所以這一步沒有成功。"
         },
         "actions": {
           "startNew": "開始新的上傳",
@@ -680,6 +704,7 @@ export default {
             "title": "活動期間的引繼限制",
             "active": "該帳號正處於活動期間的引繼限制中",
             "remaining": "剩餘可引繼次數：{count}",
+            "consumes": "在工具箱執行引繼會用掉 1 次；用完後遊戲不再允許引繼。",
             "endsAt": "限制結束時間：{time}",
             "worldBloom": "World Link 章節進行中",
             "none": "當前沒有引繼限制。"
@@ -780,7 +805,8 @@ export default {
         },
         "reset": {
           "title": "重置保險庫？",
-          "description": "會刪除保險庫裡全部 {count} 條記錄，無法撤銷。只在想不起舊登入密碼（例如忘記密碼後設置過新密碼）或忘記保險庫 PIN 時使用。",
+          "description": "會刪除保險庫裡的全部記錄（{records}），無法撤銷。只在想不起舊登入密碼（例如忘記密碼後設置過新密碼）或忘記保險庫 PIN 時使用。",
+          "records": "{count} 條記錄",
           "password": "當前的 Haruki 工具箱登入密碼",
           "ack": "我明白全部記錄都會被刪除",
           "confirm": "重置並刪除全部記錄",
@@ -854,10 +880,10 @@ export default {
         "boostConfig": "控分之前請務必確保您的體力消耗（Live Boost）配置正確，謹防控分失敗。",
         "testingPrefix": "該功能處於測試狀態，",
         "testingSuffix": "如果遇到任何問題請聯絡 Haruki Dev Team 進行反饋。",
-        "deckRecommend": "控分結果會有“加成組卡”按鈕，方便快速跳轉組卡。"
+        "deckRecommend": "控分結果會有「加成組卡」按鈕，方便快速跳轉組卡。"
       },
       "fields": {
-        "region": "資料伺服器",
+        "region": "區服",
         "music": "歌曲",
         "loadingMusic": "正在準備歌曲...",
         "musicPlaceholder": "請選擇歌曲",
@@ -906,7 +932,7 @@ export default {
   },
   "botNeo": {
     "title": "HarukiBot NEO 註冊",
-    "description": "註冊 HarukiBot NEO 例項並獲取 Bot 憑據",
+    "description": "註冊 HarukiBot NEO 實例並獲取 Bot 憑據",
     "disabled": {
       "title": "註冊暫未開放",
       "description": "HarukiBot NEO 註冊功能當前已關閉，請稍後再試。",
@@ -934,7 +960,7 @@ export default {
     },
     "result": {
       "successTitle": "註冊成功",
-      "successDescription": "您的 HarukiBot NEO 例項已建立，請儲存以下憑據資訊。",
+      "successDescription": "您的 HarukiBot NEO 實例已建立，請儲存以下憑據資訊。",
       "botIdLabel": "Bot ID",
       "credentialLabel": "憑據",
       "copyAction": "複製{label}",
@@ -1012,10 +1038,16 @@ export default {
       "whitelist": "白名單",
       "whitelistDesc": "只顯示包含以下關鍵詞的房間",
       "presetTags": "預設標籤",
+      "presetTagLabel": "{tag}（{name}）",
+      "tagNames": {
+        "shrimp": "蝦",
+        "dragon": "龍",
+        "pizza": "披薩"
+      },
       "keywordPlaceholder": "新增關鍵詞",
       "add": "新增",
       "clear": "清空",
-      "removeFilter": "移除過濾詞“{name}”",
+      "removeFilter": "移除過濾詞「{name}」",
       "display": "顯示",
       "expireTime": "房間顯示時長",
       "durationSeconds": "{n} 秒",

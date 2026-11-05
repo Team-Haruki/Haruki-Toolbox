@@ -30,6 +30,9 @@ const REGISTRATION_INPUT_LABEL_KEYS: Record<string, KratosInputLabelKeys> = {
 
 const SETTINGS_INPUT_LABEL_KEYS: Record<string, KratosInputLabelKeys> = {
   "password": { labelKey: "auth.resetPassword.newPasswordLabel", placeholderKey: "auth.resetPassword.newPasswordPlaceholder" },
+  // Account settings calls the display name "昵称" everywhere (profile card,
+  // "manage email and nickname"); the settings form must not call it 用户名.
+  "traits.name": { labelKey: "userSettings.email.nicknameLabel", placeholderKey: "userSettings.email.nicknamePlaceholder" },
 }
 
 export function resolveKratosInputLabelKeys(flowType: KratosFlowType, name: string): KratosInputLabelKeys | null {

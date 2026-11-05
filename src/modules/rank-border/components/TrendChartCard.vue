@@ -206,10 +206,15 @@ function pointStyle(point: RankBorderChartPoint) {
   stroke: rgb(245 158 11 / 0.9);
 }
 
+/* The single row is pinned to the frame height (minmax(0, 1fr) + min-height: 0
+   on the items): without that, the svg's intrinsic aspect ratio sets the
+   items' automatic minimum and the plot grows past the clamped frame, drawing
+   the baseline under the time axis. */
 .rank-border-chart-frame {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 4.75rem;
+  grid-template-rows: minmax(0, 1fr);
   gap: 0.5rem;
   height: clamp(7.5rem, 24cqw, 12rem);
   min-width: 0;
@@ -222,10 +227,13 @@ function pointStyle(point: RankBorderChartPoint) {
 .rank-border-chart-plot {
   position: relative;
   min-width: 0;
+  min-height: 0;
   height: 100%;
+  overflow: hidden;
 }
 
 .rank-border-chart-svg {
+  display: block;
   width: 100%;
   height: 100%;
   min-width: 0;
@@ -235,6 +243,7 @@ function pointStyle(point: RankBorderChartPoint) {
 .rank-border-chart-labels {
   position: relative;
   min-width: 0;
+  min-height: 0;
   height: 100%;
 }
 

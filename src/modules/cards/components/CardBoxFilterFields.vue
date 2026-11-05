@@ -71,8 +71,7 @@ function setOwnership(value: AcceptableValue | AcceptableValue[] | undefined) {
 </script>
 
 <template>
-  <!-- `contents` keeps the panel's flex layout; the coarse-pointer rule gives every chip a 36px tap target on touch screens. -->
-  <div class="contents [@media(pointer:coarse)]:[&_[data-slot=toggle-group-item]]:min-h-9">
+  <!-- Touch targets come from the shared toggle-group item (40 px on coarse pointers). -->
   <CatalogCharacterPicker
     v-if="characters.length > 0"
     :model-value="state.characterIds"
@@ -139,6 +138,5 @@ function setOwnership(value: AcceptableValue | AcceptableValue[] | undefined) {
         </ToggleGroupItem>
       </ToggleGroup>
     </div>
-  </div>
   </div>
 </template>

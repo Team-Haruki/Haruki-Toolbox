@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
-import { formatLocalizedDate } from "@/lib/date-time"
+import { DATE_RANGE_SEPARATOR, formatLocalizedDate } from "@/lib/date-time"
 import CatalogStatusBadge from "@/shared/components/catalog/CatalogStatusBadge.vue"
-import { isCatalogPermanentEnd } from "@/shared/components/catalog/types"
+import { isCatalogPlaceholderDate } from "@/shared/components/catalog/types"
 import GachaAssetImage from "@/modules/gachas/components/GachaAssetImage.vue"
 import GachaPickupAvatars from "@/modules/gachas/components/GachaPickupAvatars.vue"
 import GachaTypeBadge from "@/modules/gachas/components/GachaTypeBadge.vue"
@@ -19,15 +19,21 @@ const { t } = useI18n()
 const blur = computed(() => props.tile.unreleased && props.blurUnreleased)
 
 function formatDate(value: number | null): string {
-  return formatLocalizedDate(value, { year: "numeric", month: "2-digit", day: "2-digit" }, t("gachas.common.dateFallback"))
+  return formatLocalizedDate(value, "date", t("gachas.common.dateFallback"))
 }
 
-/** "2099/12/31" on a permanent pool reads as a typo; say "permanent" instead. */
+/** Year-2099 sentinels never print as dates: "TBD" for an undecided start, "permanent" for an open end. */
+const startLabel = computed(() => (
+  isCatalogPlaceholderDate(props.tile.gacha.startAt, Date.now())
+    ? t("catalog.status.tbd")
+    : formatDate(props.tile.gacha.startAt)
+))
 const endLabel = computed(() => (
-  isCatalogPermanentEnd(props.tile.gacha.endAt, Date.now())
+  isCatalogPlaceholderDate(props.tile.gacha.endAt, Date.now())
     ? t("catalog.status.permanent")
     : formatDate(props.tile.gacha.endAt)
 ))
+const period = computed(() => `${startLabel.value}${DATE_RANGE_SEPARATOR}${endLabel.value}`)
 </script>
 
 <template>
@@ -52,9 +58,7 @@ const endLabel = computed(() => (
         <CatalogStatusBadge :status="tile.status" :until-ms="tile.untilMs" size="sm" />
         <span class="font-mono text-[11px] text-muted-foreground">#{{ tile.gacha.id }}</span>
       </div>
-      <p class="text-xs text-muted-foreground tabular-nums">
-        {{ formatDate(tile.gacha.startAt) }} – {{ endLabel }}
-      </p>
+      <p class="text-xs text-muted-foreground tabular-nums">{{ period }}</p>
     </div>
     <GachaPickupAvatars
       :characters="tile.pickupCharacters"

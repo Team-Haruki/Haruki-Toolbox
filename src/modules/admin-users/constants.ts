@@ -2,7 +2,7 @@ import type { Component } from "vue"
 import type { AdminUser } from "@/types/admin"
 import type { UserRole } from "@/types/common"
 import type { SocialPlatform } from "@/types/social-platform"
-import { formatLocalizedDate, formatLocalizedDateTime } from "@/lib/date-time"
+import { formatLocalizedDate, formatLocalizedDateTime, type DateFormatOptions } from "@/lib/date-time"
 import { asRecord, readBoolean } from "@/lib/record-utils"
 import {
   SOCIAL_PLATFORM_VALUES,
@@ -78,12 +78,12 @@ export function getSocialPlatformOptions(t: TranslateFn): Array<[SocialPlatform,
 }
 
 export function formatDateTime(value: string, fallback = "—") {
-  return formatLocalizedDateTime(value, undefined, fallback)
+  return formatLocalizedDateTime(value, "dateTime", fallback)
 }
 
 export function formatDate(
   value: string | undefined,
-  options?: Intl.DateTimeFormatOptions,
+  options: DateFormatOptions = "date",
   fallback = "—"
 ) {
   return formatLocalizedDate(value, options, fallback)

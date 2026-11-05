@@ -178,7 +178,7 @@ onBeforeUnmount(() => {
     <button
       type="button"
       :class="cn(
-        'relative inline-flex h-7 shrink-0 touch-manipulation select-none items-center rounded-md px-2 font-mono font-bold leading-none tracking-wider tabular-nums outline-none transition-colors [-webkit-touch-callout:none] focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'relative inline-flex h-7 shrink-0 touch-manipulation select-none items-center rounded-md px-2 font-mono font-bold leading-none tracking-wider tabular-nums outline-none transition-colors [-webkit-touch-callout:none] focus-visible:ring-[3px] focus-visible:ring-ring/50 pointer-coarse:min-h-10 pointer-coarse:px-3',
         holdShown ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary hover:bg-primary/15',
       )"
       :style="idStyle"

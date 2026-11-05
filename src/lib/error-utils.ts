@@ -110,6 +110,11 @@ export function describeError(err: unknown, fallback: string = translate("common
         if (transport) {
             return { message: translateTransportError(transport), detail: normalizeDetail(raw) }
         }
+        // A 403 with an unrecognised body still means "no permission"; its
+        // text is kept as a detail only when it says more than that.
+        if (err.response?.status === 403) {
+            return { message: translate("core.errors.forbidden"), detail: normalizeDetail(raw) }
+        }
         return { message: fallback, detail: normalizeDetail(raw) }
     }
 

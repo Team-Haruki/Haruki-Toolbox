@@ -51,14 +51,6 @@ const LABEL_KEYS: Record<EventTimelineRowKey, string> = {
 
 const rows = computed(() => buildEventTimeline(props.event, props.nowMs))
 const countdown = computed(() => resolveEventCountdownTarget(props.event, props.status))
-
-const dateTimeFormat: Intl.DateTimeFormatOptions = {
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-}
 </script>
 
 <template>
@@ -80,10 +72,12 @@ const dateTimeFormat: Intl.DateTimeFormatOptions = {
         :icon="ICONS[row.key]"
         :value-class="row.reached ? 'text-muted-foreground' : ''"
       >
+        <!-- The shared `dateTime` preset: 24 h clock, so en-US values never
+             wrap an "AM/PM" onto a second line on phones. -->
         <CatalogZonedTime
           :value="row.at"
           :region="region"
-          :options="dateTimeFormat"
+          options="dateTime"
           :fallback="t('events.common.dateFallback')"
         />
       </CatalogInfoRow>

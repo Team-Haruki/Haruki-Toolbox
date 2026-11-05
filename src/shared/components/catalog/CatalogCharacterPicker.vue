@@ -82,7 +82,9 @@ function unitLabel(unit: SekaiUnit): string {
   return resolveSekaiUnitLabel({ t, te }, unit)
 }
 
-const avatarClass = computed(() => (props.size === "sm" ? "size-7 ring-0" : "size-10 ring-0 md:size-8"))
+// Touch devices always get 40 px avatars, whatever the nominal size: the
+// avatar is the whole button, so there is nothing else to pad.
+const avatarClass = computed(() => (props.size === "sm" ? "size-7 ring-0 pointer-coarse:size-10" : "size-10 ring-0 md:size-8 pointer-coarse:size-10"))
 
 /**
  * Until the characters index resolves the picker draws the roster's shape
@@ -111,7 +113,7 @@ const placeholderGroups = computed(() => (props.characters.length === 0 ? PLACEH
         v-if="group.unit"
         type="button"
         :class="[
-          'ml-1 inline-flex h-8 shrink-0 items-center rounded-md px-1.5 transition-colors hover:bg-muted',
+          'ml-1 inline-flex h-8 shrink-0 items-center rounded-md px-1.5 transition-colors hover:bg-muted pointer-coarse:min-h-10 pointer-coarse:min-w-10',
           groupSelected(group.characters) ? 'bg-primary/10' : '',
         ]"
         :title="t('catalog.character.toggleUnit', { unit: unitLabel(group.unit) })"

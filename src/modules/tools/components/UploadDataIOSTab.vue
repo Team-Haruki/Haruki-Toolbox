@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
+import { RouterLink, useRoute } from "vue-router"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,11 +9,13 @@ import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Check, Copy, KeyRound, Link2, LucideInfo, PackageCheck, RefreshCw } from "lucide-vue-next"
+import { Check, Copy, KeyRound, Link2, LogIn, LucideInfo, PackageCheck, RefreshCw } from "lucide-vue-next"
 import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import { useIOSModuleGenerator } from "@/modules/tools/composables/useIOSModuleGenerator"
 
 const { t, locale } = useI18n()
+const route = useRoute()
+const loginRoute = computed(() => ({ name: "user.login", query: { redirect: route.fullPath } }))
 
 const {
   userStore,
@@ -46,6 +49,10 @@ const {
 
 // Regenerating invalidates the installed module's code, so it asks first.
 const regenerateDialogOpen = ref(false)
+
+// "Sign in and bind an account first" is a reminder only while it is still to do.
+const hasVerifiedBinding = computed(() => (userStore.gameAccountBindings ?? []).some((binding) => binding.verified))
+const needsPrerequisite = computed(() => !userStore.isLoggedIn || !hasVerifiedBinding.value)
 
 const modeOptionsWithDisabled = computed(() =>
   modeOptions.value.map((opt) => ({
@@ -90,7 +97,7 @@ function handleCopyScriptUrl() {
               href="https://neo.haruki.seiunx.com/toolbox-tutorial/ios-module.html"
               target="_blank"
               rel="noopener noreferrer"
-              class="font-medium text-primary underline underline-offset-4 transition-colors hover:text-primary/80"
+              class="font-medium text-primary underline underline-offset-4 transition-colors hover:text-primary/80 pointer-coarse:inline-block pointer-coarse:-my-3 pointer-coarse:-mx-1.5 pointer-coarse:px-1.5 pointer-coarse:py-3"
             >
               {{ t("tools.iosModules.tutorialAlert.linkText") }}
             </a>
@@ -216,7 +223,7 @@ function handleCopyScriptUrl() {
               v-for="opt in regionOptions"
               :key="opt.value"
               type="button"
-              class="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors"
+              class="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors pointer-coarse:min-h-10"
               :class="selectedRegions.includes(opt.value) ? 'border-primary bg-primary/10 text-primary' : 'bg-muted/20 hover:bg-muted/50'"
               :aria-pressed="selectedRegions.includes(opt.value)"
               @click="toggleRegion(opt.value)"
@@ -276,7 +283,7 @@ function handleCopyScriptUrl() {
           <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">3</span>
           <div class="space-y-0.5">
             <h3 class="text-sm font-semibold leading-6">{{ t("tools.iosModules.steps.install.title") }}</h3>
-            <p class="text-xs font-medium text-amber-700 dark:text-amber-300">{{ t("tools.iosModules.steps.install.prerequisite") }}</p>
+            <p v-if="needsPrerequisite" class="text-xs font-medium text-amber-700 dark:text-amber-300" data-testid="ios-install-prerequisite">{{ t("tools.iosModules.steps.install.prerequisite") }}</p>
             <p class="text-xs text-muted-foreground">{{ t("tools.iosModules.steps.install.description") }}</p>
           </div>
         </header>
@@ -317,14 +324,20 @@ function handleCopyScriptUrl() {
             </Button>
           </div>
           <div v-else class="pt-1">
-            <Button
-              class="w-full sm:w-auto"
-              :disabled="isGeneratingCode || !userStore.isLoggedIn"
-              @click="generateCode"
-            >
+            <Button v-if="userStore.isLoggedIn" class="w-full sm:w-auto" :disabled="isGeneratingCode" @click="generateCode">
               <RefreshCw class="mr-2 size-4" :class="{ 'animate-spin': isGeneratingCode }" />
-              {{ userStore.isLoggedIn ? t("tools.iosModules.uploadCode.generate") : t("tools.iosModules.uploadCode.loginRequired") }}
+              {{ t("tools.iosModules.uploadCode.generate") }}
             </Button>
+            <!-- Signed out: a way in, not a disabled button. -->
+            <div v-else class="flex flex-wrap items-center gap-x-3 gap-y-2" data-testid="ios-login-required">
+              <span class="text-sm text-muted-foreground">{{ t("tools.iosModules.uploadCode.loginRequired") }}</span>
+              <Button as-child variant="outline" size="sm">
+                <RouterLink :to="loginRoute">
+                  <LogIn class="size-4" aria-hidden="true" />
+                  {{ t("tools.iosModules.uploadCode.loginAction") }}
+                </RouterLink>
+              </Button>
+            </div>
           </div>
         </div>
 
