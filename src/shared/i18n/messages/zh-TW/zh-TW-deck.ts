@@ -242,6 +242,7 @@ export default {
         "description": "指定必須上場或排除的卡牌；當前主隊、固定卡牌和固定角色互斥。",
         "fixedGroup": "固定上場",
         "fixedGroupDescription": "固定卡牌最多 5 張且同一角色只能選 1 張；固定角色最多 5 個。",
+        "challengeFixedGroupDescription": "可固定所選挑戰角色的多張卡牌，最多 5 張；請先選擇挑戰角色。",
         "excludedGroup": "排除條件",
         "excludedGroupDescription": "從候選卡池裡排除任意數量的卡牌，不影響固定卡牌上限。",
         "fixedCards": "固定卡牌",

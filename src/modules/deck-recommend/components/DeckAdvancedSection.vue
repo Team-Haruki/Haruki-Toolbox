@@ -31,6 +31,7 @@ const {
   running,
   cardOptions,
   recommendMode,
+  selectedCharacterId,
   dataRegion,
   trainingConfig,
   unitFilters,
@@ -74,6 +75,7 @@ const {
   useCurrentDeck,
   isCurrentDeckEnabled,
   fixedCardIds,
+  fixedCardOptions,
   fixedCharacterIds,
   excludedCardIds,
 } = useDeckRecommendFormContext()
@@ -397,17 +399,20 @@ function setAttrFilters(values: string[]) {
                             <div class="space-y-1">
                               <h4 class="text-sm font-medium">{{ t("deckRecommend.options.constraints.fixedGroup") }}</h4>
                               <p class="text-xs leading-5 text-muted-foreground">
-                                {{ t("deckRecommend.options.constraints.fixedGroupDescription") }}
+                                {{ t(recommendMode === 'challenge'
+                                  ? "deckRecommend.options.constraints.challengeFixedGroupDescription"
+                                  : "deckRecommend.options.constraints.fixedGroupDescription") }}
                               </p>
                             </div>
                             <div class="grid min-w-0 grid-cols-1 gap-2">
                               <p class="text-sm font-medium">{{ t("deckRecommend.options.constraints.fixedCards") }}</p>
                               <CardMultiPicker
+                                :key="recommendMode === 'challenge' ? selectedCharacterId ?? 'challenge' : 'standard'"
                                 v-model="fixedCardIds"
-                                :card-options="cardOptions"
+                                :card-options="fixedCardOptions"
                                 :disabled="running || isCurrentDeckEnabled"
                                 :max-cards="5"
-                                unique-character
+                                :unique-character="recommendMode !== 'challenge'"
                                 :placeholder="t('deckRecommend.options.constraints.fixedCardSelectPlaceholder')"
                               />
                             </div>
