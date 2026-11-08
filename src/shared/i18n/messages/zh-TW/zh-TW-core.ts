@@ -1800,13 +1800,40 @@ export default {
       "failedDescription": "獲取綁定帳號的遊戲資料失敗，進入相關頁面時會自動重試。"
     },
     "unsupportedBrowser": {
-      "title": "不受支援的瀏覽器",
-      "description": "您正在嘗試使用不受支援的瀏覽器訪問Haruki工具箱",
-      "suggestion": "請改用Chrome、Safari、Firefox等瀏覽器再使用Haruki工具箱",
-      "deviceHint": "要授權裝置，請複製下面的頁面地址，在系統瀏覽器中開啟後再手動輸入裝置上顯示的程式碼。",
-      "copyDeviceLink": "複製頁面地址",
-      "copied": "已複製",
-      "copyFailed": "複製失敗，請手動輸入地址"
+      "title": "請用瀏覽器開啟",
+      "descriptionApp": "你現在是在{app}裡開啟 Haruki 工具箱的。{app}自帶的網頁視窗功能受限，頁面沒法正常使用，換到瀏覽器開啟就好了。",
+      "descriptionGeneric": "你現在是在某個 App 自帶的網頁視窗裡開啟 Haruki 工具箱的。這種視窗功能受限，頁面沒法正常使用，換到瀏覽器開啟就好了。",
+      "stepsTitle": "怎麼換到瀏覽器開啟",
+      "stepMenu": "點右上角的{icon}按鈕",
+      "stepMenuAnywhere": "找到頁面的選單或分享按鈕，圖示多半是{icon}",
+      "cornerLabel": "按鈕就在這上面",
+      "copyFirstTitle": "複製連結，到瀏覽器裡開啟",
+      "menuAltTitle": "也可以試試直接切換",
+      "menuAltTitleApp": "也可以試試在{app}裡直接切換",
+      "stepOpenIos": "選擇「在 Safari 中開啟」或「用瀏覽器開啟」",
+      "stepOpenAndroid": "選擇「在瀏覽器開啟」或類似選項",
+      "stepDone": "頁面會在瀏覽器裡重新開啟，之後直接在瀏覽器裡使用即可",
+      "fallbackTitle": "找不到這個選項？",
+      "fallbackBody": "複製下面的連結，貼上到瀏覽器的位址列開啟，推薦用 {browsers}。",
+      "browsers": {
+        "ios": "Safari 或 Chrome",
+        "android": "Chrome 或手機自帶瀏覽器",
+        "other": "Chrome、Edge、Firefox 或 Safari"
+      },
+      "linkLabel": "頁面連結",
+      "copyLink": "複製連結",
+      "copied": "已複製，去瀏覽器貼上開啟吧",
+      "copyFailed": "複製失敗，請長按上面的連結手動複製",
+      "deviceHint": "要授權裝置，請在瀏覽器裡開啟這個連結，再手動輸入裝置上顯示的代碼。",
+      "apps": {
+        "wechat": "微信",
+        "qq": "QQ",
+        "weibo": "微博",
+        "dingtalk": "釘釘",
+        "alipay": "支付寶",
+        "douyin": "抖音",
+        "tiktok": "TikTok"
+      }
     },
     "pwa": {
       "updateAvailableTitle": "發現新版本",
