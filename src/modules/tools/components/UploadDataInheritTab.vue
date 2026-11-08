@@ -66,6 +66,7 @@ const loginRoute = computed(() => ({ name: "user.login", query: { redirect: rout
 const ERROR_IDS = {
   inheritId: "inherit-id-error",
   inheritPassword: "inherit-password-error",
+  inheritText: "inherit-text-error",
 } as const
 
 const PASSWORD_MODES: { value: InheritNewPasswordMode; icon: typeof Repeat }[] = [
@@ -102,8 +103,9 @@ async function submit() {
     const message = describeInheritApiError(t, problem)
     const field = FIELD_ERROR_CODES[problem.code]
     if (field) {
-      form.fieldErrors[field] = message
-      document.getElementById(INHERIT_FIELD_IDS[field])?.focus()
+      const target = form.usesPastedText.value ? "inheritText" : field
+      form.fieldErrors[target] = message
+      document.getElementById(INHERIT_FIELD_IDS[target])?.focus()
       return
     }
     // Nothing was uploaded yet: the refused action is reading the account.
@@ -302,6 +304,23 @@ watch(
                 </div>
                 <FieldError :id="ERROR_IDS.inheritPassword" :message="form.fieldErrors.inheritPassword" />
               </div>
+              <div class="flex min-w-0 flex-col space-y-1.5 sm:col-span-2">
+                <Label :for="INHERIT_FIELD_IDS.inheritText">{{ t("tools.uploadData.inheritTab.paste.label") }}</Label>
+                <textarea
+                  :id="INHERIT_FIELD_IDS.inheritText"
+                  v-model="form.inheritText.value"
+                  rows="4"
+                  autocomplete="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  :placeholder="t('tools.uploadData.inheritTab.paste.placeholder')"
+                  :aria-invalid="form.fieldErrors.inheritText ? 'true' : undefined"
+                  :aria-describedby="form.fieldErrors.inheritText ? ERROR_IDS.inheritText : undefined"
+                  class="flex min-h-28 w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:bg-input/30 dark:aria-invalid:ring-destructive/40 md:text-sm"
+                  @input="form.clearFieldError('inheritText')"
+                />
+                <FieldError :id="ERROR_IDS.inheritText" :message="form.fieldErrors.inheritText" />
+              </div>
               <div class="flex min-w-0 flex-col space-y-1.5">
                 <Label for="inherit-server-select">{{ t("tools.uploadData.inheritTab.fields.server") }}</Label>
                 <div class="relative min-w-0 w-full items-center">
@@ -362,7 +381,7 @@ watch(
                       name="inherit-new-password-mode"
                       :value="mode.value"
                       class="mt-1 accent-primary"
-                      @change="form.clearFieldError('inheritPassword')"
+                      @change="form.clearFieldError(form.usesPastedText.value ? 'inheritText' : 'inheritPassword')"
                     >
                     <span class="min-w-0 space-y-0.5">
                       <span class="flex items-center gap-1.5 text-sm font-medium">

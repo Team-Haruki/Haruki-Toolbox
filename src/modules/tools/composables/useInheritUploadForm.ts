@@ -7,13 +7,15 @@ import {
   type InheritNewPasswordMode,
 } from "@/modules/tools/lib/inherit-job"
 import type { CreateInheritJobInput } from "@/modules/tools/api/inherit"
+import { parseInheritPaste } from "@/modules/tools/lib/inherit-paste"
 
-export type InheritField = "inheritId" | "inheritPassword"
+export type InheritField = "inheritId" | "inheritPassword" | "inheritText"
 
 /** DOM ids of the inherit form fields; validation focuses the first invalid one. */
 export const INHERIT_FIELD_IDS: Record<InheritField, string> = {
   inheritId: "inherit-id",
   inheritPassword: "inherit-password",
+  inheritText: "inherit-text",
 }
 
 /**
@@ -28,8 +30,15 @@ export function useInheritUploadForm(hasVerifiedQQ: Ref<boolean>) {
   const dataType = ref<UploadDataType>("suite")
   const inheritId = ref("")
   const inheritPassword = ref("")
+  const inheritText = ref("")
   const newPasswordMode = ref<InheritNewPasswordMode>("reuse")
-  const fieldErrors = reactive<Record<InheritField, string>>({ inheritId: "", inheritPassword: "" })
+  const fieldErrors = reactive<Record<InheritField, string>>({ inheritId: "", inheritPassword: "", inheritText: "" })
+  // Pasted text is an alternative to the two manual fields, never a partial
+  // source to mix with them. An invalid paste must not submit stale values.
+  const usesPastedText = computed(() => inheritText.value.trim() !== "")
+  const credentials = computed(() => usesPastedText.value
+    ? parseInheritPaste(inheritText.value)
+    : { inheritId: inheritId.value.trim(), inheritPassword: inheritPassword.value })
 
   // MySekai needs a verified QQ binding; the option is hidden without one.
   watch(
@@ -41,28 +50,42 @@ export function useInheritUploadForm(hasVerifiedQQ: Ref<boolean>) {
   )
 
   /** The entered password cannot become the new code's password: suggest "random". */
-  const reuseBlocked = computed(() => inheritPassword.value !== "" && !isReusableInheritPassword(inheritPassword.value))
+  const reuseBlocked = computed(() => {
+    const password = credentials.value?.inheritPassword ?? ""
+    return password !== "" && !isReusableInheritPassword(password)
+  })
 
   function clearFieldError(field: InheritField) {
     fieldErrors[field] = ""
   }
 
   function validate(): boolean {
-    const id = inheritId.value.trim()
-    fieldErrors.inheritId = !id
+    fieldErrors.inheritId = ""
+    fieldErrors.inheritPassword = ""
+    fieldErrors.inheritText = ""
+    const parsed = credentials.value
+    if (!parsed) {
+      fieldErrors.inheritText = t("tools.uploadData.inheritTab.paste.invalid")
+      void nextTick(() => document.getElementById(INHERIT_FIELD_IDS.inheritText)?.focus())
+      return false
+    }
+    const idField = usesPastedText.value ? "inheritText" : "inheritId"
+    const passwordField = usesPastedText.value ? "inheritText" : "inheritPassword"
+    const { inheritId: id, inheritPassword: password } = parsed
+    fieldErrors[idField] = !id
       ? t("tools.uploadData.toast.inheritIdRequired")
       : !INHERIT_ID_PATTERN.test(id)
         ? t("tools.uploadData.toast.inheritIdInvalidDescription")
         : ""
     // The password is sent as typed (the backend does not trim it).
-    fieldErrors.inheritPassword = !inheritPassword.value
+    fieldErrors[passwordField] = !password
       ? t("tools.uploadData.toast.inheritPasswordRequired")
-      : new TextEncoder().encode(inheritPassword.value).length > 64
+      : new TextEncoder().encode(password).length > 64
         ? t("tools.uploadData.inheritTab.newPassword.tooLong")
-        : newPasswordMode.value === "reuse" && !isReusableInheritPassword(inheritPassword.value)
+        : newPasswordMode.value === "reuse" && !isReusableInheritPassword(password)
           ? t("tools.uploadData.inheritTab.newPassword.reuseBlocked")
           : ""
-    const firstInvalid = (["inheritId", "inheritPassword"] as const).find((field) => fieldErrors[field])
+    const firstInvalid = (["inheritId", "inheritPassword", "inheritText"] as const).find((field) => fieldErrors[field])
     if (firstInvalid) {
       void nextTick(() => document.getElementById(INHERIT_FIELD_IDS[firstInvalid])?.focus())
       return false
@@ -71,11 +94,13 @@ export function useInheritUploadForm(hasVerifiedQQ: Ref<boolean>) {
   }
 
   function toCreateInput(): CreateInheritJobInput {
+    const parsed = credentials.value
+    if (!parsed) throw new Error("Transfer information must be validated before submission")
     return {
       server: server.value,
       uploadType: dataType.value,
-      inheritId: inheritId.value.trim(),
-      inheritPassword: inheritPassword.value,
+      inheritId: parsed.inheritId,
+      inheritPassword: parsed.inheritPassword,
       newPasswordMode: newPasswordMode.value,
     }
   }
@@ -84,8 +109,10 @@ export function useInheritUploadForm(hasVerifiedQQ: Ref<boolean>) {
   function clearSecrets() {
     inheritId.value = ""
     inheritPassword.value = ""
+    inheritText.value = ""
     fieldErrors.inheritId = ""
     fieldErrors.inheritPassword = ""
+    fieldErrors.inheritText = ""
   }
 
   return {
@@ -93,6 +120,8 @@ export function useInheritUploadForm(hasVerifiedQQ: Ref<boolean>) {
     dataType,
     inheritId,
     inheritPassword,
+    inheritText,
+    usesPastedText,
     newPasswordMode,
     fieldErrors,
     reuseBlocked,

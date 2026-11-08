@@ -513,6 +513,11 @@ export default {
       "inheritTab": {
         "title": "Transfer-code data upload",
         "description": "Enter the transfer ID and transfer password from the game. The Toolbox first shows you the account to check, runs the transfer only after you confirm, and right away issues you a new transfer code.",
+        "paste": {
+          "label": "Transfer information",
+          "placeholder": "Paste the full transfer information copied from the JP or global game, including the transfer ID and password.",
+          "invalid": "Could not identify a complete transfer ID and password. Paste the full text copied from the game, keeping its field labels and line breaks"
+        },
         "loginRequired": {
           "title": "Sign in to Haruki Toolbox first",
           "description": "Transfer-code uploads need you to be signed in to this website. After the transfer, the new transfer code is kept encrypted in your transfer-code vault, readable only by you.",
