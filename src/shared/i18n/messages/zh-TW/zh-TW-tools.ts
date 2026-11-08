@@ -541,7 +541,7 @@ export default {
           "reuseHint": "新引繼碼使用你剛輸入的密碼，方便記憶。",
           "random": "隨機生成",
           "randomHint": "生成 12 位字母與數字組成的隨機密碼。",
-          "reuseBlocked": "這個密碼不能沿用：需為 8–16 個半形字母、數字或符號，且不含空格，請改選「隨機生成」",
+          "reuseBlocked": "引繼密碼需為 8–16 個半形字母或數字，且不含空格",
           "tooLong": "引繼密碼過長"
         },
         "alerts": {

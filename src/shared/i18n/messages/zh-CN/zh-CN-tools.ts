@@ -541,7 +541,7 @@ export default {
           "reuseHint": "新引继码使用你刚输入的密码，方便记忆。",
           "random": "随机生成",
           "randomHint": "生成 12 位字母与数字组成的随机密码。",
-          "reuseBlocked": "这个密码不能沿用：需为 8–16 个半角字母、数字或符号，且不含空格，请改选「随机生成」",
+          "reuseBlocked": "引继密码需为 8–16 个半角字母或数字，且不含空格",
           "tooLong": "引继密码过长"
         },
         "alerts": {

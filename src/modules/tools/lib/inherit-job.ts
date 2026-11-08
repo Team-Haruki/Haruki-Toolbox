@@ -376,11 +376,10 @@ export function formatStepDuration(ms: number): string {
 
 /**
  * What the game accepts as a transfer password, and therefore what "reuse
- * this password for the new code" needs: 8 to 16 printable ASCII characters,
- * no spaces.
+ * this password for the new code" needs: 8 to 16 ASCII letters or digits.
  */
 export function isReusableInheritPassword(password: string): boolean {
-  return /^[\x21-\x7e]{8,16}$/.test(password)
+  return /^[A-Za-z0-9]{8,16}$/.test(password)
 }
 
 export const INHERIT_ID_PATTERN = /^[A-Za-z0-9]{16}$/
