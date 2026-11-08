@@ -1800,13 +1800,40 @@ export default {
       "failedDescription": "Failed to fetch game data for bound accounts. It will retry automatically on the related pages."
     },
     "unsupportedBrowser": {
-      "title": "Unsupported browser",
-      "description": "You are trying to access Haruki Toolbox from an unsupported browser.",
-      "suggestion": "Please use Chrome, Safari, Firefox, or another supported browser.",
-      "deviceHint": "To authorize a device, copy the page address below, open it in your system browser, then type the code shown on your device.",
-      "copyDeviceLink": "Copy page address",
-      "copied": "Copied",
-      "copyFailed": "Could not copy. Please type the address manually."
+      "title": "Open in your browser",
+      "descriptionApp": "You opened Haruki Toolbox inside {app}. The web view built into {app} is limited, so the toolbox does not work there. Open the page in your browser instead.",
+      "descriptionGeneric": "You opened Haruki Toolbox inside an app’s built-in web view. That view is limited, so the toolbox does not work there. Open the page in your browser instead.",
+      "stepsTitle": "How to switch to your browser",
+      "stepMenu": "Tap the {icon} button in the top-right corner",
+      "stepMenuAnywhere": "Find the page’s menu or share button, usually shown as {icon}",
+      "cornerLabel": "The button is just above here",
+      "copyFirstTitle": "Copy the link and open it in your browser",
+      "menuAltTitle": "Or switch from the menu",
+      "menuAltTitleApp": "Or switch from inside {app}",
+      "stepOpenIos": "Choose “Open in Safari” or “Open in browser”",
+      "stepOpenAndroid": "Choose “Open in browser” or a similar option",
+      "stepDone": "The page reopens in your browser. Keep using it there.",
+      "fallbackTitle": "No such option?",
+      "fallbackBody": "Copy the link below and paste it into your browser’s address bar. We recommend {browsers}.",
+      "browsers": {
+        "ios": "Safari or Chrome",
+        "android": "Chrome or your phone’s browser",
+        "other": "Chrome, Edge, Firefox or Safari"
+      },
+      "linkLabel": "Page link",
+      "copyLink": "Copy link",
+      "copied": "Copied. Paste it into your browser to open.",
+      "copyFailed": "Could not copy. Press and hold the link above to copy it.",
+      "deviceHint": "To authorize a device, open this link in your browser, then type the code shown on your device.",
+      "apps": {
+        "wechat": "WeChat",
+        "qq": "QQ",
+        "weibo": "Weibo",
+        "dingtalk": "DingTalk",
+        "alipay": "Alipay",
+        "douyin": "Douyin",
+        "tiktok": "TikTok"
+      }
     },
     "pwa": {
       "updateAvailableTitle": "New version available",

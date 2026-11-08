@@ -10,6 +10,7 @@ import { useUserStore } from "@/shared/stores/user";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { setupInterceptors } from "@/core/http/call-api";
 import { DEFAULT_LOCALE, i18n, isAppLocale, setI18nLocale } from "@/shared/i18n";
+import { resolvePreMountDark, resolvePreMountLocale } from "@/lib/pre-mount-preferences";
 import { bootstrapUserSettingsFromKratosSession } from "@/modules/auth/lib/kratos";
 import { installAppUpdateMessaging, installChunkLoadRecovery, registerAppServiceWorker } from "@/pwa";
 import { isRestrictedBrowser } from "@/lib/restricted-browser";
@@ -27,7 +28,11 @@ installAppUpdateMessaging()
 configureAnalytics()
 
 if (isRestrictedBrowser()) {
-    await setI18nLocale(DEFAULT_LOCALE)
+    // No settings store here, so the persisted locale and theme (or the
+    // device's) are read directly: the block page must look right to whoever
+    // hits it, in their language, in their colour scheme.
+    document.documentElement.classList.toggle("dark", resolvePreMountDark())
+    await setI18nLocale(resolvePreMountLocale())
     createApp(UnsupportedBrowserPage)
         .use(i18n)
         .mount('#app')

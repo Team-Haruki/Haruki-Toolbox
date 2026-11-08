@@ -56,6 +56,8 @@ const TERM_FIXES = [
   [/指令碼/g, "腳本"],
   // 高级 -> 高階 is "high-end"; advanced settings/features are 進階 in Taiwan.
   [/高階/g, "進階"],
+  // 窗口 (an app's web view window) -> OpenCC leaves it alone; Taiwan says 視窗.
+  [/窗口/g, "視窗"],
   // 二维码 -> 二維碼 is mainland usage; Taiwan says QR Code, spaced from CJK text.
   [/二維碼/g, (match, offset, text) => {
     const cjk = /[\u3400-\u9fff]/
@@ -66,8 +68,13 @@ const TERM_FIXES = [
 // Fixes that are only right inside one top-level namespace. OpenCC renders
 // 项目 as 專案 (project), which is correct for the public pages, but the
 // admin content manager's 项目 are list items (群聊項目).
+// 代码 -> 程式碼 is source code, right for the admin code editor and the
+// open-source notice; the OAuth device flow's 代码 is the code typed from a
+// device, which is 代碼.
 const SCOPED_TERM_FIXES = {
   adminContent: [[/專案/g, "項目"]],
+  core: [[/程式碼/g, "代碼"]],
+  oauth: [[/程式碼/g, "代碼"]],
 }
 
 function applyTermFixes(value, fixes) {
