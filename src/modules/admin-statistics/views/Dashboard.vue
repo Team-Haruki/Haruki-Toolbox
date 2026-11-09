@@ -21,7 +21,7 @@ import { LucideChartLine } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import { DashboardBreakdownCard } from "@/modules/admin-statistics/components"
-import { useDashboardStats } from "@/modules/admin-statistics/composables/useDashboardStats"
+import { SERIES_COLORS, useDashboardStats } from "@/modules/admin-statistics/composables/useDashboardStats"
 import { formatNumberCN } from "@/lib/number-format"
 
 const { t } = useI18n()
@@ -50,22 +50,31 @@ const {
   yUploads,
   yRegistrations,
   yFailures,
-  crosshairTemplate,
+  uploadYDomain,
+  uploadTickValues,
+  uploadsTickFormat,
+  failuresTickFormat,
+  uploadCrosshairTemplate,
+  registrationCrosshairTemplate,
   xTickFormat,
 } = useDashboardStats()
 
-// Mid-tone series colors that stay legible on both themes. They intentionally
-// match the hex values hardcoded in the composable's crosshair template.
-const seriesColors = {
-  uploads: "#3b82f6",
-  registrations: "#22c55e",
-  failures: "#ef4444",
-} as const
+// Fixed margins so the hand-drawn right axis can share the plot's tick positions.
+const UPLOAD_CHART_HEIGHT = 256
+const UPLOAD_CHART_MARGIN = { top: 8, right: 44, bottom: 28, left: 52 } as const
 
-const legendItems = computed(() => [
-  { key: "uploads", label: t("adminStatistics.dashboard.chart.uploads"), color: seriesColors.uploads },
-  { key: "registrations", label: t("adminStatistics.dashboard.chart.registrations"), color: seriesColors.registrations },
-  { key: "failures", label: t("adminStatistics.dashboard.chart.failures"), color: seriesColors.failures },
+function rightAxisTickTop(tick: number): string {
+  const [, max] = uploadYDomain.value
+  const plotHeight = UPLOAD_CHART_HEIGHT - UPLOAD_CHART_MARGIN.top - UPLOAD_CHART_MARGIN.bottom
+  const ratio = max > 0 ? tick / max : 0
+  return `${UPLOAD_CHART_MARGIN.top + (1 - ratio) * plotHeight}px`
+}
+
+// The upload chart carries two measures of different scale, so the legend names
+// the axis each one is read against. Registrations draw alone and need no legend.
+const uploadLegendItems = computed(() => [
+  { key: "uploads", label: t("adminStatistics.dashboard.chart.uploadsAxis"), color: SERIES_COLORS.uploads },
+  { key: "failures", label: t("adminStatistics.dashboard.chart.failuresAxis"), color: SERIES_COLORS.failures },
 ])
 
 const uploadSummaryCards = computed(() => [
@@ -222,20 +231,70 @@ const windowDescription = computed(() => t("adminStatistics.dashboard.breakdown.
           />
         </template>
         <template v-else-if="chartData.length > 0">
-          <div class="h-64">
-            <VisXYContainer :data="chartData" :height="256">
-              <VisArea :x="x" :y="yUploads" :color="seriesColors.uploads" :opacity="0.15" curveType="monotoneX" />
-              <VisLine :x="x" :y="yUploads" :color="seriesColors.uploads" curveType="monotoneX" />
-              <VisScatter :x="x" :y="yUploads" :color="seriesColors.uploads" :size="4" />
-              <VisLine :x="x" :y="yRegistrations" :color="seriesColors.registrations" curveType="monotoneX" />
-              <VisScatter :x="x" :y="yRegistrations" :color="seriesColors.registrations" :size="4" />
-              <VisLine :x="x" :y="yFailures" :color="seriesColors.failures" curveType="monotoneX" />
-              <VisScatter :x="x" :y="yFailures" :color="seriesColors.failures" :size="4" />
-              <VisCrosshair :template="crosshairTemplate" />
-              <VisTooltip />
-              <VisAxis type="x" :tickFormat="xTickFormat" />
-              <VisAxis type="y" />
-            </VisXYContainer>
+          <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <section class="min-w-0" aria-labelledby="statistics-upload-trend-title">
+              <h3 id="statistics-upload-trend-title" class="mb-2 text-sm font-medium">
+                {{ t("adminStatistics.dashboard.chart.uploadTitle") }}
+              </h3>
+              <div class="relative h-64" data-testid="statistics-upload-trend">
+                <VisXYContainer
+                  :data="chartData"
+                  :height="UPLOAD_CHART_HEIGHT"
+                  :yDomain="uploadYDomain"
+                  :margin="UPLOAD_CHART_MARGIN"
+                  :autoMargin="false"
+                >
+                  <VisArea :x="x" :y="yUploads" :color="SERIES_COLORS.uploads" :opacity="0.15" curveType="monotoneX" />
+                  <VisLine :x="x" :y="yUploads" :color="SERIES_COLORS.uploads" curveType="monotoneX" />
+                  <VisScatter :x="x" :y="yUploads" :color="SERIES_COLORS.uploads" :size="4" />
+                  <VisLine :x="x" :y="yFailures" :color="SERIES_COLORS.failures" curveType="monotoneX" />
+                  <VisScatter :x="x" :y="yFailures" :color="SERIES_COLORS.failures" :size="4" />
+                  <VisCrosshair :template="uploadCrosshairTemplate" />
+                  <VisTooltip />
+                  <VisAxis type="x" :tickFormat="xTickFormat" />
+                  <VisAxis type="y" :tickValues="uploadTickValues" :tickFormat="uploadsTickFormat" />
+                </VisXYContainer>
+                <!-- Unovis keeps one y scale per container, so the failure axis is drawn by
+                     hand: the same tick positions, labelled on the failure scale. -->
+                <div
+                  class="pointer-events-none absolute inset-y-0 right-0 text-xs text-muted-foreground"
+                  :style="{ width: `${UPLOAD_CHART_MARGIN.right}px` }"
+                  data-testid="statistics-upload-right-axis"
+                  aria-hidden="true"
+                >
+                  <span
+                    v-for="tick in uploadTickValues"
+                    :key="tick"
+                    class="absolute left-2 -translate-y-1/2 tabular-nums"
+                    :style="{ top: rightAxisTickTop(tick) }"
+                  >
+                    {{ failuresTickFormat(tick) }}
+                  </span>
+                </div>
+              </div>
+              <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-sm">
+                <div v-for="item in uploadLegendItems" :key="item.key" class="flex items-center gap-1.5">
+                  <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: item.color }"></span>
+                  {{ item.label }}
+                </div>
+              </div>
+            </section>
+            <section class="min-w-0" aria-labelledby="statistics-registration-trend-title">
+              <h3 id="statistics-registration-trend-title" class="mb-2 text-sm font-medium">
+                {{ t("adminStatistics.dashboard.chart.registrationTitle") }}
+              </h3>
+              <div class="h-64" data-testid="statistics-registration-trend">
+                <VisXYContainer :data="chartData" :height="256">
+                  <VisArea :x="x" :y="yRegistrations" :color="SERIES_COLORS.registrations" :opacity="0.15" curveType="monotoneX" />
+                  <VisLine :x="x" :y="yRegistrations" :color="SERIES_COLORS.registrations" curveType="monotoneX" />
+                  <VisScatter :x="x" :y="yRegistrations" :color="SERIES_COLORS.registrations" :size="4" />
+                  <VisCrosshair :template="registrationCrosshairTemplate" />
+                  <VisTooltip />
+                  <VisAxis type="x" :tickFormat="xTickFormat" />
+                  <VisAxis type="y" />
+                </VisXYContainer>
+              </div>
+            </section>
           </div>
         </template>
         <template v-else>
@@ -244,15 +303,6 @@ const windowDescription = computed(() => t("adminStatistics.dashboard.breakdown.
             <p class="text-sm text-muted-foreground">{{ t("adminStatistics.dashboard.chart.empty") }}</p>
           </div>
         </template>
-        <div
-          v-if="!chartError && (chartLoading || chartData.length > 0)"
-          class="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-sm"
-        >
-          <div v-for="item in legendItems" :key="item.key" class="flex items-center gap-1.5">
-            <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: item.color }"></span>
-            {{ item.label }}
-          </div>
-        </div>
       </CardContent>
     </Card>
   </div>

@@ -7,6 +7,7 @@ import {
   LucideUsers,
 } from "lucide-vue-next"
 import { formatLocalizedDate } from "@/lib/date-time"
+import { formatNumberCN } from "@/lib/number-format"
 import { describeError, type ErrorDescription } from "@/lib/error-utils"
 import { getDashboard, getTimeseries } from "@/modules/admin-statistics/api/dashboard"
 import { toBreakdownItems } from "@/modules/admin-statistics/lib/dashboard-breakdown"
@@ -17,8 +18,17 @@ import {
   resolveUploadServerLabel,
 } from "@/modules/admin-statistics/lib/upload-log-meta"
 import type { DashboardData, TimeseriesPoint } from "@/types/admin"
+import { buildPairedAxes } from "@/modules/admin-statistics/lib/dashboard-chart-axes"
 
 const DAY_MS = 24 * 60 * 60 * 1000
+
+// Mid-tone series colors validated against both themes (dataviz palette checks):
+// blue/red pass CVD and contrast as a pair; the darker green holds 3:1 on light.
+export const SERIES_COLORS = {
+  uploads: "#3b82f6",
+  failures: "#ef4444",
+  registrations: "#16a34a",
+} as const
 
 export function useDashboardStats() {
   const { t } = useI18n()
@@ -183,8 +193,25 @@ export function useDashboardStats() {
     return point.registrations
   }
 
+  // The upload chart draws failures on the upload scale and labels them on a
+  // right-hand axis; both axes share tick positions, so the labels stay integers.
+  const uploadAxes = computed(() => buildPairedAxes(
+    chartData.value.map((point) => point.uploads),
+    chartData.value.map((point) => point.uploadFailures),
+  ))
+  const uploadYDomain = computed<[number, number]>(() => [0, uploadAxes.value.leftMax])
+  const uploadTickValues = computed(() => uploadAxes.value.tickValues)
+
   function yFailures(point: TimeseriesPoint) {
-    return point.uploadFailures
+    return uploadAxes.value.toLeft(point.uploadFailures)
+  }
+
+  function uploadsTickFormat(tick: number | Date) {
+    return formatNumberCN(Number(tick))
+  }
+
+  function failuresTickFormat(tick: number | Date) {
+    return formatNumberCN(uploadAxes.value.toRight(Number(tick)))
   }
 
   function formatShortDate(value?: string) {
@@ -196,16 +223,25 @@ export function useDashboardStats() {
     return `${((point.uploadSuccesses / point.uploads) * 100).toFixed(1)}%`
   }
 
-  function crosshairTemplate(point: TimeseriesPoint) {
-    const date = formatShortDate(point.time)
-    // Content only — the unovis tooltip wrapper (themed via --vis-tooltip-* CSS
-    // vars) provides the box, so we must not draw a second box here.
+  function crosshairHeader(point: TimeseriesPoint) {
+    return `<div style="font-weight:600;margin-bottom:2px">${formatShortDate(point.time)}</div>`
+  }
+
+  // Content only — the unovis tooltip wrapper (themed via --vis-tooltip-* CSS
+  // vars) provides the box, so we must not draw a second box here.
+  function uploadCrosshairTemplate(point: TimeseriesPoint) {
     return `<div style="font-size:12px;line-height:1.55">
-    <div style="font-weight:600;margin-bottom:2px">${date}</div>
-    <div style="color:#3b82f6">${t("adminStatistics.dashboard.chart.uploads")}: ${point.uploads}</div>
-    <div style="color:#ef4444">${t("adminStatistics.dashboard.chart.failures")}: ${point.uploadFailures}</div>
-    <div style="color:#22c55e">${t("adminStatistics.dashboard.chart.registrations")}: ${point.registrations}</div>
+    ${crosshairHeader(point)}
+    <div style="color:${SERIES_COLORS.uploads}">${t("adminStatistics.dashboard.chart.uploads")}: ${point.uploads}</div>
+    <div style="color:${SERIES_COLORS.failures}">${t("adminStatistics.dashboard.chart.failures")}: ${point.uploadFailures}</div>
     <div style="opacity:0.7;margin-top:2px">${t("adminStatistics.dashboard.chart.successRate")}: ${successRate(point)}</div>
+  </div>`
+  }
+
+  function registrationCrosshairTemplate(point: TimeseriesPoint) {
+    return `<div style="font-size:12px;line-height:1.55">
+    ${crosshairHeader(point)}
+    <div style="color:${SERIES_COLORS.registrations}">${t("adminStatistics.dashboard.chart.registrations")}: ${point.registrations}</div>
   </div>`
   }
 
@@ -243,7 +279,12 @@ export function useDashboardStats() {
     yUploads,
     yRegistrations,
     yFailures,
-    crosshairTemplate,
+    uploadYDomain,
+    uploadTickValues,
+    uploadsTickFormat,
+    failuresTickFormat,
+    uploadCrosshairTemplate,
+    registrationCrosshairTemplate,
     xTickFormat,
   }
 }
