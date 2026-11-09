@@ -30,8 +30,10 @@ export async function logoutInPlace() {
  * for flows that must not continue while the session is still alive.
  */
 export async function logoutInPlaceStrict() {
-    await clearLocalUserState();
+    // Kratos first: a failed logout must leave the local state (and the
+    // caches) as they were, since the session is still alive.
     await performKratosLogout();
+    await clearLocalUserState();
 }
 
 export async function logout() {

@@ -48,7 +48,11 @@ export function encodeBase64Url(value: ArrayBuffer | ArrayBufferView | null | un
   for (const byte of bytes) {
     binary += String.fromCharCode(byte)
   }
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
+  let encoded = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_")
+  while (encoded.endsWith("=")) {
+    encoded = encoded.slice(0, -1)
+  }
+  return encoded
 }
 
 /** Accepts base64url or base64, padded or not. */
@@ -123,6 +127,43 @@ interface ConditionalUiWindow {
   abortPasskeyConditionalUI?: AbortController
 }
 
+/** What the sign-in needs from the browser; swapped for a stub in tests. */
+export interface PasskeyLoginEnvironment {
+  /** False when WebAuthn is unavailable (no `PublicKeyCredential`, no `navigator.credentials.get`). */
+  supported: boolean
+  getCredential(publicKey: PublicKeyCredentialRequestOptions): Promise<PasskeyAssertionLike | null>
+  /** Cancels a pending conditional-UI request started by Kratos' webauthn.js. */
+  abortConditionalUi(): void
+}
+
+/** The parts of the Kratos form the sign-in touches (an HTMLFormElement fits). */
+export interface PasskeyLoginForm {
+  elements: { namedItem(name: string): unknown }
+  submit(): void
+}
+
+export function createBrowserPasskeyLoginEnvironment(): PasskeyLoginEnvironment {
+  if (typeof window === "undefined" || typeof navigator === "undefined") {
+    return { supported: false, getCredential: async () => null, abortConditionalUi: () => undefined }
+  }
+  const conditionalWindow = window as unknown as ConditionalUiWindow
+  return {
+    supported: Boolean(conditionalWindow.PublicKeyCredential) && typeof navigator.credentials?.get === "function",
+    getCredential: async (publicKey) =>
+      (await navigator.credentials.get({ publicKey })) as PasskeyAssertionLike | null,
+    abortConditionalUi: () => {
+      // A pending conditional-UI request from webauthn.js would make the next
+      // call fail with "a request is already pending".
+      conditionalWindow.abortPasskeyConditionalUI?.abort("Replaced by the refresh passkey sign-in.")
+      conditionalWindow.abortPasskeyConditionalUI = undefined
+    },
+  }
+}
+
+function isValueField(value: unknown): value is { value: string } {
+  return typeof value === "object" && value !== null && "value" in value
+}
+
 /**
  * Runs a discoverable passkey assertion for the flow and posts it the way
  * Kratos' script would: the result lands in the form's hidden `passkey_login`
@@ -131,13 +172,10 @@ interface ConditionalUiWindow {
  */
 export async function runDiscoverablePasskeyLogin(
   challengeValue: string,
-  form: HTMLFormElement
+  form: PasskeyLoginForm,
+  environment: PasskeyLoginEnvironment = createBrowserPasskeyLoginEnvironment()
 ): Promise<DiscoverablePasskeyLoginResult> {
-  if (typeof window === "undefined" || typeof navigator === "undefined") {
-    return "unsupported"
-  }
-  const conditionalWindow = window as unknown as ConditionalUiWindow
-  if (!conditionalWindow.PublicKeyCredential || typeof navigator.credentials?.get !== "function") {
+  if (!environment.supported) {
     return "unsupported"
   }
 
@@ -147,16 +185,13 @@ export async function runDiscoverablePasskeyLogin(
   }
 
   const input = form.elements.namedItem("passkey_login")
-  if (!(input instanceof HTMLInputElement)) {
+  if (!isValueField(input)) {
     return "missing-field"
   }
 
-  // A pending conditional-UI request from webauthn.js would make this call
-  // fail with "a request is already pending".
-  conditionalWindow.abortPasskeyConditionalUI?.abort("Replaced by the refresh passkey sign-in.")
-  conditionalWindow.abortPasskeyConditionalUI = undefined
+  environment.abortConditionalUi()
 
-  const credential = (await navigator.credentials.get({ publicKey })) as PasskeyAssertionLike | null
+  const credential = await environment.getCredential(publicKey)
   if (!credential) {
     throw new DOMException("No credential returned.", "NotAllowedError")
   }
