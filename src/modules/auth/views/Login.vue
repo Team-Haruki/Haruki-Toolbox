@@ -50,6 +50,7 @@ const {
   action,
   flowReturnTo,
   method,
+  isRefreshFlow,
   invokeVisibleFieldAction,
   restartFlow,
 } = useKratosBrowserFlow("login", {
@@ -134,11 +135,15 @@ function actionIcon(action: LoginAction) {
 }
 
 // The subtitle names the step: email + password, the second factor, or a
-// re-authentication where only the password is asked again.
+// re-authentication. Kratos flags the latter on the flow itself; a passkey-only
+// account gets no password field there, so the fields alone cannot tell.
 const loginStep = computed<"password" | "mfa" | "refresh">(() => {
   const names = visibleFields.value.map((field) => field.name.toLowerCase())
   if (names.some((name) => name === "totp_code" || name === "lookup_secret")) {
     return "mfa"
+  }
+  if (isRefreshFlow.value) {
+    return "refresh"
   }
   const hasIdentifier = names.some((name) => name === "identifier" || name.endsWith("email"))
   const hasPassword = names.some((name) => name.includes("password"))

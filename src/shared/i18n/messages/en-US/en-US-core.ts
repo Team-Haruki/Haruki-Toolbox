@@ -390,7 +390,7 @@ export default {
       "title": "Sign in to Haruki Toolbox",
       "description": "Use your email and password to sign in",
       "descriptionMfa": "Complete the second step to finish signing in",
-      "descriptionRefresh": "Enter your password again to confirm it is you",
+      "descriptionRefresh": "Verify it is you to continue",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
       "passwordLabel": "Password",

@@ -390,7 +390,7 @@ export default {
       "title": "登入到 Haruki 工具箱",
       "description": "使用您的信箱和密碼登入",
       "descriptionMfa": "請完成第二步驗證以繼續登入",
-      "descriptionRefresh": "為確認身份，請再次輸入密碼",
+      "descriptionRefresh": "為確認是你本人，請再次驗證身份",
       "emailLabel": "信箱",
       "emailPlaceholder": "請輸入您的信箱",
       "passwordLabel": "密碼",

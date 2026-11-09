@@ -169,6 +169,9 @@ export default {
       }
     },
     "kratosFlow": {
+      "hints": {
+        "lastSignInMethod": "This is the account’s only sign-in method. Set a password or add another sign-in method before removing it."
+      },
       "titles": {
         "profile": "Change email or nickname",
         "password": "Change password",
