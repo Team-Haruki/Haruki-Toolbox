@@ -171,7 +171,7 @@ test.describe("transfer-code upload", () => {
     await expect(page.locator("#inherit-id")).toHaveCount(0)
   })
 
-  test("drops the old remembered code and validates the reuse password", async ({ page }) => {
+  test("drops the old remembered code and validates the password in both modes", async ({ page }) => {
     await signIn(page, { legacyInherit: true })
     const calls = await mockApi(page, {
       extra: (route, url, method) => {
@@ -201,7 +201,7 @@ test.describe("transfer-code upload", () => {
     await expect(page.getByText(/记住引继信息|remember transfer info/i)).toHaveCount(0)
     await expect(page.locator("#inherit-id")).toBeEnabled()
 
-    // "Keep this password" needs 8-16 printable ASCII characters.
+    // Both modes require a valid current transfer password.
     await fillForm(page, "short")
     await expect(page.getByTestId("inherit-reuse-blocked")).toBeVisible()
     await page.getByRole("radio", { name: /沿用本次密码|Keep this password/ }).check()
@@ -209,7 +209,22 @@ test.describe("transfer-code upload", () => {
     await expect(page.locator("#inherit-password-error")).toBeVisible()
     expect(calls.some((call) => call.path === "/api/inherit/jobs")).toBe(false)
 
+    await page.locator("#inherit-password").fill("abcd!123")
+    await page.locator('button[form="upload-data-inherit-form"]').click()
+    await expect(page.locator("#inherit-password-error")).toHaveText(/^(引继密码需为 8–16 个半角字母或数字，且不含空格|The transfer password must be 8–16 half-width letters or digits without spaces)$/)
+    expect(calls.some((call) => call.path === "/api/inherit/jobs")).toBe(false)
+
     await page.getByRole("radio", { name: /随机生成|Generate a random one/ }).check()
+    for (const password of ["88", "1234567", "12345678901234567", "abcd!123", "abcd_123", "with space", "全角パスワード1234"]) {
+      await page.locator("#inherit-password").fill(password)
+      await expect(page.locator('button[form="upload-data-inherit-form"]')).toBeEnabled()
+      await page.locator('button[form="upload-data-inherit-form"]').click()
+      await expect(page.locator("#inherit-password-error")).toBeVisible()
+      await expect(page.locator("#inherit-password")).toBeFocused()
+      await expect(page.getByTestId("inherit-job")).toHaveCount(0)
+      expect(calls.some((call) => call.path === "/api/inherit/jobs")).toBe(false)
+    }
+    await page.locator("#inherit-password").fill("abcd1234")
     await page.locator('button[form="upload-data-inherit-form"]').click()
     await expect(page.getByTestId("inherit-job")).toBeVisible()
     const create = calls.find((call) => call.path === "/api/inherit/jobs")
@@ -217,14 +232,14 @@ test.describe("transfer-code upload", () => {
       server: "jp",
       upload_type: "suite",
       inherit_id: "ABCDEFGH12345678",
-      inherit_password: "short",
+      inherit_password: "abcd1234",
       new_password_mode: "random",
     })
     // Only the job id is remembered, never the code.
     const stored = await page.evaluate(() => localStorage.getItem("haruki_inherit_job"))
     expect(stored).toContain(JOB_ID)
     expect(stored).not.toContain("ABCDEFGH12345678")
-    expect(stored).not.toContain("short")
+    expect(stored).not.toContain("abcd1234")
   })
 
   test("follows the job over the socket, confirms, and keeps the new code after a later failure", async ({ page }) => {
