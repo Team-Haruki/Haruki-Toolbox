@@ -577,3 +577,28 @@ describe("deck recommend wasm option helpers", () => {
     expect(resolveCurrentDeckCardsWithProfile(suiteData, null)).toEqual([201, 202, 203, 204, 205])
   })
 })
+
+describe("challenge mode character", () => {
+  const base = {
+    region: "jp" as const,
+    mode: "challenge" as const,
+    liveType: "multi" as const,
+    algorithm: "dfs" as const,
+    musicId: "1",
+    musicDifficulty: "master",
+    eventId: null,
+    trainingConfig: createDefaultCardTrainingConfig(),
+    userData: { userCards: [] },
+  }
+
+  it("falls back to a stray forced leader so the engine always gets the challenge character", () => {
+    const options = buildDeckRecommendOptions({ ...base, characterId: null, forcedLeaderCharacterId: "7" })
+    expect(options.challenge_live_character_id).toBe(7)
+    expect(options.forcedLeaderCharacterId).toBeUndefined()
+  })
+
+  it("prefers the selected character over a forced leader", () => {
+    const options = buildDeckRecommendOptions({ ...base, characterId: "3", forcedLeaderCharacterId: "7" })
+    expect(options.challenge_live_character_id).toBe(3)
+  })
+})
