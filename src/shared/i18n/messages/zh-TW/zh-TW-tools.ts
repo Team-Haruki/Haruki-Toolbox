@@ -488,6 +488,8 @@ export default {
           "file": "上傳檔案",
           "chooseFile": "選擇檔案",
           "noFile": "未選擇檔案",
+          "dropHint": "也可以把檔案直接拖到這裡",
+          "dropActive": "鬆開滑鼠即可選中這個檔案",
           "fileHint": "選擇 HarukiProxy 或 iOS 模組儲存下來的資料檔案，檔案會原樣上傳。",
           "account": "選擇帳號（區服 / UID）",
           "accountPlaceholder": "請選擇可上傳的帳號",
