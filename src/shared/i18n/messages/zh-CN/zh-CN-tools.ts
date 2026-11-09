@@ -488,6 +488,8 @@ export default {
           "file": "上传文件",
           "chooseFile": "选择文件",
           "noFile": "未选择文件",
+          "dropHint": "也可以把文件直接拖到这里",
+          "dropActive": "松开鼠标即可选中这个文件",
           "fileHint": "选择 HarukiProxy 或 iOS 模块保存下来的数据文件，文件会原样上传。",
           "account": "选择账号（区服 / UID）",
           "accountPlaceholder": "请选择可上传的账号",

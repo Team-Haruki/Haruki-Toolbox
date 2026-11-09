@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test"
+import type { Page } from "@playwright/test"
 
-// The manual upload tab lists accounts from the write-targets endpoint and
-// gates uploads purely on writeCapabilities: a received write grant is
-// selectable, an unverified own binding is listed but disabled.
-test("manual upload selector offers write grants and disables unwritable accounts", async ({ page }) => {
-  let writeListingRequested = false
+// Signs in a test user and serves one write-target listing: an own verified JP
+// account, an unverified EN one and a JP account granted by someone else.
+async function mockManualUploadTargets(page: Page) {
+  const state = { writeListingRequested: false }
   await page.addInitScript(() => {
     sessionStorage.setItem("user", JSON.stringify({
       name: "Upload test",
@@ -24,7 +24,7 @@ test("manual upload selector offers write grants and disables unwritable account
     }
     if (url.pathname.includes("/api/user/toolbox-test/accessible-game-accounts")) {
       if (url.searchParams.get("action") === "write") {
-        writeListingRequested = true
+        state.writeListingRequested = true
       }
       return handler.fulfill({
         status: 200,
@@ -47,12 +47,20 @@ test("manual upload selector offers write grants and disables unwritable account
     return handler.abort()
   })
 
+  return state
+}
+
+// The manual upload tab lists accounts from the write-targets endpoint and
+// gates uploads purely on writeCapabilities: a received write grant is
+// selectable, an unverified own binding is listed but disabled.
+test("manual upload selector offers write grants and disables unwritable accounts", async ({ page }) => {
+  const state = await mockManualUploadTargets(page)
   await page.goto("/upload-data?tab=file")
 
   // The account selector is the first combobox on the file tab (data type follows it).
   const trigger = page.getByRole("combobox").first()
   await expect(trigger).toContainText("123456")
-  expect(writeListingRequested).toBe(true)
+  expect(state.writeListingRequested).toBe(true)
 
   await trigger.click()
   const listbox = page.getByRole("listbox")
@@ -69,4 +77,27 @@ test("manual upload selector offers write grants and disables unwritable account
   await expect(trigger).toContainText("987654321987654321")
   await expect(trigger).toContainText(/授权|Granted/)
   await expect(page.getByText(/他人授权给你的账号|granted to you by another user/)).toBeVisible()
+})
+
+// Desktop users drop the capture file straight onto the file field: the hidden
+// input receives it and the field shows the file name, as if it had been picked.
+test("manual upload accepts a file dropped onto the file field", async ({ page }) => {
+  await mockManualUploadTargets(page)
+  await page.goto("/upload-data?tab=file")
+
+  const zone = page.getByTestId("upload-drop-zone")
+  await expect(zone).toBeVisible()
+  await expect(page.getByTestId("upload-file-name")).toContainText(/未选择文件|No file selected/)
+
+  const dataTransfer = await page.evaluateHandle(() => {
+    const transfer = new DataTransfer()
+    transfer.items.add(new File(["suite"], "suite-20261109.bin", { type: "application/octet-stream" }))
+    return transfer
+  })
+  await zone.dispatchEvent("dragenter", { dataTransfer })
+  await expect(zone).toHaveAttribute("data-drag-over", "true")
+  await zone.dispatchEvent("drop", { dataTransfer })
+
+  await expect(zone).not.toHaveAttribute("data-drag-over", "true")
+  await expect(page.getByTestId("upload-file-name")).toContainText("suite-20261109.bin")
 })

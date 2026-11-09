@@ -488,6 +488,8 @@ export default {
           "file": "Upload file",
           "chooseFile": "Choose file",
           "noFile": "No file selected",
+          "dropHint": "You can also drop the file here",
+          "dropActive": "Release to pick this file",
           "fileHint": "Pick a data file saved by HarukiProxy or the iOS module; it is uploaded as-is.",
           "account": "Select account (region / UID)",
           "accountPlaceholder": "Select an account you can upload to",

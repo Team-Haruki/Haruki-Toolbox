@@ -406,8 +406,14 @@ const worldBloomCharacterFallbackId = computed(() =>
         ?? characterOptions.options.value[0]?.id
         ?? null,
 )
+// Only event-like modes have a World Bloom finale: the selected event type survives a
+// switch to challenge mode, and a finale there would steal the challenge character
+// as a forced leader (ticket: "challenge_live_character_id is required").
 const isWorldBloomFinaleSelection = computed(() =>
-  selectedEventType.value === "world_bloom" && !isEventSimulationActive.value && !worldBloomCharacters.hasCharacters.value,
+  isEventLikeMode.value
+  && selectedEventType.value === "world_bloom"
+  && !isEventSimulationActive.value
+  && !worldBloomCharacters.hasCharacters.value,
 )
 const showCharacterSelect = computed(() =>
   showChallengeCharacterSelect.value || showWorldBloomCharacterSelect.value,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, onBeforeUnmount, onMounted, ref } from "vue"
 import type { UploadDataType } from "@/types"
 import { useI18n } from "vue-i18n"
 import { RouterLink, useRoute } from "vue-router"
@@ -69,6 +69,62 @@ function openFilePicker() {
   if (controlsDisabled.value) return
   fileInput.value?.click()
 }
+
+// Desktop users used to drop the file onto the native file control; the styled
+// picker hides that control, so the whole field accepts drops again.
+const isDragOver = ref(false)
+let dragDepth = 0
+
+function carriesFiles(event: DragEvent): boolean {
+  return Array.from(event.dataTransfer?.types ?? []).includes("Files")
+}
+
+function onDragEnter(event: DragEvent) {
+  if (controlsDisabled.value || !carriesFiles(event)) return
+  event.preventDefault()
+  dragDepth += 1
+  isDragOver.value = true
+}
+
+function onDragOver(event: DragEvent) {
+  if (controlsDisabled.value || !carriesFiles(event)) return
+  event.preventDefault()
+  if (event.dataTransfer) event.dataTransfer.dropEffect = "copy"
+}
+
+function onDragLeave() {
+  dragDepth = Math.max(0, dragDepth - 1)
+  if (dragDepth === 0) isDragOver.value = false
+}
+
+function onDrop(event: DragEvent) {
+  dragDepth = 0
+  isDragOver.value = false
+  if (controlsDisabled.value) return
+  const files = event.dataTransfer?.files
+  if (!files || files.length === 0) return
+  event.preventDefault()
+  const input = fileInput.value
+  if (!input) return
+  // Hand the file to the hidden input so the existing change path picks it up.
+  input.files = files
+  input.dispatchEvent(new Event("change", { bubbles: true }))
+}
+
+// A file that misses the field would otherwise replace the page with itself.
+function blockPageDrop(event: DragEvent) {
+  if (carriesFiles(event)) event.preventDefault()
+}
+
+onMounted(() => {
+  window.addEventListener("dragover", blockPageDrop)
+  window.addEventListener("drop", blockPageDrop)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener("dragover", blockPageDrop)
+  window.removeEventListener("drop", blockPageDrop)
+})
 
 const ownAccounts = computed(() => props.uploadAccounts.filter((account) => account.ownership === "own"))
 const grantedAccounts = computed(() => props.uploadAccounts.filter((account) => account.ownership === "granted"))
@@ -149,7 +205,16 @@ function accountOptionTitle(account: UploadTargetAccount): string | undefined {
             <Label :for="FILE_INPUT_ID">{{ t("tools.uploadData.fileTab.fields.file") }}</Label>
             <!-- Styled picker: the native control's label is browser-language, not ours.
                  A real button (not a label) so the disabled state is visible and announced. -->
-            <div class="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2">
+            <div
+              class="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 transition-colors"
+              :class="isDragOver ? 'border-dashed border-primary bg-primary/5' : ''"
+              data-testid="upload-drop-zone"
+              :data-drag-over="isDragOver ? 'true' : undefined"
+              @dragenter="onDragEnter"
+              @dragover="onDragOver"
+              @dragleave="onDragLeave"
+              @drop="onDrop"
+            >
               <Button type="button" variant="outline" size="sm" :disabled="controlsDisabled" @click="openFilePicker">
                 <FolderOpen class="h-4 w-4" aria-hidden="true" />
                 {{ t("tools.uploadData.fileTab.fields.chooseFile") }}
@@ -159,7 +224,11 @@ function accountOptionTitle(account: UploadTargetAccount): string | undefined {
                 :class="selectedFileName ? 'text-foreground' : 'text-muted-foreground'"
                 data-testid="upload-file-name"
               >
-                {{ selectedFileName || t("tools.uploadData.fileTab.fields.noFile") }}
+                {{ isDragOver ? t("tools.uploadData.fileTab.fields.dropActive") : (selectedFileName || t("tools.uploadData.fileTab.fields.noFile")) }}
+              </span>
+              <!-- Only pointer devices can drag a file in; touch screens never see the hint. -->
+              <span v-if="!isDragOver && !controlsDisabled" class="hidden text-xs text-muted-foreground pointer-fine:inline">
+                {{ t("tools.uploadData.fileTab.fields.dropHint") }}
               </span>
               <input
                 :id="FILE_INPUT_ID"

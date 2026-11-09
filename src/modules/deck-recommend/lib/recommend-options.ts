@@ -262,7 +262,10 @@ export function buildDeckRecommendOptions(input: BuildDeckRecommendOptionsInput)
   applyCustomBonusOptions(options, input)
 
   if (input.mode === "challenge") {
+    // A forced leader is an event-mode concept; if a caller hands one over in
+    // challenge mode it is the challenge character, never a reason to omit it.
     const characterId = normalizePositiveInteger(input.characterId)
+      ?? normalizePositiveInteger(input.forcedLeaderCharacterId)
     if (characterId) {
       options.challenge_live_character_id = characterId
     }
