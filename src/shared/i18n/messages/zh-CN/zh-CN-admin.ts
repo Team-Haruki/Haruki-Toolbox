@@ -1090,7 +1090,11 @@ export default {
       },
       "chart": {
         "title": "趋势图",
-        "description": "注册与上传趋势",
+        "description": "上传与注册分开展示；上传图的左轴是上传次数，右轴是上传失败次数",
+        "uploadTitle": "上传趋势",
+        "registrationTitle": "注册趋势",
+        "uploadsAxis": "上传次数（左轴）",
+        "failuresAxis": "上传失败次数（右轴）",
         "uploads": "上传",
         "registrations": "注册",
         "failures": "上传失败",
@@ -1208,7 +1212,8 @@ export default {
         "browserSession": "浏览器会话",
         "oauth2": "OAuth2 应用",
         "iosUserCode": "iOS 用户码",
-        "gameSessionProxy": "游戏会话代理"
+        "gameSessionProxy": "游戏会话代理",
+        "serviceToken": "服务令牌"
       },
       "authorizationSource": {
         "owner": "账号所有者",
@@ -1251,11 +1256,14 @@ export default {
         "iosProxy": "iOS代理",
         "iosScript": "iOS脚本",
         "harukiProxy": "HarukiProxy",
-        "inherit": "引继码"
+        "inherit": "引继码",
+        "internal": "内部上传",
+        "oauth2": "OAuth2"
       },
       "dataType": {
         "suite": "Suite",
-        "mysekai": "MySekai"
+        "mysekai": "MySekai",
+        "mysekaiBirthdayParty": "MySekai 生日派对"
       },
       "sort": {
         "uploadTimeDesc": "上传时间 ↓",

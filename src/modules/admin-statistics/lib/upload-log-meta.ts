@@ -24,6 +24,8 @@ const UPLOAD_METHOD_VALUES = [
   "ios_script",
   "haruki_proxy",
   "inherit",
+  "internal",
+  "oauth2",
 ] as const
 
 const UPLOAD_METHOD_LABEL_KEY: Record<(typeof UPLOAD_METHOD_VALUES)[number], string> = {
@@ -33,14 +35,19 @@ const UPLOAD_METHOD_LABEL_KEY: Record<(typeof UPLOAD_METHOD_VALUES)[number], str
   ios_script: "adminStatistics.uploadLogs.method.iosScript",
   haruki_proxy: "adminStatistics.uploadLogs.method.harukiProxy",
   inherit: "adminStatistics.uploadLogs.method.inherit",
+  internal: "adminStatistics.uploadLogs.method.internal",
+  oauth2: "adminStatistics.uploadLogs.method.oauth2",
 }
 
-const UPLOAD_DATA_TYPE_VALUES = ["all", ...UPLOAD_DATA_TYPES] as const
+// Logged data types go beyond what a user can upload by hand: birthday-party
+// MySekai deliveries arrive from the proxies under their own type.
+const UPLOAD_DATA_TYPE_VALUES = ["all", ...UPLOAD_DATA_TYPES, "mysekai_birthday_party"] as const
 
 const UPLOAD_DATA_TYPE_LABEL_KEY: Record<(typeof UPLOAD_DATA_TYPE_VALUES)[number], string> = {
   all: "adminStatistics.uploadLogs.filters.allDataTypes",
   suite: "adminStatistics.uploadLogs.dataType.suite",
   mysekai: "adminStatistics.uploadLogs.dataType.mysekai",
+  mysekai_birthday_party: "adminStatistics.uploadLogs.dataType.mysekaiBirthdayParty",
 }
 
 const UPLOAD_SERVER_VALUES = ["all", ...SEKAI_REGIONS] as const
@@ -73,6 +80,7 @@ const UPLOAD_AUTH_METHOD_LABEL_KEY: Record<string, string> = {
   oauth2: "adminStatistics.uploadLogs.authMethod.oauth2",
   ios_user_code: "adminStatistics.uploadLogs.authMethod.iosUserCode",
   game_session_proxy: "adminStatistics.uploadLogs.authMethod.gameSessionProxy",
+  service_token: "adminStatistics.uploadLogs.authMethod.serviceToken",
 }
 
 const UPLOAD_AUTHORIZATION_SOURCE_LABEL_KEY: Record<string, string> = {

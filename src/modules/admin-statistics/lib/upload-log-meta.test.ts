@@ -21,6 +21,10 @@ const TEST_TRANSLATIONS: Record<string, string> = {
   "adminStatistics.common.fallback": "—",
   "adminStatistics.uploadLogs.authMethod.oauth2": "OAuth2",
   "adminStatistics.uploadLogs.authorizationSource.grant": "Grant",
+  "adminStatistics.uploadLogs.method.internal": "Internal upload",
+  "adminStatistics.uploadLogs.method.oauth2": "OAuth2",
+  "adminStatistics.uploadLogs.dataType.mysekaiBirthdayParty": "MySekai Birthday Party",
+  "adminStatistics.uploadLogs.authMethod.serviceToken": "Service token",
 }
 
 function t(key: string) {
@@ -43,6 +47,7 @@ describe("upload log meta helpers", () => {
 
   test("resolves auth method and authorization source labels", () => {
     expect(resolveUploadAuthMethodLabel("oauth2", t)).toBe("OAuth2")
+    expect(resolveUploadAuthMethodLabel("service_token", t)).toBe("Service token")
     expect(resolveUploadAuthMethodLabel(undefined, t)).toBe("—")
     expect(resolveUploadAuthorizationSourceLabel("grant", t)).toBe("Grant")
     expect(resolveUploadAuthorizationSourceLabel("", t)).toBe("—")
@@ -83,5 +88,13 @@ describe("upload log filter options", () => {
       expect(option.label).toMatch(/^[\w-]+(\.[\w-]+)+$/)
     }
     expect(getUploadSuccessOptions(identity).map((option) => option.value)).toEqual(["all", "true", "false"])
+  })
+
+  test("labels the logged-only values the proxies and services write", () => {
+    expect(resolveUploadMethodLabel("internal", t)).toBe("Internal upload")
+    expect(resolveUploadMethodLabel("oauth2", t)).toBe("OAuth2")
+    expect(resolveUploadDataTypeLabel("mysekai_birthday_party", t)).toBe("MySekai Birthday Party")
+    expect(getUploadMethodOptions(t).map((option) => option.value)).toContain("internal")
+    expect(getUploadDataTypeOptions(t).map((option) => option.value)).toContain("mysekai_birthday_party")
   })
 })

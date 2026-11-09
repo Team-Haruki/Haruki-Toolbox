@@ -1090,7 +1090,11 @@ export default {
       },
       "chart": {
         "title": "Trend chart",
-        "description": "Registration and upload trends",
+        "description": "Uploads and registrations side by side; the upload chart reads uploads on the left axis and failures on the right",
+        "uploadTitle": "Upload trend",
+        "registrationTitle": "Registration trend",
+        "uploadsAxis": "Uploads (left axis)",
+        "failuresAxis": "Failed uploads (right axis)",
         "uploads": "Uploads",
         "registrations": "Registrations",
         "failures": "Failures",
@@ -1208,7 +1212,8 @@ export default {
         "browserSession": "Browser session",
         "oauth2": "OAuth2 app",
         "iosUserCode": "iOS user code",
-        "gameSessionProxy": "Game session proxy"
+        "gameSessionProxy": "Game session proxy",
+        "serviceToken": "Service token"
       },
       "authorizationSource": {
         "owner": "Account owner",
@@ -1251,11 +1256,14 @@ export default {
         "iosProxy": "iOS proxy",
         "iosScript": "iOS script",
         "harukiProxy": "HarukiProxy",
-        "inherit": "Transfer code"
+        "inherit": "Transfer code",
+        "internal": "Internal upload",
+        "oauth2": "OAuth2"
       },
       "dataType": {
         "suite": "Suite",
-        "mysekai": "MySekai"
+        "mysekai": "MySekai",
+        "mysekaiBirthdayParty": "MySekai Birthday Party"
       },
       "sort": {
         "uploadTimeDesc": "Upload time ↓",
