@@ -399,6 +399,12 @@ export default {
       "submit": "登入",
       "noAccount": "還沒有帳號？",
       "registerLink": "註冊",
+      "refreshPasskey": {
+        "mismatchTitle": "再次驗證沒有完成",
+        "mismatchDescription": "你的裝置在驗證時沒有返回帳號資訊，登入服務無法確認是哪個帳號。退出後用通行密鑰重新登入一次即可繼續，重新登入後的 15 分鐘內不需要再次驗證。",
+        "relogin": "退出並重新登入",
+        "reloginFailed": "退出登入失敗，請重試。"
+      },
       "reasons": {
         "authRequired": "需要登入後才能訪問該頁面，登入後會自動返回。",
         "adminRequired": "該頁面需要管理員帳號登入，登入後會自動返回。",
