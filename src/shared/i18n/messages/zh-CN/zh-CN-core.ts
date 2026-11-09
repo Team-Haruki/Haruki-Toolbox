@@ -399,6 +399,12 @@ export default {
       "submit": "登录",
       "noAccount": "还没有账号？",
       "registerLink": "注册",
+      "refreshPasskey": {
+        "mismatchTitle": "再次验证没有完成",
+        "mismatchDescription": "你的设备在验证时没有返回账号信息，登录服务无法确认是哪个账号。退出后用通行密钥重新登录一次即可继续，重新登录后的 15 分钟内不需要再次验证。",
+        "relogin": "退出并重新登录",
+        "reloginFailed": "退出登录失败，请重试。"
+      },
       "reasons": {
         "authRequired": "需要登录后才能访问该页面，登录后会自动返回。",
         "adminRequired": "该页面需要管理员账号登录，登录后会自动返回。",

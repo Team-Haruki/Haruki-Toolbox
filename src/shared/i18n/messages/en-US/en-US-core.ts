@@ -399,6 +399,12 @@ export default {
       "submit": "Sign in",
       "noAccount": "No account yet?",
       "registerLink": "Register",
+      "refreshPasskey": {
+        "mismatchTitle": "Verification did not complete",
+        "mismatchDescription": "Your device did not return the account information during verification, so the sign-in service could not tell which account it was. Sign out and sign in again with your passkey to continue; no re-verification is needed for 15 minutes after signing in.",
+        "relogin": "Sign out and sign in again",
+        "reloginFailed": "Sign-out failed. Please try again."
+      },
       "reasons": {
         "authRequired": "You need to sign in to view that page. You will be taken back to it after signing in.",
         "adminRequired": "That page needs an administrator account. You will be taken back to it after signing in.",

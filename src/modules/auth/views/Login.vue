@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import { useRoute } from "vue-router"
 import { useI18n } from "vue-i18n"
+import { toast } from "vue-sonner"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Loader2, LogIn, Mail, Lock, KeyRound, Info } from "lucide-vue-next"
+import { Loader2, LogIn, LogOut, Mail, Lock, KeyRound, Info, CircleAlert } from "lucide-vue-next"
 import {
   isPasskeyAction,
   orderKratosActions,
@@ -27,7 +28,11 @@ import {
   buildFlowReturnTo,
   resolveAuthPageRedirect,
   resolveBrowserOrigin,
+  resolveRedirectFromFlowReturnTo,
 } from "@/modules/auth/lib/return-to"
+import { runDiscoverablePasskeyLogin } from "@/modules/auth/lib/passkey-refresh-login"
+import { localizeKratosWebAuthnAlert } from "@/modules/auth/lib/kratos-webauthn-alerts"
+import { logoutInPlaceStrict } from "@/modules/auth/api/logout"
 import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue"
 import KratosFieldInput from "@/modules/auth/components/KratosFieldInput.vue"
 import { resolveLoginReason } from "@/modules/auth/lib/login-reason"
@@ -160,13 +165,96 @@ const loginDescription = computed(() => {
   }
 })
 
+const formElement = ref<HTMLFormElement | null>(null)
+const passkeyChallenge = computed(
+  () => hiddenFields.value.find((field) => field.name === "passkey_challenge")?.value ?? ""
+)
+const passkeyBusy = ref(false)
+
+// A refresh flow pins the passkey request to the account's credentials, and
+// some phone authenticators then leave the user handle out, which Kratos
+// needs to find the account (see passkey-refresh-login.ts). The refresh
+// passkey button therefore sends a discoverable request of our own instead
+// of calling Kratos' webauthn.js.
+async function runRefreshPasskeyLogin() {
+  const form = formElement.value
+  if (!form) {
+    return
+  }
+
+  passkeyBusy.value = true
+  try {
+    const result = await runDiscoverablePasskeyLogin(passkeyChallenge.value, form)
+    if (result === "submitted") {
+      // The form is posting; keep the buttons disabled until the page unloads.
+      return
+    }
+    passkeyBusy.value = false
+    toast.error(result === "unsupported" ? t("auth.kratos.webauthn.unsupported") : t("auth.common.triggerUnavailable"))
+  } catch (error: unknown) {
+    passkeyBusy.value = false
+    toast.error(localizeKratosWebAuthnAlert(error))
+  }
+}
+
 function handleActionClick(action: LoginAction) {
   if (action.kind !== "trigger") {
     return
   }
 
   markLoginSuccessPending()
+  if (isRefreshFlow.value && isPasskeyAction(action) && passkeyChallenge.value !== "") {
+    void runRefreshPasskeyLogin()
+    return
+  }
   invokeVisibleFieldAction({ onClickTrigger: action.onClickTrigger })
+}
+
+// Kratos text id of "This account does not exist or has no security key set
+// up" (text/message_login.go). In a refresh flow it means the authenticator
+// did not hand back the user handle, not that the account is missing.
+const NO_WEBAUTHN_CREDENTIALS_ID = 4000015
+
+function isRefreshPasskeyMismatch(message: KratosFlowMessage): boolean {
+  return isRefreshFlow.value && message.id === NO_WEBAUTHN_CREDENTIALS_ID
+}
+
+const hasRefreshPasskeyMismatch = computed(() =>
+  [
+    ...generalMessages.value,
+    ...visibleFields.value.flatMap((field) => field.messages),
+    ...buttonFields.value.flatMap((field) => field.messages),
+    ...submitFields.value.flatMap((field) => field.messages),
+  ].some(isRefreshPasskeyMismatch)
+)
+
+function withoutRefreshPasskeyMismatch(messages: KratosFlowMessage[]): KratosFlowMessage[] {
+  return hasRefreshPasskeyMismatch.value ? messages.filter((message) => !isRefreshPasskeyMismatch(message)) : messages
+}
+
+const reloginBusy = ref(false)
+
+// A fresh sign-in sends a discoverable passkey request (which does carry the
+// user handle) and leaves the new session privileged for a while, so the
+// settings change that needed the refresh can be made right after it.
+async function signOutAndSignInAgain() {
+  reloginBusy.value = true
+  try {
+    await logoutInPlaceStrict()
+  } catch {
+    reloginBusy.value = false
+    toast.error(t("auth.login.refreshPasskey.reloginFailed"))
+    return
+  }
+
+  // Back to the page that asked for the refresh, minus its now-dead flow id.
+  const redirect = resolveRedirectFromFlowReturnTo(flowReturnTo.value, resolveBrowserOrigin(), [
+    "flow",
+    LOGIN_SUCCESS_QUERY_PARAM,
+  ])
+  const link = buildAuthPageLink("/user/login", redirect === "/" ? null : redirect)
+  const query = new URLSearchParams(link.query).toString()
+  window.location.assign(query ? `${link.path}?${query}` : link.path)
 }
 
 function handleSubmit(event: Event) {
@@ -240,11 +328,37 @@ const loginReasonText = computed(() => {
             {{ t("auth.common.restartFlow") }}
           </Button>
         </div>
-        <form v-else :action="action" :method="method" novalidate @submit="handleSubmit">
+        <form v-else ref="formElement" :action="action" :method="method" novalidate @submit="handleSubmit">
           <div class="grid gap-6">
             <input v-for="field in hiddenFields" :key="field.key" type="hidden" :name="field.name" :value="field.value" />
 
-            <KratosFlowMessages :messages="generalMessages" />
+            <KratosFlowMessages :messages="withoutRefreshPasskeyMismatch(generalMessages)" />
+
+            <div
+              v-if="hasRefreshPasskeyMismatch"
+              class="space-y-3 rounded-md border border-amber-300 border-l-4 border-l-amber-500 bg-amber-50 px-3 py-3 text-sm text-amber-800 dark:border-amber-900/40 dark:border-l-amber-400 dark:bg-amber-900/20 dark:text-amber-200"
+              role="alert"
+              data-testid="login-refresh-passkey-mismatch"
+            >
+              <div class="flex items-start gap-2">
+                <CircleAlert class="mt-0.5 h-4 w-4 shrink-0" />
+                <div class="space-y-1">
+                  <p class="font-medium">{{ t("auth.login.refreshPasskey.mismatchTitle") }}</p>
+                  <p>{{ t("auth.login.refreshPasskey.mismatchDescription") }}</p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                class="w-full bg-background"
+                :disabled="reloginBusy"
+                @click="signOutAndSignInAgain"
+              >
+                <Loader2 v-if="reloginBusy" class="mr-2 h-4 w-4 animate-spin" />
+                <LogOut v-else class="mr-2 h-4 w-4" />
+                {{ t("auth.login.refreshPasskey.relogin") }}
+              </Button>
+            </div>
 
             <div v-for="(field, index) in visibleFields" :key="field.key" class="grid gap-2">
               <div class="flex items-center">
@@ -284,7 +398,7 @@ const loginReasonText = computed(() => {
                 :error="fieldErrors[field.name]"
                 :autofocus="index === 0 && isReady"
               />
-              <KratosFlowMessages :messages="field.messages" />
+              <KratosFlowMessages :messages="withoutRefreshPasskeyMismatch(field.messages)" />
             </div>
 
             <div v-if="orderedLoginActions.length > 0" class="space-y-2">
@@ -297,13 +411,13 @@ const loginReasonText = computed(() => {
                   :name="actionItem.name || undefined"
                   :value="actionItem.value || undefined"
                   :data-kratos-submit="actionItem.kind === 'submit' ? actionItem.key : undefined"
-                  :disabled="!isReady || actionItem.disabled"
+                  :disabled="!isReady || actionItem.disabled || passkeyBusy"
                   @click="handleActionClick(actionItem)"
                 >
                   <component :is="actionIcon(actionItem)" class="h-4 w-4 mr-2" />
                   {{ actionItem.label }}
                 </Button>
-                <KratosFlowMessages :messages="actionItem.messages" />
+                <KratosFlowMessages :messages="withoutRefreshPasskeyMismatch(actionItem.messages)" />
               </div>
             </div>
             <Button v-else type="submit" class="w-full" :disabled="!isReady">

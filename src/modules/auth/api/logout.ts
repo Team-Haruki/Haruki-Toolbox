@@ -25,6 +25,15 @@ export async function logoutInPlace() {
     await performKratosLogout().catch(() => undefined);
 }
 
+/**
+ * Like logoutInPlace, but a failed Kratos logout is reported to the caller,
+ * for flows that must not continue while the session is still alive.
+ */
+export async function logoutInPlaceStrict() {
+    await clearLocalUserState();
+    await performKratosLogout();
+}
+
 export async function logout() {
     await clearLocalUserState();
 
