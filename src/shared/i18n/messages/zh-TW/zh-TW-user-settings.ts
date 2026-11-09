@@ -169,6 +169,9 @@ export default {
       }
     },
     "kratosFlow": {
+      "hints": {
+        "lastSignInMethod": "這是帳號目前唯一的登入方式，先設定密碼或綁定其他登入方式後才能移除。"
+      },
       "description": "在這裡完成修改，儲存後會返回帳號設定。",
       "titles": {
         "profile": "修改信箱或暱稱",

@@ -61,6 +61,8 @@ export interface KratosBrowserFlow {
   return_to?: string
   /** Flow state, e.g. "choose_method", "sent_email" or "passed_challenge" for verification. */
   state?: string
+  /** Login flows only: true when Kratos asked the signed-in user to prove it is still them. */
+  refresh?: boolean
   ui: {
     action: string
     method: string

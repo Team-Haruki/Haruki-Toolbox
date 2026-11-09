@@ -461,6 +461,13 @@ interface SettingsAction {
   labelId: number | null
 }
 
+const LAST_METHOD_REMOVAL_NAMES = new Set(["passkey_remove", "webauthn_remove"])
+
+/** A disabled passkey / security key removal: Kratos greys it out while it is the account's only way to sign in. */
+function isLastSignInMethodRemoval(action: { name: string; disabled?: boolean }): boolean {
+  return action.disabled === true && LAST_METHOD_REMOVAL_NAMES.has(action.name)
+}
+
 function isDangerousAction(action: SettingsAction): boolean {
   return (action.labelId !== null && DANGEROUS_LABEL_IDS.has(action.labelId)) || DANGEROUS_NODE_NAMES.has(action.name)
 }
@@ -695,6 +702,10 @@ const kratosHost = computed(() => {
                     <component :is="iconForSubmit(submit)" class="mr-2 h-4 w-4 shrink-0" aria-hidden="true" />
                     <span class="break-words">{{ submit.label }}</span>
                   </Button>
+                  <!-- Kratos disables removing the last sign-in method; say why instead of leaving a dead button. -->
+                  <p v-if="isLastSignInMethodRemoval(submit)" class="text-xs text-muted-foreground" data-testid="kratos-last-method-hint">
+                    {{ t("userSettings.kratosFlow.hints.lastSignInMethod") }}
+                  </p>
                   <KratosFlowMessages :messages="submit.messages" />
                 </div>
               </div>

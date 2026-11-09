@@ -869,6 +869,7 @@ export function useKratosBrowserFlow(
   const submitValue = computed(() => submitFields.value[0]?.value ?? "")
 
   const action = computed(() => flow.value?.ui.action ?? "")
+  const isRefreshFlow = computed(() => flow.value?.refresh === true)
   const flowReturnTo = computed(() =>
     typeof flow.value?.return_to === "string" ? flow.value.return_to : ""
   )
@@ -903,6 +904,7 @@ export function useKratosBrowserFlow(
     action,
     flowReturnTo,
     flowState,
+    isRefreshFlow,
     method,
     invokeVisibleFieldAction,
     restartFlow,
