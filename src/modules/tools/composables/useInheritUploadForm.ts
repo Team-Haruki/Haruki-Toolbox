@@ -49,7 +49,7 @@ export function useInheritUploadForm(hasVerifiedQQ: Ref<boolean>) {
     { immediate: true },
   )
 
-  /** The entered password cannot become the new code's password: suggest "random". */
+  /** The current password must be valid regardless of how the next one is generated. */
   const reuseBlocked = computed(() => {
     const password = credentials.value?.inheritPassword ?? ""
     return password !== "" && !isReusableInheritPassword(password)
@@ -82,7 +82,7 @@ export function useInheritUploadForm(hasVerifiedQQ: Ref<boolean>) {
       ? t("tools.uploadData.toast.inheritPasswordRequired")
       : new TextEncoder().encode(password).length > 64
         ? t("tools.uploadData.inheritTab.newPassword.tooLong")
-        : newPasswordMode.value === "reuse" && !isReusableInheritPassword(password)
+        : !isReusableInheritPassword(password)
           ? t("tools.uploadData.inheritTab.newPassword.reuseBlocked")
           : ""
     const firstInvalid = (["inheritId", "inheritPassword", "inheritText"] as const).find((field) => fieldErrors[field])

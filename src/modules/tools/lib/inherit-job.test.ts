@@ -127,13 +127,18 @@ describe("job state questions", () => {
 })
 
 describe("password rules", () => {
-  it("accepts only 8-16 printable ASCII characters without spaces for reuse", () => {
+  it("accepts only 8-16 ASCII letters or digits for reuse", () => {
     expect(isReusableInheritPassword("abcd1234")).toBe(true)
-    expect(isReusableInheritPassword("A!b@c#d$e%f^g&h*")).toBe(true)
+    expect(isReusableInheritPassword("AbCdEfGhIjKlMnOp")).toBe(true)
+    expect(isReusableInheritPassword("12345678")).toBe(true)
+    expect(isReusableInheritPassword("1234567890123456")).toBe(true)
+    expect(isReusableInheritPassword("A!b@c#d$e%f^g&h*")).toBe(false)
+    expect(isReusableInheritPassword("abcd_123")).toBe(false)
     expect(isReusableInheritPassword("short7")).toBe(false)
-    expect(isReusableInheritPassword("seventeen-chars-x")).toBe(false)
+    expect(isReusableInheritPassword("12345678901234567")).toBe(false)
     expect(isReusableInheritPassword("with space")).toBe(false)
     expect(isReusableInheritPassword("全角パスワード1234")).toBe(false)
+    expect(isReusableInheritPassword("ａｂｃｄ１２３４")).toBe(false)
   })
 
   it("checks the vault PIN length in characters", () => {

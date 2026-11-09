@@ -546,7 +546,7 @@ export default {
           "reuseHint": "The new code uses the password you just entered, so it is easy to remember.",
           "random": "Generate a random one",
           "randomHint": "A random password of 12 letters and digits.",
-          "reuseBlocked": "This password cannot be kept: it must be 8–16 half-width letters, digits or symbols without spaces; choose “Generate a random one”",
+          "reuseBlocked": "The transfer password must be 8–16 half-width letters or digits without spaces",
           "tooLong": "The transfer password is too long"
         },
         "alerts": {
