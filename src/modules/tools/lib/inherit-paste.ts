@@ -23,8 +23,13 @@ export function parseInheritPaste(text: string): PastedInheritCredentials | null
 
     let value = match[2]!.trim()
     // Some game clients put the value on the line after its label.
-    while (!value && index + 1 < lines.length) value = lines[++index]!.trim()
-    if (!value || FIELD_LINE.test(value) || /\s/u.test(value)) return null
+    if (!value) {
+      while (!value && index + 1 < lines.length) value = lines[++index]!.trim()
+      // A new labelled field cannot fill a missing value. A bare word such
+      // as "password", however, can be the credential itself.
+      if (FIELD_LINE.test(value) && /[:：]/u.test(value)) return null
+    }
+    if (!value || /\s/u.test(value)) return null
     values.set(field, value)
   }
 

@@ -23,6 +23,22 @@ describe("parseInheritPaste", () => {
     expect(parseInheritPaste(text)).toEqual({ inheritId: ID, inheritPassword: PASSWORD })
   })
 
+  it.each(["password", "Password", "PASSWORD", "transferpassword"])("preserves a password that also matches a field label: %s", (password) => {
+    for (const separator of [": ", ":\n", "\n"]) {
+      expect(parseInheritPaste(`Transfer ID: ${ID}\nPassword${separator}${password}`)).toEqual({
+        inheritId: ID,
+        inheritPassword: password,
+      })
+    }
+  })
+
+  it("preserves an ID that also matches a field label", () => {
+    expect(parseInheritPaste(`Transfer ID: transferpassword\nPassword: ${PASSWORD}`)).toEqual({
+      inheritId: "transferpassword",
+      inheritPassword: PASSWORD,
+    })
+  })
+
   it.each([
     "",
     ID,
@@ -30,7 +46,10 @@ describe("parseInheritPaste", () => {
     `Transfer ID: ${ID}`,
     `Password: ${PASSWORD}`,
     `Transfer ID:\nPassword: ${PASSWORD}`,
+    `Transfer ID:\nPassword:${PASSWORD}`,
     `Transfer ID: ${ID}\nPassword:`,
+    `Transfer ID: ${ID}\nPassword:\nPassword:`,
+    `Transfer ID: ${ID}\nPassword:\nTransfer ID: ZYXWVUTS12345678`,
     `Transfer ID: ${ID}9\nPassword: ${PASSWORD}`,
     `Transfer ID: ${ID.slice(1)}\nPassword: ${PASSWORD}`,
     `Transfer ID: ＡBCD123456789012\nPassword: ${PASSWORD}`,
