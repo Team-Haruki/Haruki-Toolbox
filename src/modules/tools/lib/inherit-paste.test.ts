@@ -63,6 +63,10 @@ describe("parseInheritPaste", () => {
     expect(parseInheritPaste(text)).toBeNull()
   })
 
+  it.each(["\u2028", "\u2029"])("rejects a missing value after a long separator and Unicode line break", (lineBreak) => {
+    expect(parseInheritPaste(`Transfer ID: ${ID}\nPassword${" ".repeat(4000)}${lineBreak}`)).toBeNull()
+  })
+
   it("leaves password reuse policy to the form", () => {
     for (const password of ["short", "x".repeat(64), "ｐａｓｓ１２３４"]) {
       expect(parseInheritPaste(`Transfer ID: ${ID}\nPassword: ${password}`)?.inheritPassword).toBe(password)
