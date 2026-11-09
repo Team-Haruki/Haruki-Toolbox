@@ -164,6 +164,138 @@ async function fillForm(page: Page, password: string) {
 }
 
 test.describe("transfer-code upload", () => {
+  for (const { name, text } of [
+    { name: "JP", text: "引き継ぎID：AbCdEFGH12345678\nパスワード：aBcD1234" },
+    { name: "EN", text: "Transfer ID: AbCdEFGH12345678\nPassword: aBcD1234" },
+  ]) {
+    test(`reads ${name} pasted information with both manual fields empty`, async ({ page }) => {
+      await signIn(page)
+      const calls = await mockApi(page, {
+        extra: (route, url, method) => {
+          if (url.pathname === "/api/inherit/jobs" && method === "POST") {
+            return route.fulfill(envelope({ job_id: JOB_ID, job: AWAITING() }, 202))
+          }
+        },
+      })
+      await page.routeWebSocket(/\/api\/inherit\/jobs\/.+\/ws/, (ws) => {
+        ws.send(JSON.stringify({ type: "snapshot", job: AWAITING() }))
+      })
+      await page.goto("/upload-data?tab=inherit")
+      const information = page.locator("#inherit-text")
+      await expect(information).toHaveAttribute("placeholder", /粘贴|Paste/)
+      await expect(information).toHaveAttribute("rows", "4")
+      await information.fill(text)
+      await expect(page.locator("#inherit-id")).toHaveValue("")
+      await expect(page.locator("#inherit-password")).toHaveValue("")
+      await page.locator("#upload-data-inherit-form").getByRole("combobox").first().click()
+      await page.getByRole("option", { name: name === "JP" ? /日服|JP/ : /国际服|EN/ }).click()
+      // Editing the text alone must not create a job.
+      expect(calls.some((call) => call.path === "/api/inherit/jobs")).toBe(false)
+      await page.locator('button[form="upload-data-inherit-form"]').click()
+      await expect(page.getByTestId("inherit-confirm")).toBeVisible()
+      expect(calls.find((call) => call.path === "/api/inherit/jobs")?.body).toEqual({
+        server: name === "JP" ? "jp" : "en",
+        upload_type: "suite",
+        inherit_id: "AbCdEFGH12345678",
+        inherit_password: "aBcD1234",
+        new_password_mode: "reuse",
+      })
+      const storage = await page.evaluate(() => JSON.stringify([localStorage, sessionStorage]))
+      expect(storage).not.toContain("AbCdEFGH12345678")
+      expect(storage).not.toContain("aBcD1234")
+    })
+  }
+
+  test("does not fall back to manual credentials when pasted text is invalid", async ({ page }) => {
+    await signIn(page)
+    const calls = await mockApi(page, {
+      extra: (route, url, method) => {
+        if (url.pathname === "/api/inherit/jobs" && method === "POST") {
+          return route.fulfill(envelope({ job_id: JOB_ID, job: AWAITING() }, 202))
+        }
+      },
+    })
+    await page.routeWebSocket(/\/api\/inherit\/jobs\/.+\/ws/, (ws) => {
+      ws.send(JSON.stringify({ type: "snapshot", job: AWAITING() }))
+    })
+    await page.goto("/upload-data?tab=inherit")
+    await fillForm(page, "manualPass123")
+    await page.locator("#inherit-text").fill("Transfer ID: AbCdEFGH12345678")
+    await page.locator('button[form="upload-data-inherit-form"]').click()
+    await expect(page.locator("#inherit-text-error")).toBeVisible()
+    await expect(page.locator("#inherit-text")).toBeFocused()
+    expect(calls.some((call) => call.path === "/api/inherit/jobs")).toBe(false)
+    await expect(page.locator("#inherit-id")).toHaveValue("ABCDEFGH12345678")
+    await expect(page.locator("#inherit-password")).toHaveValue("manualPass123")
+    // Clearing the alternative input restores the existing manual flow.
+    await page.locator("#inherit-text").fill("")
+    await page.locator('button[form="upload-data-inherit-form"]').click()
+    await expect(page.getByTestId("inherit-confirm")).toBeVisible()
+    expect(calls.find((call) => call.path === "/api/inherit/jobs")?.body).toMatchObject({
+      inherit_id: "ABCDEFGH12345678",
+      inherit_password: "manualPass123",
+    })
+  })
+
+  for (const mode of ["reuse", "random"] as const) {
+    test(`validates pasted passwords in ${mode} mode before creating a job`, async ({ page }) => {
+      await page.setViewportSize({ width: mode === "reuse" ? 1280 : 390, height: 844 })
+      await signIn(page)
+      const calls = await mockApi(page, {
+        extra: (route, url, method) => {
+          if (url.pathname === "/api/inherit/jobs" && method === "POST") {
+            return route.fulfill(envelope({ job_id: JOB_ID, job: AWAITING() }, 202))
+          }
+        },
+      })
+      await page.routeWebSocket(/\/api\/inherit\/jobs\/.+\/ws/, (ws) => {
+        ws.send(JSON.stringify({ type: "snapshot", job: AWAITING() }))
+      })
+      await page.goto("/upload-data?tab=inherit")
+      // The paste must take priority over these valid but different credentials.
+      await fillForm(page, "manualPass123")
+      await page.locator(`input[name="inherit-new-password-mode"][value="${mode}"]`).check()
+      for (const password of ["short", "12345678901234567", "abcd!123", "ｐａｓｓ１２３４"]) {
+        await page.locator("#inherit-text").fill(`Transfer ID: AbCdEFGH12345678\nPassword: ${password}`)
+        await page.locator('button[form="upload-data-inherit-form"]').click()
+        await expect(page.locator("#inherit-text-error")).toBeVisible()
+        await expect(page.locator("#inherit-text")).toBeFocused()
+        await expect(page.getByTestId("inherit-job")).toHaveCount(0)
+        expect(calls.some((call) => call.path === "/api/inherit/jobs")).toBe(false)
+      }
+      // A password equal to its label is valid, both inline and on the next line.
+      const separator = mode === "reuse" ? ":\n" : ": "
+      await page.locator("#inherit-text").fill(`Transfer ID: AbCdEFGH12345678\nPassword${separator}password`)
+      await expect(page.locator("#inherit-text-error")).toHaveCount(0)
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+      await page.locator('button[form="upload-data-inherit-form"]').click()
+      await expect(page.getByTestId("inherit-confirm")).toBeVisible()
+      expect(calls.find((call) => call.path === "/api/inherit/jobs")?.body).toMatchObject({
+        inherit_id: "AbCdEFGH12345678",
+        inherit_password: "password",
+        new_password_mode: mode,
+      })
+    })
+  }
+
+  test("shows backend credential errors on the pasted information field", async ({ page }) => {
+    await signIn(page)
+    const calls = await mockApi(page, {
+      extra: (route, url, method) => {
+        if (url.pathname === "/api/inherit/jobs" && method === "POST") {
+          return route.fulfill(problem(400, "inherit_password_invalid"))
+        }
+      },
+    })
+    await page.goto("/upload-data?tab=inherit")
+    await page.locator("#inherit-text").fill("Transfer ID: AbCdEFGH12345678\nPassword: testPass123")
+    await page.locator('button[form="upload-data-inherit-form"]').click()
+    await expect(page.locator("#inherit-text-error")).toBeVisible()
+    await expect(page.locator("#inherit-text")).toBeFocused()
+    await expect(page.locator("#inherit-password-error")).toHaveCount(0)
+    expect(calls.some((call) => call.path === "/api/inherit/jobs")).toBe(true)
+  })
+
   test("asks to sign in first", async ({ page }) => {
     await page.route("**/*", (route) => new URL(route.request().url()).host === "127.0.0.1:4173" ? route.continue() : route.abort())
     await page.goto("/upload-data?tab=inherit")
