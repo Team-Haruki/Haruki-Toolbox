@@ -18,7 +18,8 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import UploadPanelHeader from "@/modules/tools/components/upload/UploadPanelHeader.vue"
 import { toInheritApiError } from "@/modules/tools/api/inherit"
 import {
   canCancelJob,
@@ -35,6 +36,7 @@ import type { InheritUnlockInput, InheritVaultKeyStatus } from "@/modules/tools/
 import { describeInheritApiError, describeJobError, describeJobWarning } from "@/modules/tools/lib/inherit-messages"
 import InheritJobConfirm from "@/modules/tools/components/inherit/InheritJobConfirm.vue"
 import InheritJobSteps from "@/modules/tools/components/inherit/InheritJobSteps.vue"
+import InheritJobPhases from "@/modules/tools/components/inherit/InheritJobPhases.vue"
 import InheritNewCodeCard from "@/modules/tools/components/inherit/InheritNewCodeCard.vue"
 
 const props = defineProps<{
@@ -130,13 +132,9 @@ function dismiss() {
     :data-job-status="job.status"
     :data-expired="expired ? 'true' : undefined"
   >
-    <CardHeader class="gap-2">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <CardTitle id="inherit-job-title" class="flex items-center gap-2">
-          <ServerCog class="size-5" />
-          {{ t("tools.uploadData.inheritJob.title") }}
-        </CardTitle>
-        <div class="flex items-center gap-1.5">
+    <CardHeader>
+      <UploadPanelHeader :icon="ServerCog" :title="t('tools.uploadData.inheritJob.title')" :description="summary" title-id="inherit-job-title">
+        <template #action>
           <Badge :variant="STATUS_VARIANT[statusKey]" data-testid="inherit-job-status" :data-status="statusKey">
             {{ t(`tools.uploadData.inheritJob.status.${statusKey}`) }}
           </Badge>
@@ -152,12 +150,13 @@ function dismiss() {
             <Loader2 v-else class="animate-spin" />
             {{ t(`tools.uploadData.inheritJob.connection.${connectionState}`) }}
           </Badge>
-        </div>
-      </div>
-      <CardDescription>{{ summary }}</CardDescription>
+        </template>
+      </UploadPanelHeader>
     </CardHeader>
 
     <CardContent class="space-y-4">
+      <InheritJobPhases :job="job" />
+
       <InheritNewCodeCard
         v-if="newCode"
         :inherit-id="newCode.inheritId"

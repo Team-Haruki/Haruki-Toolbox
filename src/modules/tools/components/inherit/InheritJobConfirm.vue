@@ -97,24 +97,24 @@ function updateField(field: "secret" | "repeat" | "previousPassword", value: str
       <p class="text-sm text-muted-foreground">{{ t("tools.uploadData.inheritJob.confirm.description") }}</p>
     </div>
 
-    <dl v-if="preview" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
-      <div class="min-w-0 rounded-lg border bg-muted/20 p-3">
+    <dl v-if="preview" class="grid grid-cols-2 overflow-hidden rounded-xl border bg-muted/20 sm:grid-cols-3">
+      <div class="min-w-0 border-b border-r border-border/60 px-4 py-3 sm:border-b-0">
         <dt class="flex items-center gap-1.5 text-xs text-muted-foreground">
           <UserRound class="size-3.5" />{{ t("tools.uploadData.inheritJob.confirm.nickname") }}
         </dt>
         <dd class="mt-1 truncate text-base font-semibold" data-testid="inherit-preview-nickname">{{ preview.nickname || "—" }}</dd>
       </div>
-      <div class="min-w-0 rounded-lg border bg-muted/20 p-3">
+      <div class="min-w-0 border-b border-border/60 px-4 py-3 sm:border-b-0 sm:border-r">
         <dt class="text-xs text-muted-foreground">{{ t("tools.uploadData.inheritJob.confirm.rank") }}</dt>
         <dd class="mt-1 text-base font-semibold tabular-nums">{{ preview.rank }}</dd>
       </div>
-      <div class="col-span-2 min-w-0 rounded-lg border bg-muted/20 p-3 sm:col-span-1">
+      <div class="col-span-2 min-w-0 px-4 py-3 sm:col-span-1">
         <dt class="text-xs text-muted-foreground">{{ t("tools.uploadData.inheritJob.confirm.userId") }}</dt>
         <dd class="mt-1 break-all font-mono text-sm font-semibold">{{ preview.gameUserIdMasked || "—" }}</dd>
       </div>
     </dl>
 
-    <div class="rounded-lg border p-3 text-sm" data-testid="inherit-restriction">
+    <div class="rounded-xl border bg-muted/20 px-4 py-3 text-sm" data-testid="inherit-restriction">
       <p class="font-medium">{{ t("tools.uploadData.inheritJob.confirm.restriction.title") }}</p>
       <template v-if="restriction && (restriction.isRestrictDeviceTransfer || restriction.isWorldBloomChapter)">
         <ul class="mt-1.5 space-y-1 text-muted-foreground">

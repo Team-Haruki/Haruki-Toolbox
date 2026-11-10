@@ -682,7 +682,7 @@ test.describe("transfer-code upload", () => {
     const reissue = calls.find((call) => call.path.endsWith("/reissue"))
     expect(reissue?.body).toEqual({ password: "toolbox-pw", new_password_mode: "random" })
 
-    await row.getByRole("button", { name: /我已在手机上恢复|I recovered it on my phone/ }).click()
+    await row.getByRole("button", { name: /我已在设备上恢复|I recovered it on my device/ }).click()
     await page.getByRole("alertdialog").getByRole("button", { name: /确认删除|Delete/ }).click()
     await expect(page.getByTestId("inherit-vault-entry")).toHaveCount(0)
     expect(calls.some((call) => call.method === "DELETE" && call.path === "/api/inherit/vault/entries/entry-1")).toBe(true)

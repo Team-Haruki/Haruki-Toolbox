@@ -14,6 +14,7 @@ import {
   remainingParts,
   splitUnreachedSteps,
   stepDurationMs,
+  summarizeJobPhases,
   type InheritJob,
 } from "@/modules/tools/lib/inherit-job"
 
@@ -205,6 +206,41 @@ describe("job moments", () => {
     const awaiting = job({ status: "awaiting_confirm" })
     expect(jobMomentBetween(null, awaiting)).toBeNull()
     expect(jobMomentBetween(job({ id: "job-0" }), awaiting)).toBeNull()
+  })
+})
+
+describe("summarizeJobPhases", () => {
+  const statuses = (value: InheritJob) => Object.fromEntries(summarizeJobPhases(value).map((phase) => [phase.key, phase.status]))
+
+  it("starts with every phase pending and follows the running step", () => {
+    expect(statuses(job())).toEqual({ read: "pending", confirm: "pending", transfer: "pending", data: "pending" })
+    const reading = job({ steps: withSteps({ bootstrap: "done", preview: "running" }) })
+    expect(statuses(reading)).toEqual({ read: "running", confirm: "pending", transfer: "pending", data: "pending" })
+    const waiting = job({ status: "awaiting_confirm", steps: withSteps({ bootstrap: "done", preview: "done", awaiting_confirm: "running" }) })
+    expect(statuses(waiting)).toEqual({ read: "done", confirm: "running", transfer: "pending", data: "pending" })
+  })
+
+  it("keeps a phase running between two of its steps", () => {
+    const between = job({ steps: withSteps({ bootstrap: "done", preview: "done", awaiting_confirm: "done", execute: "done" }) })
+    expect(statuses(between).transfer).toBe("running")
+  })
+
+  it("counts skipped steps as finished and marks the failed phase", () => {
+    const done = job({ status: "succeeded", steps: INHERIT_JOB_STEPS.map((name) => ({ name, status: name === "fetch_mysekai" ? "skipped" : "done" })) })
+    expect(statuses(done)).toEqual({ read: "done", confirm: "done", transfer: "done", data: "done" })
+    const failed = job({
+      status: "failed",
+      steps: withSteps({
+        bootstrap: "done", preview: "done", awaiting_confirm: "done", execute: "done", vault_store_credential: "done",
+        login: "done", issue_new_code: "done", vault_store_code: "done", fetch_suite: "failed",
+      }),
+    })
+    expect(statuses(failed)).toEqual({ read: "done", confirm: "done", transfer: "done", data: "failed" })
+  })
+
+  it("marks the phase a cancelled job stopped in, and leaves later ones pending", () => {
+    const cancelled = job({ status: "cancelled", steps: withSteps({ bootstrap: "done", preview: "done", awaiting_confirm: "running" }) })
+    expect(statuses(cancelled)).toEqual({ read: "done", confirm: "stopped", transfer: "pending", data: "pending" })
   })
 })
 

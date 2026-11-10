@@ -114,7 +114,7 @@ const rows = computed(() => visibleSteps.value.map((step) => ({
         marksConsumption ? 'mt-2 border-t border-dashed pt-2.5' : '',
       ]"
     >
-      <p v-if="marksConsumption" class="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+      <p v-if="marksConsumption" class="mb-1.5 text-xs font-medium text-muted-foreground">
         {{ t("tools.uploadData.inheritJob.consumesCode") }}
       </p>
       <div class="flex items-center gap-2.5">
