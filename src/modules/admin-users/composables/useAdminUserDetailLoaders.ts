@@ -1,9 +1,10 @@
+import type { Ref } from "vue"
 import { getAuthorizedSocialPlatforms } from "@/modules/admin-users/api/authorized-social"
 import { getGameAccountBindings } from "@/modules/admin-users/api/game-binding"
 import { getUserOAuthAuthorizations } from "@/modules/admin-users/api/oauth"
 import { getSocialPlatform } from "@/modules/admin-users/api/social"
 import { getUserActivity, getUserDetail } from "@/modules/admin-users/api/user"
-import { describeError, isNotFoundError } from "@/lib/error-utils"
+import { describeError, isNotFoundError, type ErrorDescription } from "@/lib/error-utils"
 import { assertUserDetailPayload } from "@/modules/admin-users/lib/user-detail-payload"
 import { translate } from "@/shared/i18n"
 import type { LoaderRunOptions } from "./useAdminUserDetailActionTypes"
@@ -23,31 +24,27 @@ interface CreateLoadersParams {
 }
 
 export function createAdminUserDetailLoaders({ userId, state, runLoad }: CreateLoadersParams) {
-  const { refs, markTabLoaded, shouldLoadTab } = state
+  const { refs, markSectionLoaded } = state
 
-  function toLoadOptions(options?: LoaderRunOptions) {
+  /**
+   * Options for a section's load. Without explicit options it is the page
+   * loading the section: a failure is shown inside the section (with a
+   * retry), not as a toast. A strict refresh after an action keeps the
+   * caller's handling and leaves the list on screen as it was.
+   */
+  function sectionLoadOptions(errorRef: Ref<ErrorDescription | null>, errorTitle: string, options?: LoaderRunOptions) {
+    const inline = options?.notifyOnError === undefined
+    if (inline) {
+      errorRef.value = null
+    }
     return {
+      errorTitle,
       throwOnError: options?.throwOnError,
-      notifyOnError: options?.notifyOnError,
-    }
-  }
-
-  function shouldTriggerTabLoad(tab: "activity" | "oauth" | "game" | "social" | "auth-social") {
-    if (!shouldLoadTab(tab)) {
-      return false
-    }
-
-    switch (tab) {
-      case "activity":
-        return !refs.activityLoading.value
-      case "oauth":
-        return !refs.oauthLoading.value
-      case "game":
-        return !refs.gameBindingLoading.value
-      case "social":
-        return !refs.socialLoading.value
-      case "auth-social":
-        return !refs.authSocialLoading.value
+      notifyOnError: inline ? false : options?.notifyOnError,
+      onError: (error: unknown) => {
+        if (!inline) return
+        errorRef.value = describeError(error, translate("adminUsers.detail.toast.actionFailedFallback"))
+      },
     }
   }
 
@@ -62,7 +59,7 @@ export function createAdminUserDetailLoaders({ userId, state, runLoad }: CreateL
     // A 200 with another shape is an error like any other (inline, retryable).
     await runLoad(refs.loading, async () => assertUserDetailPayload(await getUserDetail(userId())), {
       errorTitle: translate("adminUsers.detail.toast.loadUserFailedTitle"),
-      ...toLoadOptions(options),
+      throwOnError: options?.throwOnError,
       notifyOnError: inline ? false : options?.notifyOnError,
       onSuccess: (data) => {
         refs.user.value = data
@@ -84,67 +81,75 @@ export function createAdminUserDetailLoaders({ userId, state, runLoad }: CreateL
 
   async function loadActivities(options?: LoaderRunOptions) {
     await runLoad(refs.activityLoading, () => getUserActivity(userId()), {
-      errorTitle: translate("adminUsers.detail.toast.loadActivityFailedTitle"),
-      ...toLoadOptions(options),
+      ...sectionLoadOptions(refs.activityError, translate("adminUsers.detail.toast.loadActivityFailedTitle"), options),
       onSuccess: (response) => {
         refs.activities.value = response.systemLogs ?? []
         refs.uploadLogs.value = response.uploadLogs ?? []
-        markTabLoaded("activity")
+        refs.activityScope.value = response.from && response.to && response.summary
+          ? {
+              from: response.from,
+              to: response.to,
+              systemLogTotal: response.summary.systemLogTotal,
+              uploadLogTotal: response.summary.uploadLogTotal,
+            }
+          : null
+        refs.activityError.value = null
+        markSectionLoaded("activity")
       },
     })
   }
 
   async function loadOAuth(options?: LoaderRunOptions) {
     await runLoad(refs.oauthLoading, () => getUserOAuthAuthorizations(userId()), {
-      errorTitle: translate("adminUsers.detail.toast.loadOAuthFailedTitle"),
-      ...toLoadOptions(options),
+      ...sectionLoadOptions(refs.oauthError, translate("adminUsers.detail.toast.loadOAuthFailedTitle"), options),
       onSuccess: (data) => {
         refs.oauthAuths.value = data
-        markTabLoaded("oauth")
+        refs.oauthError.value = null
+        markSectionLoaded("oauth")
       },
     })
   }
 
   async function loadGameBindings(options?: LoaderRunOptions) {
     await runLoad(refs.gameBindingLoading, () => getGameAccountBindings(userId()), {
-      errorTitle: translate("adminUsers.detail.toast.loadGameBindingsFailedTitle"),
-      ...toLoadOptions(options),
+      ...sectionLoadOptions(refs.gameBindingError, translate("adminUsers.detail.toast.loadGameBindingsFailedTitle"), options),
       onSuccess: (data) => {
         refs.gameBindings.value = data
-        markTabLoaded("game")
+        refs.gameBindingError.value = null
+        markSectionLoaded("game")
       },
     })
   }
 
   async function loadSocialPlatform(options?: LoaderRunOptions) {
     await runLoad(refs.socialLoading, () => getSocialPlatform(userId()), {
-      errorTitle: translate("adminUsers.detail.toast.loadSocialFailedTitle"),
-      ...toLoadOptions(options),
+      ...sectionLoadOptions(refs.socialError, translate("adminUsers.detail.toast.loadSocialFailedTitle"), options),
       onSuccess: (data) => {
         refs.socialPlatform.value = data
-        markTabLoaded("social")
+        refs.socialError.value = null
+        markSectionLoaded("social")
       },
     })
   }
 
   async function loadAuthorizedSocials(options?: LoaderRunOptions) {
     await runLoad(refs.authSocialLoading, () => getAuthorizedSocialPlatforms(userId()), {
-      errorTitle: translate("adminUsers.detail.toast.loadAuthSocialFailedTitle"),
-      ...toLoadOptions(options),
+      ...sectionLoadOptions(refs.authSocialError, translate("adminUsers.detail.toast.loadAuthSocialFailedTitle"), options),
       onSuccess: (data) => {
         refs.authorizedSocials.value = data
-        markTabLoaded("auth-social")
+        refs.authSocialError.value = null
+        markSectionLoaded("auth-social")
       },
     })
   }
 
-  function onTabChange(tab: string | number) {
-    const value = String(tab)
-    if (value === "activity" && shouldTriggerTabLoad("activity")) void loadActivities()
-    if (value === "oauth" && shouldTriggerTabLoad("oauth")) void loadOAuth()
-    if (value === "game" && shouldTriggerTabLoad("game")) void loadGameBindings()
-    if (value === "social" && shouldTriggerTabLoad("social")) void loadSocialPlatform()
-    if (value === "auth-social" && shouldTriggerTabLoad("auth-social")) void loadAuthorizedSocials()
+  /** The page shows every section at once, so they all load with the user. */
+  function loadSections() {
+    void loadActivities()
+    void loadOAuth()
+    void loadGameBindings()
+    void loadSocialPlatform()
+    void loadAuthorizedSocials()
   }
 
   return {
@@ -154,6 +159,6 @@ export function createAdminUserDetailLoaders({ userId, state, runLoad }: CreateL
     loadGameBindings,
     loadSocialPlatform,
     loadAuthorizedSocials,
-    onTabChange,
+    loadSections,
   }
 }

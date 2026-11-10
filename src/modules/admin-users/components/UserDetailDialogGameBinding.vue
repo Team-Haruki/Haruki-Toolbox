@@ -5,10 +5,10 @@ import type { MysekaiDataPrivacySettings, SekaiRegion, SuiteDataPrivacySettings 
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogScrollContent,
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -28,6 +28,7 @@ import {
   SUITE_PERMISSION_OPTIONS,
 } from "@/lib/game-binding-permission-meta"
 import { isSekaiRegion } from "@/lib/sekai-region"
+import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
 import { resolveServerLabel } from "@/modules/admin-users/constants"
 
 defineProps<{
@@ -67,86 +68,89 @@ function permissionId(group: "suite" | "mysekai", key: string): string {
 
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent>
+    <DialogScrollContent class="sm:max-w-[520px]">
       <DialogHeader>
-        <DialogTitle>{{ t("adminUsers.detail.dialog.gameBinding.title") }}</DialogTitle>
+        <DialogTitle>
+          {{ isEditMode ? t("adminUsers.detail.game.edit") : t("adminUsers.detail.dialog.gameBinding.title") }}
+        </DialogTitle>
         <DialogDescription>
           {{ t("adminUsers.detail.dialog.gameBinding.description", { name: userName }) }}
         </DialogDescription>
       </DialogHeader>
-      <div class="flex flex-col gap-4 py-2">
-        <div class="flex flex-col gap-1.5">
-          <Label id="user-game-binding-server-label" for="user-game-binding-server">{{ t("adminUsers.detail.dialog.gameBinding.server") }}</Label>
-          <Select id="user-game-binding-server" :key="locale" :model-value="server" @update:model-value="handleServerChange">
-            <SelectTrigger aria-labelledby="user-game-binding-server-label" class="w-full" :disabled="isEditMode">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem
-                v-for="region in ['jp', 'en', 'tw', 'kr', 'cn']"
-                :key="region"
-                :value="region"
-              >
-                {{ resolveServerLabel(region, t) }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div class="flex flex-col gap-1.5">
-          <Label for="user-game-binding-game-id">{{ t("adminUsers.detail.dialog.gameBinding.gameUserId") }}</Label>
-          <Input
-            id="user-game-binding-game-id"
-            :model-value="gameUserId"
-            :disabled="isEditMode"
-            :placeholder="t('adminUsers.detail.dialog.gameBinding.gameUserIdPlaceholder')"
-            @update:model-value="emit('update:game-user-id', String($event ?? ''))"
-          />
-        </div>
-        <div class="border rounded-lg p-3">
-          <h3 class="font-semibold text-sm">{{ t("adminUsers.detail.dialog.gameBinding.suiteSettings") }}</h3>
-          <div class="grid gap-2 mt-2">
-            <div
-              v-for="option in suitePermissionOptions"
-              :key="option.key"
-              class="flex items-center justify-between"
-            >
-              <Label :for="permissionId('suite', option.key)" class="text-sm">
-                {{ t(SUITE_PERMISSION_TITLE_KEYS[option.key]) }}
-              </Label>
-              <Switch
-                :id="permissionId('suite', option.key)"
-                :model-value="suite[option.key]"
-                @update:model-value="emit('update:suite', { ...suite, [option.key]: !!$event })"
-              />
-            </div>
+      <div class="flex flex-col gap-4 py-1">
+        <!-- Which account: both fields are fixed once the binding exists. -->
+        <div class="grid gap-3 sm:grid-cols-[9rem_minmax(0,1fr)]">
+          <div class="grid content-start gap-1.5">
+            <Label id="user-game-binding-server-label" for="user-game-binding-server">{{ t("adminUsers.detail.dialog.gameBinding.server") }}</Label>
+            <Select id="user-game-binding-server" :key="locale" :model-value="server" @update:model-value="handleServerChange">
+              <SelectTrigger aria-labelledby="user-game-binding-server-label" class="w-full" :disabled="isEditMode">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem
+                  v-for="region in ['jp', 'en', 'tw', 'kr', 'cn']"
+                  :key="region"
+                  :value="region"
+                >
+                  {{ resolveServerLabel(region, t) }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div class="grid content-start gap-1.5">
+            <Label for="user-game-binding-game-id">{{ t("adminUsers.detail.dialog.gameBinding.gameUserId") }}</Label>
+            <Input
+              id="user-game-binding-game-id"
+              :model-value="gameUserId"
+              :disabled="isEditMode"
+              class="font-mono tabular-nums"
+              inputmode="numeric"
+              :placeholder="t('adminUsers.detail.dialog.gameBinding.gameUserIdPlaceholder')"
+              @update:model-value="emit('update:game-user-id', String($event ?? ''))"
+            />
           </div>
         </div>
-        <div class="border rounded-lg p-3">
-          <h3 class="font-semibold text-sm">{{ t("adminUsers.detail.dialog.gameBinding.mysekaiSettings") }}</h3>
-          <div class="grid gap-2 mt-2">
-            <div
-              v-for="option in mysekaiPermissionOptions"
-              :key="option.key"
-              class="flex items-center justify-between"
-            >
-              <Label :for="permissionId('mysekai', option.key)" class="text-sm">
-                {{ t(MYSEKAI_PERMISSION_TITLE_KEYS[option.key]) }}
-              </Label>
-              <Switch
-                :id="permissionId('mysekai', option.key)"
-                :model-value="mysekai[option.key]"
-                @update:model-value="emit('update:mysekai', { ...mysekai, [option.key]: !!$event })"
-              />
-            </div>
+
+        <!-- One group per upload, one compact line per switch. -->
+        <SettingsGroup :title="t('adminUsers.detail.dialog.gameBinding.suiteSettings')">
+          <div
+            v-for="option in suitePermissionOptions"
+            :key="option.key"
+            class="flex items-center justify-between gap-3 px-4 py-2"
+          >
+            <Label :for="permissionId('suite', option.key)" class="min-w-0 flex-1 text-sm leading-snug font-normal">
+              {{ t(SUITE_PERMISSION_TITLE_KEYS[option.key]) }}
+            </Label>
+            <Switch
+              :id="permissionId('suite', option.key)"
+              :model-value="suite[option.key]"
+              @update:model-value="emit('update:suite', { ...suite, [option.key]: !!$event })"
+            />
           </div>
-        </div>
+        </SettingsGroup>
+        <SettingsGroup :title="t('adminUsers.detail.dialog.gameBinding.mysekaiSettings')">
+          <div
+            v-for="option in mysekaiPermissionOptions"
+            :key="option.key"
+            class="flex items-center justify-between gap-3 px-4 py-2"
+          >
+            <Label :for="permissionId('mysekai', option.key)" class="min-w-0 flex-1 text-sm leading-snug font-normal">
+              {{ t(MYSEKAI_PERMISSION_TITLE_KEYS[option.key]) }}
+            </Label>
+            <Switch
+              :id="permissionId('mysekai', option.key)"
+              :model-value="mysekai[option.key]"
+              @update:model-value="emit('update:mysekai', { ...mysekai, [option.key]: !!$event })"
+            />
+          </div>
+        </SettingsGroup>
       </div>
       <DialogFooter>
         <Button variant="outline" @click="emit('update:open', false)">{{ t("adminUsers.common.cancel") }}</Button>
-        <Button @click="emit('save')" :disabled="!gameUserId.trim() || actionLoading">
+        <Button :disabled="!gameUserId.trim() || actionLoading" @click="emit('save')">
           {{ t("adminUsers.common.save") }}
         </Button>
       </DialogFooter>
-    </DialogContent>
+    </DialogScrollContent>
   </Dialog>
 </template>

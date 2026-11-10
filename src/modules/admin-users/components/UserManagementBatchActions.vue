@@ -18,17 +18,15 @@ import {
 } from "@/components/ui/select"
 import {
   LucideBan,
-  LucideCheckCircle2,
+  LucideCircleCheck,
   LucideLoader2,
   LucideLogOut,
   LucideSettings2,
-  LucideShield,
-  LucideShieldAlert,
   LucideShieldOff,
-  LucideUser,
   LucideUserCog,
 } from "lucide-vue-next"
 import { roleLabel } from "@/modules/admin-users/constants"
+import UserRoleSelectItems from "./UserRoleSelectItems.vue"
 import type { UserRole } from "@/types/common"
 
 /**
@@ -129,32 +127,32 @@ const confirmDialog = computed(() => {
     :aria-hidden="selectedCount === 0 || undefined"
   >
     <div class="min-h-0 overflow-hidden">
-      <div class="flex items-center gap-2 flex-wrap border-b bg-muted/40 px-4 py-3 sm:px-6">
-        <span class="text-sm text-muted-foreground mr-2">
+      <div class="flex flex-wrap items-center gap-2 border-b border-border/60 bg-primary/5 px-3 py-2" data-testid="admin-users-batch">
+        <span class="mr-1 text-sm font-medium tabular-nums">
           {{ t("adminUsers.management.batch.selectedCount", { count: selectedCount }) }}
         </span>
 
         <Button variant="destructive" size="sm" :disabled="batchLoading" @click="requestConfirm('ban')">
-          <LucideBan class="w-4 h-4 mr-1" />{{ t("adminUsers.management.batch.banButton") }}
+          <LucideBan class="size-4" aria-hidden="true" />{{ t("adminUsers.management.batch.banButton") }}
         </Button>
 
         <Button variant="outline" size="sm" :disabled="batchLoading" @click="actions.unban()">
-          <LucideShieldOff class="w-4 h-4 mr-1" />{{ t("adminUsers.management.batch.unbanButton") }}
+          <LucideShieldOff class="size-4" aria-hidden="true" />{{ t("adminUsers.management.batch.unbanButton") }}
         </Button>
 
         <Button variant="outline" size="sm" :disabled="batchLoading" @click="requestConfirm('forceLogout')">
-          <LucideLogOut class="w-4 h-4 mr-1" />{{ t("adminUsers.management.batch.forceLogoutButton") }}
+          <LucideLogOut class="size-4" aria-hidden="true" />{{ t("adminUsers.management.batch.forceLogoutButton") }}
         </Button>
 
         <Popover v-if="isSuperAdmin" v-model:open="roleOpen">
           <PopoverTrigger as-child>
             <Button variant="outline" size="sm" :disabled="batchLoading">
-              <LucideUserCog class="w-4 h-4 mr-1" />{{ t("adminUsers.management.batch.roleButton") }}
+              <LucideUserCog class="size-4" aria-hidden="true" />{{ t("adminUsers.management.batch.roleButton") }}
             </Button>
           </PopoverTrigger>
-          <PopoverContent class="w-64 p-4">
-            <div class="space-y-4">
-              <h4 class="font-medium leading-none mb-3">{{ t("adminUsers.management.batch.roleTitle") }}</h4>
+          <PopoverContent class="w-64 p-3">
+            <div class="flex flex-col gap-3">
+              <h4 class="text-sm font-semibold">{{ t("adminUsers.management.batch.roleTitle") }}</h4>
               <Label id="batch-user-role-label" for="batch-user-role" class="sr-only">
                 {{ t("adminUsers.management.batch.roleTitle") }}
               </Label>
@@ -162,31 +160,14 @@ const confirmDialog = computed(() => {
                 :model-value="batchRoleTarget"
                 @update:model-value="emit('update:batchRoleTarget', $event as UserRole)"
               >
-                <SelectTrigger aria-labelledby="batch-user-role-label">
+                <SelectTrigger aria-labelledby="batch-user-role-label" class="w-full">
                   <SelectValue :placeholder="t('adminUsers.management.batch.rolePlaceholder')" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="user">
-                    <div class="flex items-center gap-2">
-                      <LucideUser class="w-4 h-4 text-muted-foreground" />
-                      {{ t("adminUsers.role.user") }}
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="admin">
-                    <div class="flex items-center gap-2">
-                      <LucideShield class="w-4 h-4 text-blue-500" />
-                      {{ t("adminUsers.role.admin") }}
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="super_admin">
-                    <div class="flex items-center gap-2">
-                      <LucideShieldAlert class="w-4 h-4 text-red-500" />
-                      {{ t("adminUsers.role.superAdmin") }}
-                    </div>
-                  </SelectItem>
+                  <UserRoleSelectItems />
                 </SelectContent>
               </Select>
-              <div class="flex justify-end gap-2 mt-4">
+              <div class="flex justify-end">
                 <Button size="sm" @click="requestRoleConfirm">{{ t("adminUsers.management.batch.roleConfirm") }}</Button>
               </div>
             </div>
@@ -196,12 +177,12 @@ const confirmDialog = computed(() => {
         <Popover v-model:open="allowCNOpen">
           <PopoverTrigger as-child>
             <Button variant="outline" size="sm" :disabled="batchLoading">
-              <LucideSettings2 class="w-4 h-4 mr-1" />{{ t("adminUsers.management.batch.allowCNButton") }}
+              <LucideSettings2 class="size-4" aria-hidden="true" />{{ t("adminUsers.management.batch.allowCNButton") }}
             </Button>
           </PopoverTrigger>
-          <PopoverContent class="w-64 p-4">
-            <div class="space-y-4">
-              <h4 class="font-medium leading-none mb-3">{{ t("adminUsers.management.batch.allowCNTitle") }}</h4>
+          <PopoverContent class="w-64 p-3">
+            <div class="flex flex-col gap-3">
+              <h4 class="text-sm font-semibold">{{ t("adminUsers.management.batch.allowCNTitle") }}</h4>
               <Label id="batch-user-cn-label" for="batch-user-cn" class="sr-only">
                 {{ t("adminUsers.management.batch.allowCNTitle") }}
               </Label>
@@ -209,32 +190,32 @@ const confirmDialog = computed(() => {
                 :model-value="batchAllowCnTarget"
                 @update:model-value="emit('update:batchAllowCnTarget', $event as 'true' | 'false')"
               >
-                <SelectTrigger aria-labelledby="batch-user-cn-label">
+                <SelectTrigger aria-labelledby="batch-user-cn-label" class="w-full">
                   <SelectValue :placeholder="t('adminUsers.management.batch.allowCNPlaceholder')" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="true">
                     <div class="flex items-center gap-2">
-                      <LucideCheckCircle2 class="w-4 h-4 text-green-500" />
+                      <LucideCircleCheck class="size-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                       {{ t("adminUsers.management.batch.allowCNEnable") }}
                     </div>
                   </SelectItem>
                   <SelectItem value="false">
                     <div class="flex items-center gap-2">
-                      <LucideBan class="w-4 h-4 text-red-500" />
+                      <LucideBan class="size-4 text-destructive" aria-hidden="true" />
                       {{ t("adminUsers.management.batch.allowCNDisable") }}
                     </div>
                   </SelectItem>
                 </SelectContent>
               </Select>
-              <div class="flex justify-end gap-2 mt-4">
+              <div class="flex justify-end">
                 <Button size="sm" @click="confirmAllowCN">{{ t("adminUsers.management.batch.allowCNConfirm") }}</Button>
               </div>
             </div>
           </PopoverContent>
         </Popover>
 
-        <LucideLoader2 v-if="batchLoading" class="w-4 h-4 animate-spin" />
+        <LucideLoader2 v-if="batchLoading" class="size-4 animate-spin text-muted-foreground" aria-hidden="true" />
       </div>
     </div>
 

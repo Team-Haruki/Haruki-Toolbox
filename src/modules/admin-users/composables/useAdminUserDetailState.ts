@@ -1,6 +1,5 @@
 import { ref } from "vue"
 import type {
-  AdminGameAccountBinding,
   AdminUserDetail,
   AuthorizedSocialPlatform,
   UploadLog,
@@ -11,6 +10,7 @@ import type { SocialPlatform } from "@/types/social-platform"
 import type { SekaiRegion } from "@/types/store"
 import type { ErrorDescription } from "@/lib/error-utils"
 import type { UserOAuthAuthorization } from "@/modules/admin-users/api/oauth"
+import type { AdminUserGameBinding } from "@/modules/admin-users/api/shared"
 import {
   normalizeMysekaiPermissions,
   normalizeSuitePermissions,
@@ -18,7 +18,16 @@ import {
   type SuitePermissions,
 } from "@/lib/game-binding-permissions"
 
-export type LazyTab = "activity" | "oauth" | "game" | "social" | "auth-social"
+/** The blocks of the detail page that load from their own endpoint. */
+export type DetailSection = "activity" | "oauth" | "game" | "social" | "auth-social"
+
+/** What the activity response says about the lists it returned. */
+export interface UserActivityScope {
+  from: string
+  to: string
+  systemLogTotal: number
+  uploadLogTotal: number
+}
 
 export const INITIAL_GAME_SERVER: SekaiRegion = "jp"
 export const DEFAULT_SOCIAL_PLATFORM: SocialPlatform = "qq"
@@ -41,21 +50,29 @@ export function createAdminUserDetailState() {
     userNotFound: ref(false),
     userLoadError: ref<ErrorDescription | null>(null),
 
+    // Every section loads right after the user: its flag starts true so the
+    // section shows its skeleton, never an "empty" state, before the answer.
     activities: ref<UserActivity[]>([]),
     uploadLogs: ref<UploadLog[]>([]),
-    activityLoading: ref(false),
+    activityScope: ref<UserActivityScope | null>(null),
+    activityLoading: ref(true),
+    activityError: ref<ErrorDescription | null>(null),
 
     oauthAuths: ref<UserOAuthAuthorization[]>([]),
-    oauthLoading: ref(false),
+    oauthLoading: ref(true),
+    oauthError: ref<ErrorDescription | null>(null),
 
-    gameBindings: ref<AdminGameAccountBinding[]>([]),
-    gameBindingLoading: ref(false),
+    gameBindings: ref<AdminUserGameBinding[]>([]),
+    gameBindingLoading: ref(true),
+    gameBindingError: ref<ErrorDescription | null>(null),
 
     socialPlatform: ref<UserSocialPlatform | null>(null),
-    socialLoading: ref(false),
+    socialLoading: ref(true),
+    socialError: ref<ErrorDescription | null>(null),
 
     authorizedSocials: ref<AuthorizedSocialPlatform[]>([]),
-    authSocialLoading: ref(false),
+    authSocialLoading: ref(true),
+    authSocialError: ref<ErrorDescription | null>(null),
 
     iosUploadCode: ref<string | null>(null),
 
@@ -85,7 +102,9 @@ export function createAdminUserDetailState() {
     editAuthSocialComment: ref(""),
   }
 
-  const lazyTabLoaded = ref<Record<LazyTab, boolean>>({
+  // True once a section's endpoint has answered: its list is then the truth,
+  // and the stat tiles count it instead of the copy in the detail payload.
+  const sectionLoaded = ref<Record<DetailSection, boolean>>({
     activity: false,
     oauth: false,
     game: false,
@@ -93,12 +112,8 @@ export function createAdminUserDetailState() {
     "auth-social": false,
   })
 
-  function markTabLoaded(tab: LazyTab) {
-    lazyTabLoaded.value[tab] = true
-  }
-
-  function shouldLoadTab(tab: LazyTab) {
-    return !lazyTabLoaded.value[tab]
+  function markSectionLoaded(section: DetailSection) {
+    sectionLoaded.value[section] = true
   }
 
   function resetGameBindingEditor() {
@@ -111,8 +126,8 @@ export function createAdminUserDetailState() {
     refs.editGameMysekai.value = createDefaultMysekaiPermissions()
   }
 
-  function resetLazyTabs() {
-    lazyTabLoaded.value = {
+  function resetSections() {
+    sectionLoaded.value = {
       activity: false,
       oauth: false,
       game: false,
@@ -129,15 +144,21 @@ export function createAdminUserDetailState() {
     refs.editEmailError.value = ""
     refs.activities.value = []
     refs.uploadLogs.value = []
-    refs.activityLoading.value = false
+    refs.activityScope.value = null
+    refs.activityLoading.value = true
+    refs.activityError.value = null
     refs.oauthAuths.value = []
-    refs.oauthLoading.value = false
+    refs.oauthLoading.value = true
+    refs.oauthError.value = null
     refs.gameBindings.value = []
-    refs.gameBindingLoading.value = false
+    refs.gameBindingLoading.value = true
+    refs.gameBindingError.value = null
     refs.socialPlatform.value = null
-    refs.socialLoading.value = false
+    refs.socialLoading.value = true
+    refs.socialError.value = null
     refs.authorizedSocials.value = []
-    refs.authSocialLoading.value = false
+    refs.authSocialLoading.value = true
+    refs.authSocialError.value = null
     refs.iosUploadCode.value = null
 
     refs.emailDialogOpen.value = false
@@ -158,15 +179,15 @@ export function createAdminUserDetailState() {
     refs.editAuthSocialUserId.value = ""
     refs.editAuthSocialComment.value = ""
 
-    resetLazyTabs()
+    resetSections()
   }
 
   return {
     refs,
-    markTabLoaded,
-    shouldLoadTab,
+    sectionLoaded,
+    markSectionLoaded,
     resetGameBindingEditor,
-    resetLazyTabs,
+    resetSections,
     resetForUserChange,
   }
 }

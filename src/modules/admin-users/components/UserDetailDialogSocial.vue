@@ -2,7 +2,6 @@
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
     Dialog,
     DialogContent,
@@ -20,6 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import type { SocialPlatform } from "@/types/social-platform"
 import {
   getSocialPlatformOptions,
@@ -64,44 +64,47 @@ const socialPlatformOptions = computed(() => getSocialPlatformOptions(t))
           {{ t("adminUsers.detail.dialog.social.description", { name: userName }) }}
         </DialogDescription>
       </DialogHeader>
-      <div class="flex flex-col gap-4 py-2">
-        <div class="flex flex-col gap-1.5">
-          <Label id="user-social-platform-label" for="user-social-platform">{{ t("adminUsers.detail.dialog.social.platform") }}</Label>
-          <Select id="user-social-platform" :key="locale" :model-value="platform" @update:model-value="handlePlatformChange">
-            <SelectTrigger aria-labelledby="user-social-platform-label" class="w-full">
-              <SelectValue :placeholder="t('adminUsers.detail.dialog.social.platformPlaceholder')" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="[key, platformOption] in socialPlatformOptions" :key="key" :value="key">
-                <div class="flex items-center gap-2">
-                  <component :is="platformOption.icon" class="w-4 h-4" />
-                  {{ platformOption.label }}
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
+      <div class="flex flex-col gap-4 py-1">
+        <div class="grid gap-3 sm:grid-cols-[10rem_minmax(0,1fr)]">
+          <div class="grid content-start gap-1.5">
+            <Label id="user-social-platform-label" for="user-social-platform">{{ t("adminUsers.detail.dialog.social.platform") }}</Label>
+            <Select id="user-social-platform" :key="locale" :model-value="platform" @update:model-value="handlePlatformChange">
+              <SelectTrigger aria-labelledby="user-social-platform-label" class="w-full">
+                <SelectValue :placeholder="t('adminUsers.detail.dialog.social.platformPlaceholder')" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="[key, platformOption] in socialPlatformOptions" :key="key" :value="key">
+                  <div class="flex items-center gap-2">
+                    <component :is="platformOption.icon" class="size-4" aria-hidden="true" />
+                    {{ platformOption.label }}
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div class="grid content-start gap-1.5">
+            <Label for="user-social-user-id">{{ t("adminUsers.detail.dialog.social.userId") }}</Label>
+            <Input
+              id="user-social-user-id"
+              :model-value="userId"
+              class="font-mono"
+              :placeholder="t('adminUsers.detail.dialog.social.userIdPlaceholder')"
+              @update:model-value="emit('update:user-id', String($event ?? ''))"
+            />
+          </div>
         </div>
-        <div class="flex flex-col gap-1.5">
-          <Label for="user-social-user-id">{{ t("adminUsers.detail.dialog.social.userId") }}</Label>
-          <Input
-            id="user-social-user-id"
-            :model-value="userId"
-            :placeholder="t('adminUsers.detail.dialog.social.userIdPlaceholder')"
-            @update:model-value="emit('update:user-id', String($event ?? ''))"
-          />
-        </div>
-        <div class="flex items-center gap-2">
-          <Checkbox
+        <div class="flex items-center justify-between gap-3 rounded-xl border bg-muted/20 px-4 py-2.5">
+          <Label for="socialVerified" class="min-w-0 flex-1 text-sm font-normal">{{ t("adminUsers.common.verified") }}</Label>
+          <Switch
             id="socialVerified"
             :model-value="verified"
             @update:model-value="emit('update:verified', !!$event)"
           />
-          <Label for="socialVerified" class="text-sm font-normal">{{ t("adminUsers.common.verified") }}</Label>
         </div>
       </div>
       <DialogFooter>
         <Button variant="outline" @click="emit('update:open', false)">{{ t("adminUsers.common.cancel") }}</Button>
-        <Button @click="emit('save')" :disabled="!platform.trim() || !userId.trim() || actionLoading">
+        <Button :disabled="!platform.trim() || !userId.trim() || actionLoading" @click="emit('save')">
           {{ t("adminUsers.common.save") }}
         </Button>
       </DialogFooter>

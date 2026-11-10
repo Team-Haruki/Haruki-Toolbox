@@ -1,8 +1,7 @@
 import { readUpdatedItems, request, unwrapUpdatedData } from "@/core/http/call-api"
 import { encodePathSegment } from "@/core/http/url"
-import { normalizeGameAccountBinding, userBase } from "@/modules/admin-users/api/shared"
+import { normalizeGameAccountBinding, userBase, type AdminUserGameBinding } from "@/modules/admin-users/api/shared"
 import { translate } from "@/shared/i18n"
-import type { AdminGameAccountBinding } from "@/types/admin"
 import type { MysekaiDataPrivacySettings, SekaiRegion, SuiteDataPrivacySettings } from "@/types/store"
 import type { APIResponse } from "@/types/response"
 import type { UnknownRecord } from "@/lib/record-utils"
@@ -16,7 +15,7 @@ export async function getGameAccountBindings(userId: string) {
   const items = readUpdatedItems(updatedData)
   return items
     .map((item) => normalizeGameAccountBinding(item))
-    .filter((item): item is AdminGameAccountBinding => item !== null)
+    .filter((item): item is AdminUserGameBinding => item !== null)
 }
 
 export function updateGameAccountBinding(

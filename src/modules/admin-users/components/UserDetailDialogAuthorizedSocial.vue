@@ -64,33 +64,36 @@ const socialPlatformOptions = computed(() => getSocialPlatformOptions(t))
           {{ t("adminUsers.detail.dialog.authSocial.description", { name: userName }) }}
         </DialogDescription>
       </DialogHeader>
-      <div class="flex flex-col gap-4 py-2">
-        <div class="flex flex-col gap-1.5">
-          <Label id="auth-social-platform-label" for="auth-social-platform">{{ t("adminUsers.detail.dialog.authSocial.platform") }}</Label>
-          <Select id="auth-social-platform" :key="locale" :model-value="platform" @update:model-value="handlePlatformChange">
-            <SelectTrigger aria-labelledby="auth-social-platform-label" class="w-full">
-              <SelectValue :placeholder="t('adminUsers.detail.dialog.authSocial.platformPlaceholder')" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="[key, platformOption] in socialPlatformOptions" :key="key" :value="key">
-                <div class="flex items-center gap-2">
-                  <component :is="platformOption.icon" class="w-4 h-4" />
-                  {{ platformOption.label }}
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
+      <div class="flex flex-col gap-4 py-1">
+        <div class="grid gap-3 sm:grid-cols-[10rem_minmax(0,1fr)]">
+          <div class="grid content-start gap-1.5">
+            <Label id="auth-social-platform-label" for="auth-social-platform">{{ t("adminUsers.detail.dialog.authSocial.platform") }}</Label>
+            <Select id="auth-social-platform" :key="locale" :model-value="platform" @update:model-value="handlePlatformChange">
+              <SelectTrigger aria-labelledby="auth-social-platform-label" class="w-full">
+                <SelectValue :placeholder="t('adminUsers.detail.dialog.authSocial.platformPlaceholder')" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="[key, platformOption] in socialPlatformOptions" :key="key" :value="key">
+                  <div class="flex items-center gap-2">
+                    <component :is="platformOption.icon" class="size-4" aria-hidden="true" />
+                    {{ platformOption.label }}
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div class="grid content-start gap-1.5">
+            <Label for="auth-social-user-id">{{ t("adminUsers.detail.dialog.authSocial.userId") }}</Label>
+            <Input
+              id="auth-social-user-id"
+              :model-value="userId"
+              class="font-mono"
+              :placeholder="t('adminUsers.detail.dialog.authSocial.userIdPlaceholder')"
+              @update:model-value="emit('update:user-id', String($event ?? ''))"
+            />
+          </div>
         </div>
-        <div class="flex flex-col gap-1.5">
-          <Label for="auth-social-user-id">{{ t("adminUsers.detail.dialog.authSocial.userId") }}</Label>
-          <Input
-            id="auth-social-user-id"
-            :model-value="userId"
-            :placeholder="t('adminUsers.detail.dialog.authSocial.userIdPlaceholder')"
-            @update:model-value="emit('update:user-id', String($event ?? ''))"
-          />
-        </div>
-        <div class="flex flex-col gap-1.5">
+        <div class="grid gap-1.5">
           <Label for="auth-social-comment">{{ t("adminUsers.detail.dialog.authSocial.comment") }}</Label>
           <Input
             id="auth-social-comment"
@@ -102,7 +105,7 @@ const socialPlatformOptions = computed(() => getSocialPlatformOptions(t))
       </div>
       <DialogFooter>
         <Button variant="outline" @click="emit('update:open', false)">{{ t("adminUsers.common.cancel") }}</Button>
-        <Button @click="emit('save')" :disabled="!userId.trim() || actionLoading">
+        <Button :disabled="!userId.trim() || actionLoading" @click="emit('save')">
           {{ t("adminUsers.common.save") }}
         </Button>
       </DialogFooter>
