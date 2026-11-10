@@ -21,3 +21,17 @@ export async function getTimeseries(params?: QueryParams) {
   })
   return unwrapUpdatedData(res, translate("adminStatistics.dashboard.toast.loadChartFailedTitle"))
 }
+
+/**
+ * Upload quality aggregates (success rate, processing-time percentiles,
+ * failure stages, protocol split). Without `from` / `to` the backend covers
+ * the last 24 hours; `group_by` defaults to `upload_method`. The payload is
+ * narrowed by `parseUploadAnalytics`.
+ */
+export async function getUploadAnalytics(params?: QueryParams) {
+  const res = await request<APIResponse<unknown>>(`${STATS_BASE}/upload-analytics`, {
+    method: "GET",
+    params,
+  })
+  return unwrapUpdatedData(res, translate("adminStatistics.dashboard.toast.loadQualityFailedTitle"))
+}

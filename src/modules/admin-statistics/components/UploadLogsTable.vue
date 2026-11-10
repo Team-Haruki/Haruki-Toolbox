@@ -1,32 +1,27 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { RouterLink } from "vue-router"
-import { LucideCheckCircle, LucideInbox, LucideInfo, LucideXCircle } from "lucide-vue-next"
+import { LucideInbox, LucideInfo } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import {
   Dialog,
   DialogClose,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogScrollContent,
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import EmptyState from "@/shared/components/EmptyState.vue"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import AdminPagination from "@/modules/admin/components/AdminPagination.vue"
+import LogsResultChip from "@/modules/admin-statistics/components/LogsResultChip.vue"
 import type { UploadLog } from "@/types/admin"
 import type { ErrorDescription } from "@/lib/error-utils"
 import { formatNumberCN } from "@/lib/number-format"
+import { formatByteSize, formatDurationMs } from "@/modules/admin-statistics/lib/logs-stats"
 import {
   resolveUploadAuthMethodLabel,
   resolveUploadAuthorizationSourceLabel,
@@ -34,6 +29,16 @@ import {
   resolveUploadLogOwnerId,
 } from "@/modules/admin-statistics/lib/upload-log-meta"
 
+/**
+ * The upload-log rows: one bordered, divided list with the pager in its
+ * footer. From 50rem of its own width a row sits in fixed columns under a
+ * caption row (status, time, owner over the game UID, uploader, server,
+ * method over data type, processing time); below that everything but the
+ * status and the owner folds onto a second line rather than scrolling
+ * sideways. A failed upload carries its error under the row. A click on a row
+ * opens the full record; the button at the end is the same action for
+ * keyboard and assistive tech.
+ */
 interface Props {
   loading: boolean
   logs: UploadLog[]
@@ -48,9 +53,11 @@ interface Props {
   error?: ErrorDescription | null
   pageSize?: number
   showPagination?: boolean
+  /** Drops the list's own border and corners, for a host that already frames it (a panel body). */
+  embedded?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), { error: null, pageSize: 20, showPagination: true })
+const props = withDefaults(defineProps<Props>(), { error: null, pageSize: 20, showPagination: true, embedded: false })
 const { t } = useI18n()
 const shouldShowPagination = computed(() => props.showPagination && !props.error)
 const showDetailDialog = ref(false)
@@ -64,6 +71,9 @@ const emit = defineEmits<{
 }>()
 
 const fallback = computed(() => t("adminStatistics.common.fallback"))
+
+// One template for the caption row and every row, so the columns line up.
+const WIDE_COLUMNS = "@min-[50rem]:grid-cols-[4.5rem_5.25rem_minmax(0,7fr)_minmax(0,5fr)_3rem_minmax(0,7rem)_4.25rem_2rem]"
 
 function openDetailDialog(log: UploadLog) {
   selectedLog.value = log
@@ -105,10 +115,19 @@ function platformLabel(log: UploadLog | null) {
   return parts.length > 0 ? parts.join(" / ") : fallback.value
 }
 
+/** The one-line reason under a failed row: error code, stage and message, whichever the log carries. */
+function failureLine(log: UploadLog): string {
+  const head = [log.errorCode, log.failureStage].filter((part): part is string => !!part).join(" · ")
+  const message = log.errorMessage?.trim() ?? ""
+  return head && message ? `${head}: ${message}` : head || message
+}
+
 const detailRows = computed(() => {
   const log = selectedLog.value
   if (!log) return []
   const actor = actorOf(log)
+  const duration = formatDurationMs(log.processingDurationMs)
+  const size = formatByteSize(log.requestBytes)
   return [
     { label: t("adminStatistics.uploadLogs.table.time"), value: props.formatTime(log.uploadTime) },
     { label: t("adminStatistics.uploadLogs.table.server"), value: props.serverLabel(log.server) },
@@ -123,6 +142,8 @@ const detailRows = computed(() => {
     { label: t("adminStatistics.uploadLogs.detail.client"), value: clientLabel(log) },
     { label: t("adminStatistics.uploadLogs.detail.platform"), value: platformLabel(log) },
     { label: t("adminStatistics.uploadLogs.detail.requestId"), value: orFallback(log.requestId) },
+    { label: t("adminStatistics.uploadLogs.detail.duration"), value: orFallback(duration), hidden: !duration },
+    { label: t("adminStatistics.uploadLogs.detail.requestSize"), value: orFallback(size), hidden: !size },
     { label: t("adminStatistics.uploadLogs.detail.claimedGameUserId"), value: orFallback(log.claimedGameUserId), hidden: !log.claimedGameUserId },
     { label: t("adminStatistics.uploadLogs.detail.failureStage"), value: orFallback(log.failureStage), hidden: log.success !== false },
     { label: t("adminStatistics.uploadLogs.detail.errorCode"), value: orFallback(log.errorCode), hidden: log.success !== false },
@@ -131,139 +152,133 @@ const detailRows = computed(() => {
 </script>
 
 <template>
-  <Card class="gap-0 py-0 overflow-hidden">
-    <CardContent class="p-0">
-      <template v-if="props.loading">
-        <div class="p-6 flex flex-col gap-3">
-          <Skeleton v-for="i in 5" :key="i" class="h-12 w-full" />
+  <div
+    :class="['@container flex min-w-0 flex-col', embedded ? '' : 'overflow-hidden rounded-xl border bg-card']"
+    data-slot="upload-logs-table"
+  >
+    <div v-if="props.loading" class="flex flex-col gap-2 p-3" data-testid="upload-logs-loading">
+      <Skeleton v-for="i in 8" :key="i" class="h-9 w-full" />
+    </div>
+    <LoadErrorState
+      v-else-if="props.error"
+      :title="t('adminStatistics.uploadLogs.toast.loadFailedTitle')"
+      :description="props.error.message"
+      :detail="props.error.detail"
+      :retrying="props.loading"
+      @retry="emit('retry')"
+    />
+    <EmptyState
+      v-else-if="props.logs.length === 0"
+      :icon="LucideInbox"
+      :title="t('adminStatistics.uploadLogs.table.empty')"
+    />
+    <div v-else class="divide-y divide-border/60" data-testid="upload-logs-list">
+      <!-- Column captions; a narrow list is self-explanatory without them. -->
+      <div :class="['hidden items-center gap-x-3 bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground @min-[50rem]:grid', WIDE_COLUMNS]">
+        <span>{{ t("adminStatistics.uploadLogs.table.status") }}</span>
+        <span>{{ t("adminStatistics.uploadLogs.table.time") }}</span>
+        <span>{{ t("adminStatistics.uploadLogs.table.owner") }}</span>
+        <span>{{ t("adminStatistics.uploadLogs.table.actor") }}</span>
+        <span>{{ t("adminStatistics.uploadLogs.table.server") }}</span>
+        <span class="truncate">{{ t("adminStatistics.uploadLogs.table.methodAndDataType") }}</span>
+        <span class="text-right">{{ t("adminStatistics.uploadLogs.table.duration") }}</span>
+        <span class="sr-only">{{ t("adminStatistics.uploadLogs.table.details") }}</span>
+      </div>
+
+      <div
+        v-for="log in props.logs"
+        :key="log.id"
+        :class="[
+          'grid cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-3 py-2 transition-colors hover:bg-muted/40 @min-[50rem]:py-1.5',
+          WIDE_COLUMNS,
+        ]"
+        data-testid="upload-log-row"
+        @click="openDetailDialog(log)"
+      >
+        <LogsResultChip :success="!!log.success" class="justify-self-start @min-[50rem]:order-1" />
+
+        <!-- Owner: the user the data belongs to, with the game UID beside (wide: under) the name. -->
+        <div class="flex min-w-0 flex-wrap items-baseline gap-x-2 text-[13px] leading-5 @min-[50rem]:order-3 @min-[50rem]:flex-col">
+          <RouterLink
+            v-if="ownerId(log)"
+            :to="`/admin/users/${ownerId(log)}`"
+            class="min-w-0 max-w-full font-medium text-primary underline-offset-4 [overflow-wrap:anywhere] hover:underline"
+            @click.stop
+          >
+            {{ log.userName || ownerId(log) }}
+          </RouterLink>
+          <!-- No owner: unauthorized or unverified attempt. The claimed UID is
+               never used to look one up client-side. -->
+          <span v-else class="text-muted-foreground">{{ t("adminStatistics.uploadLogs.table.noOwner") }}</span>
+          <span v-if="log.gameUserId" class="max-w-full text-xs tabular-nums text-muted-foreground [overflow-wrap:anywhere]">
+            UID: {{ log.gameUserId }}
+          </span>
         </div>
-      </template>
-      <template v-else-if="props.error">
-        <LoadErrorState
-          :title="t('adminStatistics.uploadLogs.toast.loadFailedTitle')"
-          :description="props.error.message"
-          :detail="props.error.detail"
-          :retrying="props.loading"
-          @retry="emit('retry')"
-        />
-      </template>
-      <template v-else-if="props.logs.length === 0">
-        <div class="flex flex-col items-center justify-center gap-3 py-12 text-center">
-          <LucideInbox class="h-8 w-8 text-muted-foreground/60" />
-          <p class="text-sm text-muted-foreground">{{ t("adminStatistics.uploadLogs.table.empty") }}</p>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          class="size-8 shrink-0 px-0 has-[>svg]:px-0 text-muted-foreground hover:text-foreground pointer-coarse:size-10 @min-[50rem]:order-8"
+          :title="log.success ? t('adminStatistics.uploadLogs.table.viewDetails') : t('adminStatistics.uploadLogs.table.viewError')"
+          :aria-label="t('adminStatistics.uploadLogs.table.viewDetails')"
+          @click.stop="openDetailDialog(log)"
+        >
+          <LucideInfo class="size-4" aria-hidden="true" />
+        </Button>
+
+        <!-- Its own line on a narrow list; columns on a wide one. -->
+        <div class="col-span-3 flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5 text-xs leading-5 text-muted-foreground @min-[50rem]:contents">
+          <!-- The date and the time break onto two lines in the narrow time column. -->
+          <span class="tabular-nums @min-[50rem]:order-2">{{ props.formatTime(log.uploadTime) }}</span>
+          <span class="@min-[50rem]:order-5">{{ props.serverLabel(log.server) }}</span>
+          <span class="flex min-w-0 flex-wrap items-baseline gap-x-3 @min-[50rem]:order-6 @min-[50rem]:flex-col">
+            <span class="max-w-full [overflow-wrap:anywhere] @min-[50rem]:text-foreground/80">{{ props.methodLabel(log.uploadMethod) }}</span>
+            <span class="max-w-full [overflow-wrap:anywhere]">{{ props.dataTypeLabel(log.dataType) }}</span>
+          </span>
+          <span
+            :class="[
+              'tabular-nums whitespace-nowrap @min-[50rem]:order-7 @min-[50rem]:text-right',
+              formatDurationMs(log.processingDurationMs) ? '' : 'hidden @min-[50rem]:inline',
+            ]"
+            :title="formatByteSize(log.requestBytes) ?? undefined"
+          >
+            {{ formatDurationMs(log.processingDurationMs) ?? fallback }}
+          </span>
+
+          <!-- Who performed the upload, relative to the owner. -->
+          <span class="flex min-w-0 flex-wrap items-baseline gap-x-1.5 @min-[50rem]:order-4 @min-[50rem]:flex-col">
+            <template v-if="actorOf(log).kind === 'owner'">
+              {{ t("adminStatistics.uploadLogs.actor.owner") }}
+            </template>
+            <template v-else-if="actorOf(log).kind === 'delegate'">
+              <RouterLink
+                :to="`/admin/users/${actorOf(log).actorUserId}`"
+                class="min-w-0 max-w-full font-medium text-primary tabular-nums underline-offset-4 [overflow-wrap:anywhere] hover:underline"
+                @click.stop
+              >
+                {{ actorOf(log).actorUserId }}
+              </RouterLink>
+              <span>{{ authorizationSourceLabel(log.authorizationSource) }}</span>
+            </template>
+            <template v-else>
+              <span>{{ t("adminStatistics.uploadLogs.actor.unknown") }}</span>
+              <span v-if="log.authMethod" class="text-muted-foreground/80">{{ authMethodLabel(log.authMethod) }}</span>
+            </template>
+          </span>
         </div>
-      </template>
-      <template v-else>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead class="pl-6">{{ t("adminStatistics.uploadLogs.table.status") }}</TableHead>
-              <TableHead>{{ t("adminStatistics.uploadLogs.table.owner") }}</TableHead>
-              <TableHead class="hidden md:table-cell">{{ t("adminStatistics.uploadLogs.table.actor") }}</TableHead>
-              <TableHead class="hidden lg:table-cell">{{ t("adminStatistics.uploadLogs.table.server") }}</TableHead>
-              <TableHead class="hidden lg:table-cell">{{ t("adminStatistics.uploadLogs.table.method") }}</TableHead>
-              <TableHead class="hidden xl:table-cell">{{ t("adminStatistics.uploadLogs.table.dataType") }}</TableHead>
-              <TableHead>
-                <!-- One header text: visible from xl, screen-reader only below. -->
-                <span class="sr-only xl:not-sr-only">{{ t("adminStatistics.uploadLogs.table.details") }}</span>
-              </TableHead>
-              <TableHead class="pr-6">{{ t("adminStatistics.uploadLogs.table.time") }}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow v-for="log in props.logs" :key="log.id">
-              <TableCell class="pl-6">
-                <span
-                  v-if="log.success"
-                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                >
-                  <LucideCheckCircle class="w-3 h-3" />
-                  {{ t("adminStatistics.common.success") }}
-                </span>
-                <span
-                  v-else
-                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                >
-                  <LucideXCircle class="w-3 h-3" />
-                  {{ t("adminStatistics.common.failure") }}
-                </span>
-              </TableCell>
-              <TableCell>
-                <RouterLink
-                  v-if="ownerId(log)"
-                  :to="`/admin/users/${ownerId(log)}`"
-                  class="flex flex-col justify-center hover:underline text-primary pointer-coarse:min-h-10"
-                >
-                  <span class="font-medium text-sm">{{ log.userName || ownerId(log) }}</span>
-                  <span v-if="log.gameUserId" class="text-xs text-muted-foreground/80">
-                    UID: {{ log.gameUserId }}
-                  </span>
-                </RouterLink>
-                <!-- No owner: unauthorized or unverified attempt. The claimed UID is
-                     never used to look one up client-side. -->
-                <div v-else class="flex flex-col">
-                  <span class="text-sm text-muted-foreground">{{ t("adminStatistics.uploadLogs.table.noOwner") }}</span>
-                  <span v-if="log.gameUserId" class="text-xs text-muted-foreground/80">
-                    UID: {{ log.gameUserId }}
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell class="hidden md:table-cell text-sm">
-                <template v-if="actorOf(log).kind === 'owner'">
-                  <span class="text-muted-foreground">{{ t("adminStatistics.uploadLogs.actor.owner") }}</span>
-                </template>
-                <template v-else-if="actorOf(log).kind === 'delegate'">
-                  <RouterLink
-                    :to="`/admin/users/${actorOf(log).actorUserId}`"
-                    class="flex flex-col justify-center hover:underline text-primary pointer-coarse:min-h-10"
-                  >
-                    <span class="font-medium">{{ actorOf(log).actorUserId }}</span>
-                    <span class="text-xs text-muted-foreground/80">
-                      {{ authorizationSourceLabel(log.authorizationSource) }}
-                    </span>
-                  </RouterLink>
-                </template>
-                <template v-else>
-                  <span class="flex flex-col text-muted-foreground">
-                    <span>{{ t("adminStatistics.uploadLogs.actor.unknown") }}</span>
-                    <span v-if="log.authMethod" class="text-xs text-muted-foreground/80">
-                      {{ authMethodLabel(log.authMethod) }}
-                    </span>
-                  </span>
-                </template>
-              </TableCell>
-              <TableCell class="hidden lg:table-cell text-sm text-muted-foreground">
-                {{ props.serverLabel(log.server) }}
-              </TableCell>
-              <TableCell class="hidden lg:table-cell text-sm text-muted-foreground">
-                {{ props.methodLabel(log.uploadMethod) }}
-              </TableCell>
-              <TableCell class="hidden xl:table-cell text-sm text-muted-foreground">
-                {{ props.dataTypeLabel(log.dataType) }}
-              </TableCell>
-              <TableCell>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  :title="t('adminStatistics.uploadLogs.table.viewDetails')"
-                  :aria-label="t('adminStatistics.uploadLogs.table.viewDetails')"
-                  @click="openDetailDialog(log)"
-                >
-                  <LucideInfo class="w-4 h-4 xl:mr-1" />
-                  <span class="hidden xl:inline">
-                    {{ log.success ? t("adminStatistics.uploadLogs.table.viewDetails") : t("adminStatistics.uploadLogs.table.viewError") }}
-                  </span>
-                </Button>
-              </TableCell>
-              <TableCell class="text-sm text-muted-foreground whitespace-nowrap pr-6">
-                {{ props.formatTime(log.uploadTime) }}
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </template>
-    </CardContent>
-    <div v-if="shouldShowPagination" class="border-t px-4 py-3 sm:px-6">
+
+        <p
+          v-if="log.success === false && failureLine(log)"
+          class="col-span-full min-w-0 truncate text-xs text-destructive-tint-foreground @min-[50rem]:order-9 @min-[50rem]:pl-[5.25rem]"
+          :title="failureLine(log)"
+          data-testid="upload-log-row-error"
+        >
+          {{ failureLine(log) }}
+        </p>
+      </div>
+    </div>
+
+    <div v-if="shouldShowPagination" class="border-t border-border/60 px-4 py-2.5">
       <AdminPagination
         :total="props.total"
         :page="props.page"
@@ -277,53 +292,57 @@ const detailRows = computed(() => {
         @go-to-page="emit('go-to-page', $event)"
       />
     </div>
-  </Card>
 
-  <Dialog :open="showDetailDialog" @update:open="showDetailDialog = $event">
-    <DialogScrollContent class="sm:max-w-[640px]">
-      <DialogHeader>
-        <DialogTitle>
-          {{ selectedLog?.success === false ? t("adminStatistics.uploadLogs.errorDialog.title") : t("adminStatistics.uploadLogs.detail.title") }}
-        </DialogTitle>
-        <p class="text-sm text-muted-foreground">
-          {{ t("adminStatistics.uploadLogs.detail.description") }}
-        </p>
-      </DialogHeader>
+    <Dialog :open="showDetailDialog" @update:open="showDetailDialog = $event">
+      <DialogScrollContent class="sm:max-w-[640px]">
+        <DialogHeader>
+          <DialogTitle>
+            {{ selectedLog?.success === false ? t("adminStatistics.uploadLogs.errorDialog.title") : t("adminStatistics.uploadLogs.detail.title") }}
+          </DialogTitle>
+          <DialogDescription>
+            {{ t("adminStatistics.uploadLogs.detail.description") }}
+          </DialogDescription>
+        </DialogHeader>
 
-      <div class="space-y-3">
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div class="space-y-1">
-            <div class="text-xs text-muted-foreground">{{ t("adminStatistics.uploadLogs.table.owner") }}</div>
-            <div class="text-sm font-medium break-all">
-              {{ selectedLog ? (selectedLog.userName || ownerId(selectedLog) || t("adminStatistics.uploadLogs.table.noOwner")) : fallback }}
-            </div>
+        <div class="flex min-w-0 flex-col gap-3">
+          <div v-if="selectedLog" class="flex items-center gap-2">
+            <LogsResultChip :success="!!selectedLog.success" />
+            <span class="text-xs tabular-nums text-muted-foreground">#{{ selectedLog.id }}</span>
           </div>
-          <div class="space-y-1">
-            <div class="text-xs text-muted-foreground">{{ t("adminStatistics.uploadLogs.table.actor") }}</div>
-            <div class="text-sm font-medium break-all">
-              {{ selectedLog ? (actorOf(selectedLog).actorUserId ?? t("adminStatistics.uploadLogs.actor.unknown")) : fallback }}
+          <dl class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
+            <div class="min-w-0">
+              <dt class="text-xs text-muted-foreground">{{ t("adminStatistics.uploadLogs.table.owner") }}</dt>
+              <dd class="text-sm font-medium [overflow-wrap:anywhere]">
+                {{ selectedLog ? (selectedLog.userName || ownerId(selectedLog) || t("adminStatistics.uploadLogs.table.noOwner")) : fallback }}
+              </dd>
             </div>
-          </div>
-          <div v-for="row in detailRows" :key="row.label" class="space-y-1">
-            <div class="text-xs text-muted-foreground">{{ row.label }}</div>
-            <div class="text-sm break-all">{{ row.value }}</div>
-            <div v-if="row.hint" class="text-xs text-muted-foreground/80">{{ row.hint }}</div>
+            <div class="min-w-0">
+              <dt class="text-xs text-muted-foreground">{{ t("adminStatistics.uploadLogs.table.actor") }}</dt>
+              <dd class="text-sm font-medium [overflow-wrap:anywhere]">
+                {{ selectedLog ? (actorOf(selectedLog).actorUserId ?? t("adminStatistics.uploadLogs.actor.unknown")) : fallback }}
+              </dd>
+            </div>
+            <div v-for="row in detailRows" :key="row.label" class="min-w-0">
+              <dt class="text-xs text-muted-foreground">{{ row.label }}</dt>
+              <dd class="text-sm tabular-nums [overflow-wrap:anywhere]">{{ row.value }}</dd>
+              <dd v-if="row.hint" class="text-xs text-muted-foreground/80">{{ row.hint }}</dd>
+            </div>
+          </dl>
+
+          <div v-if="selectedLog?.success === false" class="flex flex-col gap-1">
+            <div class="text-xs text-muted-foreground">{{ t("adminStatistics.uploadLogs.table.error") }}</div>
+            <div class="rounded-md bg-muted px-3 py-2.5 text-sm break-words whitespace-pre-wrap">
+              {{ selectedLog?.errorMessage || fallback }}
+            </div>
           </div>
         </div>
 
-        <div v-if="selectedLog?.success === false" class="space-y-1">
-          <div class="text-xs text-muted-foreground">{{ t("adminStatistics.uploadLogs.table.error") }}</div>
-          <div class="rounded-md border bg-muted/20 px-3 py-3 text-sm whitespace-pre-wrap break-words">
-            {{ selectedLog?.errorMessage || fallback }}
-          </div>
-        </div>
-      </div>
-
-      <DialogFooter>
-        <DialogClose as-child>
-          <Button>{{ t("adminStatistics.uploadLogs.errorDialog.close") }}</Button>
-        </DialogClose>
-      </DialogFooter>
-    </DialogScrollContent>
-  </Dialog>
+        <DialogFooter>
+          <DialogClose as-child>
+            <Button>{{ t("adminStatistics.uploadLogs.errorDialog.close") }}</Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogScrollContent>
+    </Dialog>
+  </div>
 </template>

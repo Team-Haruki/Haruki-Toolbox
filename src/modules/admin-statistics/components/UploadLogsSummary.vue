@@ -1,244 +1,239 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { VisDonut, VisSingleContainer } from "@unovis/vue"
-import {
-  LucideCheckCircle,
-  LucidePieChart,
-  LucideTrendingDown,
-  LucideTrendingUp,
-  LucideUpload,
-  LucideXCircle,
-} from "lucide-vue-next"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
 import { useI18n } from "vue-i18n"
+import {
+  LucideCircleCheck,
+  LucideCircleX,
+  LucideGamepad2,
+  LucideGauge,
+  LucideTimer,
+  LucideUpload,
+} from "lucide-vue-next"
+import AdminSparkline from "@/modules/admin/components/AdminSparkline.vue"
+import AdminStatGrid from "@/modules/admin/components/AdminStatGrid.vue"
+import AdminStatTile from "@/modules/admin/components/AdminStatTile.vue"
+import LogsBreakdownPanel from "@/modules/admin-statistics/components/LogsBreakdownPanel.vue"
+import type { ErrorDescription } from "@/lib/error-utils"
+import { formatNumberCN, formatPercent } from "@/lib/number-format"
+import type { UploadLogAnalyticsResponse } from "@/modules/admin-statistics/api/upload-log"
+import {
+  buildUploadVolumeSeries,
+  failureStageCounts,
+  formatDurationMs,
+  rankCategoryCounts,
+  successRatePercent,
+  sumUploadAttemptsByDimension,
+  type UploadVolumeInterval,
+} from "@/modules/admin-statistics/lib/logs-stats"
 import type { UploadLogsSummary } from "@/types/admin"
-import { formatNumberCN } from "@/lib/number-format"
 
-type DonutChartItem = {
-  key?: string
-  label?: string
-  value: number
-  color: string
-}
-
-interface Props {
+/**
+ * The stat block above the upload-log table. Every figure covers all uploads
+ * matching the filters inside the time range, never just the page shown:
+ * the counts and the method / data type splits come with the list response,
+ * the volume sparklines, the per-server split, the failure stages, the active
+ * accounts and the processing time from `GET /statistics/upload-analytics`.
+ * When only the analytics request fails, its tiles show a dash and its panels
+ * a retry; the rest stays.
+ */
+const props = defineProps<{
   loading: boolean
   total: number
   summary: UploadLogsSummary | null
-  successRate: string | null
-  isSuccessRateHealthy: boolean
-  donutData: DonutChartItem[]
-  methodChartData: DonutChartItem[]
-  methodTotal: number
-  dataTypeChartData: DonutChartItem[]
-  dataTypeTotal: number
-}
+  analytics: UploadLogAnalyticsResponse | null
+  analyticsLoading: boolean
+  analyticsError: ErrorDescription | null
+  /** "from — to" of the window the list covers. */
+  rangeLabel: string
+  methodLabel: (method?: string) => string
+  dataTypeLabel: (type?: string) => string
+  serverLabel: (server?: string) => string
+}>()
 
-const props = defineProps<Props>()
+const emit = defineEmits<{ retryAnalytics: [] }>()
+
 const { t } = useI18n()
 
-const successRateClass = computed(() =>
-  props.isSuccessRateHealthy
-    ? "text-green-600 dark:text-green-400"
-    : "text-orange-600 dark:text-orange-400"
+const BREAKDOWN_LIMIT = 6
+const HEALTHY_SUCCESS_RATE = 90
+
+// Skeletons only before the first answer: on a refresh the figures stay and glide to the new values.
+const pending = computed(() => props.loading && !props.summary)
+const analyticsPending = computed(() => props.analyticsLoading && !props.analytics)
+
+const rate = computed(() =>
+  props.summary ? successRatePercent(props.summary.success, props.summary.failed) : null,
+)
+const rateDetail = computed(() =>
+  rate.value == null
+    ? null
+    : t("adminStatistics.uploadLogs.summary.failureRate", { rate: formatPercent(100 - rate.value, 1) }),
 )
 
-const donutValue = (item: DonutChartItem) => item.value
-const donutColor = (item: DonutChartItem) => item.color
+const interval = computed<UploadVolumeInterval>(() => (props.analytics?.interval === "day" ? "day" : "hour"))
+const volume = computed(() =>
+  props.analytics
+    ? buildUploadVolumeSeries(props.analytics.groups, props.analytics.from, props.analytics.to, interval.value)
+    : [],
+)
+const attemptSeries = computed(() => volume.value.map((point) => point.attempts))
+const failureSeries = computed(() => volume.value.map((point) => point.failures))
+// A trend needs a few points with something in them; a single bucket is just the total again.
+const showSeries = computed(() => volume.value.length >= 3 && volume.value.some((point) => point.attempts > 0))
+const volumeLabel = computed(() => t(`adminStatistics.uploadLogs.summary.volume.${interval.value}`))
+const failureVolumeLabel = computed(() => t(`adminStatistics.uploadLogs.summary.failureVolume.${interval.value}`))
+const peak = computed(() => Math.max(0, ...attemptSeries.value))
+const totalDetail = computed(() =>
+  showSeries.value
+    ? t(`adminStatistics.uploadLogs.summary.peak.${interval.value}`, { count: formatNumberCN(peak.value, "0") })
+    : null,
+)
+
+const activeAccounts = computed(() => props.analytics?.summary.activeGameAccounts ?? null)
+const latencyP50 = computed(() => props.analytics?.summary.latencyP50Ms ?? null)
+const latencyDetail = computed(() => {
+  const summary = props.analytics?.summary
+  if (!summary) {
+    return null
+  }
+  const p95 = formatDurationMs(summary.latencyP95Ms)
+  if (!p95 || !summary.latencySampleCount) {
+    return t("adminStatistics.uploadLogs.summary.latencyNoSamples")
+  }
+  return t("adminStatistics.uploadLogs.summary.latencyDetail", {
+    p95,
+    count: formatNumberCN(summary.latencySampleCount, "0"),
+  })
+})
+
+const methods = computed(() => rankCategoryCounts(props.summary?.byMethod, BREAKDOWN_LIMIT))
+const dataTypes = computed(() => rankCategoryCounts(props.summary?.byDataType, BREAKDOWN_LIMIT))
+const servers = computed(() => rankCategoryCounts(sumUploadAttemptsByDimension(props.analytics?.groups, "server"), BREAKDOWN_LIMIT))
+const failureStages = computed(() => rankCategoryCounts(failureStageCounts(props.analytics?.byFailureStage), BREAKDOWN_LIMIT))
+
+function stageLabel(key: string): string {
+  return !key || key === "unknown" ? t("adminStatistics.uploadLogs.charts.unknownStage") : key
+}
+
+function ratePercentText(value: number): string {
+  return formatPercent(value, 1)
+}
+
+function durationText(value: number): string {
+  return formatDurationMs(value) ?? t("adminStatistics.common.fallback")
+}
 </script>
 
 <template>
-  <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
-    <Card class="py-4 gap-0">
-      <CardContent class="px-4">
-        <div class="flex items-center gap-2 text-sm text-muted-foreground">
-          <LucideUpload class="w-4 h-4 shrink-0" />
-          {{ t("adminStatistics.uploadLogs.summary.totalUploads") }}
-        </div>
-        <template v-if="loading">
-          <Skeleton class="h-8 w-20 mt-1" />
+  <section class="flex min-w-0 flex-col gap-3" :aria-label="t('adminStatistics.uploadLogs.overview.title')" data-testid="upload-logs-summary">
+    <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
+      <h2 class="text-sm font-semibold">{{ t("adminStatistics.uploadLogs.overview.title") }}</h2>
+      <p class="min-w-0 text-xs text-muted-foreground" data-testid="upload-logs-scope">
+        <template v-if="rangeLabel">
+          <span class="tabular-nums">{{ rangeLabel }}</span>
+          <span aria-hidden="true"> · </span>
         </template>
-        <template v-else>
-          <div class="text-2xl font-bold tabular-nums mt-1">
-            {{ formatNumberCN(total, "0") }}
-          </div>
-        </template>
-      </CardContent>
-    </Card>
+        {{ t("adminStatistics.uploadLogs.overview.scope") }}
+      </p>
+    </div>
 
-    <Card class="py-4 gap-0">
-      <CardContent class="px-4">
-        <div class="flex items-center gap-2 text-sm text-muted-foreground">
-          <LucideCheckCircle class="w-4 h-4 shrink-0 text-green-500" />
-          {{ t("adminStatistics.common.success") }}
-        </div>
-        <template v-if="loading">
-          <Skeleton class="h-8 w-20 mt-1" />
-        </template>
-        <template v-else>
-          <div class="text-2xl font-bold tabular-nums mt-1 text-green-600 dark:text-green-400">
-            {{ formatNumberCN(summary?.success) }}
-          </div>
-        </template>
-      </CardContent>
-    </Card>
+    <AdminStatGrid :columns="6">
+      <AdminStatTile
+        :label="t('adminStatistics.uploadLogs.summary.totalUploads')"
+        :value="summary ? total : null"
+        :icon="LucideUpload"
+        tone="primary"
+        :detail="totalDetail"
+        :loading="pending"
+      >
+        <AdminSparkline v-if="showSeries" :values="attemptSeries" class="text-primary" :label="volumeLabel" />
+      </AdminStatTile>
+      <AdminStatTile
+        :label="t('adminStatistics.common.success')"
+        :value="summary?.success ?? null"
+        :icon="LucideCircleCheck"
+        tone="success"
+        :loading="pending"
+      />
+      <AdminStatTile
+        :label="t('adminStatistics.common.failure')"
+        :value="summary?.failed ?? null"
+        :icon="LucideCircleX"
+        tone="danger"
+        :loading="pending"
+      >
+        <AdminSparkline
+          v-if="showSeries && (summary?.failed ?? 0) > 0"
+          :values="failureSeries"
+          class="text-destructive"
+          :label="failureVolumeLabel"
+        />
+      </AdminStatTile>
+      <AdminStatTile
+        :label="t('adminStatistics.uploadLogs.summary.successRate')"
+        :value="rate"
+        :format="ratePercentText"
+        :icon="LucideGauge"
+        :tone="rate != null && rate < HEALTHY_SUCCESS_RATE ? 'warning' : 'success'"
+        :detail="rateDetail"
+        :loading="pending"
+      />
+      <AdminStatTile
+        :label="t('adminStatistics.uploadLogs.summary.activeAccounts')"
+        :value="activeAccounts"
+        :icon="LucideGamepad2"
+        tone="info"
+        :detail="analytics ? t('adminStatistics.uploadLogs.summary.activeAccountsHint') : null"
+        :loading="analyticsPending"
+      />
+      <AdminStatTile
+        :label="t('adminStatistics.uploadLogs.summary.latency')"
+        :value="latencyP50"
+        :format="durationText"
+        :icon="LucideTimer"
+        :detail="latencyDetail"
+        :loading="analyticsPending"
+      />
+    </AdminStatGrid>
 
-    <Card class="py-4 gap-0">
-      <CardContent class="px-4">
-        <div class="flex items-center gap-2 text-sm text-muted-foreground">
-          <LucideXCircle class="w-4 h-4 shrink-0 text-red-500" />
-          {{ t("adminStatistics.common.failure") }}
-        </div>
-        <template v-if="loading">
-          <Skeleton class="h-8 w-20 mt-1" />
-        </template>
-        <template v-else>
-          <div class="text-2xl font-bold tabular-nums mt-1 text-red-600 dark:text-red-400">
-            {{ formatNumberCN(summary?.failed) }}
-          </div>
-        </template>
-      </CardContent>
-    </Card>
-
-    <Card class="py-4 gap-0">
-      <CardContent class="px-4">
-        <div class="flex items-center gap-2 text-sm text-muted-foreground">
-          <component
-            :is="isSuccessRateHealthy ? LucideTrendingUp : LucideTrendingDown"
-            :class="['w-4 h-4 shrink-0', isSuccessRateHealthy ? 'text-green-500' : 'text-orange-500']"
-          />
-          {{ t("adminStatistics.uploadLogs.summary.successRate") }}
-        </div>
-        <template v-if="loading">
-          <Skeleton class="h-8 w-20 mt-1" />
-        </template>
-        <template v-else>
-          <div :class="['text-2xl font-bold tabular-nums mt-1', successRateClass]">
-            {{ successRate ? `${successRate}%` : "—" }}
-          </div>
-        </template>
-      </CardContent>
-    </Card>
-  </div>
-
-  <div v-if="loading" class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-    <Card v-for="i in 3" :key="i">
-      <CardHeader class="pb-2">
-        <div class="flex items-center gap-2">
-          <LucidePieChart class="w-4 h-4 text-muted-foreground" />
-          <Skeleton class="h-4 w-28" />
-        </div>
-      </CardHeader>
-      <CardContent class="pt-0 flex flex-col items-center gap-3">
-        <div class="flex items-center justify-center w-full" style="height: 180px">
-          <Skeleton class="h-36 w-36 rounded-full" />
-        </div>
-        <Skeleton class="h-3 w-44" />
-      </CardContent>
-    </Card>
-  </div>
-
-  <div v-else-if="summary" class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-    <Card>
-      <CardHeader class="pb-2">
-        <div class="flex items-center gap-2">
-          <LucidePieChart class="w-4 h-4 text-muted-foreground" />
-          <CardTitle class="text-sm">{{ t("adminStatistics.uploadLogs.charts.successRateDistribution") }}</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent class="pt-0 flex flex-col items-center">
-        <div class="relative w-full" style="height: 180px">
-          <VisSingleContainer :data="donutData" :height="180">
-            <VisDonut :value="donutValue" :color="donutColor" :arc-width="30" :pad-angle="0.02" :corner-radius="4" />
-          </VisSingleContainer>
-          <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div class="text-center">
-              <div :class="['text-2xl font-bold tabular-nums', successRateClass]">
-                {{ successRate ? `${successRate}%` : "—" }}
-              </div>
-              <div class="text-xs text-muted-foreground">{{ t("adminStatistics.uploadLogs.summary.successRate") }}</div>
-            </div>
-          </div>
-        </div>
-        <div class="flex gap-4 mt-2 text-xs">
-          <div class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded-full bg-green-500" />
-            {{ t("adminStatistics.common.success") }} {{ formatNumberCN(summary.success, "0") }}
-          </div>
-          <div class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded-full bg-red-500" />
-            {{ t("adminStatistics.common.failure") }} {{ formatNumberCN(summary.failed, "0") }}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-
-    <Card v-if="summary.byMethod?.length">
-      <CardHeader class="pb-2">
-        <div class="flex items-center gap-2">
-          <LucidePieChart class="w-4 h-4 text-muted-foreground" />
-          <CardTitle class="text-sm">{{ t("adminStatistics.uploadLogs.charts.byMethod") }}</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent class="pt-0 flex flex-col items-center">
-        <div class="relative w-full" style="height: 180px">
-          <VisSingleContainer :data="methodChartData" :height="180">
-            <VisDonut :value="donutValue" :color="donutColor" :arc-width="28" :pad-angle="0.02" :corner-radius="4" />
-          </VisSingleContainer>
-          <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div class="text-center">
-              <div class="text-lg font-bold tabular-nums">{{ formatNumberCN(methodTotal, "0") }}</div>
-              <div class="text-xs text-muted-foreground">{{ t("adminStatistics.uploadLogs.charts.total") }}</div>
-            </div>
-          </div>
-        </div>
-        <div class="flex flex-wrap justify-center gap-x-3 gap-y-1.5 mt-3 text-xs">
-          <div v-for="item in methodChartData" :key="item.label" class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded-sm shrink-0" :style="{ background: item.color }" />
-            <span>{{ item.label }}</span>
-            <span class="text-muted-foreground tabular-nums">
-              {{ formatNumberCN(item.value, "0") }} ({{ ((item.value / methodTotal) * 100).toFixed(1) }}%)
-            </span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-
-    <Card v-if="summary.byDataType?.length">
-      <CardHeader class="pb-2">
-        <div class="flex items-center gap-2">
-          <LucidePieChart class="w-4 h-4 text-muted-foreground" />
-          <CardTitle class="text-sm">{{ t("adminStatistics.uploadLogs.charts.byDataType") }}</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent class="pt-0 flex flex-col items-center">
-        <div class="relative w-full" style="height: 180px">
-          <VisSingleContainer :data="dataTypeChartData" :height="180">
-            <VisDonut :value="donutValue" :color="donutColor" :arc-width="28" :pad-angle="0.02" :corner-radius="4" />
-          </VisSingleContainer>
-          <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div class="text-center">
-              <div class="text-lg font-bold tabular-nums">{{ formatNumberCN(dataTypeTotal, "0") }}</div>
-              <div class="text-xs text-muted-foreground">{{ t("adminStatistics.uploadLogs.charts.total") }}</div>
-            </div>
-          </div>
-        </div>
-        <div class="flex flex-wrap justify-center gap-x-3 gap-y-1.5 mt-3 text-xs">
-          <div v-for="item in dataTypeChartData" :key="item.label" class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded-sm shrink-0" :style="{ background: item.color }" />
-            <span>{{ item.label }}</span>
-            <span class="text-muted-foreground tabular-nums">
-              {{ formatNumberCN(item.value, "0") }} ({{ ((item.value / dataTypeTotal) * 100).toFixed(1) }}%)
-            </span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  </div>
+    <!-- Nothing to break down when the range holds no uploads at all. -->
+    <div v-if="pending || total > 0" class="@container" data-testid="upload-logs-breakdowns">
+      <div class="grid grid-cols-1 gap-3 @min-[40rem]:grid-cols-2 @min-[72rem]:grid-cols-4">
+        <LogsBreakdownPanel
+          :title="t('adminStatistics.uploadLogs.charts.byMethod')"
+          :ranked="methods"
+          :label-of="methodLabel"
+          :empty-text="t('adminStatistics.uploadLogs.charts.empty')"
+          :loading="pending"
+        />
+        <LogsBreakdownPanel
+          :title="t('adminStatistics.uploadLogs.charts.byDataType')"
+          :ranked="dataTypes"
+          :label-of="dataTypeLabel"
+          :empty-text="t('adminStatistics.uploadLogs.charts.empty')"
+          :loading="pending"
+        />
+        <LogsBreakdownPanel
+          :title="t('adminStatistics.uploadLogs.charts.byServer')"
+          :ranked="servers"
+          :label-of="serverLabel"
+          :empty-text="t('adminStatistics.uploadLogs.charts.empty')"
+          :loading="analyticsPending"
+          :error="analyticsError ? analyticsError.message : null"
+          data-testid="upload-logs-by-server"
+          @retry="emit('retryAnalytics')"
+        />
+        <LogsBreakdownPanel
+          :title="t('adminStatistics.uploadLogs.charts.failureStages')"
+          :ranked="failureStages"
+          :label-of="stageLabel"
+          :empty-text="t('adminStatistics.uploadLogs.charts.noFailures')"
+          :loading="analyticsPending"
+          :error="analyticsError ? analyticsError.message : null"
+          data-testid="upload-logs-failure-stages"
+          @retry="emit('retryAnalytics')"
+        />
+      </div>
+    </div>
+  </section>
 </template>
