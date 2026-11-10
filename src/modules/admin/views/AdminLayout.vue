@@ -64,11 +64,13 @@ onBeforeUnmount(() => {
 <template>
   <div v-if="userStore.isAdmin" class="w-full max-w-7xl mx-auto flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
     <!-- Desktop: grouped secondary nav -->
-    <aside class="hidden lg:flex w-52 shrink-0 flex-col gap-5 lg:sticky lg:top-20">
-      <div class="flex items-center gap-2 px-2.5">
-        <LucideShieldCheck class="h-5 w-5 text-primary" />
+    <aside class="hidden lg:flex w-52 shrink-0 flex-col gap-4 lg:sticky lg:top-20">
+      <div class="flex items-center gap-2.5 px-2.5">
+        <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary" aria-hidden="true">
+          <LucideShieldCheck class="size-4" />
+        </span>
         <div class="min-w-0">
-          <p class="text-sm font-bold leading-tight">{{ t("route.admin.layout") }}</p>
+          <p class="text-sm font-semibold leading-tight">{{ t("route.admin.layout") }}</p>
           <p v-if="userStore.isSuperAdmin" class="text-[11px] text-muted-foreground">
             {{ t("admin.layout.superAdmin") }}
           </p>
@@ -76,14 +78,15 @@ onBeforeUnmount(() => {
       </div>
 
       <nav v-for="section in visibleSections" :key="section.labelKey" class="flex flex-col gap-1">
-        <p class="px-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <p class="px-2.5 pb-0.5 text-xs font-medium text-muted-foreground">
           {{ t(section.labelKey) }}
         </p>
         <RouterLink
           v-for="item in section.items"
           :key="item.value"
           :to="{ name: item.routeName }"
-          class="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors"
+          class="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors"
+          :aria-current="activeItem?.value === item.value ? 'page' : undefined"
           :class="activeItem?.value === item.value
             ? 'bg-primary/10 font-medium text-primary'
             : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
@@ -92,7 +95,7 @@ onBeforeUnmount(() => {
           <span class="min-w-0 flex-1 truncate">{{ t(item.labelKey) }}</span>
           <span
             v-if="item.value === 'tickets' && pendingTicketCount !== null && pendingTicketCount > 0"
-            class="shrink-0 rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-medium leading-none text-destructive-foreground"
+            class="shrink-0 rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-medium leading-none text-white"
             :title="t('admin.nav.pendingTickets', { total: pendingTicketCount })"
           >
             {{ ticketBadge(pendingTicketCount) }}
@@ -124,7 +127,7 @@ onBeforeUnmount(() => {
           {{ t(item.labelKey) }}
           <span
             v-if="item.value === 'tickets' && pendingTicketCount !== null && pendingTicketCount > 0"
-            class="rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-medium leading-none text-destructive-foreground"
+            class="rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-medium leading-none text-white"
           >
             {{ ticketBadge(pendingTicketCount) }}
           </span>
@@ -145,8 +148,8 @@ onBeforeUnmount(() => {
     <!-- Content -->
     <div class="min-w-0 flex-1 flex flex-col gap-4">
       <header v-if="activeItem && showPageHeader" class="space-y-0.5">
-        <h1 class="flex items-center gap-2 text-xl font-bold tracking-tight">
-          <component :is="activeItem.icon" class="h-5 w-5 text-muted-foreground" />
+        <h1 class="flex items-center gap-2 text-xl font-semibold tracking-tight">
+          <component :is="activeItem.icon" class="size-5 text-muted-foreground" />
           {{ t(activeItem.labelKey) }}
         </h1>
         <p class="text-sm text-muted-foreground">{{ t(activeItem.descriptionKey) }}</p>
