@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import type {SidebarProps} from '@/components/ui/sidebar'
 import { useI18n } from "vue-i18n"
-import { defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from "vue"
+import { defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch, provide } from "vue"
+import { OPEN_GLOBAL_SEARCH_KEY } from "@/lib/global-search"
+import { useGlobalMusicPlayer } from "@/modules/music-library/composables/useGlobalMusicPlayer"
 import { useRoute, useRouter } from "vue-router"
 import SidebarUser from "@/modules/user/components/SidebarUser.vue";
 import { useWebLayout } from "@/modules/web/composables/useWebLayout"
+import ScrollJumpButtons from "@/modules/web/components/ScrollJumpButtons.vue"
 import { WEB_NAV_SECTIONS } from "@/config/navigation"
 import SidebarRouteSync from "@/modules/web/components/SidebarRouteSync.vue"
 import TopBarBrand from "@/modules/web/components/TopBarBrand.vue"
@@ -88,6 +91,13 @@ function openGlobalSearch() {
     }
   })
 }
+
+// The music player bar is loaded the first time something is played.
+const GlobalMusicPlayer = defineAsyncComponent(() => import("@/modules/music-library/components/GlobalMusicPlayer.vue"))
+const musicPlayer = useGlobalMusicPlayer()
+
+// Pages can offer their own search entry point (the home page does).
+provide(OPEN_GLOBAL_SEARCH_KEY, openGlobalSearch)
 
 // Keep Cmd/Ctrl+K working before the dialog chunk has ever been loaded; once
 // mounted, the dialog registers its own hotkey handler.
@@ -294,32 +304,50 @@ watch(
 
       </div>
 
+      <!-- Bottom dock: sticks to the bottom of the viewport and rests above
+           the footer at the end of the page. It is empty (zero height)
+           unless something is playing; the scroll buttons hang off its top
+           right corner either way, so they sit above the player and never
+           over the footer. On a narrow page they move up past a page's own
+           bottom bar (`data-page-bottom-bar`: the deck form's run button,
+           the frame picker's save bar). -->
+      <div class="pointer-events-none sticky bottom-0 z-30">
+        <ScrollJumpButtons
+          :class="[
+            'absolute right-3 bottom-full sm:right-4',
+            musicPlayer.state.track ? 'mb-3' : 'mb-[calc(0.75rem+env(safe-area-inset-bottom))]',
+            'max-xl:[body:has([data-page-bottom-bar])_&]:mb-20',
+          ]"
+        />
+        <GlobalMusicPlayer v-if="musicPlayer.state.track" class="pointer-events-auto" />
+      </div>
+
       <SidebarFooter
         data-glass-surface="footer"
-        class="px-6 py-2.5 text-sm text-muted-foreground md:px-12 border-t"
+        class="px-6 py-2 text-sm text-muted-foreground md:px-12 border-t"
       >
         <div
           class="flex w-full flex-col gap-2 md:flex-row md:items-center md:justify-between"
         >
-          <div class="flex flex-col items-center gap-1.5 text-center md:items-start md:text-left">
+          <div class="flex flex-col items-center gap-0.5 text-center md:items-start md:text-left">
             <span class="text-sm text-foreground/75">
               &copy; {{ copyrightYear }} {{ t("webLayout.footer.copyright") }}
             </span>
             <nav
               :aria-label="t('webLayout.footer.legalLinks')"
-              class="flex items-center gap-1 text-xs"
+              class="flex items-center gap-1 text-xs md:-ml-2"
             >
-              <router-link to="/privacy" class="inline-flex min-h-10 items-center px-2 py-2 transition-colors underline-offset-4 hover:text-foreground hover:underline">
+              <router-link to="/privacy" class="inline-flex min-h-6 items-center px-2 transition-colors pointer-coarse:min-h-10 underline-offset-4 hover:text-foreground hover:underline">
                 {{ t("webLayout.footer.privacyPolicy") }}
               </router-link>
               <span class="h-3 w-px bg-border" aria-hidden="true"></span>
-              <router-link to="/tos" class="inline-flex min-h-10 items-center px-2 py-2 transition-colors underline-offset-4 hover:text-foreground hover:underline">
+              <router-link to="/tos" class="inline-flex min-h-6 items-center px-2 transition-colors pointer-coarse:min-h-10 underline-offset-4 hover:text-foreground hover:underline">
                 {{ t("webLayout.footer.termsOfService") }}
               </router-link>
               <span class="h-3 w-px bg-border" aria-hidden="true"></span>
               <button
                 type="button"
-                class="inline-flex min-h-10 items-center px-2 py-2 transition-colors underline-offset-4 hover:text-foreground hover:underline"
+                class="inline-flex min-h-6 items-center px-2 transition-colors pointer-coarse:min-h-10 underline-offset-4 hover:text-foreground hover:underline"
                 @click="openAppSettings"
               >
                 {{ t("webLayout.footer.appVersion") }}
