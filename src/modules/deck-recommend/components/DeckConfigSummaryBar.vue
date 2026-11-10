@@ -18,13 +18,16 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <div
-    class="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-lg border bg-card px-3 py-2.5 shadow-sm sm:px-4"
-  >
-    <template v-for="(item, index) in items" :key="`${index}-${item}`">
-      <span v-if="index > 0" class="text-muted-foreground/50" aria-hidden="true">·</span>
-      <span class="min-w-0 break-words [overflow-wrap:anywhere] text-sm text-foreground/90">{{ item }}</span>
-    </template>
+  <!-- The collapsed config on a single-column page: what will run, as chips,
+       with "edit" and "run again" at the end. -->
+  <div class="flex flex-wrap items-center gap-1.5 rounded-xl border bg-card px-3 py-2.5 sm:px-4">
+    <span
+      v-for="(item, index) in items"
+      :key="`${index}-${item}`"
+      class="min-w-0 rounded-md bg-muted px-1.5 py-0.5 text-xs break-words [overflow-wrap:anywhere] text-foreground/90"
+    >
+      {{ item }}
+    </span>
     <div class="ml-auto flex max-w-full flex-wrap items-center gap-2">
       <Button type="button" variant="outline" size="sm" @click="emit('edit')">
         <LucideSettings2 class="size-4" />

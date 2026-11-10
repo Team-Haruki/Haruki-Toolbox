@@ -8,20 +8,13 @@ import {
   LucideCloudUpload,
   LucideGamepad2,
   LucideListMusic,
+  LucideScale,
   LucideTriangleAlert,
 } from "lucide-vue-next"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { RouterLink } from "vue-router"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Collapsible,
   CollapsibleContent,
@@ -42,7 +35,6 @@ import {
   algorithmTagClass,
   buildDeckCompareRows,
   cardDetailTitle,
-  deckBasicInfoGridClass as resolveDeckBasicInfoGridClass,
   deckBasicInfoMetrics as buildDeckBasicInfoMetrics,
   deckBonusParts,
   deckMetricGridClass,
@@ -186,8 +178,10 @@ function deckBasicInfoMetrics(deck: DeckResultDeckView["deck"]) {
   return buildDeckBasicInfoMetrics(metricsContext.value, deck)
 }
 
-function deckBasicInfoGridClass(deck: DeckResultDeckView["deck"]) {
-  return resolveDeckBasicInfoGridClass(props.mode, deck)
+/** Figures the expanded detail adds to the ones already on the deck's header line. */
+function deckExtraMetrics(deck: DeckResultDeckView["deck"]) {
+  const shown = new Set(deckSummaryMetrics(deck).map((metric) => metric.kind))
+  return deckBasicInfoMetrics(deck).filter((metric) => !shown.has(metric.kind))
 }
 
 function deckPowerDetailItems(deck: DeckResultDeckView["deck"]) {
@@ -196,6 +190,18 @@ function deckPowerDetailItems(deck: DeckResultDeckView["deck"]) {
 
 function algorithmLabel(algorithm: DeckRecommendAlgorithm) {
   return resolveAlgorithmLabel(t, algorithm)
+}
+
+const ALGORITHM_SHORT_KEYS: Record<DeckRecommendAlgorithm, string> = {
+  dfs_ga: "dfsGa",
+  dfs: "dfs",
+  ga: "ga",
+  rl: "rl",
+}
+
+/** The tag under a deck's cards; the full name is on the timing line. */
+function algorithmShortLabel(algorithm: DeckRecommendAlgorithm) {
+  return t(`deckRecommend.algorithmsShort.${ALGORITHM_SHORT_KEYS[algorithm]}`)
 }
 
 function isWorldBloomResultDeck(deck: DeckResultDeckView["deck"]) {
@@ -248,395 +254,398 @@ function formatPercentValue(value: number) {
 </script>
 
 <template>
-        <div v-if="runner.running.value" class="rounded-lg border bg-card p-4 shadow-sm">
-          <div class="grid gap-2">
-            <div
-              v-for="(step, stepIndex) in RUNNER_PHASE_STEPS"
-              :key="step"
-              class="flex items-center gap-2 text-sm"
+  <div class="@container/result flex min-w-0 flex-col gap-3" data-testid="deck-result-panel">
+    <!-- Running: the phases as a checklist -->
+    <div v-if="runner.running.value" class="rounded-xl border bg-card p-4">
+      <div class="grid gap-2">
+        <div
+          v-for="(step, stepIndex) in RUNNER_PHASE_STEPS"
+          :key="step"
+          class="flex items-center gap-2 text-sm"
+        >
+          <LucideCheck v-if="runnerPhaseIndex > stepIndex" class="size-4 shrink-0 text-emerald-500" />
+          <span
+            v-else-if="runnerPhaseIndex === stepIndex"
+            class="size-4 shrink-0 animate-spin rounded-full border-2 border-primary border-t-transparent"
+            aria-hidden="true"
+          />
+          <span v-else class="flex size-4 shrink-0 items-center justify-center" aria-hidden="true">
+            <span class="size-1.5 rounded-full bg-muted-foreground/40" />
+          </span>
+          <span
+            :class="runnerPhaseIndex === stepIndex
+              ? 'font-medium'
+              : runnerPhaseIndex > stepIndex
+                ? 'text-muted-foreground'
+                : 'text-muted-foreground/60'"
+          >
+            {{ t(`deckRecommend.runner.phases.${step}`) }}
+          </span>
+        </div>
+      </div>
+      <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
+        <div class="deck-recommend-progress-bar h-full w-1/3 rounded-full bg-primary" />
+      </div>
+    </div>
+
+    <!-- Nothing run yet -->
+    <div
+      v-if="!showResultCard && !runner.running.value"
+      class="flex min-h-64 flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-8 text-center"
+    >
+      <LucideGamepad2 class="size-8 text-muted-foreground/50" />
+      <p class="text-sm font-medium">{{ t("deckRecommend.result.title") }}</p>
+      <p class="max-w-sm text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.result.idlePlaceholder") }}</p>
+    </div>
+
+    <template v-if="showResultCard">
+      <!-- Heading: the total on the title line, the per-stage timings as one quiet line. -->
+      <header class="flex flex-col gap-1.5">
+        <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h2 class="text-base font-semibold">{{ t("deckRecommend.result.title") }}</h2>
+          <p class="text-xs tabular-nums text-muted-foreground">
+            <template v-if="runner.elapsedMs.value != null">
+              {{ t("deckRecommend.result.totalElapsed", { seconds: formatElapsedSeconds(runner.elapsedMs.value) }) }}
+            </template>
+            <template v-else>
+              {{ t("deckRecommend.result.description") }}
+            </template>
+          </p>
+        </div>
+        <p
+          v-if="resultTimingItems.length > 0 || runner.algorithmTimings.value.length > 0"
+          class="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] tabular-nums text-muted-foreground"
+        >
+          <span v-for="item in resultTimingItems" :key="item.key">
+            {{ item.label }}
+            <span class="font-medium text-foreground/80">{{ formatElapsedSeconds(item.elapsedMs) }}</span>
+            {{ t("deckRecommend.result.secondsUnit") }}
+          </span>
+          <span v-for="item in runner.algorithmTimings.value" :key="item.algorithm">
+            {{ algorithmLabel(item.algorithm) }}
+            <span class="font-medium text-foreground/80">{{ formatElapsedSeconds(item.elapsedMs) }}</span>
+            {{ t("deckRecommend.result.secondsUnit") }}
+          </span>
+        </p>
+      </header>
+
+      <div v-if="runner.elapsedMs.value != null && warnings.length > 0" class="grid gap-1.5">
+        <div
+          v-for="warning in warnings"
+          :key="warning.key"
+          class="flex w-full items-start gap-2 rounded-lg border border-amber-300 bg-amber-50/90 px-3 py-2 text-sm font-medium leading-5 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100"
+        >
+          <LucideTriangleAlert class="mt-0.5 size-4 shrink-0" />
+          <span>{{ warning.message }}</span>
+        </div>
+      </div>
+
+      <div
+        v-if="runner.userDataMissing.value"
+        class="flex flex-col gap-3 rounded-lg border border-amber-300 bg-amber-50/90 p-3 text-amber-950 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100 sm:flex-row sm:items-center"
+      >
+        <LucideCloudUpload class="size-5 shrink-0" aria-hidden="true" />
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-semibold">{{ t("deckRecommend.result.missingUserDataTitle") }}</p>
+          <p class="mt-1 text-xs leading-5 text-amber-900/80 dark:text-amber-100/75">
+            {{ t("deckRecommend.result.missingUserDataDescription") }}
+          </p>
+        </div>
+        <Button as-child size="sm" class="w-full shrink-0 sm:w-auto">
+          <RouterLink to="/upload-data">
+            <LucideCloudUpload class="size-4" aria-hidden="true" />
+            {{ t("deckRecommend.result.uploadDataAction") }}
+          </RouterLink>
+        </Button>
+      </div>
+      <div v-else-if="runner.errorDescription.value" class="break-words rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+        <p>{{ runner.errorDescription.value.message }}</p>
+        <p v-if="runner.errorDescription.value.detail" class="mt-1 text-xs text-destructive/70">
+          {{ t("core.errors.detail", { detail: runner.errorDescription.value.detail }) }}
+        </p>
+      </div>
+      <div v-else-if="resultDecks.length === 0" class="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+        {{ t("deckRecommend.result.empty") }}
+      </div>
+
+      <!-- Comparison of the ticked decks; the first ticked one is the baseline. -->
+      <div v-if="deckCompareRows.length > 0" class="overflow-x-auto rounded-xl border bg-card" data-testid="deck-compare">
+        <table class="w-full min-w-[28rem] text-xs">
+          <thead>
+            <tr class="border-b bg-muted/30 text-muted-foreground">
+              <th class="px-3 py-1.5 text-left font-medium">{{ t("deckRecommend.result.actions.compareTitle") }}</th>
+              <th
+                v-for="(view, position) in comparedDecks"
+                :key="view.index"
+                class="px-3 py-1.5 text-right font-medium"
+              >
+                {{ t("deckRecommend.result.deckTitle", { index: view.index + 1 }) }}
+                <span
+                  v-if="position === 0"
+                  class="ml-1 rounded bg-muted px-1 py-0.5 text-[10px] font-medium"
+                >
+                  {{ t("deckRecommend.result.actions.compareBaseline") }}
+                </span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in deckCompareRows" :key="row.kind" class="border-b border-border/60 last:border-b-0">
+              <td class="px-3 py-1.5 text-muted-foreground">{{ row.label }}</td>
+              <td
+                v-for="(cell, position) in row.cells"
+                :key="position"
+                class="px-3 py-1.5 text-right tabular-nums"
+              >
+                <span class="font-medium">{{ cell.value }}</span>
+                <span
+                  v-if="cell.diffLabel"
+                  :class="[
+                    'ml-1 text-[10px] font-semibold',
+                    cell.tone === 'up'
+                      ? 'text-emerald-600 dark:text-emerald-300'
+                      : cell.tone === 'down'
+                        ? 'text-red-500 dark:text-red-300'
+                        : 'text-muted-foreground',
+                  ]"
+                >{{ cell.tone === 'up' ? '▲' : cell.tone === 'down' ? '▼' : '' }}{{ cell.diffLabel }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <Collapsible
+        v-for="deckView in resultDecks"
+        :key="deckView.index"
+        v-slot="{ open }"
+        as-child
+      >
+        <section class="overflow-hidden rounded-xl border bg-card" data-slot="deck-result">
+          <!-- Three layouts by the pane's own width (container query, not
+               viewport: beside the config pane it is ~45rem at 1440):
+               wide, one line — rank, the five cards, the numbers, the actions;
+               middle, the numbers take a second line;
+               phone, the cards get a line of their own so they stay legible.
+               The whole header toggles the detail: a stretched button sits
+               under the content, and only the actions take clicks of their own. -->
+          <div class="relative grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 p-2.5 @[30rem]/result:grid-cols-[auto_14.5rem_minmax(0,1fr)_auto]">
+            <CollapsibleTrigger as-child>
+              <button
+                type="button"
+                class="absolute inset-0 outline-none transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                :aria-label="t('deckRecommend.result.deckTitle', { index: deckView.index + 1 })"
+              />
+            </CollapsibleTrigger>
+
+            <span
+              :class="[
+                'pointer-events-none relative col-start-1 row-start-1 flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums @[30rem]/result:row-span-2',
+                deckView.index === 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground',
+              ]"
+              aria-hidden="true"
             >
-              <LucideCheck v-if="runnerPhaseIndex > stepIndex" class="size-4 shrink-0 text-emerald-500" />
+              {{ deckView.index + 1 }}
+            </span>
+
+            <div class="pointer-events-none relative col-span-3 col-start-1 row-start-2 grid max-w-80 grid-cols-5 gap-1 @[30rem]/result:col-span-1 @[30rem]/result:col-start-2 @[30rem]/result:row-start-1 @[30rem]/result:max-w-none">
+              <CardThumbnail
+                v-for="cardView in deckView.cards"
+                :key="cardView.card.card_id"
+                :thumbnail="cardView.thumbnail"
+                size="fluid"
+              />
+            </div>
+
+            <!-- Which algorithms arrived at this deck, in short form; the
+                 timing line above spells the names out. -->
+            <div
+              v-if="deckSourceAlgorithms(deckView.deck).length > 0"
+              class="pointer-events-none relative col-start-2 row-start-1 flex min-w-0 flex-wrap gap-1 @[30rem]/result:row-start-2"
+            >
               <span
-                v-else-if="runnerPhaseIndex === stepIndex"
-                class="size-4 shrink-0 animate-spin rounded-full border-2 border-primary border-t-transparent"
+                v-for="algorithm in deckSourceAlgorithms(deckView.deck)"
+                :key="algorithm"
+                :class="['rounded border px-1 text-[10px] leading-4 font-medium whitespace-nowrap', algorithmTagClass(algorithm)]"
+              >
+                {{ algorithmShortLabel(algorithm) }}
+              </span>
+            </div>
+
+            <dl
+              :class="[
+                'pointer-events-none relative col-span-3 col-start-1 row-start-3 grid min-w-0 gap-x-3 gap-y-1 @[30rem]/result:col-span-4 @[44rem]/result:col-span-1 @[44rem]/result:col-start-3 @[44rem]/result:row-span-2 @[44rem]/result:row-start-1',
+                deckMetricGridClass(deckSummaryMetrics(deckView.deck).length),
+              ]"
+            >
+              <div
+                v-for="(metric, metricIndex) in deckSummaryMetrics(deckView.deck)"
+                :key="metric.kind"
+                class="flex min-w-0 flex-col"
+              >
+                <dt class="truncate text-[11px] text-muted-foreground">{{ metric.label }}</dt>
+                <dd :class="['truncate font-semibold tabular-nums', metricIndex === 0 ? 'text-base leading-tight' : 'text-sm']">
+                  {{ metric.value }}
+                </dd>
+                <dd v-if="metric.detail" class="truncate text-[11px] text-muted-foreground" :title="metric.detail">
+                  {{ metric.detail }}
+                </dd>
+              </div>
+            </dl>
+
+            <div class="relative col-start-3 row-start-1 flex shrink-0 items-center gap-0.5 justify-self-end pointer-coarse:-my-1.5 @[30rem]/result:col-start-4 @[30rem]/result:row-span-2">
+              <!-- Compare is a toggle like its two neighbours; ticked decks line up in the table above the list. -->
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                :class="[
+                  'size-7 pointer-coarse:size-10',
+                  comparedDeckIndexes.includes(deckView.index) ? 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary' : 'text-muted-foreground',
+                ]"
+                :aria-pressed="comparedDeckIndexes.includes(deckView.index)"
+                :aria-label="t('deckRecommend.result.actions.compare')"
+                :title="t('deckRecommend.result.actions.compare')"
+                @click="toggleDeckCompare(deckView.index, !comparedDeckIndexes.includes(deckView.index))"
+              >
+                <LucideScale class="size-3.5" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                class="size-7 text-muted-foreground pointer-coarse:size-10"
+                :aria-label="t('deckRecommend.result.actions.copy')"
+                :title="t('deckRecommend.result.actions.copy')"
+                @click="copyDeck(deckView)"
+              >
+                <LucideCopy class="size-3.5" />
+              </Button>
+              <Button
+                v-if="songRankingAvailable"
+                type="button"
+                variant="ghost"
+                size="icon"
+                class="size-7 text-muted-foreground pointer-coarse:size-10"
+                :aria-label="t('deckRecommend.result.actions.songRanking')"
+                :title="t('deckRecommend.result.actions.songRanking')"
+                @click="openSongRanking(deckView)"
+              >
+                <LucideListMusic class="size-3.5" />
+              </Button>
+              <LucideChevronDown
+                :class="['pointer-events-none ml-0.5 size-4 text-muted-foreground transition-transform duration-200', open ? 'rotate-180' : '']"
                 aria-hidden="true"
               />
-              <span v-else class="flex size-4 shrink-0 items-center justify-center" aria-hidden="true">
-                <span class="size-1.5 rounded-full bg-muted-foreground/40" />
-              </span>
-              <span
-                :class="runnerPhaseIndex === stepIndex
-                  ? 'font-medium'
-                  : runnerPhaseIndex > stepIndex
-                    ? 'text-muted-foreground'
-                    : 'text-muted-foreground/60'"
-              >
-                {{ t(`deckRecommend.runner.phases.${step}`) }}
-              </span>
             </div>
           </div>
-          <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
-            <div class="deck-recommend-progress-bar h-full w-1/3 rounded-full bg-primary" />
-          </div>
-        </div>
 
-        <div
-          v-if="!showResultCard && !runner.running.value"
-          class="flex min-h-72 flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-card/50 p-8 text-center"
-        >
-          <LucideGamepad2 class="size-8 text-muted-foreground/50" />
-          <p class="text-sm font-medium">{{ t("deckRecommend.result.title") }}</p>
-          <p class="max-w-sm text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.result.idlePlaceholder") }}</p>
-        </div>
-
-        <Card v-if="showResultCard" size="compact" class="@container/result min-w-0 gap-3 py-3 xl:gap-4 xl:py-4">
-          <CardHeader class="px-2 sm:px-4 xl:px-6">
-            <CardTitle class="text-base">{{ t("deckRecommend.result.title") }}</CardTitle>
-            <CardDescription>
-              <template v-if="runner.elapsedMs.value != null">
-                {{ t("deckRecommend.result.totalElapsed", { seconds: formatElapsedSeconds(runner.elapsedMs.value) }) }}
-              </template>
-              <template v-else>
-                {{ t("deckRecommend.result.description") }}
-              </template>
-            </CardDescription>
-            <div v-if="runner.elapsedMs.value != null && warnings.length > 0" class="grid gap-1.5 pt-1 sm:gap-2">
-              <div
-                v-for="warning in warnings"
-                :key="warning.key"
-                class="flex w-full items-start gap-2 rounded-md border border-amber-300 bg-amber-50/90 px-2 py-2 text-sm font-medium leading-5 text-amber-900 shadow-sm dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100 sm:px-3"
-              >
-                <LucideTriangleAlert class="mt-0.5 size-4 shrink-0" />
-                <span>{{ warning.message }}</span>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent class="space-y-2 px-2 pb-2 sm:px-4 sm:pb-4 xl:space-y-3 xl:px-6 xl:pb-6">
-            <div
-              v-if="resultTimingItems.length > 0 || runner.algorithmTimings.value.length > 0"
-              class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground"
-            >
-              <span
-                v-for="item in resultTimingItems"
-                :key="item.key"
-                class="inline-flex items-baseline gap-1"
-              >
-                {{ item.label }}
-                <span class="font-mono font-medium text-foreground/80">{{ formatElapsedSeconds(item.elapsedMs) }}</span>
-                {{ t("deckRecommend.result.secondsUnit") }}
-              </span>
-              <span
-                v-for="item in runner.algorithmTimings.value"
-                :key="item.algorithm"
-                class="inline-flex items-baseline gap-1"
-              >
-                {{ algorithmLabel(item.algorithm) }}
-                <span class="font-mono font-medium text-foreground/80">{{ formatElapsedSeconds(item.elapsedMs) }}</span>
-                {{ t("deckRecommend.result.secondsUnit") }}
-              </span>
-            </div>
-            <div
-              v-if="runner.userDataMissing.value"
-              class="flex flex-col gap-3 rounded-md border border-amber-300 bg-amber-50/90 p-3 text-amber-950 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100 sm:flex-row sm:items-center"
-            >
-              <LucideCloudUpload class="size-5 shrink-0" aria-hidden="true" />
-              <div class="min-w-0 flex-1">
-                <p class="text-sm font-semibold">{{ t("deckRecommend.result.missingUserDataTitle") }}</p>
-                <p class="mt-1 text-xs leading-5 text-amber-900/80 dark:text-amber-100/75">
-                  {{ t("deckRecommend.result.missingUserDataDescription") }}
-                </p>
-              </div>
-              <Button as-child size="sm" class="w-full shrink-0 sm:w-auto">
-                <RouterLink to="/upload-data">
-                  <LucideCloudUpload class="size-4" aria-hidden="true" />
-                  {{ t("deckRecommend.result.uploadDataAction") }}
-                </RouterLink>
-              </Button>
-            </div>
-            <div v-else-if="runner.errorDescription.value" class="break-words rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
-              <p>{{ runner.errorDescription.value.message }}</p>
-              <p v-if="runner.errorDescription.value.detail" class="mt-1 text-xs text-destructive/70">
-                {{ t("core.errors.detail", { detail: runner.errorDescription.value.detail }) }}
-              </p>
-            </div>
-            <div v-else-if="resultDecks.length === 0" class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-              {{ t("deckRecommend.result.empty") }}
-            </div>
-            <div v-if="deckCompareRows.length > 0" class="overflow-x-auto rounded-md border bg-background/80 shadow-sm">
-              <table class="w-full min-w-[28rem] text-xs">
-                <thead>
-                  <tr class="border-b bg-muted/30 text-muted-foreground">
-                    <th class="px-2.5 py-2 text-left font-medium">{{ t("deckRecommend.result.actions.compareTitle") }}</th>
-                    <th
-                      v-for="(view, position) in comparedDecks"
-                      :key="view.index"
-                      class="px-2.5 py-2 text-right font-medium"
-                    >
-                      {{ t("deckRecommend.result.deckTitle", { index: view.index + 1 }) }}
-                      <span
-                        v-if="position === 0"
-                        class="ml-1 rounded bg-muted px-1 py-0.5 text-[10px] font-medium"
-                      >
-                        {{ t("deckRecommend.result.actions.compareBaseline") }}
-                      </span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="row in deckCompareRows" :key="row.kind" class="border-b last:border-b-0">
-                    <td class="px-2.5 py-2 text-muted-foreground">{{ row.label }}</td>
-                    <td
-                      v-for="(cell, position) in row.cells"
-                      :key="position"
-                      class="px-2.5 py-2 text-right tabular-nums"
-                    >
-                      <span class="font-medium">{{ cell.value }}</span>
-                      <span
-                        v-if="cell.diffLabel"
-                        :class="[
-                          'ml-1 text-[10px] font-semibold',
-                          cell.tone === 'up'
-                            ? 'text-emerald-600 dark:text-emerald-300'
-                            : cell.tone === 'down'
-                              ? 'text-red-500 dark:text-red-300'
-                              : 'text-muted-foreground',
-                        ]"
-                      >{{ cell.tone === 'up' ? '▲' : cell.tone === 'down' ? '▼' : '' }}{{ cell.diffLabel }}</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <Collapsible
-              v-for="deckView in resultDecks"
-              :key="deckView.index"
-              v-slot="{ open }"
-              as-child
-            >
-              <section class="overflow-hidden rounded-md border bg-background/80 shadow-sm">
-                <CollapsibleTrigger as-child>
-                  <!-- The thumbnail strip sits beside the text only once the result pane itself is
-                       wide enough (container query, not viewport: with the sidebar open the pane is
-                       ~540 px at 1280); below that it stacks under the metrics. -->
-                  <button
-                    type="button"
-                    class="relative grid w-full gap-2 p-2.5 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:gap-3 sm:p-3 @[44rem]/result:grid-cols-[minmax(0,1fr)_minmax(16rem,26rem)_auto] @[44rem]/result:items-start"
-                  >
-                    <div class="min-w-0 space-y-2">
-                      <div class="flex min-w-0 flex-wrap items-center gap-2 pr-7 @[44rem]/result:pr-0">
-                        <span class="shrink-0 text-sm font-semibold text-foreground">
-                          {{ t("deckRecommend.result.deckTitle", { index: deckView.index + 1 }) }}
-                        </span>
-                        <div v-if="deckSourceAlgorithms(deckView.deck).length > 0" class="flex min-w-0 flex-wrap gap-1.5">
-                          <span
-                            v-for="algorithm in deckSourceAlgorithms(deckView.deck)"
-                            :key="algorithm"
-                            :class="[
-                              'whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[11px] font-medium',
-                              algorithmTagClass(algorithm),
-                            ]"
-                          >
-                            {{ algorithmLabel(algorithm) }}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div v-if="!open" :class="['grid min-w-0 gap-1 sm:gap-2', deckMetricGridClass(deckSummaryMetrics(deckView.deck).length)]">
-                        <div
-                          v-for="metric in deckSummaryMetrics(deckView.deck)"
-                          :key="metric.kind"
-                          class="min-w-0 rounded bg-muted/20 px-1.5 py-1 sm:rounded-md sm:px-3 sm:py-2"
-                        >
-                          <span class="block truncate text-[10px] font-medium uppercase leading-4 text-muted-foreground sm:text-[11px]">{{ metric.label }}</span>
-                          <span class="block truncate font-mono text-xs font-semibold text-foreground sm:text-sm">
-                            {{ metric.value }}
-                          </span>
-                          <span v-if="metric.detail" class="hidden truncate text-[11px] text-muted-foreground sm:block">
-                            {{ metric.detail }}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div
-                      v-if="!open"
-                      class="grid w-full max-w-[41rem] grid-cols-5 content-center justify-items-center gap-0.5 self-end justify-self-center rounded bg-muted/20 p-0.5 ring-1 ring-border/60 sm:gap-1 sm:rounded-md @[44rem]/result:max-w-none @[44rem]/result:justify-self-end"
-                    >
-                      <CardThumbnail
-                        v-for="cardView in deckView.cards"
-                        :key="cardView.card.card_id"
-                        :thumbnail="cardView.thumbnail"
-                        size="fluid"
-                      />
-                    </div>
-
-                    <LucideChevronDown
-                      :class="[
-                        'absolute right-2 top-2 size-5 text-muted-foreground transition-transform duration-200 sm:right-3 sm:top-3 @[44rem]/result:static @[44rem]/result:mt-1 @[44rem]/result:self-start @[44rem]/result:justify-self-end',
-                        open ? 'rotate-180' : '',
-                      ]"
-                    />
-                  </button>
-                </CollapsibleTrigger>
-
-                <div class="flex flex-wrap items-center gap-2 border-t bg-muted/10 px-2.5 py-1.5 sm:px-3">
-                  <label :for="`deck-compare-${deckView.index}`" class="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
-                    <Checkbox
-                      :id="`deck-compare-${deckView.index}`"
-                      :model-value="comparedDeckIndexes.includes(deckView.index)"
-                      @update:model-value="checked => toggleDeckCompare(deckView.index, checked === true)"
-                    />
-                    {{ t("deckRecommend.result.actions.compare") }}
-                  </label>
-                  <span class="flex-1" />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    class="h-7 gap-1 px-2 text-xs"
-                    @click="copyDeck(deckView)"
-                  >
-                    <LucideCopy class="size-3.5" />
-                    {{ t("deckRecommend.result.actions.copy") }}
-                  </Button>
-                  <Button
-                    v-if="songRankingAvailable"
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    class="h-7 gap-1 px-2 text-xs"
-                    @click="openSongRanking(deckView)"
-                  >
-                    <LucideListMusic class="size-3.5" />
-                    {{ t("deckRecommend.result.actions.songRanking") }}
-                  </Button>
+          <CollapsibleContent>
+            <div class="@container/detail flex flex-col gap-3 border-t border-border/60 bg-muted/20 p-3">
+              <!-- The header already shows the main figures: here only the ones
+                   it leaves out (live score, challenge delta), then how the
+                   power adds up. -->
+              <dl class="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                <div v-for="metric in deckExtraMetrics(deckView.deck)" :key="metric.kind" class="flex items-baseline gap-1.5">
+                  <dt class="text-muted-foreground">{{ metric.label }}</dt>
+                  <dd class="font-semibold tabular-nums">{{ metric.value }}</dd>
                 </div>
+                <div v-for="item in deckPowerDetailItems(deckView.deck)" :key="item.key" class="flex items-baseline gap-1.5">
+                  <dt class="text-muted-foreground">{{ item.label }}</dt>
+                  <dd :class="['tabular-nums', item.key === 'total' ? 'font-semibold' : 'font-medium']">{{ formatInteger(item.value) }}</dd>
+                </div>
+              </dl>
 
-                <CollapsibleContent>
-                  <div class="space-y-3 border-t bg-muted/5 p-2.5 sm:p-3">
-                    <div :class="['grid grid-cols-2 gap-1.5 sm:gap-2', deckBasicInfoGridClass(deckView.deck)]">
-                      <div
-                        v-for="metric in deckBasicInfoMetrics(deckView.deck)"
-                        :key="metric.kind"
-                        class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2"
-                      >
-                        <span class="block text-xs text-muted-foreground">{{ metric.label }}</span>
-                        <span class="block font-mono text-sm font-semibold sm:text-base">
-                          {{ metric.value }}
-                        </span>
-                        <span v-if="metric.detail" class="block text-xs text-muted-foreground">
-                          {{ metric.detail }}
-                        </span>
-                      </div>
-                    </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <h3 class="text-sm font-semibold">{{ mainDeckSectionTitle(deckView.deck) }}</h3>
+                <span class="rounded-md border border-rose-200 bg-rose-50 px-1.5 py-0.5 text-[11px] font-medium text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
+                  {{ bonusTagLabel(deckBonusParts(deckView.deck).main) }}
+                </span>
+              </div>
 
-                    <div class="flex flex-wrap gap-1.5 text-xs">
-                      <span
-                        v-for="item in deckPowerDetailItems(deckView.deck)"
-                        :key="item.key"
-                        class="rounded-md bg-background/80 px-1.5 py-1 ring-1 ring-border/40"
-                      >
-                        <span class="text-muted-foreground">{{ item.label }}</span>
-                        <span class="ml-1 font-mono font-semibold text-foreground">{{ formatInteger(item.value) }}</span>
-                      </span>
-                    </div>
-
-                    <div class="flex flex-wrap items-center gap-2 pt-1">
-                      <span class="text-sm font-semibold">{{ mainDeckSectionTitle(deckView.deck) }}</span>
-                      <span class="rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
-                        {{ bonusTagLabel(deckBonusParts(deckView.deck).main) }}
-                      </span>
-                    </div>
-                    <div class="grid gap-2 lg:grid-cols-2">
-                      <div
-                        v-for="cardView in deckView.cards"
-                        :key="cardView.card.card_id"
-                        class="flex min-w-0 items-start gap-2 rounded-md bg-background/70 p-2 ring-1 ring-border/60 sm:gap-3"
-                      >
-                        <CardThumbnail
-                          :thumbnail="cardView.thumbnail"
-                          size="md"
-                          :level-label="t('deckRecommend.result.cardLevel', { value: cardView.card.level })"
-                        />
-                        <div class="min-w-0 flex-1 space-y-2">
-                          <div class="flex min-w-0 flex-wrap items-start justify-between gap-2">
-                            <span class="min-w-0 text-sm font-semibold leading-5">
-                              {{ cardDetailTitle(cardView) }}
-                            </span>
-                            <span class="shrink-0 rounded-md bg-background/70 px-1.5 py-0.5 font-mono text-xs text-muted-foreground ring-1 ring-border/70">
-                              #{{ cardView.card.card_id }}
-                            </span>
-                          </div>
-                          <div class="flex flex-wrap gap-1.5 text-xs">
-                            <span class="rounded-md bg-muted/50 px-1.5 py-0.5 font-medium text-foreground">
-                              {{ t("deckRecommend.result.cardTotalPowerShort", { value: formatInteger(cardView.card.total_power) }) }}
-                            </span>
-                            <span class="rounded-md bg-muted/50 px-1.5 py-0.5 font-medium text-foreground/80">
-                              {{ t("deckRecommend.result.skillLevel", { value: cardView.card.skill_level }) }}
-                            </span>
-                            <span class="rounded-md bg-muted/50 px-1.5 py-0.5 font-medium text-foreground/80">
-                              {{ t("deckRecommend.result.skillScoreUpShort", { value: cardView.card.skill_score_up }) }}
-                            </span>
-                            <span
-                              v-if="cardView.card.skill_life_recovery > 0"
-                              class="rounded-md bg-muted/50 px-1.5 py-0.5 font-medium text-foreground/80"
-                            >
-                              {{ t("deckRecommend.result.skillLifeRecoveryShort", { value: cardView.card.skill_life_recovery }) }}
-                            </span>
-                            <span class="rounded-md bg-muted/50 px-1.5 py-0.5 font-medium text-foreground/80">
-                              {{ t("deckRecommend.result.cardEventBonusShort", { value: cardView.card.event_bonus_rate }) }}
-                            </span>
-                            <span
-                              :class="[
-                                'rounded-md border px-1.5 py-0.5 font-medium',
-                                episodeTagClass(cardView.card),
-                              ]"
-                              :title="episodeTitle(cardView.card)"
-                            >
-                              {{ t("deckRecommend.result.episodesShort") }}
-                              {{ episodeSymbol(cardView.card.episode1_read) }}{{ episodeSymbol(cardView.card.episode2_read) }}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <template v-if="isWorldBloomResultDeck(deckView.deck) && worldBloomSupportCardViews(deckView.deck).length > 0">
-                      <div class="flex flex-wrap items-center gap-2 pt-1">
-                        <span class="text-sm font-semibold">{{ t("deckRecommend.result.sections.supportCards") }}</span>
-                        <span class="rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
-                          {{ bonusTagLabel(deckBonusParts(deckView.deck).support) }}
-                        </span>
-                      </div>
-                      <div class="grid grid-cols-3 gap-1.5 sm:grid-cols-4 sm:gap-2 xl:grid-cols-5">
-                        <div
-                          v-for="supportCardView in worldBloomSupportCardViews(deckView.deck)"
-                          :key="supportCardView.card.card_id"
-                          class="grid gap-1.5 rounded-md bg-background/75 p-1.5 ring-1 ring-border/60 sm:gap-2 sm:p-2"
-                        >
-                          <div class="flex justify-center">
-                            <CardThumbnail
-                              :thumbnail="supportCardView.thumbnail"
-                              :corner-badge="`#${supportCardView.card.card_id}`"
-                            />
-                          </div>
-                          <div class="flex flex-wrap items-center justify-center gap-1.5 text-xs">
-                            <span class="rounded-md bg-muted/50 px-1.5 py-0.5 font-medium text-foreground/80">
-                              {{ formatPercentValue(supportCardView.card.bonus) }}%
-                            </span>
-                            <span class="font-mono text-muted-foreground">
-                              {{ t("deckRecommend.result.supportSkillLevel", { value: supportCardView.card.skill_level }) }}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </template>
+              <!-- The five cards as a table: one line each, numbers in columns.
+                   Under 40rem the numbers fold under the name as labelled pairs. -->
+              <div class="divide-y divide-border/60 overflow-hidden rounded-lg border bg-card">
+                <div class="hidden items-center gap-3 bg-muted/30 px-2.5 py-1 text-[11px] text-muted-foreground @[40rem]/detail:flex">
+                  <span class="min-w-0 flex-1">{{ t("deckRecommend.result.columns.card") }}</span>
+                  <span class="w-20 shrink-0 text-right">{{ t("deckRecommend.result.columns.power") }}</span>
+                  <span class="w-14 shrink-0 text-right">{{ t("deckRecommend.result.columns.skillLevel") }}</span>
+                  <span class="w-20 shrink-0 text-right">{{ t("deckRecommend.result.columns.scoreUp") }}</span>
+                  <span class="w-16 shrink-0 text-right">{{ t("deckRecommend.result.columns.eventBonus") }}</span>
+                  <span class="w-12 shrink-0 text-right">{{ t("deckRecommend.result.episodesShort") }}</span>
+                </div>
+                <div
+                  v-for="cardView in deckView.cards"
+                  :key="cardView.card.card_id"
+                  class="flex flex-wrap items-center gap-x-3 gap-y-1 px-2.5 py-1.5"
+                >
+                  <div class="size-11 shrink-0">
+                    <CardThumbnail :thumbnail="cardView.thumbnail" size="fluid" />
                   </div>
-                </CollapsibleContent>
-              </section>
-            </Collapsible>
-          </CardContent>
-      </Card>
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-medium" :title="cardDetailTitle(cardView)">{{ cardDetailTitle(cardView) }}</p>
+                    <p class="text-[11px] tabular-nums text-muted-foreground">
+                      #{{ cardView.card.card_id }} · {{ t("deckRecommend.result.cardLevel", { value: cardView.card.level }) }}
+                    </p>
+                  </div>
+                  <div class="flex basis-full flex-wrap items-center gap-x-3 gap-y-1 pl-14 text-xs tabular-nums @[40rem]/detail:basis-auto @[40rem]/detail:flex-nowrap @[40rem]/detail:pl-0">
+                    <span class="font-medium @[40rem]/detail:w-20 @[40rem]/detail:text-right">
+                      <span class="mr-1 font-normal text-muted-foreground @[40rem]/detail:hidden">{{ t("deckRecommend.result.columns.power") }}</span>{{ formatInteger(cardView.card.total_power) }}
+                    </span>
+                    <span class="@[40rem]/detail:w-14 @[40rem]/detail:text-right">
+                      <span class="mr-1 text-muted-foreground @[40rem]/detail:hidden">{{ t("deckRecommend.result.columns.skillLevel") }}</span>Lv.{{ cardView.card.skill_level }}
+                    </span>
+                    <span class="@[40rem]/detail:w-20 @[40rem]/detail:text-right">
+                      <span class="mr-1 text-muted-foreground @[40rem]/detail:hidden">{{ t("deckRecommend.result.columns.scoreUp") }}</span>{{ cardView.card.skill_score_up }}%
+                      <span
+                        v-if="cardView.card.skill_life_recovery > 0"
+                        class="ml-1 text-[11px] text-muted-foreground"
+                        :title="t('deckRecommend.result.skillLifeRecoveryShort', { value: cardView.card.skill_life_recovery })"
+                      >+{{ cardView.card.skill_life_recovery }}</span>
+                    </span>
+                    <span class="@[40rem]/detail:w-16 @[40rem]/detail:text-right">
+                      <span class="mr-1 text-muted-foreground @[40rem]/detail:hidden">{{ t("deckRecommend.result.columns.eventBonus") }}</span>{{ cardView.card.event_bonus_rate }}%
+                    </span>
+                    <span class="flex @[40rem]/detail:w-12 @[40rem]/detail:justify-end">
+                      <span
+                        :class="['rounded border px-1 py-px text-[11px] font-medium', episodeTagClass(cardView.card)]"
+                        :title="episodeTitle(cardView.card)"
+                      >
+                        <span class="mr-1 @[40rem]/detail:hidden">{{ t("deckRecommend.result.episodesShort") }}</span>{{ episodeSymbol(cardView.card.episode1_read) }}{{ episodeSymbol(cardView.card.episode2_read) }}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <template v-if="isWorldBloomResultDeck(deckView.deck) && worldBloomSupportCardViews(deckView.deck).length > 0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-sm font-semibold">{{ t("deckRecommend.result.sections.supportCards") }}</h3>
+                  <span class="rounded-md border border-rose-200 bg-rose-50 px-1.5 py-0.5 text-[11px] font-medium text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
+                    {{ bonusTagLabel(deckBonusParts(deckView.deck).support) }}
+                  </span>
+                </div>
+                <div class="grid grid-cols-4 gap-1.5 @[28rem]/detail:grid-cols-6 @[40rem]/detail:grid-cols-8 @[52rem]/detail:grid-cols-10">
+                  <div
+                    v-for="supportCardView in worldBloomSupportCardViews(deckView.deck)"
+                    :key="supportCardView.card.card_id"
+                    class="flex flex-col items-center gap-0.5"
+                    :title="`#${supportCardView.card.card_id}`"
+                  >
+                    <CardThumbnail :thumbnail="supportCardView.thumbnail" size="fluid" />
+                    <span class="text-[11px] tabular-nums">
+                      <span class="font-medium">{{ formatPercentValue(supportCardView.card.bonus) }}%</span>
+                      <span class="ml-1 text-muted-foreground">{{ t("deckRecommend.result.supportSkillLevel", { value: supportCardView.card.skill_level }) }}</span>
+                    </span>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </CollapsibleContent>
+        </section>
+      </Collapsible>
+    </template>
+  </div>
 
   <DeckSongRankingDialog
     v-model:open="songRankingOpen"

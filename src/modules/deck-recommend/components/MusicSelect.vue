@@ -310,7 +310,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
 
 <template>
   <div class="@container min-w-0">
-    <div class="grid min-w-0 grid-cols-1 gap-3" :class="props.hideDifficulty ? '' : '@sm:grid-cols-[minmax(0,1fr)_auto]'">
+    <div class="grid min-w-0 grid-cols-1 gap-3" :class="props.hideDifficulty ? '' : '@[20rem]:grid-cols-[minmax(0,1fr)_auto]'">
       <Button
         type="button"
         variant="outline"
@@ -345,10 +345,10 @@ function toNullableNumber(value: number | string | undefined | null): number | n
         :disabled="props.disabled || !props.modelValue || difficultyOptions.length === 0"
         @update:model-value="handleDifficultyUpdate"
       >
-        <SelectTrigger class="w-full py-1.5 @sm:!h-full @sm:min-h-9" :aria-labelledby="difficultyLabelId">
+        <SelectTrigger class="w-full py-1.5 @[20rem]:!h-full @[20rem]:min-h-9" :aria-labelledby="difficultyLabelId">
           <span
             v-if="selectedDifficultyOption"
-            class="flex flex-row items-center gap-1.5 @sm:flex-col @sm:items-start @sm:gap-1"
+            class="flex flex-row items-center gap-1.5 @[20rem]:flex-col @[20rem]:items-start @[20rem]:gap-1"
           >
             <span :class="[resolveMusicDifficultyChipClass(selectedDifficultyOption.value), 'px-1.5 py-0.5']">
               {{ selectedDifficultyOption.label }}
