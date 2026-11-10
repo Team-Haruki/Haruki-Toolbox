@@ -24,3 +24,19 @@ const STORY_PLAYER_ASSET = /^https:\/\/[^/]+\/[a-z]+-assets\/(?:(?:startapp|onde
 export function isCachedSekaiImage(url: string): boolean {
   return SEKAI_IMAGE.test(url) && !STORY_PLAYER_ASSET.test(url)
 }
+
+/**
+ * Whether a cached image may answer this request.
+ *
+ * `<img>` loads are no-cors, so what they put in the cache is opaque: fine
+ * for another `<img>`, but a script that reads the picture (the image
+ * viewer's `fetch`, an `<img crossorigin>`) asks in cors mode, and a browser
+ * rejects an opaque response to a cors request. Served from the cache, the
+ * viewer's fetch failed whenever a thumbnail had been shown first, which is
+ * nearly always. Such a request has to go to the network instead; its
+ * readable response then replaces the opaque entry, and serves both kinds of
+ * request from then on.
+ */
+export function canServeCachedImage(requestMode: string, cachedResponseType: string): boolean {
+  return requestMode === "no-cors" || cachedResponseType !== "opaque"
+}

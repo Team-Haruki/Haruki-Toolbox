@@ -15,7 +15,7 @@ import {
   readAppUpdateMessage,
   type AppUpdateClientBuild,
 } from "@/lib/app-update-protocol"
-import { isCachedSekaiImage } from "@/lib/sekai-image-cache"
+import { canServeCachedImage, isCachedSekaiImage } from "@/lib/sekai-image-cache"
 
 declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<PrecacheEntry | string>
@@ -151,6 +151,14 @@ registerRoute(
   new CacheFirst({
     cacheName: "sekai-image-assets-v2",
     plugins: [
+      // A script reading the image (the viewer) must not get the opaque copy
+      // an <img> cached: returning null sends CacheFirst to the network, and
+      // the readable response it gets back overwrites the entry.
+      {
+        cachedResponseWillBeUsed: async ({ request, cachedResponse }) => (
+          cachedResponse && !canServeCachedImage(request.mode, cachedResponse.type) ? null : cachedResponse ?? null
+        ),
+      },
       new CacheableResponsePlugin({ statuses: [0, 200] }),
       new ExpirationPlugin({ maxEntries: 4000, maxAgeSeconds: 60 * 60 * 24 * 30, purgeOnQuotaError: true }),
     ],
