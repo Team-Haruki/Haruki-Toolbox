@@ -51,7 +51,7 @@ export function useOAuthClientManagement() {
     }))
   )
 
-  const { loading, loadError, clients, loadClients } = useOAuthClientList()
+  const { loading, loadError, clients, clientsTotal, loadClients } = useOAuthClientList()
   async function refreshClientsStrict() {
     await loadClients({ throwOnError: true })
   }
@@ -144,6 +144,8 @@ export function useOAuthClientManagement() {
     statsTo,
     statsBucket,
     statsError,
+    statsAudit,
+    statsAuditError,
     statsTimeRangeError,
     showStats,
     applyStatsFilters,
@@ -181,6 +183,7 @@ export function useOAuthClientManagement() {
     userStore,
     loading,
     clients,
+    clientsTotal,
     actionLoading,
     createOpen,
     newClientId,
@@ -212,6 +215,8 @@ export function useOAuthClientManagement() {
     statsTo,
     statsBucket,
     statsError,
+    statsAudit,
+    statsAuditError,
     statsTimeRangeError,
     secretDisplayOpen,
     displayedSecret,

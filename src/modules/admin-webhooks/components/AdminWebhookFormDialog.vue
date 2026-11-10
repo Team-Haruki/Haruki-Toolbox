@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogClose,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogScrollContent,
@@ -13,9 +14,11 @@ import {
 import { Input, InputWithToggle } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { LucideLoader2, LucideSave } from "lucide-vue-next"
+import { LucideEraser, LucideLoader2, LucidePower, LucideSave } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import FieldError from "@/shared/components/FieldError.vue"
+import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
+import SettingsRow from "@/shared/components/settings/SettingsRow.vue"
 import {
   WEBHOOK_FIELD_IDS,
   type WebhookFormErrors,
@@ -67,91 +70,108 @@ function errorId(field: WebhookFormField) {
     <DialogScrollContent class="sm:max-w-[560px]">
       <DialogHeader>
         <DialogTitle>{{ formTitle }}</DialogTitle>
-        <p class="text-sm text-muted-foreground">{{ t("adminWebhooks.form.description") }}</p>
+        <DialogDescription>{{ t("adminWebhooks.form.description") }}</DialogDescription>
       </DialogHeader>
 
-      <form class="space-y-4" novalidate @submit.prevent="emit('save')">
-        <div v-if="props.formMode === 'create'" class="space-y-2">
-          <Label :for="WEBHOOK_FIELD_IDS.id">{{ t("adminWebhooks.form.idLabel") }}</Label>
-          <Input
-            :id="WEBHOOK_FIELD_IDS.id"
-            :model-value="props.formId"
-            :placeholder="t('adminWebhooks.form.idPlaceholder')"
-            :disabled="props.formSaving"
-            :aria-invalid="!!props.formErrors.id || undefined"
-            :aria-describedby="props.formErrors.id ? errorId('id') : undefined"
-            @update:model-value="emit('update:formId', String($event ?? '')); emit('clearError', 'id')"
-          />
-          <FieldError :id="errorId('id')" :message="props.formErrors.id" />
-          <p class="text-xs text-muted-foreground">{{ t("adminWebhooks.form.idHelp") }}</p>
-        </div>
+      <form class="flex flex-col gap-5" novalidate @submit.prevent="emit('save')">
+        <SettingsGroup :title="t('adminWebhooks.form.groups.endpoint')">
+          <div v-if="props.formMode === 'create'" class="grid gap-1.5 px-4 py-3">
+            <Label :for="WEBHOOK_FIELD_IDS.id">{{ t("adminWebhooks.form.idLabel") }}</Label>
+            <Input
+              :id="WEBHOOK_FIELD_IDS.id"
+              class="bg-background font-mono"
+              :model-value="props.formId"
+              :placeholder="t('adminWebhooks.form.idPlaceholder')"
+              :disabled="props.formSaving"
+              :aria-invalid="!!props.formErrors.id || undefined"
+              :aria-describedby="props.formErrors.id ? errorId('id') : undefined"
+              @update:model-value="emit('update:formId', String($event ?? '')); emit('clearError', 'id')"
+            />
+            <FieldError :id="errorId('id')" :message="props.formErrors.id" />
+            <p class="text-xs text-muted-foreground">{{ t("adminWebhooks.form.idHelp") }}</p>
+          </div>
 
-        <div v-else class="space-y-2">
-          <p class="text-sm font-medium">{{ t("adminWebhooks.form.idLabel") }}</p>
-          <div class="rounded-md border bg-muted/20 px-3 py-2 text-sm font-medium">{{ props.formId }}</div>
-        </div>
+          <!-- An existing endpoint keeps its id: shown as a fact, not as a greyed-out field. -->
+          <div v-else class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3">
+            <p class="text-sm font-medium">{{ t("adminWebhooks.form.idLabel") }}</p>
+            <p class="min-w-0 font-mono text-sm [overflow-wrap:anywhere]">{{ props.formId }}</p>
+          </div>
 
-        <div class="space-y-2">
-          <Label :for="WEBHOOK_FIELD_IDS.callbackUrl">{{ t("adminWebhooks.form.callbackUrlLabel") }}</Label>
-          <Input
-            :id="WEBHOOK_FIELD_IDS.callbackUrl"
-            :model-value="props.formCallbackUrl"
-            type="url"
-            :placeholder="t('adminWebhooks.form.callbackUrlPlaceholder')"
-            :disabled="props.formSaving"
-            :aria-invalid="!!props.formErrors.callbackUrl || undefined"
-            :aria-describedby="props.formErrors.callbackUrl ? errorId('callbackUrl') : undefined"
-            @update:model-value="emit('update:formCallbackUrl', String($event ?? '')); emit('clearError', 'callbackUrl')"
-          />
-          <FieldError :id="errorId('callbackUrl')" :message="props.formErrors.callbackUrl" />
-        </div>
+          <div class="grid gap-1.5 px-4 py-3">
+            <Label :for="WEBHOOK_FIELD_IDS.callbackUrl">{{ t("adminWebhooks.form.callbackUrlLabel") }}</Label>
+            <Input
+              :id="WEBHOOK_FIELD_IDS.callbackUrl"
+              class="bg-background"
+              :model-value="props.formCallbackUrl"
+              type="url"
+              :placeholder="t('adminWebhooks.form.callbackUrlPlaceholder')"
+              :disabled="props.formSaving"
+              :aria-invalid="!!props.formErrors.callbackUrl || undefined"
+              :aria-describedby="props.formErrors.callbackUrl ? errorId('callbackUrl') : undefined"
+              @update:model-value="emit('update:formCallbackUrl', String($event ?? '')); emit('clearError', 'callbackUrl')"
+            />
+            <FieldError :id="errorId('callbackUrl')" :message="props.formErrors.callbackUrl" />
+          </div>
 
-        <div class="space-y-2">
-          <Label :for="WEBHOOK_FIELD_IDS.credential">{{ t("adminWebhooks.form.credentialLabel") }}</Label>
-          <Input
-            :id="WEBHOOK_FIELD_IDS.credential"
-            :model-value="props.formCredential"
-            :placeholder="t('adminWebhooks.form.credentialPlaceholder')"
-            :disabled="props.formSaving"
-            :aria-invalid="!!props.formErrors.credential || undefined"
-            :aria-describedby="props.formErrors.credential ? errorId('credential') : undefined"
-            @update:model-value="emit('update:formCredential', String($event ?? '')); emit('clearError', 'credential')"
-          />
-          <FieldError :id="errorId('credential')" :message="props.formErrors.credential" />
-          <p class="text-xs text-muted-foreground">{{ t("adminWebhooks.form.credentialHelp") }}</p>
-        </div>
+          <SettingsRow
+            :icon="LucidePower"
+            :tone="props.formEnabled ? 'success' : 'default'"
+            :label="t('adminWebhooks.form.enabledLabel')"
+            label-for="webhook-enabled"
+          >
+            <Switch
+              id="webhook-enabled"
+              :model-value="props.formEnabled"
+              :disabled="props.formSaving"
+              @update:model-value="emit('update:formEnabled', !!$event)"
+            />
+          </SettingsRow>
+        </SettingsGroup>
 
-        <div class="space-y-2">
-          <Label for="webhook-bearer">{{ t("adminWebhooks.form.bearerLabel") }}</Label>
-          <InputWithToggle
-            id="webhook-bearer"
-            :model-value="props.formBearer"
-            type="password"
-            :placeholder="t('adminWebhooks.form.bearerPlaceholder')"
-            :disabled="props.formSaving || props.formClearBearer"
-            @update:model-value="emit('update:formBearer', String($event ?? ''))"
-          />
-          <p class="text-xs text-muted-foreground">{{ t("adminWebhooks.form.bearerHelp") }}</p>
-        </div>
+        <SettingsGroup :title="t('adminWebhooks.form.groups.auth')">
+          <div class="grid gap-1.5 px-4 py-3">
+            <Label :for="WEBHOOK_FIELD_IDS.credential">{{ t("adminWebhooks.form.credentialLabel") }}</Label>
+            <Input
+              :id="WEBHOOK_FIELD_IDS.credential"
+              class="bg-background font-mono"
+              :model-value="props.formCredential"
+              :placeholder="t('adminWebhooks.form.credentialPlaceholder')"
+              :disabled="props.formSaving"
+              :aria-invalid="!!props.formErrors.credential || undefined"
+              :aria-describedby="props.formErrors.credential ? errorId('credential') : undefined"
+              @update:model-value="emit('update:formCredential', String($event ?? '')); emit('clearError', 'credential')"
+            />
+            <FieldError :id="errorId('credential')" :message="props.formErrors.credential" />
+            <p class="text-xs text-muted-foreground">{{ t("adminWebhooks.form.credentialHelp") }}</p>
+          </div>
 
-        <div v-if="props.formMode === 'edit'" class="flex items-center gap-3">
-          <Checkbox
-            id="webhook-clear-bearer"
-            :model-value="props.formClearBearer"
-            @update:model-value="emit('update:formClearBearer', $event === true)"
-          />
-          <Label for="webhook-clear-bearer">{{ t("adminWebhooks.form.clearBearerLabel") }}</Label>
-        </div>
+          <div class="grid gap-1.5 px-4 py-3">
+            <Label for="webhook-bearer">{{ t("adminWebhooks.form.bearerLabel") }}</Label>
+            <InputWithToggle
+              id="webhook-bearer"
+              :model-value="props.formBearer"
+              type="password"
+              :placeholder="t('adminWebhooks.form.bearerPlaceholder')"
+              :disabled="props.formSaving || props.formClearBearer"
+              @update:model-value="emit('update:formBearer', String($event ?? ''))"
+            />
+            <p class="text-xs text-muted-foreground">{{ t("adminWebhooks.form.bearerHelp") }}</p>
+          </div>
 
-        <div class="flex items-center gap-3">
-          <Switch
-            id="webhook-enabled"
-            :model-value="props.formEnabled"
-            :disabled="props.formSaving"
-            @update:model-value="emit('update:formEnabled', !!$event)"
-          />
-          <Label for="webhook-enabled">{{ t("adminWebhooks.form.enabledLabel") }}</Label>
-        </div>
+          <SettingsRow
+            v-if="props.formMode === 'edit'"
+            :icon="LucideEraser"
+            :tone="props.formClearBearer ? 'danger' : 'default'"
+            :label="t('adminWebhooks.form.clearBearerLabel')"
+            label-for="webhook-clear-bearer"
+          >
+            <Checkbox
+              id="webhook-clear-bearer"
+              :model-value="props.formClearBearer"
+              @update:model-value="emit('update:formClearBearer', $event === true)"
+            />
+          </SettingsRow>
+        </SettingsGroup>
 
         <DialogFooter>
           <DialogClose as-child>
@@ -162,8 +182,8 @@ function errorId(field: WebhookFormField) {
             :disabled="props.formSaving || !props.formDirty"
             :title="!props.formDirty ? t('adminWebhooks.settings.noChanges') : undefined"
           >
-            <LucideLoader2 v-if="props.formSaving" class="w-4 h-4 mr-2 animate-spin" />
-            <LucideSave v-else class="w-4 h-4 mr-2" />
+            <LucideLoader2 v-if="props.formSaving" class="size-4 animate-spin" />
+            <LucideSave v-else class="size-4" />
             {{ props.formMode === "create" ? t("adminWebhooks.actions.create") : t("common.save") }}
           </Button>
         </DialogFooter>

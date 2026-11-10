@@ -33,6 +33,10 @@ import {
     readRevocationOutcome,
 } from "@/modules/admin-oauth-clients/lib/client-actions"
 import { readOAuthClientDeviceFields } from "@/modules/admin-oauth-clients/lib/grant-types"
+import {
+    type OAuthClientAuditSummary,
+    normalizeOAuthClientAuditSummary,
+} from "@/modules/admin-oauth-clients/lib/client-stats"
 
 const BASE = "/api/admin/oauth-clients"
 
@@ -152,9 +156,12 @@ export async function getOAuthClients(params?: QueryParams) {
         params,
     })
     const rawItems = readUpdatedItems(res.updatedData)
+    const items = rawItems.map((item) => normalizeOAuthClient(item))
     return {
-        items: rawItems.map((item) => normalizeOAuthClient(item)),
-        total: readUpdatedTotal(res.updatedData),
+        items,
+        // All clients the backend holds, which is more than `items` once the list spans several pages.
+        total: Math.max(readUpdatedTotal(res.updatedData), items.length),
+        generatedAt: readOptionalString(asRecord(res.updatedData) ?? {}, ["generatedAt", "generated_at"]) ?? "",
     }
 }
 
@@ -234,9 +241,13 @@ export async function getOAuthClientAuditLogs(clientId: string, params?: QueryPa
     return unwrapUpdatedData(res, translate("adminOAuthClients.toast.loadAuditLogsFailedTitle"))
 }
 
-export async function getOAuthClientAuditSummary(clientId: string) {
-    const res = await request<APIResponse>(`${BASE}/${encodePathSegment(clientId)}/audit-summary`, { method: "GET" })
-    return res.updatedData
+/** Counts of the audit log entries that target the client; `from` / `to` narrow the range like the statistics. */
+export async function getOAuthClientAuditSummary(clientId: string, params?: QueryParams): Promise<OAuthClientAuditSummary> {
+    const res = await request<APIResponse>(`${BASE}/${encodePathSegment(clientId)}/audit-summary`, {
+        method: "GET",
+        params,
+    })
+    return normalizeOAuthClientAuditSummary(res.updatedData)
 }
 
 const webhooksBase = (clientId: string) => `${BASE}/${encodePathSegment(clientId)}/webhooks`

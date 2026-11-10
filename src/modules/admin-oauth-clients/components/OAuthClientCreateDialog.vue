@@ -72,29 +72,17 @@ const clientIdErrorId = `${OAUTH_CLIENT_FIELD_IDS.clientId}-error`
   <Dialog :open="props.open" @update:open="value => emit('update:open', value)">
     <DialogTrigger as-child>
       <Button size="sm">
-        <LucidePlus class="w-4 h-4 mr-1" />
+        <LucidePlus class="size-4" />
         {{ t("adminOAuthClients.createDialog.trigger") }}
       </Button>
     </DialogTrigger>
-    <DialogContent class="max-h-[85vh] overflow-y-auto">
+    <DialogContent class="max-h-[85vh] overflow-y-auto sm:max-w-xl">
       <DialogHeader>
         <DialogTitle>{{ t("adminOAuthClients.createDialog.title") }}</DialogTitle>
         <DialogDescription>{{ t("adminOAuthClients.createDialog.description") }}</DialogDescription>
       </DialogHeader>
       <form novalidate @submit.prevent="emit('submit')">
-        <div class="flex flex-col gap-4 py-4">
-          <div class="flex flex-col gap-2">
-            <Label :for="OAUTH_CLIENT_FIELD_IDS.clientId">{{ t("adminOAuthClients.createDialog.clientIdLabel") }}</Label>
-            <Input
-              :id="OAUTH_CLIENT_FIELD_IDS.clientId"
-              :model-value="props.clientId"
-              :placeholder="t('adminOAuthClients.createDialog.clientIdPlaceholder')"
-              :aria-invalid="props.formErrors.clientId ? true : undefined"
-              :aria-describedby="props.formErrors.clientId ? clientIdErrorId : undefined"
-              @update:model-value="value => emit('update:client-id', String(value ?? ''))"
-            />
-            <FieldError :id="clientIdErrorId" :message="props.formErrors.clientId" />
-          </div>
+        <div class="flex flex-col gap-5 py-4">
           <OAuthClientFormFields
             :name="props.name"
             :client-type="props.clientType"
@@ -117,11 +105,27 @@ const clientIdErrorId = `${OAUTH_CLIENT_FIELD_IDS.clientId}-error`
             @add-post-logout-redirect-uri="emit('add-post-logout-redirect-uri')"
             @remove-post-logout-redirect-uri="index => emit('remove-post-logout-redirect-uri', index)"
             @update-post-logout-redirect-uri="payload => emit('update-post-logout-redirect-uri', payload)"
-          />
+          >
+            <template #identity>
+              <div class="grid content-start gap-1.5 sm:col-span-2">
+                <Label :for="OAUTH_CLIENT_FIELD_IDS.clientId">{{ t("adminOAuthClients.createDialog.clientIdLabel") }}</Label>
+                <Input
+                  :id="OAUTH_CLIENT_FIELD_IDS.clientId"
+                  class="bg-background font-mono"
+                  :model-value="props.clientId"
+                  :placeholder="t('adminOAuthClients.createDialog.clientIdPlaceholder')"
+                  :aria-invalid="props.formErrors.clientId ? true : undefined"
+                  :aria-describedby="props.formErrors.clientId ? clientIdErrorId : undefined"
+                  @update:model-value="value => emit('update:client-id', String(value ?? ''))"
+                />
+                <FieldError :id="clientIdErrorId" :message="props.formErrors.clientId" />
+              </div>
+            </template>
+          </OAuthClientFormFields>
         </div>
         <DialogFooter>
           <Button type="submit" :disabled="props.creating">
-            <LucideLoader2 v-if="props.creating" class="w-4 h-4 mr-1 animate-spin" />
+            <LucideLoader2 v-if="props.creating" class="size-4 animate-spin" />
             {{ t("adminOAuthClients.createDialog.submit") }}
           </Button>
         </DialogFooter>

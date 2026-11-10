@@ -15,20 +15,19 @@ import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
+  LucideBan,
   LucideCable,
+  LucideCheckCircle2,
+  LucideKeyRound,
+  LucideEraser,
   LucidePencil,
   LucidePlus,
+  LucidePower,
   LucideRefreshCw,
   LucideTrash2,
 } from "lucide-vue-next"
+import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
+import SettingsRow from "@/shared/components/settings/SettingsRow.vue"
 import { formatLocalizedDate } from "@/lib/date-time"
 import type { OAuthClientWebhook } from "@/types/admin"
 
@@ -68,6 +67,8 @@ const formTitle = computed(() =>
     : t("adminOAuthClients.webhooks.form.createTitle")
 )
 
+const enabledCount = computed(() => props.webhooks.filter((webhook) => webhook.enabled).length)
+
 function formatDate(value: string | undefined) {
   return value
     ? formatLocalizedDate(value, "date", t("adminOAuthClients.common.fallback"))
@@ -77,7 +78,7 @@ function formatDate(value: string | undefined) {
 
 <template>
   <Dialog :open="props.open" @update:open="emit('update:open', $event)">
-    <DialogContent class="sm:max-w-[min(72rem,90vw)]">
+    <DialogContent class="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
       <DialogHeader>
         <DialogTitle>{{ t("adminOAuthClients.webhooks.title") }}</DialogTitle>
         <DialogDescription>
@@ -85,128 +86,129 @@ function formatDate(value: string | undefined) {
         </DialogDescription>
       </DialogHeader>
 
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <div class="text-sm text-muted-foreground">
+      <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <p class="min-w-0 flex-1 basis-56 text-xs text-muted-foreground">
           {{ t("adminOAuthClients.webhooks.placeholderHint") }}
-        </div>
-        <div class="flex gap-2">
+        </p>
+        <div class="flex shrink-0 gap-2">
           <Button variant="outline" size="sm" :disabled="props.loading" @click="emit('refresh')">
-            <LucideRefreshCw class="h-4 w-4" />
+            <LucideRefreshCw :class="['size-4', props.loading ? 'animate-spin' : '']" />
             {{ t("adminOAuthClients.webhooks.actions.refresh") }}
           </Button>
           <Button size="sm" @click="emit('create')">
-            <LucidePlus class="h-4 w-4" />
+            <LucidePlus class="size-4" />
             {{ t("adminOAuthClients.webhooks.actions.create") }}
           </Button>
         </div>
       </div>
 
-      <div v-if="props.loading" class="space-y-2">
-        <Skeleton v-for="i in 3" :key="i" class="h-12 w-full" />
+      <div v-if="props.loading" class="divide-y divide-border/60 overflow-hidden rounded-xl border bg-card">
+        <div v-for="i in 3" :key="i" class="space-y-2 px-4 py-3">
+          <Skeleton class="h-4 w-72 max-w-full" />
+          <Skeleton class="h-3 w-40 max-w-full" />
+        </div>
       </div>
       <div
         v-else-if="props.webhooks.length === 0"
-        class="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-10 text-center"
+        class="flex flex-col items-center justify-center gap-3 rounded-xl border bg-card px-4 py-10 text-center"
       >
-        <LucideCable class="h-8 w-8 text-muted-foreground/60" />
+        <LucideCable class="size-8 text-muted-foreground/60" aria-hidden="true" />
         <p class="text-sm text-muted-foreground">{{ t("adminOAuthClients.webhooks.table.empty") }}</p>
         <Button size="sm" @click="emit('create')">
-          <LucidePlus class="h-4 w-4" />
+          <LucidePlus class="size-4" />
           {{ t("adminOAuthClients.webhooks.actions.create") }}
         </Button>
       </div>
-      <div v-else class="min-w-0 rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{{ t("adminOAuthClients.webhooks.table.callbackUrl") }}</TableHead>
-              <TableHead>{{ t("adminOAuthClients.webhooks.table.bearer") }}</TableHead>
-              <TableHead>{{ t("adminOAuthClients.webhooks.table.status") }}</TableHead>
-              <TableHead class="hidden md:table-cell">{{ t("adminOAuthClients.webhooks.table.createdAt") }}</TableHead>
-              <TableHead>{{ t("adminOAuthClients.webhooks.table.actions") }}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow v-for="webhook in props.webhooks" :key="webhook.id">
-              <TableCell class="min-w-56 whitespace-normal">
-                <div class="flex flex-col gap-1">
-                  <code class="text-xs break-all [overflow-wrap:anywhere]">{{ webhook.callbackUrl }}</code>
-                  <span class="text-xs break-all text-muted-foreground">{{ webhook.id }}</span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <span class="text-sm">
-                  {{ webhook.bearerSet ? t("adminOAuthClients.webhooks.bearer.configured") : t("adminOAuthClients.webhooks.bearer.empty") }}
-                </span>
-              </TableCell>
-              <TableCell>
+      <div v-else class="min-w-0 overflow-hidden rounded-xl border bg-card">
+        <p class="border-b border-border/60 bg-muted/30 px-4 py-2 text-xs tabular-nums text-muted-foreground">
+          {{ t("adminOAuthClients.webhooks.summary", { total: props.webhooks.length, enabled: enabledCount }) }}
+        </p>
+        <ul class="divide-y divide-border/60" role="list">
+          <li
+            v-for="webhook in props.webhooks"
+            :key="webhook.id"
+            class="flex items-start gap-3 px-4 py-3"
+            data-testid="oauth-client-webhook-row"
+          >
+            <div class="min-w-0 flex-1">
+              <p class="font-mono text-xs [overflow-wrap:anywhere]">{{ webhook.callbackUrl }}</p>
+              <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span
                   :class="[
-                    'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
+                    'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium',
                     webhook.enabled
-                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                      : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400',
+                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-muted text-muted-foreground',
                   ]"
                 >
+                  <LucideCheckCircle2 v-if="webhook.enabled" class="size-3" aria-hidden="true" />
+                  <LucideBan v-else class="size-3" aria-hidden="true" />
                   {{ webhook.enabled ? t("adminOAuthClients.status.enabled") : t("adminOAuthClients.status.disabled") }}
                 </span>
-              </TableCell>
-              <TableCell class="hidden md:table-cell text-sm text-muted-foreground tabular-nums">
-                {{ formatDate(webhook.createdAt) }}
-              </TableCell>
-              <TableCell>
-                <div class="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    :disabled="props.saving"
-                    :title="t('adminOAuthClients.table.menu.edit')"
-                    :aria-label="t('adminOAuthClients.table.menu.edit')"
-                    @click="emit('edit', webhook)"
-                  >
-                    <LucidePencil class="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    class="text-destructive hover:text-destructive"
-                    :disabled="props.deleting"
-                    :title="t('adminOAuthClients.webhooks.deleteDialog.confirm')"
-                    :aria-label="t('adminOAuthClients.webhooks.deleteDialog.confirm')"
-                    @click="emit('delete', webhook)"
-                  >
-                    <LucideTrash2 class="h-4 w-4" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+                <span class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                  <LucideKeyRound class="size-3" aria-hidden="true" />
+                  {{ t("adminOAuthClients.webhooks.table.bearer") }}
+                  {{ webhook.bearerSet ? t("adminOAuthClients.webhooks.bearer.configured") : t("adminOAuthClients.webhooks.bearer.empty") }}
+                </span>
+                <span class="text-xs tabular-nums text-muted-foreground">
+                  {{ t("adminOAuthClients.list.createdAt", { date: formatDate(webhook.createdAt) }) }}
+                </span>
+              </div>
+              <p class="mt-1 font-mono text-[11px] text-muted-foreground [overflow-wrap:anywhere]">{{ webhook.id }}</p>
+            </div>
+            <div class="-mr-2 flex shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-8 pointer-coarse:size-10"
+                :disabled="props.saving"
+                :title="t('adminOAuthClients.table.menu.edit')"
+                :aria-label="t('adminOAuthClients.table.menu.edit')"
+                @click="emit('edit', webhook)"
+              >
+                <LucidePencil class="size-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-8 text-destructive hover:text-destructive pointer-coarse:size-10"
+                :disabled="props.deleting"
+                :title="t('adminOAuthClients.webhooks.deleteDialog.confirm')"
+                :aria-label="t('adminOAuthClients.webhooks.deleteDialog.confirm')"
+                @click="emit('delete', webhook)"
+              >
+                <LucideTrash2 class="size-4" />
+              </Button>
+            </div>
+          </li>
+        </ul>
       </div>
     </DialogContent>
   </Dialog>
 
   <Dialog :open="props.formOpen" @update:open="emit('update:form-open', $event)">
-    <DialogContent>
+    <DialogContent class="max-h-[85vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>{{ formTitle }}</DialogTitle>
         <DialogDescription>{{ t("adminOAuthClients.webhooks.form.description") }}</DialogDescription>
       </DialogHeader>
-      <div class="space-y-4 py-2">
-        <div class="space-y-1.5">
+      <SettingsGroup>
+        <div class="grid gap-1.5 px-4 py-3">
           <Label for="oauth-webhook-callback-url">{{ t("adminOAuthClients.webhooks.form.callbackUrl") }}</Label>
           <Input
             id="oauth-webhook-callback-url"
+            class="bg-background"
             :model-value="props.callbackUrl"
             :placeholder="t('adminOAuthClients.webhooks.form.callbackUrlPlaceholder')"
             @update:model-value="emit('update:callback-url', String($event ?? ''))"
           />
         </div>
-        <div class="space-y-1.5">
+        <div class="grid gap-1.5 px-4 py-3">
           <Label for="oauth-webhook-bearer">{{ t("adminOAuthClients.webhooks.form.bearer") }}</Label>
           <Input
             id="oauth-webhook-bearer"
             type="password"
+            class="bg-background"
             :model-value="props.bearer"
             :disabled="props.saving || props.clearBearer"
             :placeholder="props.editingWebhook?.bearerSet ? t('adminOAuthClients.webhooks.form.bearerReplacePlaceholder') : t('adminOAuthClients.webhooks.form.bearerPlaceholder')"
@@ -216,21 +218,26 @@ function formatDate(value: string | undefined) {
             {{ t("adminOAuthClients.webhooks.form.bearerHelp") }}
           </p>
         </div>
-        <div class="flex items-center justify-between gap-3 rounded-md border p-3">
-          <div>
-            <Label for="oauth-webhook-enabled">{{ t("adminOAuthClients.webhooks.form.enabled") }}</Label>
-            <p class="text-sm text-muted-foreground">{{ t("adminOAuthClients.webhooks.form.enabledHelp") }}</p>
-          </div>
+        <SettingsRow
+          :icon="LucidePower"
+          :tone="props.enabled ? 'success' : 'default'"
+          :label="t('adminOAuthClients.webhooks.form.enabled')"
+          :help="t('adminOAuthClients.webhooks.form.enabledHelp')"
+          label-for="oauth-webhook-enabled"
+        >
           <Switch id="oauth-webhook-enabled" :model-value="props.enabled" @update:model-value="emit('update:enabled', Boolean($event))" />
-        </div>
-        <div v-if="props.editingWebhook?.bearerSet" class="flex items-center justify-between gap-3 rounded-md border p-3">
-          <div>
-            <Label for="oauth-webhook-clear-bearer">{{ t("adminOAuthClients.webhooks.form.clearBearer") }}</Label>
-            <p class="text-sm text-muted-foreground">{{ t("adminOAuthClients.webhooks.form.clearBearerHelp") }}</p>
-          </div>
+        </SettingsRow>
+        <SettingsRow
+          v-if="props.editingWebhook?.bearerSet"
+          :icon="LucideEraser"
+          :tone="props.clearBearer ? 'danger' : 'default'"
+          :label="t('adminOAuthClients.webhooks.form.clearBearer')"
+          :help="t('adminOAuthClients.webhooks.form.clearBearerHelp')"
+          label-for="oauth-webhook-clear-bearer"
+        >
           <Switch id="oauth-webhook-clear-bearer" :model-value="props.clearBearer" @update:model-value="emit('update:clear-bearer', Boolean($event))" />
-        </div>
-      </div>
+        </SettingsRow>
+      </SettingsGroup>
       <DialogFooter>
         <Button variant="outline" @click="emit('update:form-open', false)">
           {{ t("adminOAuthClients.webhooks.actions.cancel") }}

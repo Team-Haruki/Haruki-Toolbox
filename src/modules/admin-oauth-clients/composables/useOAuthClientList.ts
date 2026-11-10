@@ -12,6 +12,9 @@ export function useOAuthClientList() {
   const { t } = useI18n()
   const loading = ref(true)
   const clients = ref<OAuthClient[]>([])
+  // The backend's count of all clients; larger than `clients` when the list
+  // does not fit the one page that is loaded.
+  const clientsTotal = ref(0)
   // A failed list load renders inline (LoadErrorState + retry) in place of
   // the list: an empty state would read as "no clients".
   const loadError = ref<ErrorDescription | null>(null)
@@ -25,6 +28,7 @@ export function useOAuthClientList() {
       const data = await getOAuthClients({ page_size: 200 })
       if (requestId !== latestLoadRequestId) return
       clients.value = data.items
+      clientsTotal.value = data.total
     } catch (error: unknown) {
       if (requestId !== latestLoadRequestId) return
       if (options.throwOnError) {
@@ -42,6 +46,7 @@ export function useOAuthClientList() {
     loading,
     loadError,
     clients,
+    clientsTotal,
     loadClients,
   }
 }

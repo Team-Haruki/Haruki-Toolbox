@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
-import { LucideKey, LucideRefreshCw, LucideSearch } from "lucide-vue-next"
+import { LucideKeyRound, LucideRefreshCw, LucideSearch } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,15 +15,27 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import AdminMeterList, { type AdminMeterItem } from "@/modules/admin/components/AdminMeterList.vue"
+import AdminPanel from "@/modules/admin/components/AdminPanel.vue"
 import {
   OAuthClientCreateDialog,
   OAuthClientEditDialog,
   OAuthClientList,
+  OAuthClientOverview,
   OAuthClientSecretDialog,
   OAuthClientStatsDialog,
   OAuthClientWebhooksDialog,
 } from "@/modules/admin-oauth-clients/components"
 import { useOAuthClientManagement } from "@/modules/admin-oauth-clients/composables/useOAuthClientManagement"
+import {
+  type KeyCount,
+  countClientsByGrantType,
+  countClientsByScope,
+  ratePercent,
+  summarizeOAuthClients,
+} from "@/modules/admin-oauth-clients/lib/client-stats"
+import { GRANT_TYPE_DEVICE_CODE } from "@/modules/admin-oauth-clients/lib/grant-types"
+import { formatNumberCN, formatPercent } from "@/lib/number-format"
 
 const { t } = useI18n()
 
@@ -46,6 +58,7 @@ const {
   userStore,
   loading,
   clients,
+  clientsTotal,
   actionLoading,
   createOpen,
   newClientId,
@@ -77,6 +90,8 @@ const {
   statsBucket,
   stats,
   statsError,
+  statsAudit,
+  statsAuditError,
   statsTimeRangeError,
   secretDisplayOpen,
   displayedSecret,
@@ -173,124 +188,189 @@ function resetFilters() {
   search.value = ""
   statusFilter.value = "all"
 }
+
+// The figures describe every client that was loaded, whatever the search and
+// the status filter currently show.
+const summary = computed(() => summarizeOAuthClients(clients.value))
+
+function toMeterItems(rows: readonly KeyCount[], label: (key: string) => string): AdminMeterItem[] {
+  return rows.map((row) => {
+    const share = ratePercent(row.count, summary.value.loaded)
+    return {
+      key: row.key,
+      label: label(row.key),
+      value: row.count,
+      text: share === null ? formatNumberCN(row.count) : `${formatNumberCN(row.count)} · ${formatPercent(share, 0)}`,
+    }
+  })
+}
+
+const scopeItems = computed(() => toMeterItems(countClientsByScope(clients.value), (key) => key))
+const grantTypeItems = computed(() =>
+  toMeterItems(countClientsByGrantType(clients.value), (key) => (key === GRANT_TYPE_DEVICE_CODE ? "device_code" : key))
+)
+
+const showBreakdown = computed(() => !loadError.value && (loading.value || clients.value.length > 0))
+
+const statsClientName = computed(() => clients.value.find((client) => client.clientId === statsClientId.value)?.name ?? "")
 </script>
 
 <template>
-  <div class="w-full flex flex-col gap-4">
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-      <div class="relative min-w-0 flex-1 sm:max-w-xs">
-        <LucideSearch class="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          v-model="search"
-          :aria-label="t('adminOAuthClients.list.searchPlaceholder')"
-          class="pl-8"
-          :placeholder="t('adminOAuthClients.list.searchPlaceholder')"
-        />
-      </div>
-      <Label id="oauth-client-status-filter-label" for="oauth-client-status-filter" class="sr-only">{{ t("adminOAuthClients.list.allStatuses") }}</Label>
-      <Select id="oauth-client-status-filter" :model-value="statusFilter" @update:model-value="handleStatusFilterChange">
-        <SelectTrigger aria-labelledby="oauth-client-status-filter-label" class="w-full sm:w-36">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">{{ t("adminOAuthClients.list.allStatuses") }}</SelectItem>
-          <SelectItem value="enabled">{{ t("adminOAuthClients.status.enabled") }}</SelectItem>
-          <SelectItem value="disabled">{{ t("adminOAuthClients.status.disabled") }}</SelectItem>
-          <SelectItem value="deleted">{{ t("adminOAuthClients.status.deleted") }}</SelectItem>
-        </SelectContent>
-      </Select>
-      <div class="flex items-center justify-between gap-2 sm:ml-auto sm:justify-end">
-        <span v-if="!loadError" class="text-xs tabular-nums text-muted-foreground">
-          {{ t("adminOAuthClients.list.count", { count: filteredClients.length }, filteredClients.length) }}
-        </span>
-        <div class="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            :disabled="loading"
-            :title="t('adminOAuthClients.list.refresh')"
-            :aria-label="t('adminOAuthClients.list.refresh')"
-            @click="loadClients()"
-          >
-            <LucideRefreshCw :class="['h-4 w-4', loading ? 'animate-spin' : '']" />
-          </Button>
-          <OAuthClientCreateDialog
-            v-if="userStore.isSuperAdmin"
-            v-model:open="createOpen"
-            :creating="creating"
-            :client-id="newClientId"
-            :name="newName"
-            :client-type="newClientType"
-            :scopes="newScopes"
-            :redirect-uris="newRedirectUris"
-            :post-logout-redirect-uris="newPostLogoutRedirectUris"
-            :grant-types="newGrantTypes"
-            :device-policy="newDevicePolicy"
-            :available-scopes="AVAILABLE_SCOPES"
-            :available-grant-types="AVAILABLE_GRANT_TYPE_OPTIONS"
-            :form-errors="createFormErrors"
-            @update:client-id="updateNewClientId"
-            @update:name="updateNewName"
-            @update:client-type="updateNewClientType"
-            @toggle-scope="toggleNewScope"
-            @toggle-grant-type="toggleNewGrantType"
-            @update-device-policy="updateNewDevicePolicy"
-            @add-redirect-uri="addNewRedirectUri"
-            @remove-redirect-uri="removeNewRedirectUri"
-            @update-redirect-uri="updateNewRedirectUri"
-            @add-post-logout-redirect-uri="addNewPostLogoutRedirectUri"
-            @remove-post-logout-redirect-uri="removeNewPostLogoutRedirectUri"
-            @update-post-logout-redirect-uri="updateNewPostLogoutRedirectUri"
-            @submit="handleCreate"
+  <div class="flex w-full flex-col gap-4">
+    <OAuthClientOverview
+      :loading="loading"
+      :failed="!!loadError"
+      :summary="summary"
+      :total="clientsTotal"
+    />
+
+    <div class="@container">
+      <div class="grid items-start gap-4 @min-[72rem]:grid-cols-[minmax(0,1fr)_18rem]">
+        <AdminPanel
+          flush
+          :title="t('adminOAuthClients.list.title')"
+          :description="loadError || loading ? undefined : t('adminOAuthClients.list.count', { count: filteredClients.length }, filteredClients.length)"
+        >
+          <template #actions>
+            <Button
+              variant="outline"
+              size="icon"
+              class="size-8 pointer-coarse:size-10"
+              :disabled="loading"
+              :title="t('adminOAuthClients.list.refresh')"
+              :aria-label="t('adminOAuthClients.list.refresh')"
+              @click="loadClients()"
+            >
+              <LucideRefreshCw :class="['size-4', loading ? 'animate-spin' : '']" />
+            </Button>
+            <OAuthClientCreateDialog
+              v-if="userStore.isSuperAdmin"
+              v-model:open="createOpen"
+              :creating="creating"
+              :client-id="newClientId"
+              :name="newName"
+              :client-type="newClientType"
+              :scopes="newScopes"
+              :redirect-uris="newRedirectUris"
+              :post-logout-redirect-uris="newPostLogoutRedirectUris"
+              :grant-types="newGrantTypes"
+              :device-policy="newDevicePolicy"
+              :available-scopes="AVAILABLE_SCOPES"
+              :available-grant-types="AVAILABLE_GRANT_TYPE_OPTIONS"
+              :form-errors="createFormErrors"
+              @update:client-id="updateNewClientId"
+              @update:name="updateNewName"
+              @update:client-type="updateNewClientType"
+              @toggle-scope="toggleNewScope"
+              @toggle-grant-type="toggleNewGrantType"
+              @update-device-policy="updateNewDevicePolicy"
+              @add-redirect-uri="addNewRedirectUri"
+              @remove-redirect-uri="removeNewRedirectUri"
+              @update-redirect-uri="updateNewRedirectUri"
+              @add-post-logout-redirect-uri="addNewPostLogoutRedirectUri"
+              @remove-post-logout-redirect-uri="removeNewPostLogoutRedirectUri"
+              @update-post-logout-redirect-uri="updateNewPostLogoutRedirectUri"
+              @submit="handleCreate"
+            />
+          </template>
+
+          <!-- Nothing to search while the list failed or is empty. -->
+          <div v-if="!loadError && (loading || clients.length > 0)" class="flex flex-wrap items-center gap-2 border-b border-border/60 px-4 py-2.5">
+            <div class="relative min-w-0 flex-1 basis-32">
+              <LucideSearch class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <Input
+                v-model="search"
+                :aria-label="t('adminOAuthClients.list.searchPlaceholder')"
+                class="h-8 pl-8 pointer-coarse:h-10"
+                :placeholder="t('adminOAuthClients.list.searchPlaceholder')"
+              />
+            </div>
+            <Label id="oauth-client-status-filter-label" for="oauth-client-status-filter" class="sr-only">{{ t("adminOAuthClients.list.allStatuses") }}</Label>
+            <Select id="oauth-client-status-filter" :model-value="statusFilter" @update:model-value="handleStatusFilterChange">
+              <SelectTrigger aria-labelledby="oauth-client-status-filter-label" size="sm" class="w-36 shrink-0 pointer-coarse:h-10">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{{ t("adminOAuthClients.list.allStatuses") }}</SelectItem>
+                <SelectItem value="enabled">{{ t("adminOAuthClients.status.enabled") }}</SelectItem>
+                <SelectItem value="disabled">{{ t("adminOAuthClients.status.disabled") }}</SelectItem>
+                <SelectItem value="deleted">{{ t("adminOAuthClients.status.deleted") }}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div v-if="loading" class="divide-y divide-border/60" data-testid="oauth-client-list-loading">
+            <div v-for="i in 4" :key="i" class="flex items-start gap-3 px-4 py-3">
+              <Skeleton class="size-8 shrink-0 rounded-lg" />
+              <div class="min-w-0 flex-1 space-y-2">
+                <Skeleton class="h-4 w-40 max-w-full" />
+                <Skeleton class="h-3 w-64 max-w-full" />
+              </div>
+            </div>
+          </div>
+          <!-- A failed load is not an empty list: say so inline, with a retry. -->
+          <LoadErrorState
+            v-else-if="loadError"
+            :title="t('adminOAuthClients.toast.loadClientsFailedTitle')"
+            :description="loadError.message"
+            :detail="loadError.detail"
+            :retrying="loading"
+            @retry="loadClients()"
           />
+          <div
+            v-else-if="clients.length === 0"
+            class="flex flex-col items-center justify-center gap-2 px-4 py-12 text-center"
+          >
+            <LucideKeyRound class="size-8 text-muted-foreground/60" aria-hidden="true" />
+            <p class="text-sm text-muted-foreground">{{ t("adminOAuthClients.table.empty") }}</p>
+          </div>
+          <div
+            v-else-if="filteredClients.length === 0"
+            class="flex flex-col items-center justify-center gap-3 px-4 py-12 text-center"
+          >
+            <LucideSearch class="size-8 text-muted-foreground/60" aria-hidden="true" />
+            <p class="text-sm text-muted-foreground">{{ t("adminOAuthClients.list.noMatch") }}</p>
+            <Button v-if="hasActiveFilters" variant="outline" size="sm" @click="resetFilters">
+              {{ t("adminOAuthClients.list.resetFilters") }}
+            </Button>
+          </div>
+          <OAuthClientList
+            v-else
+            :clients="filteredClients"
+            :action-loading="actionLoading"
+            :is-super-admin="userStore.isSuperAdmin"
+            @open-edit="openEdit"
+            @manage-webhooks="openWebhookManager"
+            @show-stats="showStats"
+            @toggle-active="toggleActive"
+            @rotate-secret="confirmRotateSecret"
+            @revoke="confirmRevoke"
+            @restore="handleRestore"
+            @confirm-delete="confirmDelete"
+          />
+        </AdminPanel>
+
+        <!-- What the registered clients ask for: beside the list when there is room, under it otherwise. -->
+        <div v-if="showBreakdown" class="grid items-start gap-4 @min-[44rem]:grid-cols-2 @min-[72rem]:grid-cols-1">
+          <AdminPanel :title="t('adminOAuthClients.overview.scopesTitle')" :description="t('adminOAuthClients.overview.scopesHint')">
+            <AdminMeterList
+              :items="scopeItems"
+              :total="summary.loaded"
+              :loading="loading"
+              :empty-text="t('adminOAuthClients.list.noScopes')"
+            />
+          </AdminPanel>
+          <AdminPanel :title="t('adminOAuthClients.overview.grantTypesTitle')" :description="t('adminOAuthClients.overview.grantTypesHint')">
+            <AdminMeterList
+              :items="grantTypeItems"
+              :total="summary.loaded"
+              :loading="loading"
+              :empty-text="t('adminOAuthClients.common.fallback')"
+            />
+          </AdminPanel>
         </div>
       </div>
     </div>
-
-    <div v-if="loading" class="grid gap-3 xl:grid-cols-2">
-      <Skeleton v-for="i in 4" :key="i" class="h-32 w-full rounded-lg" />
-    </div>
-    <!-- A failed load is not an empty list: say so inline, with a retry. -->
-    <div v-else-if="loadError" class="rounded-lg border">
-      <LoadErrorState
-        :title="t('adminOAuthClients.toast.loadClientsFailedTitle')"
-        :description="loadError.message"
-        :detail="loadError.detail"
-        :retrying="loading"
-        @retry="loadClients()"
-      />
-    </div>
-    <div
-      v-else-if="clients.length === 0"
-      class="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-12 text-center"
-    >
-      <LucideKey class="h-8 w-8 text-muted-foreground/60" />
-      <p class="text-sm text-muted-foreground">{{ t("adminOAuthClients.table.empty") }}</p>
-    </div>
-    <div
-      v-else-if="filteredClients.length === 0"
-      class="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-12 text-center"
-    >
-      <LucideSearch class="h-8 w-8 text-muted-foreground/60" />
-      <p class="text-sm text-muted-foreground">{{ t("adminOAuthClients.list.noMatch") }}</p>
-      <Button v-if="hasActiveFilters" variant="outline" size="sm" @click="resetFilters">
-        {{ t("adminOAuthClients.list.resetFilters") }}
-      </Button>
-    </div>
-    <OAuthClientList
-      v-else
-      :clients="filteredClients"
-      :action-loading="actionLoading"
-      :is-super-admin="userStore.isSuperAdmin"
-      @open-edit="openEdit"
-      @manage-webhooks="openWebhookManager"
-      @show-stats="showStats"
-      @toggle-active="toggleActive"
-      @rotate-secret="confirmRotateSecret"
-      @revoke="confirmRevoke"
-      @restore="handleRestore"
-      @confirm-delete="confirmDelete"
-    />
 
     <OAuthClientStatsDialog
       v-model:open="statsOpen"
@@ -300,7 +380,10 @@ function resetFilters() {
       v-model:stats-to="statsTo"
       v-model:stats-bucket="statsBucket"
       :stats="stats"
+      :client-name="statsClientName"
       :error="statsError"
+      :audit="statsAudit"
+      :audit-error="statsAuditError"
       :time-range-error="statsTimeRangeError"
       @apply="applyStatsFilters"
       @reset="resetStatsFilters"

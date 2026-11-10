@@ -1,11 +1,17 @@
 <script setup lang="ts">
+/**
+ * One client's numbers for a time range: the range filter on top (it scopes
+ * everything under it), four counters, how many of the authorizations and
+ * tokens are still active, the per-bucket trend, and what admins did to the
+ * client in the same range (the audit summary). While a new range loads the
+ * previous numbers stay up, dimmed, so nothing jumps.
+ */
 import { computed } from "vue"
-import type { OAuthClientStatistics, OAuthClientTrendPoint } from "@/types/admin"
+import type { OAuthClientStatistics } from "@/types/admin"
 import DateTimePicker24h from "@/components/ui/datetime-picker/DateTimePicker24h.vue"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
@@ -14,14 +20,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { VisXYContainer, VisLine, VisAxis, VisScatter, VisCrosshair, VisTooltip } from "@unovis/vue"
-import { LucideChartLine } from "lucide-vue-next"
+import {
+  LucideChartLine,
+  LucideLoader2,
+  LucideTicket,
+  LucideTicketPlus,
+  LucideUserCheck,
+  LucideUserPlus,
+} from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import FieldError from "@/shared/components/FieldError.vue"
+import AdminAnimatedNumber from "@/modules/admin/components/AdminAnimatedNumber.vue"
+import AdminMeterList, { type AdminMeterItem } from "@/modules/admin/components/AdminMeterList.vue"
+import AdminPanel from "@/modules/admin/components/AdminPanel.vue"
+import AdminSparkline from "@/modules/admin/components/AdminSparkline.vue"
+import AdminStatGrid from "@/modules/admin/components/AdminStatGrid.vue"
+import AdminStatTile from "@/modules/admin/components/AdminStatTile.vue"
 import type { ErrorDescription } from "@/lib/error-utils"
 import { formatLocalizedDateTime } from "@/lib/date-time"
-import { formatNumberCN } from "@/lib/number-format"
+import { formatNumberCN, formatPercent } from "@/lib/number-format"
+import {
+  OAUTH_CLIENT_AUDIT_ACTION_KEYS,
+  type OAuthClientAuditSummary,
+  ratePercent,
+  summarizeOAuthClientTrend,
+} from "@/modules/admin-oauth-clients/lib/client-stats"
+import OAuthClientTrendChart from "./OAuthClientTrendChart.vue"
 
 const props = withDefaults(
   defineProps<{
@@ -30,7 +55,11 @@ const props = withDefaults(
     stats: OAuthClientStatistics | null
     /** A failed load; shown inline with a retry. */
     error?: ErrorDescription | null
+    /** Admin actions on the client in the same range; null while loading or when its request failed. */
+    audit?: OAuthClientAuditSummary | null
+    auditError?: ErrorDescription | null
     clientId?: string
+    clientName?: string
     statsFrom?: Date
     statsTo?: Date
     statsBucket: "hour" | "day"
@@ -40,7 +69,10 @@ const props = withDefaults(
   {
     stats: null,
     error: null,
+    audit: null,
+    auditError: null,
     clientId: "",
+    clientName: "",
     statsFrom: undefined,
     statsTo: undefined,
     timeRangeError: null,
@@ -56,55 +88,12 @@ const emit = defineEmits<{
   (event: "reset"): void
   (event: "retry"): void
 }>()
-const { t } = useI18n()
+const { t, te } = useI18n()
 
-type SummaryKey = keyof OAuthClientStatistics["summary"]
-type TileGroup = { titleKey: string; keys: readonly SummaryKey[] }
-
-// Two groups of four: what exists for the client, and what the range produced.
-const tileGroups: readonly TileGroup[] = [
-  {
-    titleKey: "adminOAuthClients.statsDialog.authorizations",
-    keys: ["authorizationTotal", "authorizationActive", "authorizationRevoked", "authorizationCreatedInRange"],
-  },
-  {
-    titleKey: "adminOAuthClients.statsDialog.tokens",
-    keys: ["tokenTotal", "tokenActive", "tokenRevoked", "tokenIssuedInRange"],
-  },
-]
-
-const seriesColors = { authorizations: "#3b82f6", tokens: "#22c55e" } as const
 const trend = computed(() => props.stats?.trend ?? [])
-
-function x(_: OAuthClientTrendPoint, index: number) {
-  return index
-}
-function yAuthorizations(point: OAuthClientTrendPoint) {
-  return point.authorizationCreated
-}
-function yTokens(point: OAuthClientTrendPoint) {
-  return point.tokenIssued
-}
-
-function formatBucket(value: string | undefined) {
-  if (props.statsBucket === "day") {
-    return formatLocalizedDateTime(value, { month: "short", day: "numeric" }, "")
-  }
-  return formatLocalizedDateTime(value, { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }, "")
-}
-
-function xTickFormat(index: number) {
-  return formatBucket(trend.value[index]?.bucketStart)
-}
-
-function crosshairTemplate(point: OAuthClientTrendPoint) {
-  // Content only: the unovis tooltip wrapper draws the box.
-  return `<div style="font-size:12px;line-height:1.55">
-    <div style="font-weight:600;margin-bottom:2px">${formatBucket(point.bucketStart)}</div>
-    <div style="color:${seriesColors.authorizations}">${t("adminOAuthClients.statsDialog.trendAuthorizations")}: ${point.authorizationCreated}</div>
-    <div style="color:${seriesColors.tokens}">${t("adminOAuthClients.statsDialog.trendTokens")}: ${point.tokenIssued}</div>
-  </div>`
-}
+const trendSummary = computed(() => summarizeOAuthClientTrend(trend.value))
+/** The bucket the loaded numbers were built with, which lags the select until "apply". */
+const loadedBucket = computed(() => props.stats?.bucket ?? props.statsBucket)
 
 const rangeLabel = computed(() => {
   const from = props.stats?.from
@@ -114,135 +103,269 @@ const rangeLabel = computed(() => {
   return `${formatLocalizedDateTime(from, options, "")} – ${formatLocalizedDateTime(to, options, "")}`
 })
 
+const ACTIVE_COLOR = "var(--color-emerald-500)"
+const REVOKED_COLOR = "color-mix(in oklab, var(--muted-foreground) 55%, transparent)"
+
+function shareText(part: number, total: number): string {
+  const share = ratePercent(part, total)
+  return share === null ? formatNumberCN(part) : `${formatNumberCN(part)} · ${formatPercent(share, 0)}`
+}
+
+function stateItems(active: number, revoked: number, total: number): AdminMeterItem[] {
+  return [
+    { key: "active", label: t("adminOAuthClients.statsDialog.stateActive"), value: active, text: shareText(active, total), color: ACTIVE_COLOR },
+    { key: "revoked", label: t("adminOAuthClients.statsDialog.stateRevoked"), value: revoked, text: shareText(revoked, total), color: REVOKED_COLOR },
+  ]
+}
+
+const authorizationState = computed(() => {
+  const summary = props.stats?.summary
+  return summary ? stateItems(summary.authorizationActive, summary.authorizationRevoked, summary.authorizationTotal) : []
+})
+const tokenState = computed(() => {
+  const summary = props.stats?.summary
+  return summary ? stateItems(summary.tokenActive, summary.tokenRevoked, summary.tokenTotal) : []
+})
+
+/** The six most frequent audit actions; the rest fold into the panel's "other" line. */
+const AUDIT_ACTION_LIMIT = 6
+
+function auditActionLabel(action: string): string {
+  const suffix = OAUTH_CLIENT_AUDIT_ACTION_KEYS.get(action)
+  const key = suffix ? `adminOAuthClients.statsDialog.audit.action.${suffix}` : ""
+  return key && te(key) ? t(key) : action
+}
+
+const auditActions = computed<AdminMeterItem[]>(() => {
+  const audit = props.audit
+  if (!audit) return []
+  return audit.byAction.slice(0, AUDIT_ACTION_LIMIT).map((row) => ({
+    key: row.key,
+    label: auditActionLabel(row.key),
+    value: row.count,
+    text: shareText(row.count, audit.total),
+  }))
+})
+
+const auditOtherCount = computed(() =>
+  (props.audit?.byAction ?? []).slice(AUDIT_ACTION_LIMIT).reduce((sum, row) => sum + row.count, 0)
+)
+
+const auditSuccessRate = computed(() => (props.audit ? ratePercent(props.audit.success, props.audit.total) : null))
+
+function formatRate(value: number): string {
+  return formatPercent(value, 1)
+}
+
 const timeRangeErrorId = "oauth-stats-time-range-error"
 </script>
 
 <template>
   <Dialog :open="props.open" @update:open="(value) => emit('update:open', value)">
-    <DialogContent class="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+    <DialogContent class="max-h-[85vh] overflow-y-auto sm:max-w-5xl">
       <DialogHeader>
         <DialogTitle>{{ t("adminOAuthClients.statsDialog.title") }}</DialogTitle>
-        <DialogDescription v-if="props.clientId">
-          <code class="rounded bg-muted px-1.5 py-0.5 text-xs">{{ props.clientId }}</code>
+        <DialogDescription v-if="props.clientId" class="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span v-if="props.clientName" class="font-medium text-foreground [overflow-wrap:anywhere]">{{ props.clientName }}</span>
+          <code class="font-mono text-xs [overflow-wrap:anywhere]">{{ props.clientId }}</code>
         </DialogDescription>
       </DialogHeader>
 
-      <template v-if="props.loading">
-        <div class="grid gap-3 sm:grid-cols-4">
-          <Skeleton v-for="i in 8" :key="i" class="h-16 w-full rounded-lg" />
-        </div>
-        <Skeleton class="h-48 w-full rounded-lg" />
-      </template>
-      <LoadErrorState
-        v-else-if="props.error"
-        :title="t('adminOAuthClients.toast.loadStatsFailedTitle')"
-        :description="props.error.message"
-        :detail="props.error.detail"
-        @retry="emit('retry')"
-      />
-      <template v-else-if="props.stats">
-        <p v-if="rangeLabel" class="text-xs text-muted-foreground">
-          {{ t("adminOAuthClients.statsDialog.rangeLabel", { range: rangeLabel }) }}
-        </p>
-        <section v-for="group in tileGroups" :key="group.titleKey" class="flex flex-col gap-2">
-          <h3 class="text-xs font-medium uppercase tracking-wider text-muted-foreground">{{ t(group.titleKey) }}</h3>
-          <div class="grid gap-2 sm:grid-cols-4">
-            <div v-for="key in group.keys" :key="key" class="rounded-lg border p-3">
-              <div class="text-xl font-bold leading-tight tabular-nums">{{ formatNumberCN(props.stats.summary[key], "0") }}</div>
-              <div class="text-xs text-muted-foreground">{{ t(`adminOAuthClients.statsDialog.summary.${key}`) }}</div>
+      <div class="@container flex min-w-0 flex-col gap-4">
+        <!-- The range comes first: every number under it is for this range. -->
+        <form
+          class="rounded-xl border bg-card px-4 py-3"
+          novalidate
+          :aria-label="t('adminOAuthClients.statsDialog.filters')"
+          @submit.prevent="emit('apply')"
+        >
+          <div class="grid gap-3 @min-[40rem]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_9rem_auto] @min-[40rem]:items-end">
+            <div class="flex min-w-0 flex-col gap-1.5">
+              <Label for="oauth-stats-from" class="text-xs text-muted-foreground">{{ t("adminOAuthClients.statsDialog.from") }}</Label>
+              <DateTimePicker24h
+                id="oauth-stats-from"
+                :model-value="props.statsFrom"
+                :placeholder="t('adminOAuthClients.statsDialog.from')"
+                :aria-invalid="props.timeRangeError ? true : undefined"
+                :aria-describedby="props.timeRangeError ? timeRangeErrorId : undefined"
+                @update:model-value="emit('update:statsFrom', $event)"
+              />
+            </div>
+            <div class="flex min-w-0 flex-col gap-1.5">
+              <Label for="oauth-stats-to" class="text-xs text-muted-foreground">{{ t("adminOAuthClients.statsDialog.to") }}</Label>
+              <DateTimePicker24h
+                id="oauth-stats-to"
+                :model-value="props.statsTo"
+                :placeholder="t('adminOAuthClients.statsDialog.to')"
+                :aria-invalid="props.timeRangeError ? true : undefined"
+                :aria-describedby="props.timeRangeError ? timeRangeErrorId : undefined"
+                @update:model-value="emit('update:statsTo', $event)"
+              />
+            </div>
+            <div class="flex min-w-0 flex-col gap-1.5">
+              <Label id="oauth-stats-bucket-label" for="oauth-stats-bucket" class="text-xs text-muted-foreground">{{ t("adminOAuthClients.statsDialog.bucket") }}</Label>
+              <Select id="oauth-stats-bucket" :model-value="props.statsBucket" @update:model-value="value => emit('update:statsBucket', value === 'day' ? 'day' : 'hour')">
+                <SelectTrigger aria-labelledby="oauth-stats-bucket-label" class="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hour">{{ t("adminOAuthClients.statsDialog.hour") }}</SelectItem>
+                  <SelectItem value="day">{{ t("adminOAuthClients.statsDialog.day") }}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="flex shrink-0 justify-end gap-2">
+              <Button type="button" variant="outline" @click="emit('reset')">{{ t("common.reset") }}</Button>
+              <Button type="submit" :disabled="props.loading">
+                <LucideLoader2 v-if="props.loading" class="size-4 animate-spin" aria-hidden="true" />
+                {{ t("adminOAuthClients.statsDialog.apply") }}
+              </Button>
             </div>
           </div>
-        </section>
+          <FieldError :id="timeRangeErrorId" class="mt-2" :message="props.timeRangeError" />
+          <p v-if="rangeLabel && !props.timeRangeError" class="mt-2 text-xs tabular-nums text-muted-foreground" data-testid="oauth-stats-range">
+            {{ t("adminOAuthClients.statsDialog.rangeLabel", { range: rangeLabel }) }}
+          </p>
+        </form>
 
-        <section class="flex flex-col gap-2">
-          <h3 class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            {{ t("adminOAuthClients.statsDialog.trendTitle") }}
-          </h3>
-          <div v-if="trend.length > 0" class="h-48">
-            <VisXYContainer :data="trend" :height="192">
-              <VisLine :x="x" :y="yAuthorizations" :color="seriesColors.authorizations" curveType="monotoneX" />
-              <VisScatter :x="x" :y="yAuthorizations" :color="seriesColors.authorizations" :size="4" />
-              <VisLine :x="x" :y="yTokens" :color="seriesColors.tokens" curveType="monotoneX" />
-              <VisScatter :x="x" :y="yTokens" :color="seriesColors.tokens" :size="4" />
-              <VisCrosshair :template="crosshairTemplate" />
-              <VisTooltip />
-              <VisAxis type="x" :tickFormat="xTickFormat" />
-              <VisAxis type="y" />
-            </VisXYContainer>
+        <template v-if="props.loading && !props.stats">
+          <AdminStatGrid :columns="4">
+            <AdminStatTile v-for="i in 4" :key="i" label=" " loading />
+          </AdminStatGrid>
+          <Skeleton class="h-56 w-full rounded-xl" />
+        </template>
+        <div v-else-if="props.error" class="rounded-xl border bg-card">
+          <LoadErrorState
+            :title="t('adminOAuthClients.toast.loadStatsFailedTitle')"
+            :description="props.error.message"
+            :detail="props.error.detail"
+            @retry="emit('retry')"
+          />
+        </div>
+        <div
+          v-else-if="props.stats"
+          :class="['flex min-w-0 flex-col gap-4 transition-opacity duration-200', props.loading ? 'opacity-60' : '']"
+          :aria-busy="props.loading || undefined"
+          data-testid="oauth-stats-content"
+        >
+          <AdminStatGrid :columns="4">
+            <AdminStatTile
+              :label="t('adminOAuthClients.statsDialog.summary.authorizationTotal')"
+              :value="props.stats.summary.authorizationTotal"
+              :icon="LucideUserCheck"
+              tone="primary"
+              data-stat="authorizationTotal"
+            />
+            <AdminStatTile
+              :label="t('adminOAuthClients.statsDialog.summary.authorizationCreatedInRange')"
+              :value="props.stats.summary.authorizationCreatedInRange"
+              :icon="LucideUserPlus"
+              tone="info"
+              data-stat="authorizationCreatedInRange"
+            >
+              <AdminSparkline
+                v-if="trendSummary.authorizationSum > 0 && trend.length > 1"
+                :values="trendSummary.authorizations"
+                class="text-[#2a78d6] dark:text-[#3987e5]"
+                :label="t('adminOAuthClients.statsDialog.trendAuthorizations')"
+              />
+            </AdminStatTile>
+            <AdminStatTile
+              :label="t('adminOAuthClients.statsDialog.summary.tokenTotal')"
+              :value="props.stats.summary.tokenTotal"
+              :icon="LucideTicket"
+              data-stat="tokenTotal"
+            />
+            <AdminStatTile
+              :label="t('adminOAuthClients.statsDialog.summary.tokenIssuedInRange')"
+              :value="props.stats.summary.tokenIssuedInRange"
+              :icon="LucideTicketPlus"
+              tone="warning"
+              data-stat="tokenIssuedInRange"
+            >
+              <AdminSparkline
+                v-if="trendSummary.tokenSum > 0 && trend.length > 1"
+                :values="trendSummary.tokens"
+                class="text-[#eb6834] dark:text-[#d95926]"
+                :label="t('adminOAuthClients.statsDialog.trendTokens')"
+              />
+            </AdminStatTile>
+          </AdminStatGrid>
+
+          <div class="grid gap-4 @min-[40rem]:grid-cols-2">
+            <AdminPanel :title="t('adminOAuthClients.statsDialog.authorizations')" :description="t('adminOAuthClients.statsDialog.authorizationStateHint')">
+              <AdminMeterList
+                v-if="props.stats.summary.authorizationTotal > 0"
+                :items="authorizationState"
+                :total="props.stats.summary.authorizationTotal"
+              />
+              <p v-else class="py-2 text-center text-xs text-muted-foreground">{{ t("adminOAuthClients.statsDialog.noAuthorizations") }}</p>
+            </AdminPanel>
+            <AdminPanel :title="t('adminOAuthClients.statsDialog.tokens')" :description="t('adminOAuthClients.statsDialog.tokenStateHint')">
+              <AdminMeterList
+                v-if="props.stats.summary.tokenTotal > 0"
+                :items="tokenState"
+                :total="props.stats.summary.tokenTotal"
+              />
+              <p v-else class="py-2 text-center text-xs text-muted-foreground">{{ t("adminOAuthClients.statsDialog.noTokens") }}</p>
+            </AdminPanel>
           </div>
-          <div v-else class="flex h-32 flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-center">
-            <LucideChartLine class="h-6 w-6 text-muted-foreground/60" />
-            <p class="text-sm text-muted-foreground">{{ t("adminOAuthClients.statsDialog.trendEmpty") }}</p>
-          </div>
-          <div v-if="trend.length > 0" class="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-            <span class="flex items-center gap-1.5">
-              <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: seriesColors.authorizations }" />
-              {{ t("adminOAuthClients.statsDialog.trendAuthorizations") }}
-            </span>
-            <span class="flex items-center gap-1.5">
-              <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: seriesColors.tokens }" />
-              {{ t("adminOAuthClients.statsDialog.trendTokens") }}
-            </span>
-          </div>
-        </section>
-      </template>
-      <template v-else>
-        <div class="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-8 text-center">
-          <LucideChartLine class="h-8 w-8 text-muted-foreground/60" />
+
+          <AdminPanel
+            :title="t('adminOAuthClients.statsDialog.trendTitle')"
+            :description="t(loadedBucket === 'day' ? 'adminOAuthClients.statsDialog.trendHintDay' : 'adminOAuthClients.statsDialog.trendHintHour')"
+          >
+            <OAuthClientTrendChart :trend="trend" :bucket="loadedBucket" />
+          </AdminPanel>
+
+          <AdminPanel
+            :title="t('adminOAuthClients.statsDialog.audit.title')"
+            :description="t('adminOAuthClients.statsDialog.audit.description')"
+            data-testid="oauth-stats-audit"
+          >
+            <p v-if="props.auditError" class="py-2 text-center text-xs text-muted-foreground" role="alert">
+              {{ t("adminOAuthClients.statsDialog.audit.loadFailed") }}
+              <span class="[overflow-wrap:anywhere]">{{ props.auditError.message }}</span>
+            </p>
+            <p v-else-if="!props.audit || props.audit.total === 0" class="py-2 text-center text-xs text-muted-foreground">
+              {{ t("adminOAuthClients.statsDialog.audit.empty") }}
+            </p>
+            <div v-else class="grid gap-x-8 gap-y-4 @min-[40rem]:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]">
+              <dl class="grid grid-cols-2 content-start gap-x-4 gap-y-3">
+                <div>
+                  <dt class="text-xs text-muted-foreground">{{ t("adminOAuthClients.statsDialog.audit.total") }}</dt>
+                  <dd class="text-lg leading-tight font-semibold"><AdminAnimatedNumber :value="props.audit.total" /></dd>
+                </div>
+                <div>
+                  <dt class="text-xs text-muted-foreground">{{ t("adminOAuthClients.statsDialog.audit.successRate") }}</dt>
+                  <dd class="text-lg leading-tight font-semibold">
+                    <AdminAnimatedNumber v-if="auditSuccessRate !== null" :value="auditSuccessRate" :format="formatRate" />
+                    <span v-else class="text-muted-foreground">—</span>
+                  </dd>
+                </div>
+                <div>
+                  <dt class="text-xs text-muted-foreground">{{ t("adminOAuthClients.statsDialog.audit.success") }}</dt>
+                  <dd class="text-lg leading-tight font-semibold"><AdminAnimatedNumber :value="props.audit.success" /></dd>
+                </div>
+                <div>
+                  <dt class="text-xs text-muted-foreground">{{ t("adminOAuthClients.statsDialog.audit.failure") }}</dt>
+                  <dd class="text-lg leading-tight font-semibold"><AdminAnimatedNumber :value="props.audit.failure" /></dd>
+                </div>
+              </dl>
+              <div class="min-w-0">
+                <AdminMeterList :items="auditActions" :total="props.audit.total" />
+                <p v-if="auditOtherCount > 0" class="mt-2.5 text-xs tabular-nums text-muted-foreground">
+                  {{ t("adminOAuthClients.statsDialog.audit.other", { count: formatNumberCN(auditOtherCount) }) }}
+                </p>
+              </div>
+            </div>
+          </AdminPanel>
+        </div>
+        <div v-else class="flex flex-col items-center justify-center gap-3 rounded-xl border bg-card py-8 text-center">
+          <LucideChartLine class="size-8 text-muted-foreground/60" aria-hidden="true" />
           <p class="text-sm text-muted-foreground">{{ t("adminOAuthClients.common.empty") }}</p>
         </div>
-      </template>
-
-      <Separator />
-
-      <form class="flex flex-col gap-3" novalidate @submit.prevent="emit('apply')">
-        <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          {{ t("adminOAuthClients.statsDialog.filters") }}
-        </p>
-        <div class="grid gap-3 sm:grid-cols-2">
-          <div class="flex flex-col gap-1.5">
-            <Label for="oauth-stats-from" class="text-sm">{{ t("adminOAuthClients.statsDialog.from") }}</Label>
-            <DateTimePicker24h
-              id="oauth-stats-from"
-              :model-value="props.statsFrom"
-              :placeholder="t('adminOAuthClients.statsDialog.from')"
-              :aria-invalid="props.timeRangeError ? true : undefined"
-              :aria-describedby="props.timeRangeError ? timeRangeErrorId : undefined"
-              @update:model-value="emit('update:statsFrom', $event)"
-            />
-          </div>
-          <div class="flex flex-col gap-1.5">
-            <Label for="oauth-stats-to" class="text-sm">{{ t("adminOAuthClients.statsDialog.to") }}</Label>
-            <DateTimePicker24h
-              id="oauth-stats-to"
-              :model-value="props.statsTo"
-              :placeholder="t('adminOAuthClients.statsDialog.to')"
-              :aria-invalid="props.timeRangeError ? true : undefined"
-              :aria-describedby="props.timeRangeError ? timeRangeErrorId : undefined"
-              @update:model-value="emit('update:statsTo', $event)"
-            />
-          </div>
-        </div>
-        <FieldError :id="timeRangeErrorId" :message="props.timeRangeError" />
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <div class="flex min-w-0 flex-1 flex-col gap-1.5">
-            <Label id="oauth-stats-bucket-label" for="oauth-stats-bucket" class="text-sm">{{ t("adminOAuthClients.statsDialog.bucket") }}</Label>
-            <Select id="oauth-stats-bucket" :model-value="props.statsBucket" @update:model-value="value => emit('update:statsBucket', value === 'day' ? 'day' : 'hour')">
-              <SelectTrigger aria-labelledby="oauth-stats-bucket-label" class="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="hour">{{ t("adminOAuthClients.statsDialog.hour") }}</SelectItem>
-                <SelectItem value="day">{{ t("adminOAuthClients.statsDialog.day") }}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div class="flex shrink-0 justify-end gap-2">
-            <Button type="button" variant="outline" @click="emit('reset')">{{ t("common.reset") }}</Button>
-            <Button type="submit" :disabled="props.loading">{{ t("adminOAuthClients.statsDialog.apply") }}</Button>
-          </div>
-        </div>
-      </form>
+      </div>
     </DialogContent>
   </Dialog>
 </template>
