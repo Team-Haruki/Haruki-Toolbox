@@ -9,12 +9,18 @@
  * (The engine's own PNG/JPEG renderer stretches it, which is why the bot's
  * charts are fine.)
  */
-const MIDDLE_SYMBOL_IMAGE = /(<symbol id="notes-\d+-middle"[^>]*>\s*<image\b)((?:(?!preserveAspectRatio)[^>])*?)(\s*\/?>)/g
+const MIDDLE_SYMBOL_IMAGE = /(<symbol id="notes-\d+-middle"[^>]*>\s*<image\b)([^>]*)>/g
 
 export function stretchChartNoteMiddles(svg: string): string {
-  return svg.replace(MIDDLE_SYMBOL_IMAGE, (_match, open: string, attributes: string, close: string) => (
-    `${open}${attributes} preserveAspectRatio="none"${close}`
-  ))
+  return svg.replace(MIDDLE_SYMBOL_IMAGE, (match, open: string, rest: string) => {
+    if (rest.includes("preserveAspectRatio")) {
+      return match
+    }
+    // `rest` is the attributes, with the "/" of a self-closing tag at its end.
+    const selfClosing = rest.trimEnd().endsWith("/")
+    const attributes = (selfClosing ? rest.trimEnd().slice(0, -1) : rest).trimEnd()
+    return `${open}${attributes} preserveAspectRatio="none"${selfClosing ? "/>" : ">"}`
+  })
 }
 
 /**

@@ -256,7 +256,7 @@ function syncStateLabel(sponsor: AdminSponsorProfile) {
 
             <!-- Folded under the name on a narrow panel; `contents` puts the
                  cells straight into the row's columns on a wide one. -->
-            <div class="order-last flex basis-full flex-wrap items-center gap-x-2.5 gap-y-1 pl-12 @min-[50rem]:order-none @min-[50rem]:contents" role="none">
+            <div class="order-last flex basis-full flex-wrap items-center gap-x-2.5 gap-y-1 pl-12 @min-[50rem]:order-none @min-[50rem]:contents" role="presentation">
               <div role="cell" class="order-3 min-w-0 max-w-full text-xs text-muted-foreground @min-[50rem]:order-none @min-[50rem]:w-36 @min-[50rem]:shrink-0">
                 <p
                   v-if="sponsor.planName"

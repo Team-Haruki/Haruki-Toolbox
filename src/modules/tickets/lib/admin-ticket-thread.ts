@@ -17,8 +17,8 @@ const STATUS_BY_BACKEND_LABEL: Readonly<Record<string, TicketStatus>> = {
   "resolved": "resolved",
   "closed": "closed",
 }
-const STATUS_CHANGED = /^status changed:\s*(.+?)\s*->\s*(.+?)\s*$/i
-const ASSIGNEE_CHANGED = /^assignee changed:\s*(.+?)\s*->\s*(.+?)\s*$/i
+const STATUS_CHANGED_PREFIX = "status changed:"
+const ASSIGNEE_CHANGED_PREFIX = "assignee changed:"
 const UNASSIGNED_LABEL = "unassigned"
 
 export type AdminTicketSystemEvent =
@@ -38,15 +38,34 @@ function readAssigneeLabel(label: string): string | null {
 }
 
 /** What a system message records; unrecognised wording comes back as `text`, verbatim. */
+/**
+ * The two sides of "<prefix> from -> to", or null when the text is not that
+ * shape. Plain string work rather than a regular expression: the message is
+ * free text, and a lazy pattern around "->" backtracks badly on long input.
+ */
+function readChange(text: string, prefix: string): [from: string, to: string] | null {
+  if (text.slice(0, prefix.length).toLowerCase() !== prefix) {
+    return null
+  }
+  const rest = text.slice(prefix.length)
+  const arrow = rest.indexOf("->")
+  if (arrow < 0) {
+    return null
+  }
+  const from = rest.slice(0, arrow).trim()
+  const to = rest.slice(arrow + 2).trim()
+  return from && to ? [from, to] : null
+}
+
 export function parseAdminTicketSystemMessage(message: string): AdminTicketSystemEvent {
   const trimmed = message.trim()
-  const status = STATUS_CHANGED.exec(trimmed)
+  const status = readChange(trimmed, STATUS_CHANGED_PREFIX)
   if (status) {
-    return { kind: "status", from: readStatusLabel(status[1]!), to: readStatusLabel(status[2]!) }
+    return { kind: "status", from: readStatusLabel(status[0]), to: readStatusLabel(status[1]) }
   }
-  const assignee = ASSIGNEE_CHANGED.exec(trimmed)
+  const assignee = readChange(trimmed, ASSIGNEE_CHANGED_PREFIX)
   if (assignee) {
-    return { kind: "assignee", from: readAssigneeLabel(assignee[1]!), to: readAssigneeLabel(assignee[2]!) }
+    return { kind: "assignee", from: readAssigneeLabel(assignee[0]), to: readAssigneeLabel(assignee[1]) }
   }
   return { kind: "text", text: trimmed }
 }

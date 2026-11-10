@@ -28,7 +28,7 @@ export function applyImageOpSize(size: ImageSize, op: ImageEditOp): ImageSize {
 }
 
 export function resolveEditedImageSize(size: ImageSize, ops: readonly ImageEditOp[]): ImageSize {
-  return ops.reduce(applyImageOpSize, size)
+  return ops.reduce((current, op) => applyImageOpSize(current, op), size)
 }
 
 /** Smallest side a crop may have, in image pixels. */

@@ -121,6 +121,7 @@ const allowCN = computed(() => props.user.userData.allowCNMysekai ?? false)
       >
         <Select
           id="admin-user-role"
+          aria-labelledby="admin-user-role-label"
           :key="locale"
           :model-value="user.userData.role"
           :disabled="actionLoading"

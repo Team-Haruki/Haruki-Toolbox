@@ -93,7 +93,9 @@ function stableStringify(value: unknown): string {
   }
   if (value && typeof value === "object") {
     const record = value as Record<string, unknown>
-    return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`).join(",")}}`
+    // Code-unit order: the same on every machine, unlike a locale-aware sort.
+    const keys = Object.keys(record).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+    return `{${keys.map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`).join(",")}}`
   }
   return JSON.stringify(value) ?? "null"
 }

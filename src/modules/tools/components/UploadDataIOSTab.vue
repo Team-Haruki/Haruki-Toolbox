@@ -170,7 +170,7 @@ function handleCopyScriptUrl() {
                 label-id="ios-endpoint-label"
                 stack
               >
-                <Select id="ios-endpoint" v-model="selectedEndpoint">
+                <Select id="ios-endpoint" v-model="selectedEndpoint" aria-labelledby="ios-endpoint-label">
                   <SelectTrigger class="w-full @min-[28rem]:w-48" aria-labelledby="ios-endpoint-label">
                     <SelectValue :placeholder="t('tools.iosModules.sections.endpoint.placeholder')" />
                   </SelectTrigger>
@@ -191,7 +191,7 @@ function handleCopyScriptUrl() {
                 stack
               >
                 <div class="flex w-full items-center gap-2 @min-[28rem]:w-48">
-                  <Input id="ios-chunk-size" v-model.number="chunkSize" type="number" min="1" max="10" class="min-w-0 flex-1" />
+                  <Input id="ios-chunk-size" v-model.number="chunkSize" type="number" min="1" max="10" class="min-w-0 flex-1" :aria-label="t('tools.iosModules.sections.chunk.title')" />
                   <span class="whitespace-nowrap text-sm text-muted-foreground">{{ t("tools.iosModules.sections.chunk.unit") }}</span>
                 </div>
               </SettingsRow>

@@ -114,7 +114,7 @@ const ICON_BUTTON = "size-8 text-muted-foreground pointer-coarse:size-10"
     <!-- The window and the two filters apply as soon as one is chosen. They sit
          under the heading: its action slot does not wrap on a phone. -->
     <div class="flex flex-wrap items-center gap-2 border-b border-border/60 px-4 py-2.5" data-testid="risk-event-filters">
-      <Select :key="`range-${locale}`" :model-value="range" @update:model-value="updateRange">
+      <Select :key="`range-${locale}`" :model-value="range" :aria-label="t('adminRisk.filters.range')" @update:model-value="updateRange">
         <SelectTrigger size="sm" class="w-auto gap-1.5 text-xs" :aria-label="t('adminRisk.filters.range')">
           <SelectValue />
         </SelectTrigger>
@@ -124,7 +124,7 @@ const ICON_BUTTON = "size-8 text-muted-foreground pointer-coarse:size-10"
           </SelectItem>
         </SelectContent>
       </Select>
-      <Select :key="`status-${locale}`" :model-value="statusFilter" @update:model-value="updateStatus">
+      <Select :key="`status-${locale}`" :model-value="statusFilter" :aria-label="t('adminRisk.filters.status')" @update:model-value="updateStatus">
         <SelectTrigger size="sm" class="w-auto gap-1.5 text-xs" :aria-label="t('adminRisk.filters.status')">
           <SelectValue />
         </SelectTrigger>
@@ -135,7 +135,7 @@ const ICON_BUTTON = "size-8 text-muted-foreground pointer-coarse:size-10"
           </SelectItem>
         </SelectContent>
       </Select>
-      <Select :key="`severity-${locale}`" :model-value="severityFilter" @update:model-value="updateSeverity">
+      <Select :key="`severity-${locale}`" :model-value="severityFilter" :aria-label="t('adminRisk.filters.severity')" @update:model-value="updateSeverity">
         <SelectTrigger size="sm" class="w-auto gap-1.5 text-xs" :aria-label="t('adminRisk.filters.severity')">
           <SelectValue />
         </SelectTrigger>
