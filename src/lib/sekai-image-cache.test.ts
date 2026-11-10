@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { isCachedSekaiImage } from "@/lib/sekai-image-cache"
+import { canServeCachedImage, isCachedSekaiImage } from "@/lib/sekai-image-cache"
 
 const CN = "https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com"
 const GLOBAL = "https://sekai-assets-haruki.seiunx.net"
@@ -26,5 +26,22 @@ describe("isCachedSekaiImage", () => {
     expect(isCachedSekaiImage(`${CN}/jp-assets/startapp/scenario/background/bg_c000501/bg_c000501.png`)).toBe(false)
     expect(isCachedSekaiImage(`${CN}/jp-assets/story-player/v1/ui/menu/btn.png`)).toBe(false)
     expect(isCachedSekaiImage(`${CN}/cn-assets/startapp/live2d/model/v1/main/21_miku/21miku_normal/texture_00.png`)).toBe(false)
+  })
+})
+
+describe("canServeCachedImage", () => {
+  test("an <img> load takes whatever is cached", () => {
+    expect(canServeCachedImage("no-cors", "opaque")).toBe(true)
+    expect(canServeCachedImage("no-cors", "cors")).toBe(true)
+  })
+
+  test("a script reading the image is not handed an opaque copy", () => {
+    expect(canServeCachedImage("cors", "opaque")).toBe(false)
+    expect(canServeCachedImage("same-origin", "opaque")).toBe(false)
+  })
+
+  test("a readable copy serves a script too", () => {
+    expect(canServeCachedImage("cors", "cors")).toBe(true)
+    expect(canServeCachedImage("cors", "basic")).toBe(true)
   })
 })
