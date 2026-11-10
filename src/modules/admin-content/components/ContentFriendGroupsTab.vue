@@ -1,11 +1,13 @@
 <script setup lang="ts">
+/**
+ * The recommended group chats: one panel per group (its order, name and
+ * size in the heading, its entries as rows underneath), with a breakdown of
+ * how many entries each group holds beside the list. The group editor dialog
+ * lives here too; entries and deletions are handled by the page.
+ */
+import { computed } from "vue"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -18,6 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
+  LucideImage,
   LucideLink,
   LucideLoader2,
   LucidePencil,
@@ -28,12 +31,16 @@ import {
 import { useI18n } from "vue-i18n"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import FieldError from "@/shared/components/FieldError.vue"
+import AdminMeterList, { type AdminMeterItem } from "@/modules/admin/components/AdminMeterList.vue"
+import AdminPanel from "@/modules/admin/components/AdminPanel.vue"
 import type { ErrorDescription } from "@/lib/error-utils"
+import { formatNumberCN } from "@/lib/number-format"
+import { countGroupItems } from "@/modules/admin-content/lib/content-stats"
 import { CONTENT_FIELD_IDS } from "@/modules/admin-content/lib/form-validation"
 import type { GroupFormErrorMessages } from "@/modules/admin-content/composables/useContentManagement"
 import type { AdminFriendGroup, AdminFriendGroupItem } from "@/types/admin"
 
-defineProps<{
+const props = defineProps<{
   loading: boolean
   /** A failed load; the empty state below is only for a real empty list. */
   loadError: ErrorDescription | null
@@ -64,124 +71,175 @@ const emit = defineEmits<{
 }>()
 
 const groupNameErrorId = `${CONTENT_FIELD_IDS.group.name}-error`
+
+const sizeItems = computed<AdminMeterItem[]>(() =>
+  countGroupItems(props.groups).map((entry) => ({
+    key: entry.key,
+    label: entry.label,
+    value: entry.count,
+    text: formatNumberCN(entry.count),
+  })))
+
+/** The line under an entry's name: what kind of group it is, then its note. */
+function itemSummary(item: AdminFriendGroupItem): string {
+  return [item.groupInfo, item.detail].filter(Boolean).join(" · ")
+}
 </script>
 
 <template>
-  <Card class="rounded-lg">
-    <CardHeader class="flex flex-row flex-wrap items-center justify-between gap-2">
-      <CardTitle class="text-base">{{ t("adminContent.groupsTab.title") }}</CardTitle>
-      <Button size="sm" @click="emit('openCreateGroup')">
-        <LucidePlus class="w-4 h-4 mr-1" /> {{ t("adminContent.groupsTab.createGroupButton") }}
-      </Button>
-    </CardHeader>
-    <CardContent>
-      <template v-if="loading">
-        <div class="flex flex-col gap-3">
-          <Skeleton v-for="i in 3" :key="i" class="h-20 w-full" />
+  <div class="@container">
+    <div class="grid items-start gap-4 @min-[52rem]:grid-cols-[minmax(0,1fr)_17rem]">
+      <div class="flex min-w-0 flex-col gap-3" data-testid="content-groups">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 class="text-sm font-semibold">{{ t("adminContent.groupsTab.title") }}</h2>
+          <Button size="sm" @click="emit('openCreateGroup')">
+            <LucidePlus class="size-4" /> {{ t("adminContent.groupsTab.createGroupButton") }}
+          </Button>
         </div>
-      </template>
-      <LoadErrorState
-        v-else-if="loadError"
-        :title="t('adminContent.toast.loadGroupsFailedTitle')"
-        :description="loadError.message"
-        :detail="loadError.detail"
-        :retrying="loading"
-        @retry="emit('retry')"
-      />
-      <template v-else-if="groups.length > 0">
-        <div class="flex flex-col gap-4">
-          <Card v-for="group in groups" :key="group.id" class="gap-3 rounded-lg py-4 shadow-none">
-            <CardHeader class="flex flex-row flex-wrap items-center justify-between gap-2 px-4">
-              <CardTitle class="text-base flex items-center gap-2">
-                <span class="text-xs text-muted-foreground tabular-nums">#{{ group.sortOrder }}</span>
-                {{ group.group }}
-              </CardTitle>
-              <div class="flex items-center gap-1">
-                <Button variant="outline" size="sm" @click="emit('createItem', String(group.id))">
-                  <LucidePlus class="w-3 h-3 mr-1" /> {{ t("adminContent.groupsTab.addItemButton") }}
-                </Button>
+
+        <template v-if="loading">
+          <div v-for="i in 2" :key="i" class="overflow-hidden rounded-xl border bg-card" aria-busy="true">
+            <div class="border-b border-border/60 px-4 py-3"><Skeleton class="h-4 w-40 max-w-full" /></div>
+            <div class="divide-y divide-border/60">
+              <div v-for="row in 2" :key="row" class="flex items-center gap-3 px-4 py-2.5">
+                <Skeleton class="size-8 shrink-0 rounded-full" />
+                <Skeleton class="h-3.5 w-48 max-w-full" />
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <div v-else-if="loadError" class="rounded-xl border bg-card">
+          <LoadErrorState
+            :title="t('adminContent.toast.loadGroupsFailedTitle')"
+            :description="loadError.message"
+            :detail="loadError.detail"
+            :retrying="loading"
+            @retry="emit('retry')"
+          />
+        </div>
+
+        <template v-else-if="groups.length > 0">
+          <AdminPanel
+            v-for="group in groups"
+            :key="group.id"
+            :title="group.group"
+            :description="t('adminContent.groupsTab.summary', { order: group.sortOrder, count: group.groupList?.length ?? 0 })"
+            flush
+            :data-group="group.id"
+          >
+            <template #actions>
+              <Button variant="outline" size="sm" @click="emit('createItem', String(group.id))">
+                <LucidePlus class="size-4" /> {{ t("adminContent.groupsTab.addItemButton") }}
+              </Button>
+              <div class="flex gap-0.5">
                 <Button
                   variant="ghost"
                   size="icon"
-                  class="size-8"
+                  class="size-8 text-muted-foreground pointer-coarse:size-10"
                   :title="t('adminContent.actions.edit')"
                   :aria-label="t('adminContent.actions.edit')"
                   @click="emit('editGroup', group)"
                 >
-                  <LucidePencil class="w-4 h-4" />
+                  <LucidePencil class="size-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  class="size-8 text-destructive hover:text-destructive"
+                  class="size-8 text-destructive hover:text-destructive pointer-coarse:size-10"
                   :title="t('adminContent.actions.delete')"
                   :aria-label="t('adminContent.actions.delete')"
                   @click="emit('deleteGroup', group)"
                 >
-                  <LucideTrash2 class="w-4 h-4" />
+                  <LucideTrash2 class="size-4" />
                 </Button>
               </div>
-            </CardHeader>
+            </template>
 
-            <CardContent v-if="group.groupList && group.groupList.length > 0" class="px-4">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <div
-                  v-for="item in group.groupList"
-                  :key="item.id"
-                  class="flex items-center justify-between gap-2 p-2 border rounded-md"
+            <ul v-if="group.groupList && group.groupList.length > 0" class="divide-y divide-border/60" role="list">
+              <li
+                v-for="item in group.groupList"
+                :key="item.id"
+                class="flex items-start gap-3 px-4 py-2"
+                :data-item="item.id"
+              >
+                <span
+                  class="w-7 shrink-0 pt-1.5 text-right text-xs tabular-nums text-muted-foreground"
+                  :title="t('adminContent.linksTab.table.sortOrder')"
                 >
-                  <span class="flex items-center gap-1 text-sm font-medium truncate">
-                    <span class="text-xs text-muted-foreground tabular-nums shrink-0">#{{ item.sortOrder }}</span>
-                    <span class="truncate">{{ item.name }}</span>
-                    <LucideLink v-if="item.url" class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  </span>
-                  <div class="flex gap-1 flex-shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      class="size-7"
-                      :title="t('adminContent.actions.edit')"
-                      :aria-label="t('adminContent.actions.edit')"
-                      @click="emit('editItem', String(group.id), item)"
-                    >
-                      <LucidePencil class="w-3.5 h-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      class="size-7 text-destructive hover:text-destructive"
-                      :title="t('adminContent.actions.delete')"
-                      :aria-label="t('adminContent.actions.delete')"
-                      @click="emit('deleteItem', String(group.id), item)"
-                    >
-                      <LucideTrash2 class="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
+                  {{ item.sortOrder }}
+                </span>
+                <Avatar class="size-8 shrink-0 border">
+                  <AvatarImage :src="item.avatar" alt="" />
+                  <AvatarFallback class="text-muted-foreground"><LucideUsers class="size-4" /></AvatarFallback>
+                </Avatar>
+                <div class="min-w-0 flex-1">
+                  <p class="flex items-start gap-1.5 text-sm font-medium">
+                    <span class="min-w-0 [overflow-wrap:anywhere]">{{ item.name }}</span>
+                    <LucideLink
+                      v-if="item.url"
+                      class="mt-1 size-3.5 shrink-0 text-muted-foreground"
+                      role="img"
+                      :aria-label="t('adminContent.groupsTab.hasLink')"
+                    />
+                    <LucideImage
+                      v-if="item.bg"
+                      class="mt-1 size-3.5 shrink-0 text-muted-foreground"
+                      role="img"
+                      :aria-label="t('adminContent.groupsTab.hasBackground')"
+                    />
+                  </p>
+                  <p v-if="itemSummary(item)" class="text-xs text-muted-foreground [overflow-wrap:anywhere]">{{ itemSummary(item) }}</p>
                 </div>
-              </div>
-            </CardContent>
-            <CardContent v-else class="px-4">
-              <div class="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed py-6 text-center">
-                <p class="text-sm text-muted-foreground">{{ t("adminContent.groupsTab.emptyItems") }}</p>
-                <Button variant="outline" size="sm" @click="emit('createItem', String(group.id))">
-                  <LucidePlus class="w-3.5 h-3.5 mr-1" /> {{ t("adminContent.groupsTab.addItemButton") }}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </template>
-      <template v-else>
-        <div class="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-10 text-center">
-          <LucideUsers class="h-8 w-8 text-muted-foreground/60" />
+                <div class="flex shrink-0 gap-0.5">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="size-8 text-muted-foreground pointer-coarse:size-10"
+                    :title="t('adminContent.actions.edit')"
+                    :aria-label="t('adminContent.actions.edit')"
+                    @click="emit('editItem', String(group.id), item)"
+                  >
+                    <LucidePencil class="size-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="size-8 text-destructive hover:text-destructive pointer-coarse:size-10"
+                    :title="t('adminContent.actions.delete')"
+                    :aria-label="t('adminContent.actions.delete')"
+                    @click="emit('deleteItem', String(group.id), item)"
+                  >
+                    <LucideTrash2 class="size-4" />
+                  </Button>
+                </div>
+              </li>
+            </ul>
+            <p v-else class="px-4 py-5 text-center text-sm text-muted-foreground">
+              {{ t("adminContent.groupsTab.emptyItems") }}
+            </p>
+          </AdminPanel>
+        </template>
+
+        <div v-else class="flex flex-col items-center justify-center gap-3 rounded-xl border bg-card px-4 py-10 text-center">
+          <LucideUsers class="size-8 text-muted-foreground/60" />
           <p class="text-sm text-muted-foreground">{{ t("adminContent.groupsTab.emptyGroups") }}</p>
           <Button size="sm" @click="emit('openCreateGroup')">
-            <LucidePlus class="w-4 h-4 mr-1" /> {{ t("adminContent.groupsTab.createGroupButton") }}
+            <LucidePlus class="size-4" /> {{ t("adminContent.groupsTab.createGroupButton") }}
           </Button>
         </div>
-      </template>
-    </CardContent>
-  </Card>
+      </div>
+
+      <AdminPanel
+        v-if="!loadError"
+        :title="t('adminContent.groupsTab.sizePanel.title')"
+        :description="t('adminContent.groupsTab.sizePanel.description')"
+        data-testid="content-group-sizes"
+      >
+        <AdminMeterList :items="sizeItems" :loading="loading" :empty-text="t('adminContent.groupsTab.emptyGroups')" />
+      </AdminPanel>
+    </div>
+  </div>
 
   <Dialog :open="groupDialogOpen" @update:open="emit('update:groupDialogOpen', $event)">
     <DialogContent>
@@ -191,8 +249,8 @@ const groupNameErrorId = `${CONTENT_FIELD_IDS.group.name}-error`
         </DialogTitle>
       </DialogHeader>
       <form novalidate @submit.prevent="emit('saveGroup')">
-        <div class="-mx-1 flex max-h-[60vh] flex-col gap-4 overflow-y-auto px-1 py-1">
-          <div class="flex flex-col gap-1.5">
+        <div class="-mx-1 grid max-h-[60vh] gap-x-3 gap-y-3 overflow-y-auto px-1 py-1 sm:grid-cols-[minmax(0,1fr)_7rem]">
+          <div class="grid content-start gap-1.5">
             <Label :for="CONTENT_FIELD_IDS.group.name">{{ t("adminContent.groupsTab.createGroupDialog.groupNameLabel") }}</Label>
             <Input
               :id="CONTENT_FIELD_IDS.group.name"
@@ -204,25 +262,28 @@ const groupNameErrorId = `${CONTENT_FIELD_IDS.group.name}-error`
             />
             <FieldError :id="groupNameErrorId" :message="groupFormErrors.name" />
           </div>
-          <div class="flex flex-col gap-1.5">
+          <div class="grid content-start gap-1.5">
             <Label for="content-group-sort-order">{{ t("adminContent.linkDialog.fields.sortOrder") }}</Label>
             <Input
               id="content-group-sort-order"
               :model-value="groupSortOrder"
               type="number"
               min="0"
+              inputmode="numeric"
+              class="tabular-nums"
               :placeholder="t('adminContent.linkDialog.placeholders.sortOrder')"
+              aria-describedby="content-group-sort-order-hint"
               @update:model-value="emit('update:groupSortOrder', Number($event ?? 0))"
             />
-            <p class="text-xs text-muted-foreground">{{ t("adminContent.linkDialog.fields.sortOrderHint") }}</p>
           </div>
+          <p id="content-group-sort-order-hint" class="text-xs text-muted-foreground sm:col-span-2">{{ t("adminContent.linkDialog.fields.sortOrderHint") }}</p>
         </div>
         <DialogFooter class="mt-4">
           <DialogClose as-child>
             <Button type="button" variant="outline" :disabled="groupSaving">{{ t("common.cancel") }}</Button>
           </DialogClose>
           <Button type="submit" :disabled="groupSaving">
-            <LucideLoader2 v-if="groupSaving" class="w-4 h-4 mr-1 animate-spin" />
+            <LucideLoader2 v-if="groupSaving" class="size-4 animate-spin" />
             {{ t("adminContent.groupsTab.createGroupDialog.create") }}
           </Button>
         </DialogFooter>

@@ -8,8 +8,18 @@ import {
   buildRuntimeSwitchPayload,
   readRuntimeSwitch,
 } from "@/modules/admin-config/lib/runtime-switch"
-import { isJsonRecord, isStringRecord } from "@/lib/json-utils"
-import type { PublicApiKeys, RuntimeConfig } from "@/types/admin"
+import {
+  EMPTY_ALLOWED_KEYS_DRAFT,
+  addAllowedKeys,
+  applyAllowedKeysDraft,
+  isAllowedKeysDraftDirty,
+  removeAllowedKey,
+  restoreAllowedKey,
+  splitKeyInput,
+  type AllowedKeysDraft,
+} from "@/modules/admin-config/lib/allowed-keys"
+import { isJsonRecord } from "@/lib/json-utils"
+import type { RuntimeConfig } from "@/types/admin"
 import { describeError, type ErrorDescription } from "@/lib/error-utils"
 import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
 
@@ -29,13 +39,19 @@ export function useSystemConfig() {
   const apiKeysLoading = ref(true)
   // Load failures render inline (LoadErrorState) instead of toasting.
   const apiKeysLoadError = ref<ErrorDescription | null>(null)
-  const apiKeys = ref<PublicApiKeys>({})
-  const apiKeysJson = ref("")
+  // The allowlist as loaded, and the edits on top of it: keys struck out and
+  // keys added. Nothing is sent until the admin saves.
+  const apiKeys = ref<string[]>([])
+  const apiKeysDraft = ref<AllowedKeysDraft>(EMPTY_ALLOWED_KEYS_DRAFT)
+  const apiKeyInput = ref("")
+  // Shown under the add field; cleared on the next edit.
+  const apiKeyInputError = ref<string | null>(null)
   const apiKeysSaving = ref(false)
-  // Invalid JSON / schema, shown under the editor; cleared on the next edit.
-  const apiKeysValidationError = ref<string | null>(null)
 
   const runtimeLoading = ref(true)
+  // A reload that keeps the loaded configuration on screen (after a switch or
+  // an allowlist save) instead of falling back to the skeleton.
+  const runtimeRefreshing = ref(false)
   const runtimeLoadError = ref<ErrorDescription | null>(null)
   const runtimeConfig = ref<RuntimeConfig>({})
   const runtimeJson = ref("")
@@ -48,7 +64,7 @@ export function useSystemConfig() {
   // Nothing is dirty without a loaded baseline: while loading or after a
   // failed load the editor holds no server state to differ from.
   const apiKeysDirty = computed(() =>
-    !apiKeysLoading.value && !apiKeysLoadError.value && apiKeysJson.value !== JSON.stringify(apiKeys.value, null, 2)
+    !apiKeysLoading.value && !apiKeysLoadError.value && isAllowedKeysDraftDirty(apiKeysDraft.value)
   )
   const runtimeDirty = computed(() =>
     !runtimeLoading.value && !runtimeLoadError.value && runtimeJson.value !== JSON.stringify(runtimeConfig.value, null, 2)
@@ -60,9 +76,6 @@ export function useSystemConfig() {
   const deviceFlowTarget = ref(false)
   const deviceFlowSaving = ref(false)
 
-  watch(apiKeysJson, () => {
-    apiKeysValidationError.value = null
-  })
   watch(runtimeJson, () => {
     runtimeValidationError.value = null
   })
@@ -71,36 +84,31 @@ export function useSystemConfig() {
     apiKeysLoading.value = true
     apiKeysLoadError.value = null
     try {
-      const data = await getPublicApiKeys()
-      apiKeys.value = data
-      apiKeysJson.value = JSON.stringify(data, null, 2)
+      apiKeys.value = await getPublicApiKeys()
+      apiKeysDraft.value = EMPTY_ALLOWED_KEYS_DRAFT
     } catch (error: unknown) {
-      apiKeysLoadError.value = describeError(error, t("adminConfig.toast.loadApiKeysFailedTitle"))
+      apiKeysLoadError.value = describeError(error, t("adminConfig.allowedKeys.loadFailed"))
     } finally {
       apiKeysLoading.value = false
     }
   }
 
-  async function loadRuntimeConfig() {
-    runtimeLoading.value = true
-    runtimeLoadError.value = null
+  async function loadRuntimeConfig(options: { silent?: boolean } = {}) {
+    const busy = options.silent ? runtimeRefreshing : runtimeLoading
+    busy.value = true
+    if (!options.silent) {
+      runtimeLoadError.value = null
+    }
     try {
       const data = await getRuntimeConfig()
       runtimeConfig.value = data
       runtimeJson.value = JSON.stringify(data, null, 2)
+      runtimeLoadError.value = null
     } catch (error: unknown) {
       runtimeLoadError.value = describeError(error, t("adminConfig.toast.loadRuntimeFailedTitle"))
     } finally {
-      runtimeLoading.value = false
+      busy.value = false
     }
-  }
-
-  function parseApiKeysJson(raw: string): PublicApiKeys {
-    const parsed = JSON.parse(raw)
-    if (!isStringRecord(parsed)) {
-      throw new SchemaValidationError(t("adminConfig.toast.invalidApiKeysSchema"))
-    }
-    return parsed
   }
 
   function parseRuntimeJson(raw: string): RuntimeConfig {
@@ -118,21 +126,60 @@ export function useSystemConfig() {
     return null
   }
 
-  async function saveApiKeys() {
+  /** Typing in the add field; a corrected entry drops its message right away. */
+  function setApiKeyInput(value: string) {
+    apiKeyInput.value = value
+    apiKeyInputError.value = null
+  }
+
+  /** Adds the keys typed or pasted into the add field (several at once, separated by commas or spaces). */
+  function addApiKeys() {
     if (apiKeysSaving.value) return
-    let parsed: PublicApiKeys
-    try {
-      parsed = parseApiKeysJson(apiKeysJson.value)
-    } catch (error: unknown) {
-      apiKeysValidationError.value = describeValidationError(error) ?? t("adminConfig.toast.invalidJson")
+    const incoming = splitKeyInput(apiKeyInput.value)
+    if (incoming.length === 0) {
+      apiKeyInputError.value = t("adminConfig.allowedKeys.validation.empty")
       return
     }
+    const result = addAllowedKeys(apiKeys.value, apiKeysDraft.value, incoming)
+    apiKeysDraft.value = result.draft
+    // Keys that went in leave the field; the ones already listed stay to be corrected.
+    apiKeyInput.value = result.duplicates.join(", ")
+    apiKeyInputError.value = result.duplicates.length > 0
+      ? t("adminConfig.allowedKeys.validation.duplicate", { keys: result.duplicates.join(", ") })
+      : null
+  }
+
+  function removeApiKey(key: string) {
+    if (apiKeysSaving.value) return
+    apiKeysDraft.value = removeAllowedKey(apiKeys.value, apiKeysDraft.value, key)
+  }
+
+  function restoreApiKey(key: string) {
+    if (apiKeysSaving.value) return
+    apiKeysDraft.value = restoreAllowedKey(apiKeysDraft.value, key)
+  }
+
+  function resetApiKeys() {
+    if (apiKeysSaving.value) return
+    apiKeysDraft.value = EMPTY_ALLOWED_KEYS_DRAFT
+    setApiKeyInput("")
+  }
+
+  async function saveApiKeys() {
+    if (apiKeysSaving.value || !apiKeysDirty.value) return
 
     apiKeysSaving.value = true
     try {
-      await updatePublicApiKeys(parsed)
-      await loadApiKeys()
-      toast.success(t("adminConfig.toast.apiKeysUpdated"))
+      // The backend answers with the list it stored (trimmed, without duplicates).
+      apiKeys.value = await updatePublicApiKeys(applyAllowedKeysDraft(apiKeys.value, apiKeysDraft.value))
+      apiKeysDraft.value = EMPTY_ALLOWED_KEYS_DRAFT
+      setApiKeyInput("")
+      // The runtime configuration carries the same list; refresh it unless
+      // that would drop unsaved edits in the JSON editor.
+      if (!runtimeDirty.value && !runtimeLoading.value && !runtimeLoadError.value) {
+        void loadRuntimeConfig({ silent: true })
+      }
+      toast.success(t("adminConfig.allowedKeys.saved"))
     } catch (error: unknown) {
       toastErrorWithExtractedMessage(
         t("adminConfig.toast.saveFailedTitle"),
@@ -172,7 +219,12 @@ export function useSystemConfig() {
       runtimeSaving.value = false
     }
     pendingRuntimeConfig = null
-    await loadRuntimeConfig()
+    await loadRuntimeConfig({ silent: true })
+    // The runtime PUT can carry the allowlist too; show what the backend holds
+    // now, unless the list has unsaved edits of its own.
+    if (!apiKeysDirty.value && !apiKeysLoading.value && !apiKeysLoadError.value) {
+      void loadApiKeys()
+    }
     toast.success(t("adminConfig.toast.runtimeUpdated"))
   }
 
@@ -202,7 +254,7 @@ export function useSystemConfig() {
     } finally {
       deviceFlowSaving.value = false
     }
-    await loadRuntimeConfig()
+    await loadRuntimeConfig({ silent: true })
     if (runtimeLoadError.value) return
     // A backend that does not know the switch accepts the PUT and ignores it.
     if (deviceFlowEnabled.value !== enabled) {
@@ -221,11 +273,15 @@ export function useSystemConfig() {
     editorOptions: EDITOR_OPTIONS,
     apiKeysLoading,
     apiKeysLoadError,
-    apiKeysJson,
+    apiKeys,
+    apiKeysDraft,
+    apiKeyInput,
+    apiKeyInputError,
     apiKeysSaving,
     apiKeysDirty,
-    apiKeysValidationError,
     runtimeLoading,
+    runtimeRefreshing,
+    runtimeConfig,
     runtimeLoadError,
     runtimeJson,
     runtimeSaving,
@@ -238,6 +294,11 @@ export function useSystemConfig() {
     deviceFlowSaving,
     loadApiKeys,
     loadRuntimeConfig,
+    setApiKeyInput,
+    addApiKeys,
+    removeApiKey,
+    restoreApiKey,
+    resetApiKeys,
     saveApiKeys,
     requestSaveRuntimeConfig,
     setRuntimeSaveDialogOpen,

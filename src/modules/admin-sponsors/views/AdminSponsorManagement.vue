@@ -2,28 +2,18 @@
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import {
-  LucideHeartHandshake,
   LucideLoader2,
-  LucidePencil,
-  LucideRefreshCw,
   LucideSave,
   LucideShieldCheck,
-  LucideSparkles,
   LucideUserPlus,
 } from "lucide-vue-next"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import DateTimePicker24h from "@/components/ui/datetime-picker/DateTimePicker24h.vue"
 import {
   Dialog,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogScrollContent,
@@ -31,22 +21,17 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Skeleton } from "@/components/ui/skeleton"
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Switch } from "@/components/ui/switch"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import FieldError from "@/shared/components/FieldError.vue"
-import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
+import SettingsRow from "@/shared/components/settings/SettingsRow.vue"
 import SponsorDurationPanel from "@/modules/admin-sponsors/components/SponsorDurationPanel.vue"
-import ToolboxSponsorPanel from "@/modules/admin-sponsors/components/ToolboxSponsorPanel.vue"
 import SponsorManualDurationDialog from "@/modules/admin-sponsors/components/SponsorManualDurationDialog.vue"
+import SponsorStatsPanel from "@/modules/admin-sponsors/components/SponsorStatsPanel.vue"
+import SponsorTable from "@/modules/admin-sponsors/components/SponsorTable.vue"
+import ToolboxSponsorPanel from "@/modules/admin-sponsors/components/ToolboxSponsorPanel.vue"
 import {
   SPONSOR_FIELD_IDS,
   useAdminSponsorManagement,
@@ -66,8 +51,6 @@ const {
   sponsors,
   generatedAt,
   total,
-  activeCount,
-  manualProfileCount,
   editOpen,
   editingSponsor,
   form,
@@ -110,7 +93,20 @@ const {
   formatDate,
 } = useAdminSponsorManagement()
 
-const boundCount = computed(() => sponsors.value.filter((sponsor) => sponsor.toolboxBound).length)
+// The values the backend accepts for `source`; anything else is refused.
+const SOURCE_OPTIONS = ["afdian", "manual", "legacy", "imported"] as const
+
+/** The stored value stays selectable even when it is not one of the known sources. */
+const sourceOptions = computed(() => {
+  const current = form.value.source
+  const known: readonly string[] = SOURCE_OPTIONS
+  return current && !known.includes(current) ? [...SOURCE_OPTIONS, current] : [...SOURCE_OPTIONS]
+})
+
+function sourceOptionLabel(source: string) {
+  const known: readonly string[] = SOURCE_OPTIONS
+  return known.includes(source) ? `${t(`adminSponsors.source.${source}`)} (${source})` : source
+}
 
 function fallbackName(sponsor: AdminSponsorProfile | null) {
   return sponsor?.name || t("adminSponsors.common.anonymous")
@@ -118,21 +114,6 @@ function fallbackName(sponsor: AdminSponsorProfile | null) {
 
 function fallbackInitial(sponsor: AdminSponsorProfile | null) {
   return fallbackName(sponsor).charAt(0).toUpperCase()
-}
-
-function sourceLabel(source: string) {
-  return source || t("adminSponsors.common.fallback")
-}
-
-function contributionLabel(sponsor: AdminSponsorProfile) {
-  const parts: string[] = []
-  if (sponsor.totalAmount !== null) {
-    parts.push(t("adminSponsors.contribution.amount", { amount: sponsor.totalAmount }))
-  }
-  if (sponsor.afdianMonths > 0) {
-    parts.push(t("adminSponsors.contribution.month", { count: sponsor.afdianMonths }))
-  }
-  return parts.length > 0 ? parts.join(" · ") : t("adminSponsors.common.fallback")
 }
 
 const afdianToggleText = computed(() => {
@@ -157,284 +138,146 @@ function handleManualDialogOpen(open: boolean) {
 </script>
 
 <template>
-  <div class="w-full flex flex-col gap-4">
+  <div class="flex w-full flex-col gap-4">
+    <!-- Every figure here is counted over the whole list, not the rows on screen. -->
+    <SponsorStatsPanel :sponsors="sponsors" :total="total" :loading="loading" :failed="!!loadError" />
+
+    <SponsorTable
+      :sponsors="sponsors"
+      :loading="loading"
+      :load-error="loadError"
+      :refreshing="refreshing"
+      :syncing="syncing"
+      :generated-at="generatedAt"
+      :is-toggling="isToggling"
+      :format-date="formatDate"
+      @refresh="refreshSponsors"
+      @retry="reloadSponsors"
+      @sync="requestSyncFromAfdian"
+      @create="openCreateDialog"
+      @edit="openEditDialog"
+      @toggle="requestAfdianToggle"
+    />
+
     <ToolboxSponsorPanel />
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <div class="rounded-xl border bg-card p-4 shadow-sm">
-        <p class="text-sm text-muted-foreground">{{ t("adminSponsors.binding.count") }}</p>
-        <Skeleton v-if="loading" class="mt-1 h-8 w-14" />
-        <p v-else class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">{{ boundCount }}</p>
-      </div>
-      <div class="rounded-xl border bg-card p-4 shadow-sm">
-        <p class="text-sm text-muted-foreground">{{ t("adminSponsors.stats.total") }}</p>
-        <Skeleton v-if="loading" class="mt-1 h-8 w-14" />
-        <p v-else class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">{{ loadError ? "—" : total }}</p>
-      </div>
-      <div class="rounded-xl border bg-card p-4 shadow-sm">
-        <p class="text-sm text-muted-foreground">{{ t("adminSponsors.stats.active") }}</p>
-        <Skeleton v-if="loading" class="mt-1 h-8 w-14" />
-        <p v-else class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">{{ loadError ? "—" : activeCount }}</p>
-      </div>
-      <div class="rounded-xl border bg-card p-4 shadow-sm">
-        <p class="text-sm text-muted-foreground">{{ t("adminSponsors.stats.manualProfile") }}</p>
-        <Skeleton v-if="loading" class="mt-1 h-8 w-14" />
-        <p v-else class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">{{ loadError ? "—" : manualProfileCount }}</p>
-      </div>
-    </div>
-
-    <Card>
-      <CardHeader class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div class="space-y-1 min-w-0">
-          <CardTitle class="text-base">{{ t("adminSponsors.list.title") }}</CardTitle>
-          <CardDescription>
-            {{ t("adminSponsors.list.description") }}
-            <span v-if="generatedAt" class="block mt-1">
-              {{ t("adminSponsors.generatedAt", { date: formatDate(generatedAt) }) }}
-            </span>
-          </CardDescription>
-        </div>
-        <div class="flex flex-wrap gap-2 shrink-0">
-          <Button variant="outline" size="sm" :disabled="loading || refreshing" @click="refreshSponsors">
-            <LucideLoader2 v-if="refreshing" class="mr-2 h-4 w-4 animate-spin" />
-            <LucideRefreshCw v-else class="mr-2 h-4 w-4" />
-            {{ t("adminSponsors.actions.refresh") }}
-          </Button>
-          <!-- Sync and create stay off while the list could not be loaded; refresh is the way back. -->
-          <Button variant="outline" size="sm" :disabled="loading || syncing || !!loadError" @click="requestSyncFromAfdian">
-            <LucideLoader2 v-if="syncing" class="mr-2 h-4 w-4 animate-spin" />
-            <LucideSparkles v-else class="mr-2 h-4 w-4" />
-            {{ t("adminSponsors.actions.syncAfdian") }}
-          </Button>
-          <Button size="sm" :disabled="loading || !!loadError" @click="openCreateDialog">
-            <LucideUserPlus class="mr-2 h-4 w-4" />
-            {{ t("adminSponsors.actions.create") }}
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent class="p-0">
-        <!-- A failed load is shown instead of the empty "sync from Afdian" call to action. -->
-        <LoadErrorState
-          v-if="!loading && loadError"
-          :title="t('adminSponsors.toast.loadFailedTitle')"
-          :description="loadError.message"
-          :detail="loadError.detail"
-          :retrying="loading"
-          @retry="reloadSponsors"
-        />
-        <Table v-else-if="loading || sponsors.length > 0">
-          <TableHeader>
-            <TableRow>
-              <TableHead>{{ t("adminSponsors.table.supporter") }}</TableHead>
-              <TableHead class="hidden md:table-cell">{{ t("adminSponsors.table.tier") }}</TableHead>
-              <TableHead>{{ t("adminSponsors.table.status") }}</TableHead>
-              <TableHead>{{ t("adminSponsors.binding.title") }}</TableHead>
-              <TableHead>{{ t("adminSponsors.table.afdianSync") }}</TableHead>
-              <TableHead class="text-right">{{ t("adminSponsors.table.actions") }}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <template v-if="loading">
-              <TableRow v-for="row in 6" :key="row">
-                <TableCell colspan="6">
-                  <Skeleton class="h-9 w-full" />
-                </TableCell>
-              </TableRow>
-            </template>
-
-            <template v-else>
-              <TableRow v-for="sponsor in sponsors" :key="sponsor.id">
-                <TableCell>
-                  <div class="flex items-center gap-3">
-                    <Avatar class="h-9 w-9 shrink-0 border">
-                      <AvatarImage :src="sponsor.avatar" :alt="fallbackName(sponsor)" />
-                      <AvatarFallback class="text-xs font-semibold">{{ fallbackInitial(sponsor) }}</AvatarFallback>
-                    </Avatar>
-                    <div class="min-w-0">
-                      <p class="truncate text-sm font-medium">{{ fallbackName(sponsor) }}</p>
-                      <p class="truncate text-xs text-muted-foreground">
-                        {{ sourceLabel(sponsor.source) }}
-                        · <span class="font-mono text-[11px]">{{ sponsor.id }}</span>
-                      </p>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell class="hidden md:table-cell">
-                  <div class="min-w-0 max-w-[200px]">
-                    <p class="truncate text-sm">{{ sponsor.planName || t("adminSponsors.common.fallback") }}</p>
-                    <p class="truncate text-xs text-muted-foreground tabular-nums">{{ contributionLabel(sponsor) }}</p>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div class="flex flex-col items-start gap-1">
-                    <Badge :variant="categoryBadgeVariant(sponsor.category)" class="px-2.5 py-1 text-xs">
-                      {{ t(`adminSponsors.category.${sponsor.category}`) }}
-                    </Badge>
-                    <span
-                      v-if="sponsor.planExpiresAt"
-                      class="hidden xl:block text-xs text-muted-foreground tabular-nums"
-                      :title="t('adminSponsors.table.effectiveExpiry')"
-                    >
-                      {{ formatDate(sponsor.planExpiresAt) }}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell><Badge :variant="sponsor.toolboxBound ? 'default' : 'secondary'">{{ t(sponsor.toolboxBound ? "adminSponsors.binding.bound" : "adminSponsors.binding.unbound") }}</Badge></TableCell>
-                <TableCell>
-                  <div
-                    class="flex items-center gap-2"
-                    :title="sponsor.afdianSyncDisabled ? t('adminSponsors.afdianSync.disabled') : t('adminSponsors.afdianSync.enabled')"
-                  >
-                    <Switch
-                      :model-value="sponsor.afdianSyncDisabled"
-                      :disabled="isToggling(sponsor.id)"
-                      :aria-label="t('adminSponsors.table.afdianSync')"
-                      @update:model-value="requestAfdianToggle(sponsor, !!$event)"
-                    />
-                    <span class="hidden xl:inline text-xs text-muted-foreground">
-                      {{ sponsor.afdianSyncDisabled ? t("adminSponsors.afdianSync.disabled") : t("adminSponsors.afdianSync.enabled") }}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell class="text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    :title="t('adminSponsors.actions.edit')"
-                    :aria-label="t('adminSponsors.actions.edit')"
-                    @click="openEditDialog(sponsor)"
-                  >
-                    <LucidePencil class="h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            </template>
-          </TableBody>
-        </Table>
-
-        <div
-          v-else
-          class="mx-6 flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-10 text-center"
-        >
-          <LucideHeartHandshake class="h-8 w-8 text-muted-foreground/60" />
-          <p class="text-sm text-muted-foreground">{{ t("adminSponsors.table.empty") }}</p>
-          <Button variant="outline" size="sm" :disabled="syncing" @click="requestSyncFromAfdian">
-            <LucideLoader2 v-if="syncing" class="mr-2 h-4 w-4 animate-spin" />
-            <LucideSparkles v-else class="mr-2 h-4 w-4" />
-            {{ t("adminSponsors.actions.syncAfdian") }}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
 
     <Dialog v-model:open="editOpen">
-      <DialogScrollContent class="sm:max-w-[min(56rem,92vw)]">
+      <DialogScrollContent class="sm:max-w-[min(46rem,92vw)]">
         <DialogHeader>
           <DialogTitle>{{ t("adminSponsors.edit.title") }}</DialogTitle>
         </DialogHeader>
 
-        <form id="admin-sponsor-edit-form" class="grid gap-4 py-2" novalidate @submit.prevent="saveSponsor">
-          <div class="flex items-center gap-3 rounded-xl border bg-muted/20 p-3">
-            <Avatar class="h-11 w-11 border">
+        <div class="@container flex flex-col gap-5 py-1">
+          <!-- Who is being edited; the id never changes. -->
+          <div class="flex items-center gap-3">
+            <Avatar class="size-11 shrink-0 border">
               <AvatarImage :src="form.avatar" :alt="fallbackName(editingSponsor)" />
               <AvatarFallback class="text-sm font-semibold">{{ fallbackInitial(editingSponsor) }}</AvatarFallback>
             </Avatar>
-            <div class="min-w-0">
-              <p class="truncate text-sm font-medium">{{ form.name || fallbackName(editingSponsor) }}</p>
-              <p class="truncate font-mono text-xs text-muted-foreground">{{ editingSponsor?.id }}</p>
-            </div>
-          </div>
-
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div class="space-y-2">
-              <Label :for="SPONSOR_FIELD_IDS.editName">{{ t("adminSponsors.edit.name") }}</Label>
-              <Input
-                :id="SPONSOR_FIELD_IDS.editName"
-                :model-value="form.name"
-                :aria-invalid="!!editNameError || undefined"
-                :aria-describedby="editNameError ? `${SPONSOR_FIELD_IDS.editName}-error` : undefined"
-                @update:model-value="updateEditName(String($event ?? ''))"
-              />
-              <FieldError :id="`${SPONSOR_FIELD_IDS.editName}-error`" :message="editNameError" />
-            </div>
-            <div class="space-y-2">
-              <Label for="admin-sponsor-avatar">{{ t("adminSponsors.edit.avatar") }}</Label>
-              <Input id="admin-sponsor-avatar" v-model="form.avatar" :placeholder="t('adminSponsors.edit.avatarPlaceholder')" />
-            </div>
-          </div>
-
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div class="space-y-2">
-              <Label for="admin-sponsor-plan">{{ t("adminSponsors.edit.planName") }}</Label>
-              <Input id="admin-sponsor-plan" v-model="form.planName" />
-            </div>
-            <div class="space-y-2">
-              <Label for="admin-sponsor-source">{{ t("adminSponsors.edit.source") }}</Label>
-              <Input id="admin-sponsor-source" v-model="form.source" />
-            </div>
-          </div>
-
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div class="space-y-2">
-              <Label for="admin-sponsor-paid-at">{{ t("adminSponsors.edit.paidAt") }}</Label>
-              <DateTimePicker24h
-                id="admin-sponsor-paid-at"
-                v-model="form.paidAt"
-                :placeholder="t('adminSponsors.edit.paidAtPlaceholder')"
-              />
-            </div>
-          </div>
-
-          <div class="space-y-2">
-            <Label for="admin-sponsor-message">{{ t("adminSponsors.edit.message") }}</Label>
-            <textarea
-              id="admin-sponsor-message"
-              v-model="form.message"
-              rows="3"
-              class="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
-            />
-          </div>
-
-          <div class="rounded-xl border bg-muted/20 p-4">
-            <div class="flex items-center gap-3">
-              <Switch
-                id="admin-sponsor-afdian-sync"
-                :model-value="form.afdianSyncDisabled"
-                @update:model-value="form.afdianSyncDisabled = !!$event"
-              />
-              <div class="space-y-1">
-                <Label for="admin-sponsor-afdian-sync">{{ t("adminSponsors.edit.afdianSyncDisabled") }}</Label>
-                <p class="text-xs text-muted-foreground">{{ t("adminSponsors.edit.afdianSyncHelp") }}</p>
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <p class="min-w-0 text-sm font-medium [overflow-wrap:anywhere]">{{ form.name || fallbackName(editingSponsor) }}</p>
+                <Badge v-if="editingSponsor" :variant="categoryBadgeVariant(editingSponsor.category)" size="sm">
+                  {{ t(`adminSponsors.category.${editingSponsor.category}`) }}
+                </Badge>
+                <Badge v-if="editingSponsor" :variant="editingSponsor.toolboxBound ? 'sky' : 'muted'" size="sm">
+                  {{ t("adminSponsors.binding.title") }} · {{ t(editingSponsor.toolboxBound ? "adminSponsors.binding.bound" : "adminSponsors.binding.unbound") }}
+                </Badge>
               </div>
+              <p class="mt-0.5 font-mono text-xs text-muted-foreground [overflow-wrap:anywhere]">{{ editingSponsor?.id }}</p>
             </div>
           </div>
 
-          <div class="flex items-start gap-2 rounded-lg border border-pink-500/20 bg-pink-500/5 p-3 text-sm text-muted-foreground">
-            <LucideShieldCheck class="mt-0.5 h-4 w-4 shrink-0 text-pink-500" />
-            <span>{{ t("adminSponsors.edit.manualProfileHint") }}</span>
-          </div>
-        </form>
+          <form id="admin-sponsor-edit-form" novalidate @submit.prevent="saveSponsor">
+            <SettingsGroup :title="t('adminSponsors.edit.profileGroup')">
+              <div class="grid gap-x-4 gap-y-3 px-4 py-3 @min-[34rem]:grid-cols-2">
+                <div class="grid content-start gap-1.5">
+                  <Label :for="SPONSOR_FIELD_IDS.editName">{{ t("adminSponsors.edit.name") }}</Label>
+                  <Input
+                    :id="SPONSOR_FIELD_IDS.editName"
+                    class="bg-background"
+                    :model-value="form.name"
+                    :aria-invalid="!!editNameError || undefined"
+                    :aria-describedby="editNameError ? `${SPONSOR_FIELD_IDS.editName}-error` : undefined"
+                    @update:model-value="updateEditName(String($event ?? ''))"
+                  />
+                  <FieldError :id="`${SPONSOR_FIELD_IDS.editName}-error`" :message="editNameError" />
+                </div>
+                <div class="grid content-start gap-1.5">
+                  <Label for="admin-sponsor-plan">{{ t("adminSponsors.edit.planName") }}</Label>
+                  <Input id="admin-sponsor-plan" v-model="form.planName" class="bg-background" />
+                </div>
+                <div class="grid content-start gap-1.5 @min-[34rem]:col-span-2">
+                  <Label for="admin-sponsor-avatar">{{ t("adminSponsors.edit.avatar") }}</Label>
+                  <Input id="admin-sponsor-avatar" v-model="form.avatar" class="bg-background" inputmode="url" :placeholder="t('adminSponsors.edit.avatarPlaceholder')" />
+                </div>
+                <div class="grid content-start gap-1.5 [&_[data-slot=native-select-wrapper]]:w-full">
+                  <Label for="admin-sponsor-source">{{ t("adminSponsors.edit.source") }}</Label>
+                  <NativeSelect id="admin-sponsor-source" :model-value="form.source" class="w-full bg-background" @update:model-value="form.source = String($event ?? '')">
+                    <NativeSelectOption v-if="!form.source" value="">{{ t("adminSponsors.common.fallback") }}</NativeSelectOption>
+                    <NativeSelectOption v-for="source in sourceOptions" :key="source" :value="source">
+                      {{ sourceOptionLabel(source) }}
+                    </NativeSelectOption>
+                  </NativeSelect>
+                </div>
+                <div class="grid content-start gap-1.5">
+                  <Label for="admin-sponsor-paid-at">{{ t("adminSponsors.edit.paidAt") }}</Label>
+                  <DateTimePicker24h
+                    id="admin-sponsor-paid-at"
+                    v-model="form.paidAt"
+                    :placeholder="t('adminSponsors.edit.paidAtPlaceholder')"
+                  />
+                </div>
+                <div class="grid content-start gap-1.5 @min-[34rem]:col-span-2">
+                  <Label for="admin-sponsor-message">{{ t("adminSponsors.edit.message") }}</Label>
+                  <textarea
+                    id="admin-sponsor-message"
+                    v-model="form.message"
+                    rows="2"
+                    class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none transition-[color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </div>
+              </div>
 
-        <!-- Durations are managed here, outside the profile form; the manual
-             entries open their own dialog with its own save. -->
-        <SponsorDurationPanel
-          :detail="detail"
-          :loading="detailLoading"
-          :load-error="detailError"
-          :deleting="deletingEntry"
-          :format-date="formatDate"
-          :delete-entry="deleteManualEntry"
-          @new="startNewManualEntry"
-          @edit="startEditManualEntry"
-          @retry="retryDetail"
-        />
+              <SettingsRow
+                :icon="LucideShieldCheck"
+                :tone="form.afdianSyncDisabled ? 'warning' : 'default'"
+                :label="t('adminSponsors.edit.afdianSyncDisabled')"
+                :help="t('adminSponsors.edit.afdianSyncHelp')"
+                label-for="admin-sponsor-afdian-sync"
+              >
+                <Switch
+                  id="admin-sponsor-afdian-sync"
+                  :model-value="form.afdianSyncDisabled"
+                  @update:model-value="form.afdianSyncDisabled = !!$event"
+                />
+              </SettingsRow>
+              <p class="px-4 py-2.5 text-xs text-muted-foreground">{{ t("adminSponsors.edit.manualProfileHint") }}</p>
+            </SettingsGroup>
+          </form>
+
+          <!-- Durations are managed here, outside the profile form; the manual
+               entries open their own dialog with its own save. -->
+          <SponsorDurationPanel
+            :detail="detail"
+            :loading="detailLoading"
+            :load-error="detailError"
+            :deleting="deletingEntry"
+            :format-date="formatDate"
+            :delete-entry="deleteManualEntry"
+            @new="startNewManualEntry"
+            @edit="startEditManualEntry"
+            @retry="retryDetail"
+          />
+        </div>
 
         <DialogFooter>
           <Button type="button" variant="outline" :disabled="saving" @click="editOpen = false">
             {{ t("common.cancel") }}
           </Button>
           <Button type="submit" form="admin-sponsor-edit-form" :disabled="saving">
-            <LucideLoader2 v-if="saving" class="mr-2 h-4 w-4 animate-spin" />
-            <LucideSave v-else class="mr-2 h-4 w-4" />
+            <LucideLoader2 v-if="saving" class="size-4 animate-spin" />
+            <LucideSave v-else class="size-4" />
             {{ t("adminSponsors.edit.saveProfile") }}
           </Button>
         </DialogFooter>
@@ -456,10 +299,10 @@ function handleManualDialogOpen(open: boolean) {
       <DialogScrollContent class="sm:max-w-[min(32rem,92vw)]">
         <DialogHeader>
           <DialogTitle>{{ t("adminSponsors.create.title") }}</DialogTitle>
+          <DialogDescription>{{ t("adminSponsors.create.description") }}</DialogDescription>
         </DialogHeader>
-        <form id="admin-sponsor-create-form" class="grid gap-4 py-2" novalidate @submit.prevent="createSponsor">
-          <p class="text-sm text-muted-foreground">{{ t("adminSponsors.create.description") }}</p>
-          <div class="space-y-2">
+        <form id="admin-sponsor-create-form" class="grid gap-3 py-1" novalidate @submit.prevent="createSponsor">
+          <div class="grid gap-1.5">
             <Label :for="SPONSOR_FIELD_IDS.createName">{{ t("adminSponsors.edit.name") }}</Label>
             <Input
               :id="SPONSOR_FIELD_IDS.createName"
@@ -470,15 +313,15 @@ function handleManualDialogOpen(open: boolean) {
             />
             <FieldError :id="`${SPONSOR_FIELD_IDS.createName}-error`" :message="createNameError" />
           </div>
-          <div class="space-y-2">
-            <Label for="admin-sponsor-create-avatar">{{ t("adminSponsors.edit.avatar") }}</Label>
-            <Input id="admin-sponsor-create-avatar" v-model="createForm.avatar" :placeholder="t('adminSponsors.edit.avatarPlaceholder')" />
-          </div>
-          <div class="space-y-2">
+          <div class="grid gap-1.5">
             <Label for="admin-sponsor-create-plan">{{ t("adminSponsors.edit.planName") }}</Label>
             <Input id="admin-sponsor-create-plan" v-model="createForm.planName" />
           </div>
-          <div class="space-y-2">
+          <div class="grid gap-1.5">
+            <Label for="admin-sponsor-create-avatar">{{ t("adminSponsors.edit.avatar") }}</Label>
+            <Input id="admin-sponsor-create-avatar" v-model="createForm.avatar" inputmode="url" :placeholder="t('adminSponsors.edit.avatarPlaceholder')" />
+          </div>
+          <div class="grid gap-1.5">
             <Label for="admin-sponsor-create-message">{{ t("adminSponsors.edit.message") }}</Label>
             <Input id="admin-sponsor-create-message" v-model="createForm.message" />
           </div>
@@ -488,8 +331,8 @@ function handleManualDialogOpen(open: boolean) {
             {{ t("common.cancel") }}
           </Button>
           <Button type="submit" form="admin-sponsor-create-form" :disabled="creating">
-            <LucideLoader2 v-if="creating" class="mr-2 h-4 w-4 animate-spin" />
-            <LucideUserPlus v-else class="mr-2 h-4 w-4" />
+            <LucideLoader2 v-if="creating" class="size-4 animate-spin" />
+            <LucideUserPlus v-else class="size-4" />
             {{ t("adminSponsors.create.submit") }}
           </Button>
         </DialogFooter>

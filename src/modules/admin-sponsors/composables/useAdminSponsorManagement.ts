@@ -1,4 +1,4 @@
-import { computed, onMounted, ref } from "vue"
+import { onMounted, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { runAsyncAction } from "@/composables/useAsyncAction"
 import { formatLocalizedDateTime } from "@/lib/date-time"
@@ -137,9 +137,6 @@ export function useAdminSponsorManagement() {
   const creating = ref(false)
   const createForm = ref<CreateSponsorForm>(emptyCreateForm())
   const createNameError = ref("")
-
-  const activeCount = computed(() => sponsors.value.filter((sponsor) => sponsor.category === "current").length)
-  const manualProfileCount = computed(() => sponsors.value.filter((sponsor) => sponsor.afdianSyncDisabled).length)
 
   function replaceSponsor(updated: AdminSponsorProfile) {
     const exists = sponsors.value.some((item) => item.id === updated.id)
@@ -464,8 +461,6 @@ export function useAdminSponsorManagement() {
     sponsors,
     generatedAt,
     total,
-    activeCount,
-    manualProfileCount,
     editOpen,
     editingSponsor,
     form,
