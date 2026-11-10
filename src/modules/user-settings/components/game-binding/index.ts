@@ -1,4 +1,3 @@
-export { default as GameBindingPermissionCard } from "./GameBindingPermissionCard.vue"
 export { default as GameBindingAccountTable } from "./GameBindingAccountTable.vue"
 export { default as GameBindingEditDialog } from "./GameBindingEditDialog.vue"
 export { default as GameBindingDeleteDialog } from "./GameBindingDeleteDialog.vue"

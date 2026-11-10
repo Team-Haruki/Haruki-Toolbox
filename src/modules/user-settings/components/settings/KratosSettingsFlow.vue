@@ -591,7 +591,7 @@ const kratosHost = computed(() => {
           {{ t("auth.common.loadingFlow") }}
         </div>
         <div v-else-if="loadError" class="space-y-4">
-          <p class="text-sm text-destructive">{{ loadError }}</p>
+          <p class="text-sm text-destructive [overflow-wrap:anywhere]">{{ loadError }}</p>
           <Button class="w-full" @click="restartFlow">
             <Save class="mr-2 h-4 w-4" />
             {{ t("auth.common.restartFlow") }}

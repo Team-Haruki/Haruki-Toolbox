@@ -14,6 +14,12 @@ const props = defineProps<{
   ownership?: "own" | "granted"
   /** Display name of the granting user, shown for granted accounts. */
   ownerName?: string | null
+  /**
+   * Keep the default / verified marks right after the UID. In a select the
+   * marks sit at the far right so they line up down the list; in a list row
+   * with its own actions that leaves them stranded between the two.
+   */
+  inlineMarks?: boolean
 }>()
 
 const { t } = useI18n()
@@ -42,7 +48,7 @@ function displayUid(userId: string | number): string {
 </script>
 
 <template>
-  <span class="flex min-w-0 flex-1 items-center gap-2">
+  <span :class="['flex min-w-0 items-center gap-2', props.inlineMarks ? '' : 'flex-1']">
     <span
       class="flex size-6 shrink-0 items-center justify-center rounded text-[10px] font-bold tracking-wide"
       :class="regionBadgeClass(props.server)"
@@ -58,7 +64,7 @@ function displayUid(userId: string | number): string {
     >
       {{ props.ownerName }}
     </span>
-    <span class="ml-auto flex shrink-0 items-center gap-1.5">
+    <span :class="['flex shrink-0 items-center gap-1.5', props.inlineMarks ? '' : 'ml-auto']">
       <span
         v-if="props.ownership === 'granted'"
         class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"

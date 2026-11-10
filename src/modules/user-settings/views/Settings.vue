@@ -107,10 +107,11 @@ onMounted(() => {
       :description="t('userSettings.sections.accountDescription')"
     />
 
-    <div class="flex w-full flex-col gap-4">
+    <!-- Who you are, how you sign in, then the sponsor binding. -->
+    <div class="flex w-full flex-col gap-5">
       <ProfileSettingsCard />
-      <AfdianBindingCard />
       <SecuritySettingsCard />
+      <AfdianBindingCard />
     </div>
   </div>
 </template>

@@ -10,11 +10,12 @@ import { useGameAccountBindingManagement } from "@/modules/user-settings/composa
 import { useGameAccountDataGrants } from "@/modules/user-settings/composables/useGameAccountDataGrants"
 import { useUserStore } from "@/shared/stores/user"
 import { useI18n } from "vue-i18n"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { RouterLink } from "vue-router"
+import { useRouter } from "vue-router"
 import { Button } from "@/components/ui/button"
-import { LucideInfo } from "lucide-vue-next"
+import { LucideBot, LucideInbox, LucideInfo, LucidePlus } from "lucide-vue-next"
 import PageHeader from "@/shared/components/PageHeader.vue"
+import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
+import SettingsLinkRow from "@/shared/components/settings/SettingsLinkRow.vue"
 
 const {
   data,
@@ -48,6 +49,7 @@ const {
 } = useGameAccountBindingManagement()
 
 const { t } = useI18n()
+const router = useRouter()
 const userStore = useUserStore()
 const {
   grantsOpen,
@@ -80,40 +82,52 @@ const {
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-0 py-4">
+  <div class="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-0 py-4">
     <PageHeader
       size="compact"
       :title="t('userSettings.gameBinding.title')"
       :description="t('userSettings.gameBinding.description')"
-    />
-
-    <!-- One notice: the binding rule and what HarukiBot does with these bindings. -->
-    <Alert variant="default" class="flex w-full items-start gap-2 bg-muted/20">
-      <LucideInfo class="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
-      <div class="w-full space-y-2">
-        <AlertTitle>{{ t("userSettings.gameBinding.alert.title") }}</AlertTitle>
-        <AlertDescription class="space-y-1.5 leading-relaxed text-muted-foreground">
-          <p>{{ t("userSettings.gameBinding.alert.line1") }}</p>
-          <p>{{ t("userSettings.gameBinding.alert.line2") }}</p>
-        </AlertDescription>
-        <Button as-child variant="outline" size="sm" class="h-auto min-h-8 max-w-full whitespace-normal">
-          <RouterLink :to="{ name: 'user.harukiBotAuthorization' }">
-            {{ t("userSettings.gameBinding.alert.action") }}
-          </RouterLink>
+    >
+      <template #actions>
+        <Button @click="startAdd">
+          <LucidePlus class="size-4" />
+          {{ t("userSettings.gameBinding.addButton") }}
         </Button>
-      </div>
-    </Alert>
+      </template>
+    </PageHeader>
 
-    <GameBindingAccountTable
-      :data="data"
-      :region-labels="regionLabels"
-      @add="startAdd"
-      @edit="startEdit"
-      @grants="openGrantManager"
-      @received-grants="openReceivedGrantManager"
-      @delete="confirmDelete"
-      @set-default="setDefaultBinding"
-    />
+    <div class="flex flex-col gap-1.5">
+      <GameBindingAccountTable
+        :data="data"
+        :region-labels="regionLabels"
+        @add="startAdd"
+        @edit="startEdit"
+        @grants="openGrantManager"
+        @delete="confirmDelete"
+        @set-default="setDefaultBinding"
+      />
+      <!-- The one binding rule, as a footnote of the list it constrains. -->
+      <p class="flex items-start gap-1.5 px-1 text-xs text-muted-foreground">
+        <LucideInfo class="mt-0.5 size-3.5 shrink-0" />
+        {{ t("userSettings.gameBinding.alert.line1") }}
+      </p>
+    </div>
+
+    <!-- Where the bindings are used by other people and by HarukiBot. -->
+    <SettingsGroup :title="t('userSettings.gameBinding.relatedTitle')" surface="card" data-testid="game-binding-related">
+      <SettingsLinkRow
+        :icon="LucideInbox"
+        :label="t('userSettings.gameBinding.actions.receivedGrants')"
+        :help="t('userSettings.gameBinding.grants.receivedDescription')"
+        @click="openReceivedGrantManager"
+      />
+      <SettingsLinkRow
+        :icon="LucideBot"
+        :label="t('userSettings.sections.harukiBotTitle')"
+        :help="t('userSettings.gameBinding.alert.line2')"
+        @click="router.push({ name: 'user.harukiBotAuthorization' })"
+      />
+    </SettingsGroup>
 
     <GameBindingEditDialog
       :open="showEditDialog"
