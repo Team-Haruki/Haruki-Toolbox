@@ -62,7 +62,7 @@ export default {
     "create": {
       "backButton": "返回工单列表",
       "title": "创建工单",
-      "description": "把关键信息写清楚，管理员会更容易判断下一步。",
+      "description": "工单用于反馈 Bug、处理工具箱账号相关的问题和提出建议，不提供使用教程指导。把关键信息写清楚，管理员会更容易判断下一步。",
       "submit": "提交工单",
       "submitting": "提交中...",
       "fields": {
@@ -131,7 +131,25 @@ export default {
       "refreshButton": "刷新",
       "unassigned": "未分配",
       "empty": "暂无工单",
+      "emptyFiltered": "没有符合筛选条件的工单",
       "total": "共 {total} 个工单",
+      "stats": {
+        "label": "工单统计",
+        "labelCount": "{label} {count}",
+        "openDetail": "新提交、尚未处理",
+        "mine": "分配给我",
+        "totalDetail": "未结 {active} · 已结 {done}",
+        "byStatus": "按状态",
+        "byPriority": "按优先级",
+        "byCategory": "按分类",
+        "scopeAll": "全部 {total} 个工单",
+        "scopeAllUnknown": "全部工单",
+        "scopePage": "仅本页显示的 {count} 个工单",
+        "share": "{count} · {percent}%",
+        "empty": "暂无数据",
+        "loadFailed": "统计数据加载失败",
+        "partialFailed": "统计数据没有全部加载出来。"
+      },
       "quickFilters": {
         "all": "全部工单",
         "pendingAdmin": "待管理员处理",
@@ -142,6 +160,8 @@ export default {
       },
       "table": {
         "subject": "主题",
+        "people": "创建者 / 处理人",
+        "category": "分类",
         "status": "状态",
         "priority": "优先级",
         "creator": "创建者",
@@ -157,9 +177,11 @@ export default {
         "none": "暂无动态"
       },
       "notifications": {
+        "title": "通知",
         "label": "工单邮件通知",
         "description": "开启后接收新工单和用户回复提醒",
         "manageButton": "管理接收者",
+        "manageHelp": "选择哪些管理员接收工单邮件提醒",
         "manageDialogTitle": "工单通知接收者",
         "manageDialogDescription": "选择哪些管理员会收到用户创建工单和用户回复工单的邮件提醒。用户只会收到管理员公开回复提醒。",
         "manageDialogSummary": "当前显示 {total} 个管理员账号",
@@ -203,7 +225,38 @@ export default {
         "creator": "创建者",
         "assignee": "处理人",
         "createdAt": "创建时间",
-        "updatedAt": "最近更新"
+        "updatedAt": "最近更新",
+        "lastMessageAt": "最近消息",
+        "closedAt": "关闭时间"
+      },
+      "viewUser": "查看 {name} 的用户资料",
+      "stats": {
+        "label": "会话概况",
+        "userMessages": "用户消息",
+        "adminReplies": "公开回复",
+        "internalNotes": "内部备注 {count}",
+        "firstResponse": "首次响应用时",
+        "firstResponseNone": "尚未回复",
+        "firstResponseDetail": "从创建到首条公开回复",
+        "waitingAdmin": "用户已等待",
+        "waitingAdminDetail": "自用户最后一条消息起",
+        "waitingUser": "等待用户回复",
+        "waitingUserDetail": "自最后一条公开回复起",
+        "closedAfter": "处理时长",
+        "closedAfterDetail": "从创建到关闭",
+        "waitingNone": "当前等待"
+      },
+      "duration": {
+        "days": "{days} 天 {hours} 小时",
+        "hours": "{hours} 小时 {minutes} 分",
+        "minutes": "{minutes} 分钟",
+        "moment": "不到 1 分钟"
+      },
+      "system": {
+        "statusChanged": "状态由「{from}」变更为「{to}」",
+        "assigneeChanged": "处理人由 {from} 变更为 {to}",
+        "assigned": "已分配给 {to}",
+        "assigneeCleared": "已取消分配（原处理人 {from}）"
       },
       "actionsTitle": "处理操作",
       "actionsDescription": "更新工单状态或分配处理人。",

@@ -24,96 +24,90 @@ export default {
       "title": "關於 Project Haruki",
       "subtitle": "服務於世界計畫玩家的社群計畫",
       "projectIntro": {
-        "title": "關於專案",
         "p1Before": "Project Haruki 是",
         "p1Name": "星雲網路 (Seiunx Network)",
         "p1After": "旗下的社群計畫，由專屬的 Haruki Dev Team 負責開發與維護，旨在為《世界計畫 繽紛舞台！ feat. 初音未來》的玩家提供更優質的遊戲服務與社群支援。",
         "p2": "我們的核心專案包括 HarukiBot NEO 和 Haruki 工具箱。其中，HarukiBot NEO 專注於為中文玩家提供便捷、智慧的各種遊戲輔助與實用功能。",
-        "p3": "此外，我們也自主開發並維護了一系列高效能的開源底層程式與微服務，為整個 Haruki 生態系統注入強大且穩定的效能支撐，讓每位玩家都能享受流暢、舒適的使用體驗。",
-        "p4": "星雲網路旗下另設 Seiunx Dev Team，負責 Haruki 計畫之外其他開源專案的開發。"
+        "p3": "此外，我們也自主開發並維護了一系列高效能的開源底層程式與微服務，為整個 Haruki 生態系統注入強大且穩定的效能支撐，讓每位玩家都能享受流暢、舒適的使用體驗。"
       },
-      "team": {
-        "title": "開發團隊",
-        "subtitle": "Haruki Dev Team 是星雲網路旗下專注於本計畫的開發團隊，Project Haruki 的開發與維護離不開以下成員的大力支援",
-        "roles": {
-          "core": "主開發",
-          "doc": "文件維護",
-          "contrib": "外部協力",
-          "sponsor": "金牌贊助"
-        },
-        "roleDescs": {
-          "core": "HarukiBot NEO 的主要開發與維護者",
-          "doc": "HarukiBot NEO 的使用文件維護者",
-          "contrib": "一些並不歸屬 Haruki Dev Team，但是為 Project Haruki 提供了不少幫助的人",
-          "sponsor": "提供了 HarukiBot NEO 使用的伺服器以及 Haruki Sekai Asset 站伺服器的人"
+      "structure": {
+        "title": "組織結構",
+        "haruki": "負責 Project Haruki：HarukiBot NEO、Haruki 工具箱，以及它們背後的服務",
+        "seiunx": "負責 Haruki 計畫之外的其他開源專案",
+        "projectCount": "{count} 個開源專案"
+      },
+      "contributors": {
+        "title": "貢獻者",
+        "subtitle": "Project Haruki 的開發與維護離不開這些人的支援",
+        "count": "{count} 人",
+        "filterLabel": "按身份篩選",
+        "all": "全部",
+        "identities": {
+          "founder": {
+            "label": "創始人",
+            "desc": "Project Haruki 的發起人"
+          },
+          "core": {
+            "label": "核心開發",
+            "desc": "HarukiBot NEO 的主要開發與維護者"
+          },
+          "docs": {
+            "label": "文件維護",
+            "desc": "HarukiBot NEO 的使用文件維護者"
+          },
+          "collab": {
+            "label": "外部協力",
+            "desc": "並不歸屬 Haruki Dev Team，但為 Project Haruki 提供了不少幫助的人"
+          },
+          "sponsor": {
+            "label": "金牌贊助",
+            "desc": "提供了 HarukiBot NEO 使用的伺服器以及 Haruki Sekai Asset 站伺服器的人"
+          }
         },
         "members": {
           "seiun": {
             "name": "星雲希凪",
-            "role": "創始人 / 核心開發",
-            "desc": "",
             "quote": "「有限的生命裡追求無限的可能」"
           },
           "lingqian": {
-            "name": "靈潛",
-            "role": "核心開發",
-            "desc": ""
+            "name": "靈潛"
           },
           "deseer": {
             "name": "Deseer",
-            "role": "核心開發",
-            "desc": "",
             "quote": "「空に昇つて、光つて、消えて」"
           },
           "storyxy": {
             "name": "storyxy3",
-            "role": "核心開發",
-            "desc": "",
             "quote": "「Beyond Light」"
           },
           "aposetles": {
             "name": "Aposetles",
-            "role": "文件維護",
-            "desc": "",
             "quote": "文件問題反饋喜歡您來"
           },
           "tianshinling": {
-            "name": "天音鈴",
-            "role": "文件維護",
-            "desc": ""
+            "name": "天音鈴"
           },
           "yangzi": {
-            "name": "巖崎陽子",
-            "role": "文件維護",
-            "desc": ""
+            "name": "巖崎陽子"
           },
           "watagashi": {
-            "name": "綿菓子ウニ",
-            "role": "外部協力",
-            "desc": ""
+            "name": "綿菓子ウニ"
           },
           "middlered": {
-            "name": "MiddleRed",
-            "role": "外部協力",
-            "desc": ""
+            "name": "MiddleRed"
           },
           "dnaroma": {
             "name": "DNARoma",
-            "role": "外部協力",
-            "desc": "",
             "quote": "\"0.1 + 0.2 = 0.300000004\""
           },
           "yamamoto": {
-            "name": "山本",
-            "role": "金牌贊助者",
-            "desc": ""
+            "name": "山本"
           }
         }
       },
       "projects": {
         "title": "開源專案",
         "subtitle": "我們編寫並維護了一系列開源高效能工具、微服務與應用棧",
-        "techStack": "技術棧",
         "groups": {
           "haruki": {
             "title": "Haruki Dev Team",
@@ -127,51 +121,51 @@ export default {
         "list": {
           "drawingEngine": {
             "name": "HarukiBot NEO Drawing Engine",
-            "desc": "基於 Python 3.14 自由執行緒 (free-threaded) 編寫，使用 FastAPI 與 Pillow，充分利用 asyncio 與多執行緒效能的 Bot 圖片渲染服務。"
+            "desc": "HarukiBot NEO 的圖片渲染服務：接收 JSON 請求，輸出玩家資料、卡牌、活動、歌曲、譜面等圖片。服務層基於自由執行緒 (free-threaded) 的 Python 3.14 與 FastAPI，繪製由 Rust + Skia 原生渲染器完成。"
           },
           "botBackend": {
             "name": "HarukiBot NEO Backend",
-            "desc": "基於 Go、Fiber 與 EntGo 編寫的高效能 HarukiBot NEO 核心後端服務。"
+            "desc": "HarukiBot NEO 的核心後端：解析 Bot 指令，查詢《世界計畫》與 CHUNITHM 資料並生成回覆，同時負責 Bot 的註冊與鑑權。基於 Go、Fiber 與 Ent。"
           },
           "toolboxBackend": {
             "name": "Haruki Toolbox Backend",
-            "desc": "基於 Go、Fiber、EntGo 與 PostgreSQL、MongoDB 編寫的高效能 Haruki 工具箱後端服務。"
+            "desc": "Haruki 工具箱的後端：接收玩家上傳的 Suite 與 MySekai 資料並提供查詢 API，帳號登入與第三方授權由 Ory Kratos 和 Hydra 承擔。基於 Go、Fiber 與 Ent，資料存於 PostgreSQL 與 Redis。"
           },
           "deckService": {
             "name": "Deck Service",
-            "desc": "基於 Rust 編寫的高效能卡組推薦微服務。"
+            "desc": "組卡推薦 HTTP 服務：用 Rust 與 Axum 提供介面，通過 FFI 呼叫 C++ 組卡引擎，可靜態連結成單個執行檔。"
           },
           "deckCpp": {
             "name": "Sekai Deck Recommend CPP",
-            "desc": "基於 C++ 與 yyjson 編寫的卡組推薦服務核心演算法引擎。原始實現來自 ルナ茶，部分修改來自 moe-sekai。"
+            "desc": "組卡推薦與算分的 C++ 引擎：除列舉搜尋外還提供隨機化與啟發式演算法，同時發布 Python 包與 WebAssembly 包。原始實現來自 ルナ茶，部分修改來自 moe-sekai。"
           },
           "scoresRs": {
             "name": "PJSekai Scores RS",
-            "desc": "基於 Rust 編寫的平面遊戲譜面 SVG 生成器，同時使用 skia-safe 提供 PNG/JPG 譜面圖片匯出支援。"
+            "desc": "《世界計畫》譜面解析與渲染庫：讀取 .sus 譜面，生成 SVG 譜面圖，也可用純 Rust 渲染器直接輸出 PNG 或 JPEG。提供 Rust crate、命令列工具與 Python 包。"
           },
           "toolbox": {
             "name": "Haruki Toolbox",
-            "desc": "基於 Vue 3 與 TypeScript，使用 Shadcn-Vue 與 Tailwind CSS 設計的 Haruki 工具箱 Web 前端網站。"
+            "desc": "Haruki 工具箱的 Web 前端：遊戲圖鑑、活動衝榜計算與個人資料工具。基於 Vue 3 與 TypeScript，介面使用 Shadcn-Vue 與 Tailwind CSS。"
           },
           "assetUpdater": {
             "name": "Haruki Sekai Asset Updater",
-            "desc": "基於 Rust 編寫的高效能 Project Sekai 遊戲資產解密與解包微服務。"
+            "desc": "《世界計畫》遊戲資源更新服務：下載並解密資源包，匯出圖片、音訊、影片等素材，再上傳到對象儲存。基於 Rust，解包使用 unity-rs 與 cridecoder。"
           },
           "sekaiApi": {
             "name": "Haruki Sekai API",
-            "desc": "基於 Rust 編寫的高效能 Project Sekai 遊戲伺服器 API 反向代理與聚合微服務。"
+            "desc": "面向《世界計畫》五個區服遊戲伺服器的 API 代理：管理各區服的遊戲帳號，處理加密通訊，並自動更新和分發 master data。基於 Rust 與 Axum。"
           },
           "eventTracker": {
             "name": "Haruki Event Tracker",
-            "desc": "基於 Rust 編寫的高效能 Project Sekai 遊戲活動與即時排行榜追蹤微服務。"
+            "desc": "《世界計畫》活動榜線追蹤服務：定時記錄各區服的排行資料，提供榜線查詢 API 與 WebSocket 即時推送。基於 Rust 與 Axum。"
           },
           "cridecoder": {
             "name": "Cridecoder",
-            "desc": "基於 Rust 編寫的高效能 CriWare 音影片與封包中介軟體解密解碼依賴庫。"
+            "desc": "純 Rust 實現的 CRI 中介軟體編解碼庫：支援 ACB、AWB 音訊容器與 USM 影片容器的提取和構建，以及 HCA 音訊的編解碼，並提供 Python 綁定。"
           },
           "unityRs": {
             "name": "Unity RS",
-            "desc": "基於 Rust 編寫的高效能 Unity 資產解包庫，修改自 AssetStudio & AssetStudioMod。"
+            "desc": "無介面的 Unity 資源讀取與匯出工具：解析資源包，匯出貼圖、音訊和模型（OBJ、FBX）等。提供 Rust 庫、命令列工具以及 Python、Node.js 綁定，實現參考了 AssetStudio 與 AssetStudioMod。"
           }
         }
       },

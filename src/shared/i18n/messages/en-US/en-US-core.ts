@@ -498,8 +498,87 @@ export default {
     "copyFailed": "Copy failed"
   },
   "home": {
-    "title": "Welcome to Haruki Toolbox",
-    "description": "Choose the feature you need",
+    "title": "Haruki Toolbox",
+    "description": "Catalog, event math and personal data tools for Project SEKAI",
+    "search": {
+      "placeholder": "Search songs, cards, events"
+    },
+    "frequent": "Frequently used",
+    "status": {
+      "needsLogin": "Sign-in required",
+      "needsData": "Upload your data first"
+    },
+    "account": {
+      "label": "Current account",
+      "guestTitle": "Three steps to your personal data tools",
+      "steps": {
+        "signIn": "Register and sign in",
+        "bind": "Bind a game account",
+        "upload": "Upload your data"
+      }
+    },
+    "live": {
+      "title": "On now",
+      "optInTitle": "See what is on in the game",
+      "optInHint": "Load the game data to show the current event, limited gachas and new songs here.",
+      "load": "Load game data",
+      "running": "Running",
+      "upcoming": "Starting soon",
+      "ended": "Ended",
+      "endsIn": "{duration} left",
+      "startsIn": "Starts in {duration}",
+      "nextStartsIn": "Next event starts in {duration}",
+      "duration": {
+        "days": "{days}d {hours}h",
+        "hours": "{hours}h {minutes}m",
+        "minutes": "{minutes} min"
+      },
+      "eventDetail": "Event details",
+      "eventCards": "Event cards",
+      "gachas": "Limited gachas",
+      "newSongs": "New songs",
+      "none": "Nothing to show for this server right now.",
+      "error": "The game data failed to load. Try again later."
+    },
+    "trays": {
+      "event": {
+        "hint": "Decks, points and rankings during an event"
+      },
+      "player": {
+        "hint": "Your own account, once uploaded"
+      },
+      "catalog": {
+        "hint": "Reference for everything in the game"
+      },
+      "community": {
+        "title": "Co-op and community",
+        "hint": "Find a room, a group, or us"
+      }
+    },
+    "tools": {
+      "deckRecommend": "The best event deck from the cards you own",
+      "rankBorder": "Score lines and their pace for every rank tier",
+      "ptCalculator": "Work back from a target Pt to the bonus and score range",
+      "eventPlanner": "Plan each hour of play on the event calendar",
+      "uploadData": "Sync your game account data to the toolbox",
+      "playerProfile": "Your in-game profile",
+      "cardBox": "Card collection progress",
+      "musicProgress": "Song clears and rewards still available",
+      "eventRecords": "Events you played and how you placed",
+      "training": "Training progress per character",
+      "musicLibrary": "Songs, difficulties and release details",
+      "cards": "Cards, skills and artwork",
+      "events": "Past and current events with bonuses and rewards",
+      "gachas": "Gacha banners and the cards in them",
+      "costumes": "Mix outfits, headwear and hair with a 3D preview",
+      "storyPlayer": "Read the game stories in your browser",
+      "sekaiStation": "Live co-op room numbers for the CN server",
+      "friendGroups": "Player group chats",
+      "friendLinks": "Other useful SEKAI sites",
+      "tickets": "Report bugs, account issues or ideas",
+      "about": "About the project and the team",
+      "sponsors": "The people who keep the toolbox running"
+    },
     "aboutBanner": {
       "badge": "About & Support",
       "title": "Your support is our motivation to keep going",
@@ -648,6 +727,8 @@ export default {
       "point": "Event PT",
       "rank": "Event rank",
       "showAll": "Show all",
+      "rankPanel": "Event rank (higher on the chart is a better rank)",
+      "allHidden": "Both series are hidden. Use the legend above to show them again.",
       "zoomHint": "Drag or resize the selection below to focus on a range of events"
     },
     "sort": {
@@ -660,6 +741,7 @@ export default {
       "title": "Event history",
       "event": "Event",
       "type": "Type",
+      "date": "Start date",
       "point": "Event PT",
       "rank": "Rank",
       "rankFromHonor": "No exact rank data; tier derived from the event honor"
@@ -918,7 +1000,22 @@ export default {
       "level": "Lv.{level}"
     },
     "music": {
-      "title": "Music Clear Stats"
+      "title": "Music Clear Stats",
+      "progress": "Progress",
+      "total": "Total"
+    },
+    "headline": {
+      "allPerfect": "All Perfect",
+      "fullCombo": "Full Combo",
+      "collection": "Cards collected",
+      "challenge": "Best challenge live",
+      "latestEvent": "Latest event rank"
+    },
+    "roster": {
+      "title": "Characters",
+      "rarityFilter": "Count the card collection by rarity",
+      "otherUnit": "Other",
+      "challenge": "Challenge"
     },
     "multiLive": {
       "title": "Multi Live",
@@ -1003,6 +1100,10 @@ export default {
       "areaItemBonus": "Area item",
       "fixtureBonus": "MYSEKAI fixtures",
       "gateBonus": "MYSEKAI gate",
+      "total": "Total",
+      "characterColumn": "Character",
+      "unitColumn": "Unit",
+      "attrColumn": "Attribute",
       "gateHint": "The VIRTUAL SINGER gate bonus assumes no support unit and uses the highest owned gate level. Cards with a support unit use that unit’s gate.",
       "units": {
         "light_sound": "Leo/need",
@@ -1079,7 +1180,9 @@ export default {
       "nextLevel": "Next level",
       "nextBonus": "Next bonus",
       "showAll": "All levels",
-      "materialsLegend": "Materials: have / need"
+      "materialsLegend": "Materials: have / need",
+      "materialEnough": "Enough",
+      "materialShort": "Not enough"
     },
     "leader": {
       "title": "Leader counts",
@@ -1089,6 +1192,7 @@ export default {
       "loadError": "Failed to load leader statistics",
       "noAccountHint": "Bind and select a game account to view leader statistics",
       "limit": "Mission cap {count}",
+      "exLimit": "EX cap {count}",
       "sortByTotal": "By count",
       "sortByCharacter": "By character",
       "normalLabel": "Normal",
@@ -1208,6 +1312,10 @@ export default {
       "myTickets": "My tickets",
       "pendingTicketReplies": "{total} tickets awaiting your reply",
       "settings": "Settings"
+    },
+    "scrollJump": {
+      "top": "Back to top",
+      "bottom": "Jump to bottom"
     },
     "footer": {
       "copyright": "Seiunx Network & Haruki Dev Team. All rights reserved.",
@@ -1624,9 +1732,26 @@ export default {
       }
     }
   },
+  "musicPlayer": {
+    "label": "Music player",
+    "play": "Play",
+    "pause": "Pause",
+    "seek": "Playback position",
+    "vocal": "Switch vocal version",
+    "vocalsTitle": "Vocal versions (switching keeps the song playing)",
+    "volume": "Volume",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "close": "Close the player",
+    "openSong": "Open the song page",
+    "error": "The audio failed to load. Please try again later.",
+    "singerSeparator": ", ",
+    "playSong": "Play {title}",
+    "nowPlaying": "Now playing"
+  },
   "homeSettings": {
     "title": "Haruki Toolbox Settings",
-    "description": "Configure the server route, image loading route, appearance, language, and performance preferences",
+    "description": "Configure the server route, asset route, appearance, language, and performance preferences",
     "trigger": "Settings",
     "tabs": {
       "preferences": "Preferences",
@@ -1636,7 +1761,7 @@ export default {
     },
     "resetDialog": {
       "title": "Reset preferences?",
-      "description": "This restores the server route, image loading route, appearance, language, low effects mode, and privacy preferences to their defaults.",
+      "description": "This restores the server route, asset route, appearance, language, low effects mode, privacy and music playback preferences to their defaults.",
       "confirm": "Reset preferences"
     },
     "endpoint": {
@@ -1653,8 +1778,8 @@ export default {
       "refreshLatency": "Re-test latency"
     },
     "assetEndpoint": {
-      "label": "Image loading route",
-      "help": "Used for game assets such as card thumbnails. The first visit picks the lower-latency route, and opening settings re-checks them.",
+      "label": "Asset route",
+      "help": "Used for game assets such as card art and audio. The first visit picks the lower-latency route, and opening settings re-checks them.",
       "placeholder": "Select a route",
       "global": "Overseas",
       "chinaCdn": "Mainland China (Tencent Cloud)",
@@ -1695,6 +1820,7 @@ export default {
     },
     "appUpdate": {
       "title": "App update",
+      "installedTitle": "Installed version",
       "description": "Check for Haruki Toolbox version updates.",
       "current": "Current",
       "available": "Update available",
@@ -1711,7 +1837,13 @@ export default {
     },
     "userData": {
       "description": "These are this browser's copies of the data your game accounts have uploaded. “Refresh” checks the server for a newer upload; “Profile” fetches the latest information straight from the game server.",
+      "groups": {
+        "source": "Data to manage",
+        "cache": "Cache status"
+      },
       "account": "Account",
+      "accountHelp": "The game account whose data you want to check or clear",
+      "dataTypeHelp": "Which kind of data from that account",
       "accountPlaceholder": "Select a bound account",
       "noAccount": "No game account is bound to the current Toolbox account.",
       "dataType": "Data type",
@@ -1754,7 +1886,22 @@ export default {
     "groups": {
       "appearance": "Appearance",
       "network": "Network",
-      "privacy": "Privacy & content"
+      "privacy": "Privacy & content",
+      "music": "Music playback",
+      "reset": "Reset"
+    },
+    "reset": {
+      "label": "Restore default settings"
+    },
+    "music": {
+      "preferredVocal": {
+        "label": "Preferred vocal version",
+        "help": "Which version a play button on a jacket or in the list starts with. A song without it plays its first version.",
+        "options": {
+          "sekai": "SEKAI version",
+          "original": "Original song"
+        }
+      }
     }
   },
   "core": {
@@ -1944,22 +2091,40 @@ export default {
       "assetNameCopied": "Internal name copied",
       "period": "Period",
       "viewAllCount": "View all ({count})",
-      "zoom": "Click to enlarge",
+      "zoom": "View full size",
       "showMore": "Show more",
       "showLess": "Show less",
       "tryOtherRegion": "It may exist on another server; switching reloads the data."
     },
     "lightbox": {
-      "description": "Image preview",
-      "zoomIn": "Zoom in",
-      "zoomOut": "Zoom out",
+      "description": "Image viewer",
       "openInNewTab": "Open in new tab",
       "items": "Images",
-      "touchZoom": "Double-tap to zoom",
-      "touchSwipe": "Swipe to switch images"
+      "tools": "Image tools",
+      "loading": "Loading the image…",
+      "loadFailed": "The image failed to load. You can open the original in a new tab.",
+      "rotateLeft": "Rotate 90° counter-clockwise",
+      "rotateRight": "Rotate 90° clockwise",
+      "flipHorizontal": "Mirror left to right",
+      "flipVertical": "Mirror top to bottom",
+      "crop": "Crop",
+      "applyCrop": "Apply crop",
+      "cropAspect": "Crop shape",
+      "cropFree": "Free",
+      "undo": "Undo the last step",
+      "reset": "Back to the original",
+      "saveOriginal": "Save original",
+      "saveEdited": "Save edited image",
+      "zoom": "Zoom",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "zoomReset": "Fit to screen"
     },
     "time": {
       "localLabel": "Local time",
+      "serverLabel": "{region} server time",
+      "localTime": "Your time: {time}",
+      "switchLabel": "Time zone for these times",
       "serverTime": "{region} server time: {time}",
       "hint": "Times are shown in your time zone ({zone}); where it differs, the {region} server time ({serverZone}) is noted next to each.",
       "sameZone": "Your time zone ({zone}) matches the {region} server."

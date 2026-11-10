@@ -5,6 +5,8 @@ import { ensureI18nBundles, translate } from "@/shared/i18n"
 import { resolveI18nBundlesForPath } from "@/shared/i18n/bundles"
 import { resolveSafeRedirectTarget } from "@/core/router/navigation"
 import { clearLoginReason, isLoginReason, rememberLoginReason } from "@/modules/auth/lib/login-reason"
+import { HOME_TOOL_URLS } from "@/modules/home/lib/home-trays"
+import { recordToolVisit } from "@/modules/home/lib/tool-usage"
 
 export function setupRouteGuards(router: Router) {
     router.beforeEach((to) => {
@@ -63,6 +65,13 @@ export function setupRouteGuards(router: Router) {
                 description: translate("core.auth.requireAdminDescription"),
             })
             return "/"
+        }
+    })
+
+    // Feeds the home page's "frequently used" row; kept in this browser only.
+    router.afterEach((to, _from, failure) => {
+        if (!failure) {
+            recordToolVisit(to.path, HOME_TOOL_URLS)
         }
     })
 

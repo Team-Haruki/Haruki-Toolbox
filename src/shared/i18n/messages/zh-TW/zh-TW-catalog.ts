@@ -62,10 +62,6 @@ export default {
         "title": "綜合力",
         "hint": "基礎綜合力，不含區域道具、稱號與角色等級加成。",
         "noData": "暫無綜合力資料",
-        "total": "總計",
-        "perf": "演出",
-        "tech": "技巧",
-        "stam": "體力",
         "level": "等級",
         "trained": "特訓",
         "episodes": "劇情",
@@ -167,6 +163,8 @@ export default {
       "title": "相關卡池",
       "empty": "沒有找到相關卡池。",
       "count": "{count} 個卡池",
+      "showMore": "還有 {count} 個",
+      "showLess": "收起",
       "byPickup": "PICK UP 卡片包含本次活動卡片的卡池",
       "byPeriod": "舉辦期間與本次活動重疊（前後 3 天）的卡池"
     },
@@ -234,6 +232,9 @@ export default {
     },
     "detail": {
       "pickupCards": "檢視 PICK UP 角色卡牌",
+      "period": "開放時間",
+      "startAt": "開始",
+      "endAt": "結束",
       "permanentHint": "常駐卡池，沒有結束時間。",
       "lightbox": {
         "banner": "橫幅",

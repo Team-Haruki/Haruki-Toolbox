@@ -117,6 +117,7 @@ export default {
       "progress": "Status",
       "actions": "Actions",
       "never": "Never",
+      "summaryTitle": "Overview",
       "regionCacheTitle": "Region caches",
       "summary": {
         "readyRegions": "Ready regions",
@@ -250,6 +251,9 @@ export default {
       "nicknameLabel": "Nickname",
       "nicknamePlaceholder": "Enter a nickname",
       "changeButton": "Manage email & nickname",
+      "changeHelp": "Opens the identity page; you are brought back here when done.",
+      "unverifiedTitle": "Email not verified yet",
+      "unverifiedHelp": "Verify your email before confirming sponsorship with an Afdian order number.",
       "verifyButton": "Verify email"
     },
     "password": {
@@ -428,6 +432,7 @@ export default {
       "title": "Authorized applications",
       "description": "Review and revoke third-party applications authorized to access your account data.",
       "refresh": "Refresh",
+      "count": "{count} applications",
       "emptyTitle": "No authorized applications",
       "emptyDescription": "Third-party applications you authorize to access your account data will appear here.",
       "authorizedAtPrefix": "Authorized at",
@@ -477,6 +482,17 @@ export default {
       },
       "addButton": "Bind new account",
       "empty": "No data",
+      "listTitle": "Bound accounts · {count}",
+      "listTitleEmpty": "Bound accounts",
+      "emptyTitle": "No game account bound yet",
+      "emptyHint": "Bind and verify a game account to upload its data and see your own game data.",
+      "unverifiedHint": "Verify it before setting it as default or granting it to someone.",
+      "relatedTitle": "Grants and bots",
+      "sharing": {
+        "label": "Sharing switched on",
+        "suite": "Account data {count}",
+        "mysekai": "MySekai data {count}"
+      },
       "region": {
         "jp": "JP",
         "en": "Global",
@@ -550,6 +566,14 @@ export default {
       },
       "permissions": {
         "sharedHint": "Only needed if you use that bot.",
+        "botsTitle": "Sync to QQ group bots",
+        "unsafeBadge": "Unsafe",
+        "bots": {
+          "allowSakura": "SakuraBot",
+          "allow8823": "Kaosen Bot",
+          "allowResona": "ResonaBot",
+          "allowLuna": "LunaBot"
+        },
         "suite": {
           "allowPublicApi": {
             "title": "Allow public lookups by other sites/bots",

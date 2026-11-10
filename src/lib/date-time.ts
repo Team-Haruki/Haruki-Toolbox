@@ -124,13 +124,19 @@ export function formatDateKey(value: DateInput): string {
     return `${year}-${month}-${day}`
 }
 
-/** The wall clock each game server runs on (event starts, gacha ends). */
+/**
+ * The wall clock each game server runs on (event starts, gacha ends, the
+ * daily reset). The offsets are the ones the bot backend uses
+ * (`GameTimeZoneOffsets` in SekaiColo): JP +9, EN −8, TW +8, CN +8. The EN
+ * server keeps a fixed UTC−8 all year, hence `Etc/GMT+8` (the IANA name's
+ * sign is inverted) rather than a zone with daylight saving.
+ */
 export const SEKAI_REGION_TIME_ZONES: Readonly<Record<SekaiRegion, string>> = {
     jp: "Asia/Tokyo",
     tw: "Asia/Taipei",
     kr: "Asia/Seoul",
     cn: "Asia/Shanghai",
-    en: "UTC",
+    en: "Etc/GMT+8",
 }
 
 export function resolveSekaiServerTimeZone(region: SekaiRegion): string {
@@ -142,6 +148,20 @@ export function resolveBrowserTimeZone(): string {
         return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
     } catch {
         return "UTC"
+    }
+}
+
+/** "UTC+9" / "UTC−8" / "UTC+5:30" for a zone at a given instant ("" when the zone is unknown). */
+export function formatZoneOffset(timeZone: string, at: DateInput = Date.now()): string {
+    const date = toValidDate(at) ?? new Date()
+    try {
+        const part = new Intl.DateTimeFormat("en-US", { timeZone, timeZoneName: "shortOffset" })
+            .formatToParts(date)
+            .find((item) => item.type === "timeZoneName")?.value ?? ""
+        const offset = part.replace(/^(GMT|UTC)/, "")
+        return offset && !/^[+-]0+(:00)?$/.test(offset) ? `UTC${offset.replace("-", "−")}` : "UTC"
+    } catch {
+        return ""
     }
 }
 

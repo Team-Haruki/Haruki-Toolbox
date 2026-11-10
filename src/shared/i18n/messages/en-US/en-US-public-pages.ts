@@ -24,96 +24,90 @@ export default {
       "title": "About Project Haruki",
       "subtitle": "A community initiative serving Project Sekai players",
       "projectIntro": {
-        "title": "About the Project",
         "p1Before": "Project Haruki is a community initiative under ",
         "p1Name": "Seiunx Network",
         "p1After": ", developed and maintained by its dedicated Haruki Dev Team, providing players of Project Sekai: Colorful Stage! feat. Hatsune Miku with high-quality game services and community support.",
         "p2": "Our core projects include HarukiBot NEO and Haruki Toolbox. Among them, HarukiBot NEO focuses on providing Chinese-speaking players with a wide range of convenient, intelligent game-helper features.",
-        "p3": "In addition, we independently develop and maintain a series of high-performance open-source underlying utilities and microservices. These serve as a robust, stable foundation for the entire Haruki ecosystem, ensuring a smooth and responsive experience for all players.",
-        "p4": "Seiunx Network also runs the Seiunx Dev Team, which develops open-source projects beyond Project Haruki."
+        "p3": "In addition, we independently develop and maintain a series of high-performance open-source underlying utilities and microservices. These serve as a robust, stable foundation for the entire Haruki ecosystem, ensuring a smooth and responsive experience for all players."
       },
-      "team": {
-        "title": "Dev Team",
-        "subtitle": "Haruki Dev Team is Seiunx Network's team dedicated to this project — the development and maintenance of Project Haruki would not be possible without the support of the following members",
-        "roles": {
-          "core": "Core Developers",
-          "doc": "Documentation",
-          "contrib": "Contributors",
-          "sponsor": "Gold Sponsors"
-        },
-        "roleDescs": {
-          "core": "Main developers and maintainers of HarukiBot NEO",
-          "doc": "Maintainers of the HarukiBot NEO user documentation",
-          "contrib": "Individuals who do not belong to Haruki Dev Team but have provided significant help to Project Haruki",
-          "sponsor": "Generously sponsored hosting servers for HarukiBot NEO and Haruki Sekai Asset station"
+      "structure": {
+        "title": "How we are organized",
+        "haruki": "Runs Project Haruki: HarukiBot NEO, Haruki Toolbox and the services behind them",
+        "seiunx": "Builds open-source projects beyond Project Haruki",
+        "projectCount": "{count} open-source projects"
+      },
+      "contributors": {
+        "title": "Contributors",
+        "subtitle": "Project Haruki is built and kept running with the help of these people",
+        "count": "{count} people",
+        "filterLabel": "Filter by identity",
+        "all": "All",
+        "identities": {
+          "founder": {
+            "label": "Founder",
+            "desc": "Started Project Haruki"
+          },
+          "core": {
+            "label": "Core developer",
+            "desc": "Main developers and maintainers of HarukiBot NEO"
+          },
+          "docs": {
+            "label": "Documentation",
+            "desc": "Maintainers of the HarukiBot NEO user documentation"
+          },
+          "collab": {
+            "label": "External collaborator",
+            "desc": "People outside Haruki Dev Team who have given Project Haruki a great deal of help"
+          },
+          "sponsor": {
+            "label": "Gold sponsor",
+            "desc": "Provided the servers behind HarukiBot NEO and the Haruki Sekai Asset site"
+          }
         },
         "members": {
           "seiun": {
             "name": "SeiunKinagi",
-            "role": "Founder / Lead Developer",
-            "desc": "",
             "quote": "“Pursuing infinite possibilities within a finite life”"
           },
           "lingqian": {
-            "name": "xuanmingLQ",
-            "role": "Core Developer",
-            "desc": ""
+            "name": "xuanmingLQ"
           },
           "deseer": {
             "name": "Deseer",
-            "role": "Core Developer",
-            "desc": "",
             "quote": "「空に昇つて、光つて、消えて」"
           },
           "storyxy": {
             "name": "storyxy3",
-            "role": "Core Developer",
-            "desc": "",
             "quote": "“Beyond Light”"
           },
           "aposetles": {
             "name": "Aposetles",
-            "role": "Documentation Maintainer",
-            "desc": "",
             "quote": "Documentation feedback is always welcome"
           },
           "tianshinling": {
-            "name": "TY_Ling",
-            "role": "Documentation Maintainer",
-            "desc": ""
+            "name": "TY_Ling"
           },
           "yangzi": {
-            "name": "IwasakiYouko",
-            "role": "Documentation Maintainer",
-            "desc": ""
+            "name": "IwasakiYouko"
           },
           "watagashi": {
-            "name": "Watagashi Uni",
-            "role": "Contributor",
-            "desc": ""
+            "name": "Watagashi Uni"
           },
           "middlered": {
-            "name": "MiddleRed",
-            "role": "Contributor",
-            "desc": ""
+            "name": "MiddleRed"
           },
           "dnaroma": {
             "name": "DNARoma",
-            "role": "Contributor",
-            "desc": "",
             "quote": "“0.1 + 0.2 = 0.300000004”"
           },
           "yamamoto": {
-            "name": "Yamamoto",
-            "role": "Gold Sponsor",
-            "desc": ""
+            "name": "Yamamoto"
           }
         }
       },
       "projects": {
         "title": "Open Source Projects",
         "subtitle": "A collection of high-performance open-source tools, microservices, and applications authored by us",
-        "techStack": "Tech Stack",
         "groups": {
           "haruki": {
             "title": "Haruki Dev Team",
@@ -127,51 +121,51 @@ export default {
         "list": {
           "drawingEngine": {
             "name": "HarukiBot NEO Drawing Engine",
-            "desc": "A high-performance Bot image rendering service built on free-threaded Python 3.14, utilizing FastAPI and Pillow to fully leverage asyncio and multi-threaded performance."
+            "desc": "The image rendering service of HarukiBot NEO: takes JSON requests and returns images of player profiles, cards, events, songs, charts and more. The service runs on free-threaded Python 3.14 with FastAPI; drawing is done by a native Rust and Skia renderer."
           },
           "botBackend": {
             "name": "HarukiBot NEO Backend",
-            "desc": "A high-performance core backend service for HarukiBot NEO, built with Go, Fiber, and EntGo."
+            "desc": "The core backend of HarukiBot NEO: parses bot commands, looks up Project Sekai and CHUNITHM data to build replies, and handles bot registration and authentication. Built with Go, Fiber and Ent."
           },
           "toolboxBackend": {
             "name": "Haruki Toolbox Backend",
-            "desc": "A high-performance backend service for Haruki Toolbox, built with Go, Fiber, EntGo, PostgreSQL, and MongoDB."
+            "desc": "The Haruki Toolbox backend: receives players' uploaded Suite and MySekai data and serves query APIs, with sign-in and third-party authorization handled by Ory Kratos and Hydra. Built with Go, Fiber and Ent on PostgreSQL and Redis."
           },
           "deckService": {
             "name": "Deck Service",
-            "desc": "A high-performance deck recommendation microservice built with Rust."
+            "desc": "The deck recommendation HTTP service: a Rust and Axum API that calls the C++ deck engine through FFI and can be statically linked into a single binary."
           },
           "deckCpp": {
             "name": "Sekai Deck Recommend CPP",
-            "desc": "The core algorithm engine for deck recommendation services, written in C++ with yyjson. The original implementation comes from NeuraXmy, with some modifications from moe-sekai."
+            "desc": "The C++ engine for deck recommendation and score calculation: brute-force search plus randomized and heuristic algorithms, published as Python and WebAssembly packages. The original implementation comes from NeuraXmy, with some modifications from moe-sekai."
           },
           "scoresRs": {
             "name": "PJSekai Scores RS",
-            "desc": "A flat game chart SVG generator written in Rust, utilizing skia-safe to support PNG/JPG chart image exports."
+            "desc": "A Project Sekai chart parser and renderer: reads .sus charts, generates SVG chart images, and renders PNG or JPEG directly with a pure-Rust renderer. Available as a Rust crate, a command-line tool and a Python package."
           },
           "toolbox": {
             "name": "Haruki Toolbox",
-            "desc": "The Haruki Toolbox Web frontend website, built with Vue 3 and TypeScript, designed using Shadcn-Vue and Tailwind CSS."
+            "desc": "The Haruki Toolbox web app: game catalog, event ranking calculators and personal data tools. Built with Vue 3 and TypeScript, with a Shadcn-Vue and Tailwind CSS interface."
           },
           "assetUpdater": {
             "name": "Haruki Sekai Asset Updater",
-            "desc": "A high-performance decryption and unpacking microservice for Project Sekai game assets, built with Rust."
+            "desc": "Keeps Project Sekai game assets up to date: downloads and decrypts asset bundles, exports images, audio and video, and uploads them to object storage. Built with Rust, unpacking with unity-rs and cridecoder."
           },
           "sekaiApi": {
             "name": "Haruki Sekai API",
-            "desc": "A high-performance reverse proxy and aggregation microservice for Project Sekai game server APIs, built with Rust."
+            "desc": "An API proxy for the Project Sekai game servers of all five regions: manages each region's game accounts, handles the encrypted protocol, and keeps master data updated and distributed. Built with Rust and Axum."
           },
           "eventTracker": {
             "name": "Haruki Event Tracker",
-            "desc": "A high-performance Project Sekai game events and real-time leaderboard tracking microservice built with Rust."
+            "desc": "Tracks Project Sekai event rankings: records each region's leaderboard data on a schedule and serves ranking query APIs plus real-time WebSocket updates. Built with Rust and Axum."
           },
           "cridecoder": {
             "name": "Cridecoder",
-            "desc": "A high-performance Rust library for decrypting and decoding CriWare audio, video, and package middleware."
+            "desc": "A pure-Rust codec library for CRI Middleware: extracts and builds ACB and AWB audio containers and USM video containers, encodes and decodes HCA audio, and ships Python bindings."
           },
           "unityRs": {
             "name": "Unity RS",
-            "desc": "A high-performance Rust library for extracting Unity assets, adapted from AssetStudio & AssetStudioMod."
+            "desc": "A headless Unity asset reader and exporter: parses asset bundles and exports textures, audio and models (OBJ, FBX). Available as a Rust library, a command-line tool, and Python and Node.js bindings; built on the format research of AssetStudio and AssetStudioMod."
           }
         }
       },

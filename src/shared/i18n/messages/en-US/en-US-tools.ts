@@ -257,8 +257,7 @@ export default {
       "title": "iOS module (iPhone / iPad)",
       "description": "Generate a proxy module for Shadowrocket, Surge and similar apps; afterwards your data uploads automatically whenever you open the game.",
       "tutorialAlert": {
-        "label": "Illustrated guide:",
-        "linkText": "open",
+        "action": "Illustrated guide",
         "nonZhWarning": "Please note that this tutorial is only available in Simplified Chinese."
       },
       "qxScriptWarning": "Quantumult X does not support script upload mode",
@@ -273,18 +272,21 @@ export default {
       },
       "steps": {
         "configure": {
-          "title": "Configure",
-          "description": "Choose the proxy app, server route, and upload mode."
+          "title": "Proxy app and upload mode",
+          "description": "Pick the proxy app on your device, then how the data is uploaded."
         },
         "scope": {
-          "title": "Scope",
+          "title": "What to upload",
           "description": "Choose the regions and data types to upload."
         },
+        "code": {
+          "title": "Upload code"
+        },
         "install": {
-          "title": "Get & Install",
+          "title": "Install the module",
           "prerequisite": "You need to be signed in with a bound game account first.",
-          "description": "Generate an upload code, then copy the URLs or quick install the module.",
-          "after": "After installing, open the game and reach the home screen once; once the upload succeeds, “My account” on the Toolbox home page shows the upload time."
+          "description": "Install in one tap, or copy the URLs below into your proxy app by hand.",
+          "after": "After installing, open the game and reach the home screen once; once the upload succeeds, the account bar on the Toolbox home page shows the upload time."
         }
       },
       "sections": {
@@ -336,8 +338,8 @@ export default {
         }
       },
       "generatedUrls": {
-        "title": "Generated URLs",
-        "description": "Copy URLs for manual install, or use quick install below",
+        "title": "Manual install",
+        "description": "If quick install does not open your proxy app, copy the URLs below and add them in the app.",
         "moduleUrl": "Module URL",
         "scriptUrl": "Script URL"
       },
@@ -355,6 +357,15 @@ export default {
       "modeOptions": {
         "proxy": "Proxy upload",
         "script": "Script upload"
+      },
+      "modeHints": {
+        "proxy": "More stable, but only one Toolbox module can be installed at a time. Pick this if unsure.",
+        "script": "Can run alongside other bots' modules, but is occasionally unstable."
+      },
+      "advanced": {
+        "title": "Advanced options",
+        "notifyOn": "Notifications on",
+        "notifyOff": "Notifications off"
       },
       "region": {
         "jp": "JP",
@@ -397,48 +408,94 @@ export default {
       }
     },
     "uploadData": {
-      "groupNotice1": "Haruki Playground QQ Group 1: {groupId}",
-      "groupNotice2": "Haruki Playground QQ Group 2: {groupId}",
       "groupTitle": "Haruki Playground QQ Groups",
       "group1Label": "Group 1",
       "group2Label": "Group 2",
       "intro": {
         "title": "Upload data",
-        "description": "“Upload data” syncs your game account data to the Toolbox for cards, event records, deck building and more. Recommended: the iOS module on iPhone/iPad, HarukiProxy on Android/Windows; use the transfer code only when neither works.",
-        "iosPlatform": "iPhone / iPad",
-        "iosMethod": "iOS module (recommended)",
-        "proxyPlatform": "Android / Windows",
-        "proxyMethod": "HarukiProxy downloads / guide",
-        "fallbackPlatform": "When neither works",
-        "fallbackMethod": "Transfer code (fallback)"
+        "description": "Sync your game account data to the Toolbox for the card, event record and deck tools. Start by picking the upload method that fits your device."
       },
-      "tabs": {
-        "ios": "iOS module (iPhone/iPad)",
-        "proxy": "HarukiProxy (Android/PC)",
-        "inherit": "Transfer code (fallback)",
-        "file": "File upload (advanced)"
+      "methods": {
+        "label": "Choose an upload method",
+        "tags": {
+          "recommended": "Recommended",
+          "fallback": "Fallback",
+          "advanced": "Advanced"
+        },
+        "ios": {
+          "name": "iOS module",
+          "platform": "iPhone / iPad",
+          "note": "Install the module once; it uploads whenever you open the game"
+        },
+        "proxy": {
+          "name": "HarukiProxy",
+          "platform": "Android / Windows",
+          "note": "Run HarukiProxy; it uploads whenever you open the game"
+        },
+        "inherit": {
+          "name": "Transfer code",
+          "platform": "When neither of those works",
+          "note": "Enter a transfer code and the Toolbox reads the data for you"
+        },
+        "file": {
+          "name": "File upload",
+          "platform": "When you already have a data file",
+          "note": "Upload a saved data file by hand"
+        }
+      },
+      "help": {
+        "title": "Need help?",
+        "description": "Ask usage questions in the QQ groups; report bugs or account problems in a ticket.",
+        "ticket": "Open a ticket"
       },
       "proxyTab": {
         "upgradeWarning": {
           "title": "HarukiProxy v1/v2 no longer upload",
           "deadline": "Uploads from the old versions were disabled on 1 Nov 2026 at 00:00 (UTC+8); they can no longer send data to the Toolbox.",
-          "upgrade": "Please update to v3.",
-          "release": "Latest version when this notice was published: HarukiProxy {version}",
-          "windowsDownload": "Windows x64 download (no guide yet)",
-          "androidDownload": "Android arm64 download (VPhoneOS guide available)",
-          "feedback": "v3 may still contain bugs. Please report any issues promptly so we can fix them."
+          "upgrade": "Please update to v3."
         },
         "title": "HarukiProxy (Android / PC)",
         "description": "Run HarukiProxy on an Android phone or a PC; your data uploads to the Toolbox automatically when you open the game.",
+        "guideIndex": "Guide index",
+        "stepTitles": {
+          "install": "Download and install HarukiProxy v3",
+          "bind": "Bind your game account",
+          "connect": "Connect Haruki Toolbox",
+          "run": "Start capturing, then open the game once"
+        },
         "steps": {
-          "install": "Download and install v3. Android users can follow the VPhoneOS guide below.",
+          "install": "Download the build for your device and follow its guide. Not sure which method fits? Start with the guide index.",
           "bind": "Bind and verify the game account to upload under Game account bindings first.",
-          "run": "With HarukiProxy on, reach the game's home screen once; “My account” on the Toolbox home page shows the upload time."
+          "connect": "In HarukiProxy's settings, choose “Connect Haruki Toolbox”, then sign in and authorize in the browser page it opens.",
+          "run": "Pick the game in HarukiProxy and start capturing, then reach the game's home screen once. After a successful upload, the account bar on the Toolbox home page shows the upload time."
         },
-        "downloads": {
-          "title": "Download HarukiProxy v3"
+        "devices": {
+          "android": {
+            "name": "Android phone / tablet",
+            "note": "Without root, use VPhoneOS; the no-root method relies on a certificate built into the system, which newer Android updates may have removed.",
+            "download": "Download APK"
+          },
+          "windows": {
+            "name": "Windows PC",
+            "note": "x64, used with MuMu Player or a connected Android device.",
+            "download": "Download for Windows"
+          },
+          "mac": {
+            "name": "Mac",
+            "note": "Apple silicon, macOS 12 or later, with MuMu Player Pro. Same steps as Windows, plus three differences such as installing adb; see “What differs on Mac”.",
+            "download": "Download for macOS"
+          }
         },
-        "tutorialButton": "Android v3 guide (VPhoneOS)"
+        "guides": {
+          "vphone": "VPhoneOS guide",
+          "noRoot": "No-root guide",
+          "pc": "PC guide",
+          "macNotes": "What differs on Mac"
+        },
+        "version": "Current version: HarukiProxy {version}.",
+        "changelog": "See the changelog",
+        "limits": "HarukiProxy cannot capture MySekai data from the CN server.",
+        "bindAction": "Game account management"
       },
       "region": {
         "jp": "JP",
@@ -515,8 +572,29 @@ export default {
       "inheritTab": {
         "title": "Transfer-code data upload",
         "description": "Enter the transfer ID and transfer password from the game. The Toolbox first shows you the account to check, runs the transfer only after you confirm, and right away issues you a new transfer code.",
+        "steps": {
+          "prep": {
+            "title": "Before you start",
+            "description": "Check these two things first to avoid unsaved data or a lost account."
+          },
+          "target": {
+            "title": "Choose the server and data",
+            "description": "Which server the transfer code belongs to, and which data to upload this time."
+          },
+          "code": {
+            "title": "Enter the transfer code",
+            "description": "Get it from the transfer settings in the game. Fill in both fields, or paste the whole transfer block; either works."
+          },
+          "newPassword": {
+            "title": "Password for the new transfer code",
+            "description": "After the transfer a new code is issued so you can restore the account on your device. Choose how its password is set."
+          }
+        },
+        "submitHint": "This step only reads the account information for you to check; it does not use up the transfer code.",
         "paste": {
           "label": "Transfer information",
+          "or": "or",
+          "overrides": "The pasted transfer information will be used; the separately entered transfer ID and password are ignored.",
           "placeholder": "Paste the full transfer information copied from the JP or global game, including the transfer ID and password.",
           "invalid": "Could not identify a complete transfer ID and password. Paste the full text copied from the game, keeping its field labels and line breaks"
         },
@@ -554,8 +632,8 @@ export default {
         "alerts": {
           "notesTitle": "Learn more: how it works, what is stored, and the risk",
           "warning1": {
-            "title": "After the transfer, your phone is signed out",
-            "description": "You then restore the account to your phone with the new transfer code the Toolbox issues. You see the account first, and nothing runs until you confirm."
+            "title": "After the transfer, your device is signed out",
+            "description": "You then restore the account to your device with the new transfer code the Toolbox issues. You see the account first, and nothing runs until you confirm."
           },
           "flow": {
             "title": "Steps",
@@ -581,6 +659,20 @@ export default {
       },
       "inheritJob": {
         "title": "Transfer progress",
+        "phases": {
+          "label": "Transfer progress overview",
+          "read": "Read account",
+          "confirm": "Your confirmation",
+          "transfer": "Transfer",
+          "data": "Save data",
+          "status": {
+            "pending": "not started",
+            "running": "in progress",
+            "done": "done",
+            "failed": "failed",
+            "stopped": "stopped"
+          }
+        },
         "summary": "{server} · {dataType}",
         "status": {
           "running": "Running",
@@ -716,8 +808,8 @@ export default {
             "worldBloom": "A World Link chapter is running",
             "none": "No transfer restriction right now."
           },
-          "warningTitle": "Once you confirm, your phone can no longer sign in to this account",
-          "warningBody": "The account moves to the Toolbox. This page then shows a new transfer code; use it to transfer the account back to your phone.",
+          "warningTitle": "Once you confirm, your device can no longer sign in to this account",
+          "warningBody": "The account moves to the Toolbox. This page then shows a new transfer code; use it to transfer the account back to your device.",
           "deadline": "Confirm within {time}; after that it is cancelled (your code stays valid).",
           "password": "Haruki Toolbox sign-in password",
           "passwordHelp": "The password you sign in to this website with. Not the game's transfer password, and not your QQ or Google password.",
@@ -745,7 +837,7 @@ export default {
         },
         "newCode": {
           "title": "Your new transfer code",
-          "description": "Use it on your phone now to transfer the account back, or write it down somewhere safe.",
+          "description": "Use it on your device now to transfer the account back, or write it down somewhere safe.",
           "inheritId": "Transfer ID",
           "password": "Transfer password",
           "copy": "Copy {label}",
@@ -758,9 +850,9 @@ export default {
           "savedToVault": "Stored encrypted in the vault below; you can view it again for 24 hours.",
           "nextSteps": {
             "title": "Next",
-            "restore": "Transfer the account back to your phone with this code.",
+            "restore": "Transfer the account back to your device with this code.",
             "platformLink": "Once it is back, we recommend linking it to Game Center (iOS) or Google Play Games (Android) in the game's transfer menu (JP can also link an Apple or Google account), so you no longer depend on transfer codes.",
-            "cleanup": "After that, press “I recovered it on my phone” in the vault below to delete the saved record."
+            "cleanup": "After that, press “I recovered it on my device” in the vault below to delete the saved record."
           },
           "unsavedTitle": "Write this code down now",
           "unsavedBody": "This code could not be stored in the vault and cannot be shown again once you leave this page. Copy it or take a screenshot now.",
@@ -791,7 +883,7 @@ export default {
           "reveal": "Show code",
           "hide": "Hide",
           "reissue": "Re-issue",
-          "destroy": "I recovered it on my phone",
+          "destroy": "I recovered it on my device",
           "reset": "Reset vault"
         },
         "reveal": {
@@ -807,7 +899,7 @@ export default {
         },
         "destroy": {
           "title": "Delete this record?",
-          "description": "Make sure you have transferred the account back to your phone. After deleting, this account's code can no longer be shown or re-issued.",
+          "description": "Make sure you have transferred the account back to your device. After deleting, this account's code can no longer be shown or re-issued.",
           "confirm": "Delete"
         },
         "reset": {

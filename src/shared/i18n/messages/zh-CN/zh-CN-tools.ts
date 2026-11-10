@@ -257,8 +257,7 @@ export default {
       "title": "iOS 模块（iPhone / iPad）",
       "description": "生成一个代理模块装进 Shadowrocket、Surge 等代理软件，之后进游戏时数据会自动上传。",
       "tutorialAlert": {
-        "label": "图文教程：",
-        "linkText": "点击查看",
+        "action": "图文教程",
         "nonZhWarning": "本教程仅有简体中文版本"
       },
       "qxScriptWarning": "Quantumult X 不支持脚本上传模式",
@@ -273,18 +272,21 @@ export default {
       },
       "steps": {
         "configure": {
-          "title": "配置",
-          "description": "选择代理软件、服务器线路与上传方式。"
+          "title": "代理软件与上传方式",
+          "description": "选你设备上装的代理软件，再选数据怎么上传。"
         },
         "scope": {
-          "title": "范围",
+          "title": "上传范围",
           "description": "选择需要上传数据的区服和数据类型。"
         },
+        "code": {
+          "title": "上传码"
+        },
         "install": {
-          "title": "获取与安装",
+          "title": "安装模块",
           "prerequisite": "需要先登录并绑定游戏账号。",
-          "description": "生成上传码后，可复制 URL 手动安装或一键快速安装。",
-          "after": "安装后打开游戏并进入主页一次，上传成功后首页「我的账号」会显示上传时间。"
+          "description": "一键快速安装，或复制下面的 URL 到代理软件里手动安装。",
+          "after": "安装后打开游戏并进入主页一次，上传成功后首页的账号栏会显示上传时间。"
         }
       },
       "sections": {
@@ -336,8 +338,8 @@ export default {
         }
       },
       "generatedUrls": {
-        "title": "生成的 URL",
-        "description": "可以复制 URL 手动安装，或点击下方按钮快速安装",
+        "title": "手动安装",
+        "description": "快速安装打不开代理软件时，复制下面的 URL 到代理软件里添加。",
         "moduleUrl": "模块 URL",
         "scriptUrl": "脚本 URL"
       },
@@ -355,6 +357,15 @@ export default {
       "modeOptions": {
         "proxy": "代理上传",
         "script": "脚本上传"
+      },
+      "modeHints": {
+        "proxy": "更稳定，但同一时间只能装一个工具箱模块。不确定就选这个。",
+        "script": "可与其他 Bot 的模块同时使用，但偶尔不稳定。"
+      },
+      "advanced": {
+        "title": "高级选项",
+        "notifyOn": "上传通知开",
+        "notifyOff": "上传通知关"
       },
       "region": {
         "jp": "日服",
@@ -397,48 +408,94 @@ export default {
       }
     },
     "uploadData": {
-      "groupNotice1": "Haruki游乐园QQ 1群: {groupId}",
-      "groupNotice2": "Haruki游乐园QQ 2群: {groupId}",
       "groupTitle": "Haruki游乐园 QQ 群",
       "group1Label": "1 群",
       "group2Label": "2 群",
       "intro": {
         "title": "上传数据",
-        "description": "「上传数据」是把你的游戏账号数据同步到工具箱，供卡牌、活动记录、组卡等功能使用。推荐方式：iPhone/iPad 用「iOS 模块」，Android/Windows 用 HarukiProxy；两者都不行时再用「引继码」。",
-        "iosPlatform": "iPhone / iPad",
-        "iosMethod": "iOS 模块（推荐）",
-        "proxyPlatform": "Android / Windows",
-        "proxyMethod": "HarukiProxy（下载 / 教程）",
-        "fallbackPlatform": "两者都不行时",
-        "fallbackMethod": "引继码（备用）"
+        "description": "把游戏账号数据同步到工具箱，供卡牌、活动记录、组卡等功能使用。先选一种适合你设备的上传方式。"
       },
-      "tabs": {
-        "ios": "iOS 模块（iPhone/iPad）",
-        "proxy": "HarukiProxy（Android/电脑）",
-        "inherit": "引继码（备用）",
-        "file": "文件上传（高级）"
+      "methods": {
+        "label": "选择上传方式",
+        "tags": {
+          "recommended": "推荐",
+          "fallback": "备用",
+          "advanced": "高级"
+        },
+        "ios": {
+          "name": "iOS 模块",
+          "platform": "iPhone / iPad",
+          "note": "装好模块后，进游戏时自动上传"
+        },
+        "proxy": {
+          "name": "HarukiProxy",
+          "platform": "Android / Windows",
+          "note": "运行 HarukiProxy 后，进游戏时自动上传"
+        },
+        "inherit": {
+          "name": "引继码",
+          "platform": "前两种都用不了时",
+          "note": "输入引继码，由工具箱代为读取数据"
+        },
+        "file": {
+          "name": "文件上传",
+          "platform": "已有数据文件时",
+          "note": "手动上传保存下来的数据文件"
+        }
+      },
+      "help": {
+        "title": "需要帮助？",
+        "description": "使用上的问题可以到 QQ 群交流；遇到 Bug 或账号问题请提交工单。",
+        "ticket": "提交工单"
       },
       "proxyTab": {
         "upgradeWarning": {
           "title": "旧版 HarukiProxy（v1/v2）已停止上传",
           "deadline": "旧版上传功能已于 2026 年 11 月 1 日 0 点（北京时间）下线，现已无法上传数据到工具箱。",
-          "upgrade": "请更换到 v3 版本。",
-          "release": "本公告发布时的最新版本：HarukiProxy {version}",
-          "windowsDownload": "Windows x64 下载（暂无教程）",
-          "androidDownload": "Android arm64 下载（有光速虚拟机教程）",
-          "feedback": "v3 版本可能仍有一些问题。如果遇到问题，请及时反馈，以便修复。"
+          "upgrade": "请更换到 v3 版本。"
         },
         "title": "HarukiProxy（Android / 电脑）",
         "description": "在 Android 手机或电脑上运行 HarukiProxy，进游戏时数据会自动上传到工具箱。",
+        "guideIndex": "教程索引",
+        "stepTitles": {
+          "install": "下载并安装 HarukiProxy v3",
+          "bind": "绑定游戏账号",
+          "connect": "连接 Haruki 工具箱",
+          "run": "开始抓包，进一次游戏"
+        },
         "steps": {
-          "install": "下载并安装 v3 版本；Android 用户可参考下方光速虚拟机教程。",
+          "install": "按你的设备下载，再照对应的教程安装。不确定选哪种方式，先看教程索引。",
           "bind": "先在「游戏账号管理」绑定并验证要上传的游戏账号。",
-          "run": "开启 HarukiProxy 后进入游戏主页一次，首页「我的账号」会显示上传时间。"
+          "connect": "在 HarukiProxy 的设置里点「连接 Haruki 工具箱」，在打开的浏览器页面里登录并授权。",
+          "run": "在 HarukiProxy 里选择游戏并开始抓包，然后进入游戏主页一次。上传成功后，首页的账号栏会显示上传时间。"
         },
-        "downloads": {
-          "title": "下载 HarukiProxy v3"
+        "devices": {
+          "android": {
+            "name": "Android 手机 / 平板",
+            "note": "没有 Root 可以用光速虚拟机；免 Root 方式依赖系统自带的证书，较新的系统可能已经用不了。",
+            "download": "下载 APK"
+          },
+          "windows": {
+            "name": "Windows 电脑",
+            "note": "x64，配合 MuMu 模拟器或已连接的 Android 设备使用。",
+            "download": "下载 Windows 版"
+          },
+          "mac": {
+            "name": "Mac",
+            "note": "Apple 芯片，macOS 12 及以上，配合 MuMu 模拟器 Pro。流程与 Windows 版相同，另有安装 adb 等三处不同，见「Mac 差异说明」。",
+            "download": "下载 macOS 版"
+          }
         },
-        "tutorialButton": "查看 Android v3 光速虚拟机教程"
+        "guides": {
+          "vphone": "光速虚拟机教程",
+          "noRoot": "免 Root 教程",
+          "pc": "PC 教程",
+          "macNotes": "Mac 差异说明"
+        },
+        "version": "当前版本：HarukiProxy {version}。",
+        "changelog": "查看更新记录",
+        "limits": "由于不可抗力，HarukiProxy 不能抓取国服的 MySekai 数据。",
+        "bindAction": "游戏账号管理"
       },
       "region": {
         "jp": "日服",
@@ -515,8 +572,29 @@ export default {
       "inheritTab": {
         "title": "引继码上传数据",
         "description": "输入游戏里的引继 ID 和引继密码。工具箱会先读取账号信息让你核对，你确认后才会执行引继，并马上为你签发新的引继码。",
+        "steps": {
+          "prep": {
+            "title": "开始前",
+            "description": "先确认这两件事，可以避免数据没保存或账号丢失。"
+          },
+          "target": {
+            "title": "选择区服和数据",
+            "description": "引继码属于哪个区服，以及这次要上传哪类数据。"
+          },
+          "code": {
+            "title": "填写引继码",
+            "description": "在游戏的引继设置里获取。分别填写，或粘贴整段引继信息，二选一。"
+          },
+          "newPassword": {
+            "title": "新引继码的密码",
+            "description": "执行引继后会签发一组新引继码，用来把账号恢复到设备。选它的密码怎么定。"
+          }
+        },
+        "submitHint": "这一步只读取账号信息供你核对，不会用掉引继码。",
         "paste": {
           "label": "引继信息",
+          "or": "或",
+          "overrides": "已粘贴引继信息，将以它为准，单独填写的引继 ID 和密码不会被使用。",
           "placeholder": "在此粘贴日服或国际服游戏内复制的整段引继信息（包含引继 ID 和密码）",
           "invalid": "未能识别完整的引继 ID 和密码。请粘贴游戏内复制的整段文本（保留字段名称和换行）"
         },
@@ -554,8 +632,8 @@ export default {
         "alerts": {
           "notesTitle": "了解更多：引继流程、保存的内容和风险",
           "warning1": {
-            "title": "执行引继后，原手机会被登出",
-            "description": "之后要用工具箱签发的新引继码把账号恢复到手机。你会先看到账号信息，确认后才会执行。"
+            "title": "执行引继后，原设备会被登出",
+            "description": "之后要用工具箱签发的新引继码把账号恢复到设备。你会先看到账号信息，确认后才会执行。"
           },
           "flow": {
             "title": "流程",
@@ -581,6 +659,20 @@ export default {
       },
       "inheritJob": {
         "title": "引继进度",
+        "phases": {
+          "label": "引继进度概览",
+          "read": "读取账号",
+          "confirm": "核对确认",
+          "transfer": "执行引继",
+          "data": "保存数据",
+          "status": {
+            "pending": "未开始",
+            "running": "进行中",
+            "done": "已完成",
+            "failed": "失败",
+            "stopped": "已中止"
+          }
+        },
         "summary": "{server} · {dataType}",
         "status": {
           "running": "进行中",
@@ -716,8 +808,8 @@ export default {
             "worldBloom": "World Link 章节进行中",
             "none": "当前没有引继限制。"
           },
-          "warningTitle": "确认后，你的手机将无法再登录这个账号",
-          "warningBody": "账号会转移到工具箱。随后本页会显示新的引继码，请用它在手机上把账号引继回来。",
+          "warningTitle": "确认后，你的设备将无法再登录这个账号",
+          "warningBody": "账号会转移到工具箱。随后本页会显示新的引继码，请用它在设备上把账号引继回来。",
           "deadline": "请在 {time} 内确认，超时会自动取消（引继码仍然有效）。",
           "password": "Haruki 工具箱登录密码",
           "passwordHelp": "登录本网站时用的密码，不是游戏的引继密码，也不是 QQ 或 Google 的密码。",
@@ -745,7 +837,7 @@ export default {
         },
         "newCode": {
           "title": "你的新引继码",
-          "description": "请现在就在手机上用这组引继码把账号引继回来，或妥善记下。",
+          "description": "请现在就在设备上用这组引继码把账号引继回来，或妥善记下。",
           "inheritId": "引继 ID",
           "password": "引继密码",
           "copy": "复制{label}",
@@ -758,9 +850,9 @@ export default {
           "savedToVault": "已加密保存到下方保险库，24 小时内可以再次查看。",
           "nextSteps": {
             "title": "接下来",
-            "restore": "在手机上用这组引继码把账号引继回来。",
+            "restore": "在设备上用这组引继码把账号引继回来。",
             "platformLink": "恢复后，建议在游戏内的引继菜单里把账号绑定到 Game Center（iOS）或 Google Play 游戏（Android；日服还可以绑定 Apple 或 Google 账号），以后就不用再依赖引继码。",
-            "cleanup": "确认恢复后，在下方保险库点「我已在手机上恢复」，删除保存的记录。"
+            "cleanup": "确认恢复后，在下方保险库点「我已在设备上恢复」，删除保存的记录。"
           },
           "unsavedTitle": "立即记下这组引继码",
           "unsavedBody": "这组引继码没能存入保险库，离开本页后就无法再查看。请现在就抄下来或截图保存。",
@@ -791,7 +883,7 @@ export default {
           "reveal": "查看引继码",
           "hide": "隐藏",
           "reissue": "重新签发",
-          "destroy": "我已在手机上恢复",
+          "destroy": "我已在设备上恢复",
           "reset": "重置保险库"
         },
         "reveal": {
@@ -807,7 +899,7 @@ export default {
         },
         "destroy": {
           "title": "删除这条记录？",
-          "description": "请先确认你已经在手机上把账号引继回来。删除后，就无法再查看或重新签发这个账号的引继码。",
+          "description": "请先确认你已经在设备上把账号引继回来。删除后，就无法再查看或重新签发这个账号的引继码。",
           "confirm": "确认删除"
         },
         "reset": {

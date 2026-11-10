@@ -9,6 +9,7 @@ import {
   formatLocalizedDateRange,
   formatLocalizedDateTime,
   formatWithZone,
+  formatZoneOffset,
   resolveDateFormatOptions,
   resolveSekaiServerTimeZone,
   toValidDate,
@@ -91,7 +92,7 @@ describe("formatWithZone", () => {
     expect(resolveSekaiServerTimeZone("tw")).toBe("Asia/Taipei")
     expect(resolveSekaiServerTimeZone("kr")).toBe("Asia/Seoul")
     expect(resolveSekaiServerTimeZone("cn")).toBe("Asia/Shanghai")
-    expect(resolveSekaiServerTimeZone("en")).toBe("UTC")
+    expect(resolveSekaiServerTimeZone("en")).toBe("Etc/GMT+8")
   })
 
   it("adds the server time when the viewer is in another zone", () => {
@@ -117,5 +118,23 @@ describe("formatWithZone", () => {
   it("returns the fallback for invalid input", () => {
     const result = formatWithZone("nope", "jp", options, { localZone: "UTC", fallback: "TBA" })
     expect(result).toEqual({ local: "TBA", server: null, localZone: "UTC", serverZone: "Asia/Tokyo" })
+  })
+})
+
+describe("formatZoneOffset", () => {
+  const at = Date.UTC(2026, 0, 1, 3, 0)
+
+  it("prints each game server's offset", () => {
+    expect(formatZoneOffset("Asia/Tokyo", at)).toBe("UTC+9")
+    expect(formatZoneOffset("Asia/Shanghai", at)).toBe("UTC+8")
+    expect(formatZoneOffset(resolveSekaiServerTimeZone("en"), at)).toBe("UTC−8")
+    // The EN server does not follow daylight saving.
+    expect(formatZoneOffset(resolveSekaiServerTimeZone("en"), Date.UTC(2026, 6, 1))).toBe("UTC−8")
+  })
+
+  it("handles UTC, half-hour zones and unknown names", () => {
+    expect(formatZoneOffset("UTC", at)).toBe("UTC")
+    expect(formatZoneOffset("Asia/Kolkata", at)).toBe("UTC+5:30")
+    expect(formatZoneOffset("Not/AZone", at)).toBe("")
   })
 })
