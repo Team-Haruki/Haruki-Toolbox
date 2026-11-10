@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { toBreakdownItems } from "./dashboard-breakdown"
+import { readCategoryCount, toBreakdownItems } from "./dashboard-breakdown"
 
 describe("toBreakdownItems", () => {
   test("sorts by count, drops blanks and zeros, computes shares", () => {
@@ -27,5 +27,21 @@ describe("toBreakdownItems", () => {
       (key) => key,
     )
     expect(items).toEqual([{ key: "inherit", label: "inherit", count: 2, share: 1 }])
+  })
+})
+
+describe("readCategoryCount", () => {
+  test("reads the backend's { key, count } rows", () => {
+    expect(readCategoryCount({ key: "jp", count: 30 }, "server")).toEqual({ key: "jp", count: 30 })
+  })
+
+  test("still reads the older per-list field name", () => {
+    expect(readCategoryCount({ server: "jp", count: 30 }, "server")).toEqual({ key: "jp", count: 30 })
+    expect(readCategoryCount({ uploadMethod: "manual", count: 2 }, "uploadMethod")).toEqual({ key: "manual", count: 2 })
+  })
+
+  test("returns nothing usable for a malformed row", () => {
+    expect(readCategoryCount(null, "server")).toEqual({ key: undefined, count: undefined })
+    expect(readCategoryCount({ key: 3, count: "4" }, "server")).toEqual({ key: undefined, count: undefined })
   })
 })

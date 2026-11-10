@@ -61,6 +61,18 @@ export const MYSEKAI_PERMISSION_DESCRIPTION_KEYS: Record<MysekaiPermissionKey, s
   allowLuna: "userSettings.gameBinding.permissions.mysekai.allowLuna.description",
 }
 
+/**
+ * The switches that sync an upload to a QQ group bot, with the bot's short
+ * name. They all mean the same thing, so a form can show them together under
+ * one explanation instead of repeating it per bot.
+ */
+export const PERMISSION_BOT_NAME_KEYS: Readonly<Record<string, string | undefined>> = {
+  allowSakura: "userSettings.gameBinding.permissions.bots.allowSakura",
+  allow8823: "userSettings.gameBinding.permissions.bots.allow8823",
+  allowResona: "userSettings.gameBinding.permissions.bots.allowResona",
+  allowLuna: "userSettings.gameBinding.permissions.bots.allowLuna",
+}
+
 export const SUITE_PERMISSION_CARD_OPTIONS: ReadonlyArray<PermissionCardOption<SuitePermissionKey>> =
   SUITE_PERMISSION_KEYS.map((key) => ({
     key,

@@ -115,6 +115,16 @@ export async function getBotSecurityAlerts(params?: QueryParams): Promise<BotSec
   return normalizeBotSecurityAlertList(unwrapUpdatedData(res, translate("adminBotSecurity.toast.loadFailedTitle")))
 }
 
+/**
+ * How many alerts are in `status`, over every alert: the `total` of the list
+ * filtered by that status, asked for with a single row. The summary endpoint
+ * only counts the open ones.
+ */
+export async function getBotSecurityAlertTotal(status: BotSecurityAlertStatus): Promise<number> {
+  const list = await getBotSecurityAlerts({ page: 1, pageSize: 1, status })
+  return list.total
+}
+
 export async function getBotSecuritySummary(): Promise<BotSecuritySummary> {
   const res = await request<APIResponse<unknown>>(`${BASE}/summary`, { method: "GET" })
   return normalizeBotSecuritySummary(unwrapUpdatedData(res, translate("adminBotSecurity.toast.loadSummaryFailedTitle")))

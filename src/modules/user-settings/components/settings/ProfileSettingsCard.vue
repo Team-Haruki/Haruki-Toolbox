@@ -6,19 +6,15 @@ import { Button } from "@/components/ui/button"
 import VerificationStatusBadge from "@/modules/user-settings/components/VerificationStatusBadge.vue"
 import { useAccountSettings } from "@/modules/user-settings/composables/useAccountSettings"
 import { redirectToKratosBrowserFlow } from "@/modules/auth/lib/kratos"
-import {
-  Card,
-  CardTitle,
-  CardHeader,
-  CardContent,
-  CardDescription
-} from "@/components/ui/card"
+import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
+import SettingsLinkRow from "@/shared/components/settings/SettingsLinkRow.vue"
+import SettingsRow from "@/shared/components/settings/SettingsRow.vue"
 import {
   Avatar,
   AvatarImage,
   AvatarFallback
 } from "@/components/ui/avatar"
-import { ArrowRightLeft, Loader2, ShieldCheck, Upload, UserCog } from "lucide-vue-next"
+import { AtSign, Loader2, MailWarning, Upload } from "lucide-vue-next"
 
 const {
   userStore,
@@ -46,53 +42,48 @@ function openVerification() {
 </script>
 
 <template>
-  <Card class="w-full">
-    <CardHeader>
-      <CardTitle class="flex items-center gap-2">
-        <UserCog class="h-5 w-5" />
-        {{ t("userSettings.profileCard.title") }}
-      </CardTitle>
-      <CardDescription>{{ t("userSettings.profileCard.description") }}</CardDescription>
-    </CardHeader>
-    <CardContent class="space-y-4">
-      <!-- Identity summary tile: avatar + text on one row, the button below on phones. -->
-      <div class="flex flex-col gap-4 rounded-lg border bg-muted/20 p-4 sm:flex-row sm:items-center">
-        <div class="flex min-w-0 flex-1 items-center gap-4">
-          <Avatar class="h-16 w-16 shrink-0">
-            <AvatarImage :src="previewAvatar || `${userStore.avatarPath}`" />
-            <AvatarFallback>{{ userStore.name.charAt(0) }}</AvatarFallback>
-          </Avatar>
-          <div class="min-w-0 flex-1">
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="text-base font-semibold break-words">{{ currentNickname }}</span>
-              <VerificationStatusBadge
-                class="whitespace-nowrap"
-                :verified="emailVerified"
-                :verified-label="t('userSettings.imBinding.status.verified')"
-                :unverified-label="t('userSettings.imBinding.status.unverified')"
-              />
-            </div>
-            <p class="mt-0.5 text-sm text-muted-foreground break-words">{{ currentEmail }}</p>
-          </div>
+  <SettingsGroup :title="t('userSettings.profileCard.title')" surface="card" data-testid="account-profile">
+    <!-- Who is signed in: avatar, name and email, with the avatar upload beside them. -->
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-4">
+      <Avatar class="size-14 shrink-0">
+        <AvatarImage :src="previewAvatar || `${userStore.avatarPath}`" />
+        <AvatarFallback>{{ userStore.name.charAt(0) }}</AvatarFallback>
+      </Avatar>
+      <div class="min-w-0 flex-1 basis-40">
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span class="text-base font-semibold break-words">{{ currentNickname }}</span>
+          <VerificationStatusBadge
+            class="whitespace-nowrap"
+            :verified="emailVerified"
+            :verified-label="t('userSettings.imBinding.status.verified')"
+            :unverified-label="t('userSettings.imBinding.status.unverified')"
+          />
         </div>
-        <input ref="fileInputRef" type="file" accept="image/*" class="hidden" :aria-label="t('userSettings.account.changeAvatar')" @change="onAvatarChange" />
-        <Button variant="outline" size="sm" class="w-full shrink-0 sm:w-auto" :disabled="isSaving" @click="triggerFileInput">
-          <Loader2 v-if="isSaving" class="mr-2 h-4 w-4 animate-spin" />
-          <Upload v-else class="mr-2 h-4 w-4" />
-          {{ isSaving ? t("userSettings.account.uploading") : t("userSettings.account.changeAvatar") }}
-        </Button>
+        <p class="mt-0.5 text-sm text-muted-foreground break-words">{{ currentEmail }}</p>
       </div>
+      <input ref="fileInputRef" type="file" accept="image/*" class="hidden" :aria-label="t('userSettings.account.changeAvatar')" @change="onAvatarChange" />
+      <Button variant="outline" size="sm" class="shrink-0" :disabled="isSaving" @click="triggerFileInput">
+        <Loader2 v-if="isSaving" class="size-4 animate-spin" />
+        <Upload v-else class="size-4" />
+        {{ isSaving ? t("userSettings.account.uploading") : t("userSettings.account.changeAvatar") }}
+      </Button>
+    </div>
 
-      <div class="grid gap-2" :class="emailVerified ? '' : 'sm:grid-cols-2'">
-        <Button variant="outline" @click="openIdentitySettings">
-          <ArrowRightLeft class="mr-2 h-4 w-4" />
-          {{ t("userSettings.email.changeButton") }}
-        </Button>
-        <Button v-if="!emailVerified" variant="outline" @click="openVerification">
-          <ShieldCheck class="mr-2 h-4 w-4" />
-          {{ t("userSettings.email.verifyButton") }}
-        </Button>
-      </div>
-    </CardContent>
-  </Card>
+    <SettingsRow
+      v-if="!emailVerified"
+      :icon="MailWarning"
+      tone="warning"
+      :label="t('userSettings.email.unverifiedTitle')"
+      :help="t('userSettings.email.unverifiedHelp')"
+    >
+      <Button size="sm" @click="openVerification">{{ t("userSettings.email.verifyButton") }}</Button>
+    </SettingsRow>
+
+    <SettingsLinkRow
+      :icon="AtSign"
+      :label="t('userSettings.email.changeButton')"
+      :help="t('userSettings.email.changeHelp')"
+      @click="openIdentitySettings"
+    />
+  </SettingsGroup>
 </template>

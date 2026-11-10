@@ -3,7 +3,7 @@ import type { SekaiRegion } from "@/types"
 import type { CatalogCharacter, SekaiUnit } from "@/shared/sekai/catalog"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import type { EventBoxInfo } from "@/modules/music-library/lib/event-box"
-import type { MusicLibraryEntry, MusicVocalCharacterSummary } from "@/modules/music-library/lib/music-data"
+import type { MusicLibraryEntry, MusicVocalCharacterSummary, MusicVocalEntry } from "@/modules/music-library/lib/music-data"
 import {
   listMusicCategoryOptions,
   listMusicTagOptions,
@@ -25,6 +25,8 @@ export type MusicCatalogList = {
   unitColorMap: ComputedRef<Map<SekaiUnit, string> | null>
   musicEventBoxes: ComputedRef<Map<number, EventBoxInfo>>
   musicVocalCharacters: ComputedRef<Map<number, MusicVocalCharacterSummary>>
+  /** Every vocal version by song (null until the vocals index is loaded): what the list's play buttons start. */
+  vocalsByMusic: ComputedRef<Map<number, MusicVocalEntry[]> | null>
   tagOptions: ComputedRef<string[]>
   categoryOptions: ComputedRef<string[]>
   yearOptions: ComputedRef<number[]>
@@ -71,6 +73,7 @@ export function useMusicCatalogList(region: Ref<SekaiRegion>): MusicCatalogList 
     musicVocalCharacters: computed(
       () => vocals.data.value?.characterSummaries ?? new Map<number, MusicVocalCharacterSummary>(),
     ),
+    vocalsByMusic: computed(() => vocals.data.value?.byMusic ?? null),
     tagOptions: computed(() => listMusicTagOptions(entries.value, MUSIC_TAG_ORDER)),
     categoryOptions: computed(() => listMusicCategoryOptions(entries.value, MUSIC_CATEGORY_ORDER)),
     yearOptions: computed(() => listMusicYearOptions(entries.value)),

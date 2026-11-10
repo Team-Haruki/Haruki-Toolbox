@@ -70,13 +70,56 @@ export default {
     }
   },
   "adminConfig": {
-    "publicApiKeys": {
-      "title": "公共 API 金鑰",
-      "description": "管理公共 API 金鑰配置（僅超級管理員可操作）"
+    "status": {
+      "title": "執行狀態",
+      "deviceFlow": "裝置授權",
+      "webhook": "Webhook 推送",
+      "allowedKeys": "允許的資料鍵",
+      "secrets": "金鑰",
+      "secretsValue": "{configured} / {known} 已配置",
+      "proxyVersion": "HarukiProxy 版本",
+      "on": "已開啟",
+      "off": "已關閉"
+    },
+    "allowedKeys": {
+      "title": "公共 API 允許的資料鍵",
+      "help": "公共介面、OAuth2 遊戲資料介面和本人帳號資料介面只返回這裡列出的頂層遊戲資料鍵，私有 API 不受限制。儲存後會清空遊戲資料快取。",
+      "count": "{count} 個",
+      "empty": "列表為空：還沒有允許任何資料鍵。",
+      "addLabel": "新增資料鍵",
+      "addPlaceholder": "userCards, userDecks",
+      "addHint": "可以一次輸入多個，用逗號或空格分隔。",
+      "add": "新增",
+      "remove": "移除 {key}",
+      "restore": "恢復 {key}",
+      "addedMark": "新增",
+      "removedMark": "將移除",
+      "pending": "新增 {added} 個 · 移除 {removed} 個",
+      "reset": "還原",
+      "validation": {
+        "empty": "請輸入要新增的資料鍵",
+        "duplicate": "已在列表中：{keys}"
+      },
+      "loadFailed": "載入允許的資料鍵失敗",
+      "saved": "允許的資料鍵已儲存"
+    },
+    "credentials": {
+      "title": "憑據與連線",
+      "note": "金鑰的值不會回傳，這裡只顯示是否已配置。要更換某一項，在下方執行時配置中寫入括號裡的欄位再儲存。",
+      "configured": "已配置",
+      "notConfigured": "未配置",
+      "notSet": "未設定",
+      "privateApiToken": "私有 API Token",
+      "harukiProxySecret": "HarukiProxy 金鑰",
+      "harukiProxyUnpackKey": "HarukiProxy 解包金鑰",
+      "webhookJwtSecret": "Webhook JWT 金鑰",
+      "privateApiUserAgent": "私有 API User-Agent",
+      "harukiProxyUserAgent": "HarukiProxy User-Agent",
+      "harukiProxyVersion": "HarukiProxy 版本"
     },
     "runtime": {
       "title": "執行時配置",
-      "description": "管理執行時配置項（修改後立即生效）",
+      "description": "以 JSON 直接編輯執行時配置，儲存後立即生效。沒有寫出的欄位保持不變。",
       "saveDialogTitle": "應用執行時配置？",
       "saveDialogDescription": "此更改將立即生效並應用於整個系統。請在繼續前確認 JSON 內容正確。",
       "saveDialogConfirm": "應用"
@@ -97,12 +140,9 @@ export default {
       }
     },
     "toast": {
-      "loadApiKeysFailedTitle": "載入公共 API 金鑰失敗",
       "loadRuntimeFailedTitle": "載入執行時配置失敗",
-      "apiKeysUpdated": "公共 API 金鑰更新成功",
       "runtimeUpdated": "執行時配置更新成功",
       "invalidJson": "JSON 格式無效",
-      "invalidApiKeysSchema": "公共 API 金鑰必須是字串值組成的 JSON 物件",
       "invalidRuntimeSchema": "執行時配置必須是一個 JSON 物件",
       "saveFailedTitle": "儲存失敗",
       "saveFailedFallback": "儲存失敗",
@@ -138,8 +178,59 @@ export default {
       "open": "待處理",
       "resolved": "已解決"
     },
+    "range": {
+      "last24h": "近 24 小時",
+      "last7d": "近 7 天",
+      "last30d": "近 30 天",
+      "last90d": "近 90 天",
+      "last365d": "近 1 年"
+    },
+    "filters": {
+      "range": "時間範圍",
+      "status": "狀態",
+      "severity": "嚴重程度",
+      "allStatuses": "全部狀態",
+      "allSeverities": "全部嚴重程度",
+      "severityOption": "嚴重程度：{severity}"
+    },
+    "stats": {
+      "open": "待處理事件",
+      "urgent": "待處理的嚴重 / 高",
+      "urgentSplit": "嚴重 {critical} · 高 {high}",
+      "resolved": "已解決事件",
+      "resolutionRate": "解決率 {rate}",
+      "total": "事件總數",
+      "bySeverity": "待處理事件的嚴重程度",
+      "bySeverityHint": "{range}內的全部待處理事件",
+      "bySource": "本頁事件來源",
+      "bySourceHint": "僅統計列表當前顯示的 {count} 條",
+      "bySourceEmpty": "當前列表沒有事件",
+      "bySourceFailed": "列表未能載入，沒有可統計的事件",
+      "noSource": "未註明來源",
+      "unavailable": "統計暫不可用"
+    },
+    "detail": {
+      "title": "風控事件 #{id}",
+      "noAction": "未記錄動作",
+      "targetUser": "目標使用者",
+      "actorUser": "觸發使用者",
+      "ip": "IP",
+      "resolvedAt": "解決時間",
+      "resolvedBy": "處理人",
+      "resolutionReason": "處理說明",
+      "groups": {
+        "event": "事件",
+        "parties": "相關方",
+        "resolution": "處理",
+        "metadata": "附加資料"
+      }
+    },
     "events": {
       "title": "風控事件",
+      "refresh": "重新整理",
+      "details": "檢視詳情",
+      "emptyHint": "{range}內沒有符合條件的事件，可以換一個時間範圍或篩選條件。",
+      "userShort": "使用者 {userId}",
       "createButton": "建立事件",
       "createDialogTitle": "建立風控事件",
       "create": "建立",
@@ -187,6 +278,16 @@ export default {
     "rules": {
       "title": "風控規則",
       "description": "檢視和編輯風控規則配置（僅超級管理員可編輯）",
+      "editorLabel": "規則 JSON",
+      "editorHint": "每條規則包含 key（1–64 個字元）、description 和 config。儲存只會新增或更新列出的規則。",
+      "formatButton": "整理格式",
+      "revertButton": "還原",
+      "state": {
+        "saving": "儲存中…",
+        "invalid": "JSON 有誤",
+        "pending": "未儲存：新增 {added} · 修改 {changed}",
+        "saved": "已儲存"
+      },
       "saveButton": "儲存規則",
       "superAdminOnly": "風控規則僅超級管理員可見。",
       "loadError": "載入風控規則失敗。",
@@ -194,13 +295,20 @@ export default {
       "validation": {
         "invalidJson": "JSON 格式錯誤，請檢查括號、引號和逗號",
         "notArray": "規則內容必須是 JSON 陣列",
-        "invalidRule": "第 {index} 條規則格式不正確：需要 id、name、description（字串）、enabled（布林值），config 可選且須為物件"
+        "invalidRule": "第 {index} 條規則格式不正確：需要 key（1–64 個字元的字串），description 可選且須為字串，config 可選且須為物件",
+        "duplicateKey": "第 {index} 條規則的 key「{key}」與前面的規則重複",
+        "tooMany": "一次最多儲存 {max} 條規則"
       },
       "preview": {
         "title": "規則預覽",
         "count": "{count} 條",
-        "invalid": "修正上方的 JSON 後會在這裡顯示解析結果。",
-        "empty": "規則陣列為空，儲存後將清空所有規則。",
+        "invalid": "修正 JSON 後會在這裡顯示解析結果。",
+        "empty": "規則陣列為空，沒有可儲存的內容。",
+        "added": "新增",
+        "changed": "已修改",
+        "updatedAt": "更新於 {time}",
+        "updatedBy": "更新於 {time} · 使用者 {user}",
+        "omitted": "未列出的 {count} 條規則保持不變（儲存不會刪除規則）：{keys}",
         "enabled": "已啟用",
         "disabled": "已停用",
         "configKeys": "配置項：{keys}",
@@ -265,6 +373,26 @@ export default {
       "unavailable": "統計暫不可用",
       "filterByKind": "只看待處理的「{kind}」告警"
     },
+    "overview": {
+      "handled": "已處置",
+      "handledSplit": "已處理 {resolved} · 已忽略 {ignored}",
+      "openKinds": "涉及 {count} 種類型",
+      "dailyAverage": "近 7 天日均 {count}",
+      "anyStatus": "含已處置的告警",
+      "byKindHint": "點選一行，只看該類型的待處理告警",
+      "byStatus": "告警狀態",
+      "byStatusHint": "全部告警",
+      "byStatusTotal": "全部 {total} 條告警",
+      "onThisPage": "本頁告警",
+      "onThisPageHint": "僅統計列表當前顯示的 {count} 條",
+      "onThisPageEmpty": "當前列表沒有告警",
+      "onThisPageFailed": "列表未能載入，沒有可統計的告警",
+      "timeline": "告警時間分佈",
+      "timelineRange": "{from} 至 {to}",
+      "timelineLabel": "本頁 {count} 條告警按告警時間的分佈",
+      "enforcement": "攔截方式",
+      "window": "統計視窗"
+    },
     "filters": {
       "title": "篩選條件",
       "expand": "展開",
@@ -278,7 +406,8 @@ export default {
       "to": "結束時間",
       "toPlaceholder": "不限",
       "allStatuses": "全部狀態",
-      "allKinds": "全部類型"
+      "allKinds": "全部類型",
+      "changed": "已設 {count} 項"
     },
     "actions": {
       "search": "查詢",
@@ -328,7 +457,12 @@ export default {
       "noNote": "暫無備註",
       "countValue": "{window}內 {count} 次，閾值 {threshold}",
       "handledAt": "處理時間",
-      "handlerNameUnavailable": "（使用者名稱不可用，可能已刪除）"
+      "handlerNameUnavailable": "（使用者名稱不可用，可能已刪除）",
+      "groups": {
+        "alert": "告警",
+        "source": "Bot 與來源",
+        "handling": "處理"
+      }
     },
     "actionDialog": {
       "title": {
@@ -365,15 +499,33 @@ export default {
       "links": "友情連結管理",
       "groups": "推薦群聊管理"
     },
+    "countShare": "{count} · {percent}",
+    "stats": {
+      "links": "友情連結",
+      "tags": "連結標籤",
+      "groups": "群聊分組",
+      "items": "群聊項目",
+      "untagged": "{count} 個未加標籤",
+      "allTagged": "全部已加標籤",
+      "topTag": "最常用：{tag}（{count}）",
+      "emptyGroups": "{count} 個空分組",
+      "noEmptyGroups": "沒有空分組",
+      "largestGroup": "最多：{group}（{count}）"
+    },
     "linksTab": {
       "title": "友情連結管理",
+      "description": "按排序值從小到大展示，相同則按 ID。",
+      "tagPanel": {
+        "title": "標籤分佈",
+        "description": "帶有每個標籤的連結數",
+        "empty": "還沒有標籤",
+        "more": "另有 {count} 個標籤未列出"
+      },
       "createButton": "新增友情連結",
       "table": {
         "sortOrder": "排序",
         "name": "名稱",
-        "url": "URL",
-        "tags": "標籤",
-        "actions": "操作"
+        "tags": "標籤"
       },
       "deleteDialog": {
         "title": "確認刪除",
@@ -385,6 +537,13 @@ export default {
     },
     "groupsTab": {
       "title": "推薦群聊管理",
+      "summary": "排序 {order} · {count} 個項目",
+      "hasLink": "已設定連結",
+      "hasBackground": "已設定背景圖",
+      "sizePanel": {
+        "title": "各分組項目數",
+        "description": "按分組的展示順序"
+      },
       "createGroupButton": "建立群聊分組",
       "createGroupDialog": {
         "title": "建立分組",
@@ -508,6 +667,11 @@ export default {
     },
     "form": {
       "removeRedirectUri": "刪除此URI",
+      "groups": {
+        "basic": "基本資訊",
+        "access": "授權方式與範圍",
+        "redirects": "回撥地址"
+      },
       "nameLabel": "客戶端名稱",
       "namePlaceholder": "顯示名稱",
       "clientTypeLabel": "客戶端類型",
@@ -556,7 +720,31 @@ export default {
       "typePublic": "Public",
       "typeConfidential": "Confidential",
       "deviceBadge": "裝置碼",
-      "deviceBadgeTitle": "已開通裝置碼授權類型"
+      "deviceBadgeTitle": "已開通裝置碼授權類型",
+      "title": "客戶端",
+      "columns": {
+        "client": "客戶端",
+        "scopes": "Scope 與授權類型",
+        "redirectUris": "回撥URI",
+        "createdAt": "建立時間"
+      },
+      "moreRedirectUris": "還有 {count} 個",
+      "noRedirectUris": "無回撥URI"
+    },
+    "overview": {
+      "total": "客戶端總數",
+      "enabled": "已啟用",
+      "disabledCount": "停用 {count}",
+      "deletedCount": "已刪除 {count}",
+      "confidential": "Confidential 客戶端",
+      "publicCount": "Public {count}",
+      "device": "裝置碼客戶端",
+      "shareOfClients": "佔全部客戶端的 {percent}",
+      "partialNote": "客戶端超過一頁：除總數外，以上數字只統計已載入的 {loaded} 個（共 {total} 個）。",
+      "scopesTitle": "Scope 分佈",
+      "scopesHint": "登記了各 Scope 的客戶端數",
+      "grantTypesTitle": "授權類型",
+      "grantTypesHint": "可使用各授權類型的客戶端數"
     },
     "table": {
       "actions": "操作",
@@ -625,7 +813,50 @@ export default {
       "trendTitle": "趨勢",
       "trendAuthorizations": "新增授權",
       "trendTokens": "簽發令牌",
-      "trendEmpty": "所選範圍內沒有授權或令牌活動"
+      "trendEmpty": "所選範圍內沒有授權或令牌活動",
+      "stateActive": "有效",
+      "stateRevoked": "已撤銷",
+      "authorizationStateHint": "全部使用者授權中仍然有效的比例",
+      "tokenStateHint": "全部令牌中仍然有效的比例",
+      "noAuthorizations": "還沒有使用者授權過此客戶端",
+      "noTokens": "沒有令牌記錄",
+      "trendHintHour": "每小時的新增授權與簽發令牌",
+      "trendHintDay": "每天的新增授權與簽發令牌",
+      "trendSummary": "範圍內共 {buckets} 個時間段，新增授權 {authorizations} 個，簽發令牌 {tokens} 個",
+      "trendPeak": "最活躍的時間段：{time}，共 {count} 次",
+      "trendView": "趨勢的展示方式",
+      "trendViewChart": "圖表",
+      "trendViewTable": "資料表",
+      "trendBucket": "時間段",
+      "trendTableNote": "只列出有資料的 {shown} 個時間段（共 {total} 個）",
+      "audit": {
+        "title": "管理操作",
+        "description": "所選範圍內以此客戶端為目標的審計日誌條目",
+        "loadFailed": "管理操作統計載入失敗。",
+        "empty": "所選範圍內沒有針對此客戶端的管理操作",
+        "total": "操作總數",
+        "success": "成功",
+        "failure": "失敗",
+        "successRate": "成功率",
+        "other": "其他操作 {count} 次",
+        "action": {
+          "create": "建立客戶端",
+          "update": "修改設定",
+          "activeUpdate": "啟用 / 停用",
+          "rotateSecret": "輪換 Secret",
+          "delete": "刪除客戶端",
+          "restore": "恢復客戶端",
+          "revoke": "撤銷全部授權",
+          "statisticsQuery": "檢視統計",
+          "authorizationsList": "檢視授權列表",
+          "auditLogsQuery": "檢視審計日誌",
+          "auditSummaryQuery": "檢視審計彙總",
+          "webhookList": "檢視 Webhook",
+          "webhookCreate": "建立 Webhook",
+          "webhookUpdate": "修改 Webhook",
+          "webhookDelete": "刪除 Webhook"
+        }
+      }
     },
     "secretDialog": {
       "title": "憑證生成成功",
@@ -637,6 +868,7 @@ export default {
       "title": "OAuth client Webhook",
       "description": "管理客戶端 {clientId} 的資料更新通知 endpoint。",
       "placeholderHint": "Callback URL 支援 {'{server}'}、{'{data_type}'}、{'{user_id}'} 佔位符。",
+      "summary": "共 {total} 個 endpoint，已啟用 {enabled} 個",
       "actions": {
         "refresh": "重新整理",
         "create": "建立 endpoint",
@@ -789,7 +1021,24 @@ export default {
       "subscriptions": "訂閱數",
       "createdAt": "建立時間",
       "actions": "操作",
-      "empty": "暫無 webhook endpoint"
+      "empty": "暫無 webhook endpoint",
+      "endpoint": "Endpoint",
+      "bearerTitle": "回撥請求會附帶 Authorization: Bearer 頭"
+    },
+    "overview": {
+      "total": "Endpoint 總數",
+      "enabledDisabled": "啟用 {enabled} · 停用 {disabled}",
+      "delivering": "正在投遞",
+      "globalOn": "全域性投遞已啟用",
+      "globalOff": "全域性投遞已關閉，不會發送任何回撥",
+      "subscriptions": "訂閱總數",
+      "endpointsWithSubscribers": "{count} 個 endpoint 有訂閱者",
+      "jwtSecret": "JWT 金鑰",
+      "withBearer": "{count} 個帶 Bearer",
+      "rankTitle": "訂閱分佈",
+      "rankHint": "訂閱數最多的 endpoint 及其佔全部訂閱的比例，按上方列表統計。",
+      "rankEmpty": "還沒有任何訂閱",
+      "rankRest": "其餘 endpoint 共 {count} 個訂閱"
     },
     "form": {
       "createTitle": "建立 webhook endpoint",
@@ -807,7 +1056,11 @@ export default {
       "bearerPlaceholder": "可選，留空則不附帶 Authorization 頭",
       "bearerHelp": "填寫後，後端會在回撥請求中附帶 `Authorization: Bearer TOKEN`。",
       "clearBearerLabel": "清空 Bearer Token",
-      "enabledLabel": "啟用當前 endpoint"
+      "enabledLabel": "啟用當前 endpoint",
+      "groups": {
+        "endpoint": "Endpoint",
+        "auth": "憑證與認證"
+      }
     },
     "deleteDialog": {
       "title": "刪除 webhook endpoint",
@@ -830,7 +1083,11 @@ export default {
       "server": "區服",
       "dataType": "資料類型",
       "createdAt": "建立時間",
-      "empty": "當前 endpoint 暫無訂閱者"
+      "empty": "當前 endpoint 暫無訂閱者",
+      "totalLabel": "訂閱數",
+      "usersLabel": "訂閱使用者",
+      "byServer": "按區服",
+      "byDataType": "按資料類型"
     },
     "toast": {
       "loadFailedFallback": "操作失敗",
@@ -897,7 +1154,6 @@ export default {
       "loadFailed": "贊助使用者載入失敗，請重試。"
     },
     "binding": {
-      "count": "已綁定工具箱的贊助使用者",
       "title": "工具箱綁定",
       "bound": "已綁定",
       "unbound": "未綁定"
@@ -922,7 +1178,51 @@ export default {
     "stats": {
       "total": "贊助者總數",
       "active": "當前贊助",
-      "manualProfile": "手動保護資料"
+      "bound": "已綁定工具箱",
+      "amount": "記錄金額合計",
+      "newRecords": "12 個月新增 {count}",
+      "formerDetail": "曾經贊助 {count}",
+      "boundShare": "佔全部贊助者 {percent}",
+      "amountDetail": "{count} 位有金額記錄",
+      "newRecordsTrend": "近 12 個月每月新增的贊助者記錄"
+    },
+    "breakdown": {
+      "share": "{count} · {percent}",
+      "empty": "暫無資料",
+      "source": {
+        "title": "來源",
+        "description": "全部贊助者按記錄來源",
+        "unknown": "未標註"
+      },
+      "plan": {
+        "title": "贊助檔位",
+        "description": "人數最多的 5 個檔位",
+        "unnamed": "未設定檔位",
+        "other": "其他 {count} 個檔位"
+      },
+      "expiry": {
+        "title": "當前贊助到期",
+        "description": "按實際到期時間距今天數",
+        "within7": "7 天內",
+        "within30": "8–30 天",
+        "within90": "31–90 天",
+        "later": "90 天以上",
+        "none": "無到期時間"
+      }
+    },
+    "source": {
+      "afdian": "愛發電",
+      "manual": "手動錄入",
+      "legacy": "舊版資料",
+      "imported": "匯入"
+    },
+    "filter": {
+      "search": "搜尋贊助者",
+      "searchPlaceholder": "名稱、ID、檔位或來源",
+      "category": "按狀態篩選",
+      "all": "全部",
+      "noMatch": "沒有符合條件的贊助者",
+      "clear": "清除篩選"
     },
     "category": {
       "current": "當前贊助",
@@ -934,7 +1234,11 @@ export default {
     },
     "list": {
       "title": "贊助者名單",
-      "description": "列表按後端返回順序展示；分類與到期時間由後端根據愛發電訂單和手動時長計算。"
+      "description": "列表按後端返回順序展示；分類與到期時間由後端根據愛發電訂單和手動時長計算。",
+      "total": "共 {total} 位",
+      "filteredTotal": "{count} / {total} 位",
+      "manualProfile": "{count} 位手動保護資料",
+      "migrationPending": "{count} 位待拆分時長"
     },
     "table": {
       "supporter": "贊助者",
@@ -944,12 +1248,17 @@ export default {
       "lastSupport": "最近贊助",
       "effectiveExpiry": "實際到期時間",
       "contribution": "贊助貢獻",
-      "afdianSync": "愛發電更新",
-      "actions": "操作",
+      "amount": "記錄金額",
+      "toolbox": "工具箱",
+      "protect": "手動保護",
+      "protectLabel": "不從愛發電更新 {name} 的資料",
+      "expiresOn": "{date} 到期",
+      "expiredOn": "{date} 已到期",
       "empty": "暫無贊助者記錄"
     },
     "edit": {
       "title": "編輯贊助者資料",
+      "profileGroup": "展示資料",
       "name": "顯示名稱",
       "avatar": "頭像 URL",
       "avatarPlaceholder": "https://example.com/avatar.png",
@@ -1065,53 +1374,121 @@ export default {
     "common": {
       "fallback": "—",
       "success": "成功",
-      "failure": "失敗"
+      "failure": "失敗",
+      "otherEntries": "另有 {kinds} 項，共 {count} 條"
     },
     "dashboard": {
+      "generatedAt": "資料生成於 {time}",
+      "refresh": "重新整理",
       "stat": {
-        "totalUsers": "總使用者數",
-        "superAdmin": "超級管理員",
-        "admin": "管理員",
-        "totalBindings": "遊戲綁定",
-        "verifiedBindings": "已驗證",
-        "totalUploads": "總上傳 (全部)"
+        "totalUsers": "使用者總數",
+        "bindingsPerUser": "人均綁定 {count} 個遊戲帳號",
+        "newRegistrations": "24 小時新註冊",
+        "vsPrevious24h": "較前 24 小時",
+        "totalBindings": "遊戲帳號綁定",
+        "verifiedBindings": "已驗證 {count} · {percent}",
+        "totalUploads": "累計上傳",
+        "uploadsPerUser": "人均 {count} 次",
+        "uploadsWindow": "{hours} 小時上傳",
+        "failedWindow": "{hours} 小時上傳失敗",
+        "failureRate": "失敗率 {percent}",
+        "staff": "管理團隊",
+        "staffDetail": "超級管理員 {superAdmin} · 管理員 {admin}",
+        "banned": "已封停使用者",
+        "bannedShare": "佔全部使用者 {percent}"
       },
       "breakdown": {
-        "byServer": "綁定按區服",
-        "byServerHint": "全部遊戲綁定",
-        "byMethod": "上傳按方式",
-        "byDataType": "上傳按資料類型",
-        "windowHint": "最近 {hours} 小時",
+        "byServer": "各區服綁定",
+        "byServerHint": "全部遊戲帳號綁定",
+        "byMethod": "上傳方式",
+        "byDataType": "資料類型",
+        "windowHint": "最近 {hours} 小時的上傳",
         "empty": "暫無資料"
       },
-      "upload24h": {
-        "total": "24h 上傳總量",
-        "bannedUsers": "被封使用者"
-      },
       "chart": {
-        "title": "趨勢圖",
-        "description": "上傳與註冊分開展示；上傳圖的左軸是上傳次數，右軸是上傳失敗次數",
-        "uploadTitle": "上傳趨勢",
-        "registrationTitle": "註冊趨勢",
-        "uploadsAxis": "上傳次數（左軸）",
-        "failuresAxis": "上傳失敗次數（右軸）",
+        "title": "趨勢",
+        "description": "上傳、上傳失敗和新註冊各佔一張圖，時間軸對齊；滑鼠移到任意一張圖上可同時檢視三項。",
         "uploads": "上傳",
-        "registrations": "註冊",
+        "registrations": "新註冊",
         "failures": "上傳失敗",
         "successRate": "成功率",
         "rangeLabel": "時間範圍",
         "bucketLabel": "時間粒度",
         "range7d": "近 7 天",
+        "range14d": "近 14 天",
         "range30d": "近 30 天",
-        "range90d": "近 90 天",
         "bucketDay": "按日",
         "bucketWeek": "按周",
         "bucketMonth": "按月",
+        "tableTime": "時間",
         "empty": "暫無資料"
+      },
+      "trend": {
+        "compare": {
+          "day": "後 {n} 天對比前 {n} 天",
+          "week": "後 {n} 周對比前 {n} 周",
+          "month": "後 {n} 個月對比前 {n} 個月"
+        },
+        "dailyAverage": "日均",
+        "peak": "峰值",
+        "failureRate": "失敗率",
+        "worstRate": "最高失敗率",
+        "bestRate": "最低失敗率"
+      },
+      "hourly": {
+        "title": "近 24 小時上傳",
+        "description": "每小時的上傳次數，失敗的部分疊在柱頂；最右一柱是還沒過完的這一小時。",
+        "successRate": "成功率",
+        "peakHour": "峰值時段",
+        "hourlyAverage": "每小時平均",
+        "previousTotal": "前 24 小時",
+        "succeeded": "上傳成功",
+        "failed": "上傳失敗",
+        "chartLabel": "近 24 小時每小時的上傳次數，可用左右方向鍵逐小時檢視",
+        "readout": "{time}：成功 {success} 次，失敗 {failed} 次"
+      },
+      "matrix": {
+        "title": "上傳方式 × 資料類型",
+        "method": "上傳方式",
+        "total": "合計"
+      },
+      "quality": {
+        "title": "上傳質量",
+        "description": "近 24 小時每種上傳方式的成功率與處理耗時。",
+        "restrictedHint": "管理員看到的數字不含超級管理員和你本人的上傳，也不含未通過身份校驗的上傳。",
+        "latencyP50": "處理耗時 P50",
+        "latencyP50Hint": "一半的上傳快於此",
+        "latencyP95": "處理耗時 P95",
+        "latencyP95Hint": "95% 的上傳快於此",
+        "activeAccounts": "活躍遊戲帳號",
+        "activeAccountsHint": "成功上傳過的已驗證帳號",
+        "v3Share": "HarukiProxy V3 佔比",
+        "v2OnlyAccounts": "仍只用 V2 的帳號 {count} 個",
+        "attempts": "次數",
+        "failed": "失敗",
+        "accounts": "活躍帳號",
+        "empty": "近 24 小時沒有上傳"
+      },
+      "failureStage": {
+        "title": "失敗階段",
+        "description": "近 24 小時失敗的上傳停在哪一步",
+        "empty": "近 24 小時沒有失敗的上傳",
+        "buildContext": "建立上傳上下文",
+        "accountPolicy": "帳號策略檢查",
+        "decodePayload": "解析資料",
+        "validatePayloadIdentity": "校驗資料歸屬",
+        "preprocess": "預處理",
+        "persist": "儲存資料",
+        "validateResult": "校驗結果",
+        "decrypt": "解密",
+        "stale": "資料已過期",
+        "retrieve": "拉取{type}資料",
+        "unknown": "未記錄階段"
       },
       "toast": {
         "loadFailedTitle": "載入儀表盤失敗",
         "loadChartFailedTitle": "載入圖表失敗",
+        "loadQualityFailedTitle": "載入上傳質量失敗",
         "loadFailedFallback": "載入失敗"
       }
     },
@@ -1121,19 +1498,63 @@ export default {
         "next": "下一頁",
         "total": "共 {total} 條日誌"
       },
-      "summary": {
-        "total": "總日誌"
+      "overview": {
+        "title": "概覽",
+        "scope": "符合篩選條件的全部日誌"
       },
-      "searchPlaceholder": "搜尋日誌…",
+      "summary": {
+        "total": "總日誌",
+        "successRate": "成功率",
+        "share": "佔 {share}",
+        "actionKinds": "{count} 種操作",
+        "topReason": "最多：{reason}",
+        "failureRate": "失敗率 {rate}"
+      },
+      "breakdown": {
+        "actions": "操作排行",
+        "actionsHint": "範圍內出現最多的操作",
+        "actorTypes": "操作者類型",
+        "actorTypesHint": "這些日誌由誰觸發",
+        "reasons": "失敗原因",
+        "reasonsHint": "失敗日誌記錄的原因",
+        "pageActors": "當前頁操作者",
+        "pageActorsHint": "只統計下方表格顯示的 {count} 條",
+        "empty": "暫無資料",
+        "noFailures": "範圍內沒有失敗的日誌",
+        "unknownReason": "未記錄原因"
+      },
+      "actorType": {
+        "anonymous": "匿名",
+        "user": "使用者",
+        "admin": "管理員",
+        "system": "系統",
+        "unknown": "未知"
+      },
+      "filters": {
+        "result": "結果",
+        "allResults": "全部",
+        "actorType": "操作者類型",
+        "allActorTypes": "全部操作者",
+        "range": "時間範圍"
+      },
+      "range": {
+        "last24h": "最近 24 小時",
+        "last7d": "最近 7 天",
+        "last30d": "最近 30 天"
+      },
+      "searchActionPlaceholder": "按操作名搜尋…",
       "resetSearch": "清除搜尋",
+      "refresh": "重新整理",
       "exportButton": "匯出",
       "table": {
         "result": "結果",
         "action": "操作",
-        "request": "方法",
-        "user": "使用者",
+        "actionAndRequest": "操作 / 請求",
+        "actor": "操作者",
         "time": "時間",
         "empty": "暫無日誌",
+        "emptyHint": "所選時間範圍內沒有日誌",
+        "emptyFiltered": "沒有符合篩選條件的日誌，可以放寬條件或擴大時間範圍",
         "openDetail": "檢視詳情"
       },
       "detail": {
@@ -1141,8 +1562,11 @@ export default {
         "result": "結果",
         "time": "時間",
         "action": "操作",
+        "target": "對象",
         "request": "請求",
         "user": "使用者",
+        "actorType": "操作者類型",
+        "requestId": "請求 ID",
         "detail": "詳情",
         "copy": "複製詳情",
         "copied": "詳情已複製",
@@ -1184,9 +1608,13 @@ export default {
         "allDataTypes": "全部類型",
         "allServers": "全部區服",
         "allStatuses": "全部狀態",
-        "selectedMore": "{first} +{count}"
+        "selectedMore": "{first} +{count}",
+        "activeCount": "已選 {count} 項"
       },
-      "timeRangeLabel": "時間範圍:",
+      "overview": {
+        "title": "概覽",
+        "scope": "符合篩選條件的全部上傳"
+      },
       "table": {
         "status": "狀態",
         "user": "使用者",
@@ -1201,6 +1629,8 @@ export default {
         "viewDetails": "檢視詳情",
         "viewError": "檢視錯誤",
         "time": "時間",
+        "duration": "耗時",
+        "methodAndDataType": "方式 / 類型",
         "empty": "暫無上傳日誌"
       },
       "actor": {
@@ -1232,6 +1662,8 @@ export default {
         "client": "客戶端 / 版本",
         "platform": "平台",
         "requestId": "請求 ID",
+        "duration": "處理耗時",
+        "requestSize": "請求大小",
         "claimedGameUserId": "載荷宣告 UID",
         "failureStage": "失敗階段",
         "errorCode": "錯誤碼"
@@ -1243,13 +1675,34 @@ export default {
       },
       "summary": {
         "totalUploads": "總上傳數",
-        "successRate": "成功率"
+        "successRate": "成功率",
+        "failureRate": "失敗率 {rate}",
+        "activeAccounts": "活躍遊戲帳號",
+        "activeAccountsHint": "有成功上傳的已驗證帳號",
+        "latency": "處理耗時中位數",
+        "latencyDetail": "P95 {p95} · {count} 個樣本",
+        "latencyNoSamples": "沒有耗時記錄",
+        "volume": {
+          "hour": "每小時上傳量走勢",
+          "day": "每日上傳量走勢"
+        },
+        "failureVolume": {
+          "hour": "每小時失敗數走勢",
+          "day": "每日失敗數走勢"
+        },
+        "peak": {
+          "hour": "峰值 {count} 次/小時",
+          "day": "峰值 {count} 次/天"
+        }
       },
       "charts": {
-        "successRateDistribution": "成功率分佈",
         "byMethod": "按上傳方式",
         "byDataType": "按資料類型",
-        "total": "總計"
+        "byServer": "按區服",
+        "failureStages": "失敗階段",
+        "noFailures": "範圍內沒有失敗的上傳",
+        "unknownStage": "未記錄階段",
+        "empty": "暫無資料"
       },
       "method": {
         "manual": "手動上傳",
@@ -1273,6 +1726,7 @@ export default {
       },
       "toast": {
         "loadFailedTitle": "載入上傳日誌失敗",
+        "loadAnalyticsFailedTitle": "載入上傳統計失敗",
         "loadFailedFallback": "載入失敗",
         "filterFailedTitle": "篩選失敗",
         "invalidTimeRange": "開始時間不能晚於結束時間"
@@ -1284,8 +1738,39 @@ export default {
       "cancel": "取消",
       "create": "建立"
     },
+    "status": {
+      "verified": "已驗證",
+      "unverified": "未驗證"
+    },
+    "stats": {
+      "total": "綁定總數",
+      "verified": "已驗證",
+      "verifiedShare": "佔全部綁定的 {share}",
+      "unverified": "未驗證",
+      "siteWide": "全站",
+      "matching": "符合當前篩選",
+      "matchingPage": "第 {page} / {pages} 頁",
+      "byServer": "區服分佈",
+      "byServerHint": "全站的全部綁定",
+      "noBindings": "還沒有遊戲帳號綁定",
+      "loadFailed": "全站統計載入失敗",
+      "retry": "重試",
+      "sharingTitle": "本頁共享設定",
+      "sharingHint": "僅統計列表當前顯示的 {count} 條綁定",
+      "sharingEmpty": "當前列表沒有綁定",
+      "sharingFailed": "列表未能載入，沒有可統計的綁定",
+      "sharing": {
+        "suitePublicApi": "帳號資料 · 公開查詢",
+        "suiteBots": "帳號資料 · 同步給 Bot",
+        "mysekaiPublicApi": "烤森資料 · 公開查詢",
+        "mysekaiFixtureApi": "烤森資料 · 家具互助",
+        "mysekaiBots": "烤森資料 · 同步給 Bot"
+      }
+    },
     "filters": {
       "title": "搜尋與篩選",
+      "verification": "驗證狀態",
+      "allVerification": "全部",
       "addButton": "新增綁定",
       "fuzzySearch": "模糊搜尋",
       "fuzzySearchPlaceholder": "遊戲ID / 使用者名稱 / 信箱",
@@ -1308,6 +1793,18 @@ export default {
       "userIdAsc": "使用者ID ↑"
     },
     "table": {
+      "title": "綁定列表",
+      "selectRowOf": "選擇遊戲帳號 {gameUserId}",
+      "sharing": {
+        "suite": "帳號 {on}/{total}",
+        "mysekai": "烤森 {on}/{total}",
+        "publicApi": "已開啟公開查詢",
+        "none": "無共享設定"
+      },
+      "role": {
+        "admin": "管理員",
+        "superAdmin": "超級管理員"
+      },
       "selectAll": "全選",
       "selectRow": "選擇該行",
       "selectedCount": "已選 {count} 條",
@@ -1318,6 +1815,9 @@ export default {
       "columns": {
         "server": "區服",
         "gameId": "遊戲ID",
+        "account": "遊戲帳號",
+        "verified": "驗證",
+        "sharing": "已開啟的共享",
         "user": "所屬使用者",
         "actions": "操作"
       },
@@ -1344,7 +1844,20 @@ export default {
       "gameUserId": "遊戲使用者ID",
       "gameUserIdPlaceholder": "輸入遊戲內使用者ID",
       "suiteSettingsTitle": "Suite 資料設定",
-      "mysekaiSettingsTitle": "MySekai 資料設定"
+      "mysekaiSettingsTitle": "MySekai 資料設定",
+      "accountTitle": "遊戲帳號",
+      "owner": "所屬使用者 ID {userId}",
+      "identityLockedHint": "區服、遊戲 ID 和所屬使用者不能在這裡修改；要換綁到其他使用者請使用「轉移綁定」。",
+      "botsHint": "把這類資料同步給對應的 QQ 群 Bot。",
+      "permissionHelp": {
+        "suite": {
+          "allowPublicApi": "開啟後，任何知道這個 UID 的人都能通過工具箱介面檢視該使用者上傳的帳號資料。"
+        },
+        "mysekai": {
+          "allowPublicApi": "開啟後，任何知道這個 UID 的人都能通過工具箱介面檢視該使用者上傳的烤森資料。",
+          "allowFixtureApi": "開啟後，這個 UID 會出現在烤森家具互助列表，其他玩家可以來訪。"
+        }
+      }
     },
     "reassignDialog": {
       "title": "轉移遊戲帳號",
@@ -1398,10 +1911,35 @@ export default {
       "confirm": "確認",
       "unbound": "未綁定",
       "openMenu": "開啟選單",
-      "fallback": "—"
+      "fallback": "—",
+      "delete": "刪除",
+      "copyId": "複製使用者 ID",
+      "idCopied": "使用者 ID 已複製",
+      "copyFailed": "複製失敗"
     },
     "management": {
       "title": "使用者管理",
+      "stats": {
+        "totalUsers": "全站使用者",
+        "newInDays": "近 {days} 天 +{count}",
+        "trendLabel": "近 {days} 天每日註冊數",
+        "staff": "管理團隊",
+        "staffBreakdown": "超級管理員 {superAdmin} · 管理員 {admin}",
+        "banned": "已封禁",
+        "shareOfAll": "佔全站 {percent}",
+        "filtered": "符合篩選",
+        "listed": "列表中的使用者",
+        "listScopeSuperAdmin": "不含你自己的帳號",
+        "listScopeAdmin": "不含你自己和超級管理員",
+        "loadFailed": "統計載入失敗",
+        "retry": "重新載入統計"
+      },
+      "pageSummary": {
+        "count": "本頁 {count} 人",
+        "staff": "管理員 {count}",
+        "banned": "已封禁 {count}",
+        "allowCN": "允許國服 MySekai {count}"
+      },
       "filters": {
         "searchLabel": "搜尋",
         "searchPlaceholder": "搜尋使用者名稱、信箱、使用者 ID 或社交帳號…",
@@ -1421,7 +1959,9 @@ export default {
         "createdFromLabel": "註冊時間起",
         "createdFromPlaceholder": "按起始時間過濾",
         "createdToLabel": "註冊時間止",
-        "createdToPlaceholder": "按結束時間過濾"
+        "createdToPlaceholder": "按結束時間過濾",
+        "allowCNShort": "國服 MySekai",
+        "toggle": "篩選條件"
       },
       "batch": {
         "selectedCount": "已選 {count} 個使用者",
@@ -1464,11 +2004,16 @@ export default {
           "role": "角色",
           "allowCN": "國服 MySekai 權限",
           "status": "帳號狀態",
-          "createdAt": "註冊時間"
+          "createdAt": "註冊時間",
+          "user": "使用者"
         },
         "empty": "暫無使用者資料",
         "loadError": "載入使用者列表失敗",
-        "retry": "重試"
+        "retry": "重試",
+        "emptyFiltered": "沒有符合當前篩選條件的使用者。",
+        "selectPage": "全選本頁",
+        "selectUser": "選擇 {name}",
+        "viewDetail": "檢視詳情"
       },
       "toast": {
         "loadFailedTitle": "載入使用者列表失敗",
@@ -1493,6 +2038,29 @@ export default {
     "detail": {
       "backToList": "返回使用者列表",
       "notFound": "使用者不存在，可能已被刪除或連結有誤。",
+      "header": {
+        "userId": "使用者 ID",
+        "banReason": "封禁原因"
+      },
+      "stats": {
+        "gameBindings": "遊戲帳號",
+        "verifiedCount": "已驗證 {count}",
+        "authorizedSocials": "授權社交帳號",
+        "mainSocial": "主綁定：{platform}",
+        "noMainSocial": "未綁定主社交平台",
+        "uploads": "近 {hours} 小時上傳",
+        "uploadBreakdown": "成功 {success} · 失敗 {failure}",
+        "uploadSuccessRate": "成功率 {percent}",
+        "noUploads": "該時段內沒有上傳",
+        "systemLogs": "近 {hours} 小時操作記錄",
+        "lastAt": "最近 {time}",
+        "noEvents": "該時段內沒有記錄"
+      },
+      "account": {
+        "title": "帳號設定",
+        "roleHelp": "新角色的權限立即生效。",
+        "iosHelp": "使用者在 iOS 快捷指令中上傳資料時使用。"
+      },
       "tabs": {
         "info": "基本資訊",
         "activity": "活動記錄",
@@ -1544,12 +2112,19 @@ export default {
           "path": "路徑",
           "time": "時間"
         },
-        "empty": "暫無活動記錄"
+        "empty": "暫無活動記錄",
+        "listedOf": "顯示最近 {listed} 條，共 {total} 條",
+        "listedAll": "共 {total} 條",
+        "showAll": "顯示全部 {count} 條",
+        "showFewer": "收起",
+        "byActor": "操作者 {actor}"
       },
       "oauth": {
         "title": "OAuth 授權",
         "revokeAll": "撤銷全部",
         "total": "共 {count} 個授權",
+        "activeCount": "{count} 個有效",
+        "device": "裝置：{name}",
         "empty": "暫無 OAuth 授權",
         "revokeAllDialogTitle": "撤銷全部授權",
         "revokeAllDialogDescription": "此操作將撤銷該使用者的全部 {count} 個 OAuth 授權，並使其從所有已連線的第三方應用登出。是否繼續？",
@@ -1575,6 +2150,9 @@ export default {
         "edit": "編輯遊戲綁定",
         "unbind": "解綁遊戲帳號",
         "empty": "暫無遊戲綁定",
+        "total": "共 {count} 個帳號",
+        "sharingSuite": "Suite 共享 {on}/{total}",
+        "sharingMysekai": "MySekai 共享 {on}/{total}",
         "unbindDialogTitle": "確認解綁",
         "unbindDialogDescription": "此操作將解綁遊戲帳號 {gameUserId}，之後可重新新增。"
       },
@@ -1582,6 +2160,7 @@ export default {
         "title": "社交平台綁定",
         "add": "新增綁定",
         "empty": "暫無社交平台綁定",
+        "delete": "刪除社交平台綁定",
         "deleteDialogTitle": "確認刪除",
         "deleteDialogDescription": "確定要刪除此主社交平台綁定嗎？之後可重新新增。"
       },
@@ -1594,6 +2173,8 @@ export default {
           "comment": "備註"
         },
         "empty": "暫無授權社交平台",
+        "total": "共 {count} 個帳號",
+        "delete": "刪除授權社交平台",
         "deleteDialogTitle": "確認刪除",
         "deleteDialogDescription": "確定要刪除此授權社交平台嗎？之後可重新新增。"
       },
@@ -1602,6 +2183,7 @@ export default {
         "regenerate": "重新生成",
         "generate": "生成上傳碼",
         "empty": "暫無上傳碼",
+        "delete": "刪除上傳碼",
         "deleteDialogTitle": "確認刪除",
         "deleteDialogDescription": "確定要刪除當前的 iOS 上傳碼嗎？之後可重新生成一個新的。",
         "regenerateDialogTitle": "確認重新生成上傳碼",

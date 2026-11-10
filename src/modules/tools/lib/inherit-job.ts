@@ -356,6 +356,41 @@ export function splitUnreachedSteps(job: InheritJob): { shown: InheritJobStep[];
   return { shown: job.steps.slice(0, last + 1), hidden: job.steps.slice(last + 1) }
 }
 
+/**
+ * The four things a transfer does, as the owner sees them. The twelve backend
+ * steps stay available as the detailed log; this is the "where am I" summary.
+ */
+export const INHERIT_JOB_PHASES = [
+  { key: "read", steps: ["bootstrap", "preview"] },
+  { key: "confirm", steps: ["awaiting_confirm"] },
+  { key: "transfer", steps: ["execute", "vault_store_credential", "login", "issue_new_code", "vault_store_code"] },
+  { key: "data", steps: ["fetch_suite", "fetch_mysekai", "upload", "done"] },
+] as const satisfies readonly { key: string; steps: readonly InheritJobStepName[] }[]
+
+export type InheritJobPhaseKey = (typeof INHERIT_JOB_PHASES)[number]["key"]
+/** `stopped`: the job ended before this phase finished, without it failing. */
+export type InheritJobPhaseStatus = "pending" | "running" | "done" | "failed" | "stopped"
+
+export function summarizeJobPhases(job: InheritJob): { key: InheritJobPhaseKey; status: InheritJobPhaseStatus }[] {
+  const terminal = isTerminalJobStatus(job.status)
+  return INHERIT_JOB_PHASES.map(({ key, steps }) => {
+    const statuses = steps.map((name) => findJobStep(job, name)?.status ?? "pending")
+    const finished = statuses.filter((status) => status === "done" || status === "skipped").length
+    let status: InheritJobPhaseStatus
+    if (statuses.includes("failed")) {
+      status = "failed"
+    } else if (finished === statuses.length && statuses.includes("done")) {
+      status = "done"
+    } else if (statuses.includes("running") || statuses.includes("done")) {
+      // Between two steps of a phase nothing is marked running for a moment.
+      status = terminal ? "stopped" : "running"
+    } else {
+      status = "pending"
+    }
+    return { key, status }
+  })
+}
+
 /** Milliseconds a step took (or has been running); null when it has not started. */
 export function stepDurationMs(step: Pick<InheritJobStep, "startedAt" | "finishedAt" | "status">, now: number): number | null {
   if (!step.startedAt) return null

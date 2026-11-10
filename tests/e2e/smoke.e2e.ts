@@ -41,7 +41,7 @@ test("logout route without a challenge offers a plain sign-out, not an error", a
   await expect(page.getByRole("button", { name: /^(退出登录|Sign out)$/ })).toHaveCount(0)
 
   await page.getByRole("button", { name: /返回首页|Back to home/ }).click()
-  await expect(page.getByRole("heading", { name: /欢迎使用 Haruki 工具箱|Welcome to Haruki Toolbox/ })).toBeVisible()
+  await expect(page.getByRole("heading", { name: /^(Haruki 工具箱|Haruki Toolbox)$/ })).toBeVisible()
 })
 
 test("logout route without a challenge signs a local session out through Kratos", async ({ page }) => {
@@ -104,7 +104,7 @@ test("app mounts while the session bootstrap is still pending", async ({ page })
 
   await page.goto("/")
 
-  await expect(page.getByRole("heading", { name: /欢迎使用 Haruki 工具箱|Welcome to Haruki Toolbox/ })).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByRole("heading", { name: /^(Haruki 工具箱|Haruki Toolbox)$/ })).toBeVisible({ timeout: 10_000 })
 })
 
 test("unknown route shows 404 page with a way back home", async ({ page }) => {
@@ -113,7 +113,7 @@ test("unknown route shows 404 page with a way back home", async ({ page }) => {
   await expect(page.getByRole("heading", { name: /页面不存在|Page not found/ })).toBeVisible()
 
   await page.getByRole("link", { name: /返回首页|Back to home/ }).click()
-  await expect(page.getByRole("heading", { name: /欢迎使用 Haruki 工具箱|Welcome to Haruki Toolbox/ })).toBeVisible()
+  await expect(page.getByRole("heading", { name: /^(Haruki 工具箱|Haruki Toolbox)$/ })).toBeVisible()
 })
 
 // Kratos (VITE_HARUKI_TOOLBOX_AUTH_URL in .env.e2e) is mocked below: its

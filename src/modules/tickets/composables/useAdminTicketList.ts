@@ -19,6 +19,7 @@ import { describeError, extractErrorMessage, type ErrorDescription } from "@/lib
 import { readQueryEnum, readQueryString, writeQueryValue } from "@/lib/query-codec"
 import { ADMIN_DEFAULT_PAGE_SIZE, readAdminPage, readAdminPageSize } from "@/modules/admin/lib/pagination"
 import { useUserStore } from "@/shared/stores/user"
+import { useAdminTicketListStats } from "@/modules/tickets/composables/useAdminTicketListStats"
 import {
   ADMIN_TICKET_PRIORITY_FILTER_VALUES,
   ADMIN_TICKET_QUICK_FILTER_VALUES,
@@ -59,6 +60,7 @@ export function useAdminTicketList() {
   const statusOptions = computed(() => getTicketStatusFilterOptions(t))
   const priorityOptions = computed(() => getAdminTicketPriorityFilterOptions(t))
   const isSuperAdmin = computed(() => userStore.isSuperAdmin)
+  const stats = useAdminTicketListStats()
   const hasActiveFilters = computed(() =>
     search.value.trim() !== "" || quickFilter.value !== "all" || statusFilter.value !== "all" || priorityFilter.value !== "all"
   )
@@ -267,8 +269,11 @@ export function useAdminTicketList() {
     void router.push({ name: "admin.ticketDetail", params: { ticketId } })
   }
 
+  // The refresh button reloads everything on the page; filters and paging
+  // only reload the list (the stat panel counts the whole set).
   function refreshTickets() {
     void loadTickets()
+    void stats.load()
   }
 
   return {
@@ -302,6 +307,10 @@ export function useAdminTicketList() {
     refreshTicketNotificationRecipients,
     setTicketNotificationRecipientEnabled,
     refreshTickets,
+    statsSummary: stats.summary,
+    statsLoading: stats.loading,
+    statsFailed: stats.failed,
+    reloadStats: stats.load,
     applySearch,
     resetFilters,
     prevPage,

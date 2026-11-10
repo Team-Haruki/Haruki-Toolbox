@@ -2,8 +2,9 @@
 import {
   GameBindingDeleteDialog,
   GameBindingEditDialog,
-  GameBindingFiltersCard,
+  GameBindingFilters,
   GameBindingReassignDialog,
+  GameBindingStats,
   GameBindingsTable,
 } from "@/modules/admin-game-bindings/components"
 import { useGameBindingManagement } from "@/modules/admin-game-bindings/composables/useGameBindingManagement"
@@ -21,7 +22,13 @@ const {
   filterServer,
   filterUserId,
   filterGameUserId,
+  filterVerified,
   filterSort,
+  stats,
+  statsLoading,
+  statsFailed,
+  loadStats,
+  pageSharing,
   selected,
   selectAll,
   reassignDialogOpen,
@@ -40,6 +47,7 @@ const {
   servers,
   editServers,
   sortOptions,
+  verifiedOptions,
   bindingKey,
   serverLabel,
   applyFilters,
@@ -70,14 +78,30 @@ function updateMysekaiPermission(payload: { key: MysekaiPermissionKey; value: bo
 </script>
 
 <template>
-  <div class="w-full flex flex-col gap-4">
-    <GameBindingFiltersCard
+  <div class="flex w-full flex-col gap-4">
+    <GameBindingStats
+      :loading="statsLoading"
+      :stats="stats"
+      :failed="statsFailed"
+      :rows-loading="loading"
+      :row-count="bindings.length"
+      :matching="loadError ? null : total"
+      :page="page"
+      :total-pages="totalPages"
+      :page-sharing="pageSharing"
+      :server-label="serverLabel"
+      @retry="loadStats"
+    />
+
+    <GameBindingFilters
       v-model:filter-q="filterQ"
       v-model:filter-server="filterServer"
       v-model:filter-user-id="filterUserId"
       v-model:filter-game-user-id="filterGameUserId"
+      v-model:filter-verified="filterVerified"
       v-model:filter-sort="filterSort"
       :servers="servers"
+      :verified-options="verifiedOptions"
       :sort-options="sortOptions"
       :loading="loading"
       @apply="applyFilters"

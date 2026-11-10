@@ -70,13 +70,56 @@ export default {
     }
   },
   "adminConfig": {
-    "publicApiKeys": {
-      "title": "Public API keys",
-      "description": "Manage public API key configuration (super admins only)."
+    "status": {
+      "title": "Status",
+      "deviceFlow": "Device authorization",
+      "webhook": "Webhook delivery",
+      "allowedKeys": "Allowed data keys",
+      "secrets": "Secrets",
+      "secretsValue": "{configured} / {known} set",
+      "proxyVersion": "HarukiProxy version",
+      "on": "On",
+      "off": "Off"
+    },
+    "allowedKeys": {
+      "title": "Data keys the public API may serve",
+      "help": "The public endpoints, the OAuth2 game-data endpoint and the owned-account endpoint return only the top-level game-data keys listed here; the private API is not limited. Saving clears the game-data cache.",
+      "count": "{count}",
+      "empty": "The list is empty: no data key is allowed yet.",
+      "addLabel": "Add data keys",
+      "addPlaceholder": "userCards, userDecks",
+      "addHint": "Add several at once, separated by commas or spaces.",
+      "add": "Add",
+      "remove": "Remove {key}",
+      "restore": "Restore {key}",
+      "addedMark": "New",
+      "removedMark": "To be removed",
+      "pending": "{added} added · {removed} removed",
+      "reset": "Reset",
+      "validation": {
+        "empty": "Enter a data key to add",
+        "duplicate": "Already on the list: {keys}"
+      },
+      "loadFailed": "Failed to load the allowed data keys",
+      "saved": "Allowed data keys saved"
+    },
+    "credentials": {
+      "title": "Credentials and connections",
+      "note": "Secret values are never sent back; this only shows whether each one is set. To replace one, write the field in parentheses into the runtime configuration below and save.",
+      "configured": "Set",
+      "notConfigured": "Not set",
+      "notSet": "Not set",
+      "privateApiToken": "Private API token",
+      "harukiProxySecret": "HarukiProxy secret",
+      "harukiProxyUnpackKey": "HarukiProxy unpack key",
+      "webhookJwtSecret": "Webhook JWT secret",
+      "privateApiUserAgent": "Private API User-Agent",
+      "harukiProxyUserAgent": "HarukiProxy User-Agent",
+      "harukiProxyVersion": "HarukiProxy version"
     },
     "runtime": {
       "title": "Runtime configuration",
-      "description": "Manage runtime configuration. Changes take effect immediately.",
+      "description": "Edit the runtime configuration as JSON; saving applies it immediately. Fields you leave out stay as they are.",
       "saveDialogTitle": "Apply runtime configuration?",
       "saveDialogDescription": "This change takes effect immediately and applies system-wide. Make sure the JSON is correct before continuing.",
       "saveDialogConfirm": "Apply"
@@ -97,12 +140,9 @@ export default {
       }
     },
     "toast": {
-      "loadApiKeysFailedTitle": "Failed to load public API keys",
       "loadRuntimeFailedTitle": "Failed to load runtime configuration",
-      "apiKeysUpdated": "Public API keys updated",
       "runtimeUpdated": "Runtime configuration updated",
       "invalidJson": "Invalid JSON format",
-      "invalidApiKeysSchema": "Public API keys must be a JSON object of string values",
       "invalidRuntimeSchema": "Runtime configuration must be a JSON object",
       "saveFailedTitle": "Failed to save",
       "saveFailedFallback": "Save failed",
@@ -138,8 +178,59 @@ export default {
       "open": "Open",
       "resolved": "Resolved"
     },
+    "range": {
+      "last24h": "Last 24 hours",
+      "last7d": "Last 7 days",
+      "last30d": "Last 30 days",
+      "last90d": "Last 90 days",
+      "last365d": "Last year"
+    },
+    "filters": {
+      "range": "Time range",
+      "status": "Status",
+      "severity": "Severity",
+      "allStatuses": "All statuses",
+      "allSeverities": "All severities",
+      "severityOption": "Severity: {severity}"
+    },
+    "stats": {
+      "open": "Open events",
+      "urgent": "Open critical / high",
+      "urgentSplit": "{critical} critical · {high} high",
+      "resolved": "Resolved events",
+      "resolutionRate": "{rate} resolved",
+      "total": "All events",
+      "bySeverity": "Open events by severity",
+      "bySeverityHint": "Every open event, {range}",
+      "bySource": "Sources on this page",
+      "bySourceHint": "Only the {count} rows the list is showing",
+      "bySourceEmpty": "The list has no events",
+      "bySourceFailed": "The list did not load, so there are no events to count",
+      "noSource": "No source given",
+      "unavailable": "Figures unavailable"
+    },
+    "detail": {
+      "title": "Risk event #{id}",
+      "noAction": "No action recorded",
+      "targetUser": "Target user",
+      "actorUser": "Acting user",
+      "ip": "IP",
+      "resolvedAt": "Resolved at",
+      "resolvedBy": "Resolved by",
+      "resolutionReason": "Resolution note",
+      "groups": {
+        "event": "Event",
+        "parties": "Who it concerns",
+        "resolution": "Resolution",
+        "metadata": "Metadata"
+      }
+    },
     "events": {
       "title": "Risk events",
+      "refresh": "Refresh",
+      "details": "View details",
+      "emptyHint": "No events match ({range}). Try another time range or filter.",
+      "userShort": "User {userId}",
       "createButton": "Create event",
       "createDialogTitle": "Create risk event",
       "create": "Create",
@@ -187,6 +278,16 @@ export default {
     "rules": {
       "title": "Risk rules",
       "description": "View and edit risk rules (super admins only).",
+      "editorLabel": "Rules JSON",
+      "editorHint": "Each rule has a key (1–64 characters), a description and a config. Saving only adds or updates the rules listed.",
+      "formatButton": "Tidy JSON",
+      "revertButton": "Revert",
+      "state": {
+        "saving": "Saving…",
+        "invalid": "Invalid JSON",
+        "pending": "Unsaved: {added} new · {changed} changed",
+        "saved": "Saved"
+      },
       "saveButton": "Save rules",
       "superAdminOnly": "Risk rules are only available to super admins.",
       "loadError": "Failed to load risk rules.",
@@ -194,13 +295,20 @@ export default {
       "validation": {
         "invalidJson": "Invalid JSON: check brackets, quotes and commas",
         "notArray": "Rules content must be a JSON array",
-        "invalidRule": "Rule #{index} is malformed: it needs id, name, description (strings) and enabled (boolean); config is optional and must be an object"
+        "invalidRule": "Rule #{index} is malformed: it needs a key (a string of 1–64 characters); description is optional and must be a string, config is optional and must be an object",
+        "duplicateKey": "Rule #{index} repeats the key “{key}” of an earlier rule",
+        "tooMany": "At most {max} rules can be saved at once"
       },
       "preview": {
         "title": "Rules preview",
         "count": "{count} rules",
-        "invalid": "Fix the JSON above to see the parsed rules here.",
-        "empty": "The rule array is empty; saving will remove every rule.",
+        "invalid": "Fix the JSON to see the parsed rules here.",
+        "empty": "The rule array is empty; there is nothing to save.",
+        "added": "New",
+        "changed": "Changed",
+        "updatedAt": "Updated {time}",
+        "updatedBy": "Updated {time} by user {user}",
+        "omitted": "{count} rules not listed here stay as they are (saving never deletes a rule): {keys}",
         "enabled": "Enabled",
         "disabled": "Disabled",
         "configKeys": "Config keys: {keys}",
@@ -265,6 +373,26 @@ export default {
       "unavailable": "Summary unavailable",
       "filterByKind": "Show open “{kind}” alerts"
     },
+    "overview": {
+      "handled": "Handled",
+      "handledSplit": "{resolved} resolved · {ignored} ignored",
+      "openKinds": "Across {count} kinds",
+      "dailyAverage": "{count} a day over 7 days",
+      "anyStatus": "Including handled alerts",
+      "byKindHint": "Select a row to list the open alerts of that kind",
+      "byStatus": "Alert status",
+      "byStatusHint": "All alerts",
+      "byStatusTotal": "All {total} alerts",
+      "onThisPage": "Alerts on this page",
+      "onThisPageHint": "Only the {count} rows the list is showing",
+      "onThisPageEmpty": "The list has no alerts",
+      "onThisPageFailed": "The list did not load, so there are no alerts to count",
+      "timeline": "When they fired",
+      "timelineRange": "{from} to {to}",
+      "timelineLabel": "The {count} alerts on this page by alert time",
+      "enforcement": "Enforcement",
+      "window": "Counting window"
+    },
     "filters": {
       "title": "Filters",
       "expand": "Expand",
@@ -278,7 +406,8 @@ export default {
       "to": "To",
       "toPlaceholder": "Any time",
       "allStatuses": "All statuses",
-      "allKinds": "All kinds"
+      "allKinds": "All kinds",
+      "changed": "{count} set"
     },
     "actions": {
       "search": "Search",
@@ -328,7 +457,12 @@ export default {
       "noNote": "No note",
       "countValue": "{count} within {window}, threshold {threshold}",
       "handledAt": "Handled at",
-      "handlerNameUnavailable": "(name unavailable, possibly a deleted user)"
+      "handlerNameUnavailable": "(name unavailable, possibly a deleted user)",
+      "groups": {
+        "alert": "Alert",
+        "source": "Bot and source",
+        "handling": "Handling"
+      }
     },
     "actionDialog": {
       "title": {
@@ -365,15 +499,33 @@ export default {
       "links": "Friend links",
       "groups": "Recommended groups"
     },
+    "countShare": "{count} · {percent}",
+    "stats": {
+      "links": "Friend links",
+      "tags": "Link tags",
+      "groups": "Groups",
+      "items": "Group entries",
+      "untagged": "{count} without a tag",
+      "allTagged": "All tagged",
+      "topTag": "Most used: {tag} ({count})",
+      "emptyGroups": "{count} empty",
+      "noEmptyGroups": "None empty",
+      "largestGroup": "Largest: {group} ({count})"
+    },
     "linksTab": {
       "title": "Friend links",
+      "description": "Shown in ascending order; ties go by ID.",
+      "tagPanel": {
+        "title": "Tags",
+        "description": "Links carrying each tag",
+        "empty": "No tags yet",
+        "more": "{count} more tags not listed"
+      },
       "createButton": "Add friend link",
       "table": {
         "sortOrder": "Order",
         "name": "Name",
-        "url": "URL",
-        "tags": "Tags",
-        "actions": "Actions"
+        "tags": "Tags"
       },
       "deleteDialog": {
         "title": "Confirm delete",
@@ -385,6 +537,13 @@ export default {
     },
     "groupsTab": {
       "title": "Recommended groups",
+      "summary": "Order {order} · {count} entries",
+      "hasLink": "Has a link",
+      "hasBackground": "Has a background image",
+      "sizePanel": {
+        "title": "Entries per group",
+        "description": "In the order the groups are shown"
+      },
       "createGroupButton": "Create group",
       "createGroupDialog": {
         "title": "Create group",
@@ -508,6 +667,11 @@ export default {
     },
     "form": {
       "removeRedirectUri": "Remove URI",
+      "groups": {
+        "basic": "Basics",
+        "access": "Grants and scopes",
+        "redirects": "Redirects"
+      },
       "nameLabel": "Client name",
       "namePlaceholder": "Display name",
       "clientTypeLabel": "Client type",
@@ -556,7 +720,31 @@ export default {
       "typePublic": "Public",
       "typeConfidential": "Confidential",
       "deviceBadge": "Device code",
-      "deviceBadgeTitle": "Device code grant enabled"
+      "deviceBadgeTitle": "Device code grant enabled",
+      "title": "Clients",
+      "columns": {
+        "client": "Client",
+        "scopes": "Scopes and grant types",
+        "redirectUris": "Redirect URIs",
+        "createdAt": "Created"
+      },
+      "moreRedirectUris": "{count} more",
+      "noRedirectUris": "No redirect URIs"
+    },
+    "overview": {
+      "total": "Clients",
+      "enabled": "Enabled",
+      "disabledCount": "{count} disabled",
+      "deletedCount": "{count} deleted",
+      "confidential": "Confidential clients",
+      "publicCount": "{count} public",
+      "device": "Device code clients",
+      "shareOfClients": "{percent} of all clients",
+      "partialNote": "The clients span more than one page: apart from the total, these figures count only the {loaded} clients loaded (of {total}).",
+      "scopesTitle": "Scopes",
+      "scopesHint": "Clients that register each scope",
+      "grantTypesTitle": "Grant types",
+      "grantTypesHint": "Clients that may use each grant type"
     },
     "table": {
       "actions": "Actions",
@@ -625,7 +813,50 @@ export default {
       "trendTitle": "Trend",
       "trendAuthorizations": "New authorizations",
       "trendTokens": "Tokens issued",
-      "trendEmpty": "No authorization or token activity in the selected range"
+      "trendEmpty": "No authorization or token activity in the selected range",
+      "stateActive": "Active",
+      "stateRevoked": "Revoked",
+      "authorizationStateHint": "Share of all user authorizations that are still active",
+      "tokenStateHint": "Share of all tokens that are still active",
+      "noAuthorizations": "No user has authorized this client yet",
+      "noTokens": "No tokens on record",
+      "trendHintHour": "New authorizations and tokens issued per hour",
+      "trendHintDay": "New authorizations and tokens issued per day",
+      "trendSummary": "{buckets} time buckets in the range, {authorizations} new authorizations and {tokens} tokens issued",
+      "trendPeak": "Busiest bucket: {time}, {count} in total",
+      "trendView": "How the trend is shown",
+      "trendViewChart": "Chart",
+      "trendViewTable": "Data table",
+      "trendBucket": "Time bucket",
+      "trendTableNote": "Only the {shown} buckets with data are listed (of {total})",
+      "audit": {
+        "title": "Admin activity",
+        "description": "Audit log entries that target this client in the selected range",
+        "loadFailed": "The admin activity summary failed to load.",
+        "empty": "No admin activity on this client in the selected range",
+        "total": "Actions",
+        "success": "Succeeded",
+        "failure": "Failed",
+        "successRate": "Success rate",
+        "other": "{count} other actions",
+        "action": {
+          "create": "Create client",
+          "update": "Change settings",
+          "activeUpdate": "Enable / disable",
+          "rotateSecret": "Rotate secret",
+          "delete": "Delete client",
+          "restore": "Restore client",
+          "revoke": "Revoke all authorizations",
+          "statisticsQuery": "View statistics",
+          "authorizationsList": "View authorizations",
+          "auditLogsQuery": "View audit logs",
+          "auditSummaryQuery": "View audit summary",
+          "webhookList": "View webhooks",
+          "webhookCreate": "Create webhook",
+          "webhookUpdate": "Change webhook",
+          "webhookDelete": "Delete webhook"
+        }
+      }
     },
     "secretDialog": {
       "title": "Credential generated",
@@ -637,6 +868,7 @@ export default {
       "title": "OAuth client webhooks",
       "description": "Manage data update notification endpoints for client {clientId}.",
       "placeholderHint": "Callback URLs support {'{server}'}, {'{data_type}'}, and {'{user_id}'} placeholders.",
+      "summary": "{total} endpoints, {enabled} enabled",
       "actions": {
         "refresh": "Refresh",
         "create": "Create endpoint",
@@ -789,7 +1021,24 @@ export default {
       "subscriptions": "Subscriptions",
       "createdAt": "Created at",
       "actions": "Actions",
-      "empty": "No webhook endpoints"
+      "empty": "No webhook endpoints",
+      "endpoint": "Endpoint",
+      "bearerTitle": "Callbacks carry an Authorization: Bearer header"
+    },
+    "overview": {
+      "total": "Endpoints",
+      "enabledDisabled": "{enabled} enabled · {disabled} disabled",
+      "delivering": "Delivering",
+      "globalOn": "Global delivery is on",
+      "globalOff": "Global delivery is off: no callbacks are sent",
+      "subscriptions": "Subscriptions",
+      "endpointsWithSubscribers": "{count} endpoints have subscribers",
+      "jwtSecret": "JWT secret",
+      "withBearer": "{count} with a bearer token",
+      "rankTitle": "Subscriptions by endpoint",
+      "rankHint": "The most subscribed endpoints and their share of all subscriptions, counted from the list above.",
+      "rankEmpty": "No subscriptions yet",
+      "rankRest": "{count} subscriptions on the other endpoints"
     },
     "form": {
       "createTitle": "Create webhook endpoint",
@@ -807,7 +1056,11 @@ export default {
       "bearerPlaceholder": "Optional. Leave empty for no Authorization header",
       "bearerHelp": "When set, the backend will send `Authorization: Bearer TOKEN` on callback requests.",
       "clearBearerLabel": "Clear bearer token",
-      "enabledLabel": "Enable this endpoint"
+      "enabledLabel": "Enable this endpoint",
+      "groups": {
+        "endpoint": "Endpoint",
+        "auth": "Credential and authentication"
+      }
     },
     "deleteDialog": {
       "title": "Delete webhook endpoint",
@@ -830,7 +1083,11 @@ export default {
       "server": "Server",
       "dataType": "Data type",
       "createdAt": "Created at",
-      "empty": "No subscribers bound to this endpoint"
+      "empty": "No subscribers bound to this endpoint",
+      "totalLabel": "Subscriptions",
+      "usersLabel": "Users",
+      "byServer": "By region",
+      "byDataType": "By data type"
     },
     "toast": {
       "loadFailedFallback": "Operation failed",
@@ -897,7 +1154,6 @@ export default {
       "loadFailed": "Could not load sponsor users. Please retry."
     },
     "binding": {
-      "count": "Supporters linked to Toolbox",
       "title": "Toolbox account",
       "bound": "Linked",
       "unbound": "Not linked"
@@ -922,7 +1178,51 @@ export default {
     "stats": {
       "total": "Total sponsors",
       "active": "Current",
-      "manualProfile": "Protected profiles"
+      "bound": "Linked to Toolbox",
+      "amount": "Recorded amounts",
+      "newRecords": "{count} new in 12 months",
+      "formerDetail": "{count} former",
+      "boundShare": "{percent} of all sponsors",
+      "amountDetail": "{count} with a recorded amount",
+      "newRecordsTrend": "Sponsor records added per month over the last 12 months"
+    },
+    "breakdown": {
+      "share": "{count} · {percent}",
+      "empty": "No data",
+      "source": {
+        "title": "Source",
+        "description": "All sponsors by where the record came from",
+        "unknown": "Unlabelled"
+      },
+      "plan": {
+        "title": "Tiers",
+        "description": "The 5 tiers with the most sponsors",
+        "unnamed": "No tier set",
+        "other": "{count} other tiers"
+      },
+      "expiry": {
+        "title": "Current sponsors by expiry",
+        "description": "Days from now to the effective expiry",
+        "within7": "Within 7 days",
+        "within30": "8–30 days",
+        "within90": "31–90 days",
+        "later": "Over 90 days",
+        "none": "No expiry"
+      }
+    },
+    "source": {
+      "afdian": "Afdian",
+      "manual": "Manual entry",
+      "legacy": "Legacy data",
+      "imported": "Imported"
+    },
+    "filter": {
+      "search": "Search sponsors",
+      "searchPlaceholder": "Name, ID, tier or source",
+      "category": "Filter by status",
+      "all": "All",
+      "noMatch": "No sponsor matches",
+      "clear": "Clear filters"
     },
     "category": {
       "current": "Current",
@@ -934,7 +1234,11 @@ export default {
     },
     "list": {
       "title": "Sponsor list",
-      "description": "Rows follow the backend order. The backend computes category and expiry from Afdian orders and manual time."
+      "description": "Rows follow the backend order. The backend computes category and expiry from Afdian orders and manual time.",
+      "total": "{total} sponsors",
+      "filteredTotal": "{count} of {total} sponsors",
+      "manualProfile": "{count} protected profiles",
+      "migrationPending": "{count} awaiting the duration split"
     },
     "table": {
       "supporter": "Supporter",
@@ -944,12 +1248,17 @@ export default {
       "lastSupport": "Last support",
       "effectiveExpiry": "Effective expiry",
       "contribution": "Contribution",
-      "afdianSync": "Afdian updates",
-      "actions": "Actions",
+      "amount": "Amount",
+      "toolbox": "Toolbox",
+      "protect": "Protect",
+      "protectLabel": "Keep {name}'s profile from Afdian updates",
+      "expiresOn": "Ends {date}",
+      "expiredOn": "Ended {date}",
       "empty": "No sponsor records yet"
     },
     "edit": {
       "title": "Edit sponsor profile",
+      "profileGroup": "Display profile",
       "name": "Display name",
       "avatar": "Avatar URL",
       "avatarPlaceholder": "https://example.com/avatar.png",
@@ -1065,53 +1374,121 @@ export default {
     "common": {
       "fallback": "—",
       "success": "Success",
-      "failure": "Failure"
+      "failure": "Failure",
+      "otherEntries": "{kinds} more, {count} in total"
     },
     "dashboard": {
+      "generatedAt": "Data as of {time}",
+      "refresh": "Refresh",
       "stat": {
         "totalUsers": "Total users",
-        "superAdmin": "Super admins",
-        "admin": "Admins",
-        "totalBindings": "Game bindings",
-        "verifiedBindings": "Verified",
-        "totalUploads": "Total uploads (all time)"
+        "bindingsPerUser": "{count} game accounts bound per user",
+        "newRegistrations": "New sign-ups, 24 h",
+        "vsPrevious24h": "vs the previous 24 h",
+        "totalBindings": "Game account bindings",
+        "verifiedBindings": "{count} verified · {percent}",
+        "totalUploads": "Uploads, all time",
+        "uploadsPerUser": "{count} per user",
+        "uploadsWindow": "Uploads, {hours} h",
+        "failedWindow": "Failed uploads, {hours} h",
+        "failureRate": "Failure rate {percent}",
+        "staff": "Admin team",
+        "staffDetail": "{superAdmin} super admin · {admin} admin",
+        "banned": "Banned users",
+        "bannedShare": "{percent} of all users"
       },
       "breakdown": {
         "byServer": "Bindings by server",
-        "byServerHint": "All game bindings",
-        "byMethod": "Uploads by method",
-        "byDataType": "Uploads by data type",
-        "windowHint": "Last {hours} hours",
+        "byServerHint": "All game account bindings",
+        "byMethod": "Upload methods",
+        "byDataType": "Data types",
+        "windowHint": "Uploads in the last {hours} hours",
         "empty": "No data"
       },
-      "upload24h": {
-        "total": "24h total uploads",
-        "bannedUsers": "Banned users"
-      },
       "chart": {
-        "title": "Trend chart",
-        "description": "Uploads and registrations side by side; the upload chart reads uploads on the left axis and failures on the right",
-        "uploadTitle": "Upload trend",
-        "registrationTitle": "Registration trend",
-        "uploadsAxis": "Uploads (left axis)",
-        "failuresAxis": "Failed uploads (right axis)",
+        "title": "Trends",
+        "description": "Uploads, failed uploads and new sign-ups each get their own chart on one time axis; point at any chart to read all three.",
         "uploads": "Uploads",
-        "registrations": "Registrations",
-        "failures": "Failures",
+        "registrations": "New sign-ups",
+        "failures": "Failed uploads",
         "successRate": "Success rate",
         "rangeLabel": "Time range",
         "bucketLabel": "Time bucket",
         "range7d": "Last 7 days",
+        "range14d": "Last 14 days",
         "range30d": "Last 30 days",
-        "range90d": "Last 90 days",
         "bucketDay": "Daily",
         "bucketWeek": "Weekly",
         "bucketMonth": "Monthly",
+        "tableTime": "Time",
         "empty": "No data"
+      },
+      "trend": {
+        "compare": {
+          "day": "Latest day vs the day before | Latest {n} days vs the {n} before",
+          "week": "Latest week vs the week before | Latest {n} weeks vs the {n} before",
+          "month": "Latest month vs the month before | Latest {n} months vs the {n} before"
+        },
+        "dailyAverage": "Daily average",
+        "peak": "Peak",
+        "failureRate": "Failure rate",
+        "worstRate": "Highest failure rate",
+        "bestRate": "Lowest failure rate"
+      },
+      "hourly": {
+        "title": "Uploads in the last 24 hours",
+        "description": "Uploads per hour with the failed ones stacked on top; the last column is the hour still in progress.",
+        "successRate": "Success rate",
+        "peakHour": "Busiest hour",
+        "hourlyAverage": "Hourly average",
+        "previousTotal": "Previous 24 h",
+        "succeeded": "Succeeded",
+        "failed": "Failed",
+        "chartLabel": "Uploads per hour over the last 24 hours; use the left and right arrow keys to step through the hours",
+        "readout": "{time}: {success} succeeded, {failed} failed"
+      },
+      "matrix": {
+        "title": "Upload method × data type",
+        "method": "Upload method",
+        "total": "Total"
+      },
+      "quality": {
+        "title": "Upload quality",
+        "description": "Success rate and processing time of each upload method over the last 24 hours.",
+        "restrictedHint": "For admins these numbers leave out uploads by super admins and by you, and uploads that did not pass the identity check.",
+        "latencyP50": "Processing time P50",
+        "latencyP50Hint": "Half of the uploads are faster",
+        "latencyP95": "Processing time P95",
+        "latencyP95Hint": "95% of the uploads are faster",
+        "activeAccounts": "Active game accounts",
+        "activeAccountsHint": "Verified accounts with a successful upload",
+        "v3Share": "HarukiProxy V3 share",
+        "v2OnlyAccounts": "{count} accounts still on V2 only",
+        "attempts": "Uploads",
+        "failed": "Failed",
+        "accounts": "Active accounts",
+        "empty": "No uploads in the last 24 hours"
+      },
+      "failureStage": {
+        "title": "Failure stages",
+        "description": "Where failed uploads stopped in the last 24 hours",
+        "empty": "No failed uploads in the last 24 hours",
+        "buildContext": "Building the upload context",
+        "accountPolicy": "Account policy check",
+        "decodePayload": "Decoding the payload",
+        "validatePayloadIdentity": "Checking who the data belongs to",
+        "preprocess": "Preprocessing",
+        "persist": "Saving the data",
+        "validateResult": "Validating the result",
+        "decrypt": "Decrypting",
+        "stale": "Stale data",
+        "retrieve": "Fetching {type} data",
+        "unknown": "Stage not recorded"
       },
       "toast": {
         "loadFailedTitle": "Failed to load dashboard",
         "loadChartFailedTitle": "Failed to load chart",
+        "loadQualityFailedTitle": "Failed to load upload quality",
         "loadFailedFallback": "Load failed"
       }
     },
@@ -1121,19 +1498,63 @@ export default {
         "next": "Next page",
         "total": "{total} logs in total"
       },
-      "summary": {
-        "total": "Total logs"
+      "overview": {
+        "title": "Overview",
+        "scope": "all logs matching the filters"
       },
-      "searchPlaceholder": "Search logs…",
+      "summary": {
+        "total": "Total logs",
+        "successRate": "Success rate",
+        "share": "{share} of all",
+        "actionKinds": "{count} distinct actions",
+        "topReason": "Mostly: {reason}",
+        "failureRate": "{rate} failed"
+      },
+      "breakdown": {
+        "actions": "Top actions",
+        "actionsHint": "Most frequent actions in the range",
+        "actorTypes": "Actor types",
+        "actorTypesHint": "Who triggered these logs",
+        "reasons": "Failure reasons",
+        "reasonsHint": "The reason recorded on failed logs",
+        "pageActors": "Actors on this page",
+        "pageActorsHint": "Only the {count} rows in the table below",
+        "empty": "No data",
+        "noFailures": "No failed logs in the range",
+        "unknownReason": "No reason recorded"
+      },
+      "actorType": {
+        "anonymous": "Anonymous",
+        "user": "User",
+        "admin": "Admin",
+        "system": "System",
+        "unknown": "Unknown"
+      },
+      "filters": {
+        "result": "Result",
+        "allResults": "All",
+        "actorType": "Actor type",
+        "allActorTypes": "All actors",
+        "range": "Time range"
+      },
+      "range": {
+        "last24h": "Last 24 hours",
+        "last7d": "Last 7 days",
+        "last30d": "Last 30 days"
+      },
+      "searchActionPlaceholder": "Search by action name…",
       "resetSearch": "Clear search",
+      "refresh": "Refresh",
       "exportButton": "Export",
       "table": {
         "result": "Result",
         "action": "Action",
-        "request": "Method",
-        "user": "User",
+        "actionAndRequest": "Action / request",
+        "actor": "Actor",
         "time": "Time",
         "empty": "No logs",
+        "emptyHint": "No logs in the selected time range",
+        "emptyFiltered": "No logs match the filters. Loosen them or widen the time range.",
         "openDetail": "View details"
       },
       "detail": {
@@ -1141,8 +1562,11 @@ export default {
         "result": "Result",
         "time": "Time",
         "action": "Action",
+        "target": "Target",
         "request": "Request",
         "user": "User",
+        "actorType": "Actor type",
+        "requestId": "Request ID",
         "detail": "Detail",
         "copy": "Copy details",
         "copied": "Details copied",
@@ -1184,9 +1608,13 @@ export default {
         "allDataTypes": "All data types",
         "allServers": "All servers",
         "allStatuses": "All statuses",
-        "selectedMore": "{first} +{count}"
+        "selectedMore": "{first} +{count}",
+        "activeCount": "{count} active"
       },
-      "timeRangeLabel": "Time range:",
+      "overview": {
+        "title": "Overview",
+        "scope": "all uploads matching the filters"
+      },
       "table": {
         "status": "Status",
         "user": "User",
@@ -1201,6 +1629,8 @@ export default {
         "viewDetails": "View details",
         "viewError": "View error",
         "time": "Time",
+        "duration": "Duration",
+        "methodAndDataType": "Method / type",
         "empty": "No upload logs"
       },
       "actor": {
@@ -1232,6 +1662,8 @@ export default {
         "client": "Client / version",
         "platform": "Platform",
         "requestId": "Request ID",
+        "duration": "Processing time",
+        "requestSize": "Request size",
         "claimedGameUserId": "Claimed UID in payload",
         "failureStage": "Failure stage",
         "errorCode": "Error code"
@@ -1243,13 +1675,34 @@ export default {
       },
       "summary": {
         "totalUploads": "Total uploads",
-        "successRate": "Success rate"
+        "successRate": "Success rate",
+        "failureRate": "{rate} failed",
+        "activeAccounts": "Active game accounts",
+        "activeAccountsHint": "Verified accounts with a successful upload",
+        "latency": "Median processing time",
+        "latencyDetail": "P95 {p95} · {count} samples",
+        "latencyNoSamples": "No timings recorded",
+        "volume": {
+          "hour": "Uploads per hour",
+          "day": "Uploads per day"
+        },
+        "failureVolume": {
+          "hour": "Failed uploads per hour",
+          "day": "Failed uploads per day"
+        },
+        "peak": {
+          "hour": "Peak {count} per hour",
+          "day": "Peak {count} per day"
+        }
       },
       "charts": {
-        "successRateDistribution": "Success rate distribution",
         "byMethod": "By upload method",
         "byDataType": "By data type",
-        "total": "Total"
+        "byServer": "By server",
+        "failureStages": "Failure stages",
+        "noFailures": "No failed uploads in the range",
+        "unknownStage": "No stage recorded",
+        "empty": "No data"
       },
       "method": {
         "manual": "Manual upload",
@@ -1273,6 +1726,7 @@ export default {
       },
       "toast": {
         "loadFailedTitle": "Failed to load upload logs",
+        "loadAnalyticsFailedTitle": "Failed to load upload statistics",
         "loadFailedFallback": "Load failed",
         "filterFailedTitle": "Filter failed",
         "invalidTimeRange": "Start time cannot be later than end time"
@@ -1284,8 +1738,39 @@ export default {
       "cancel": "Cancel",
       "create": "Create"
     },
+    "status": {
+      "verified": "Verified",
+      "unverified": "Unverified"
+    },
+    "stats": {
+      "total": "Bindings",
+      "verified": "Verified",
+      "verifiedShare": "{share} of all bindings",
+      "unverified": "Unverified",
+      "siteWide": "Site-wide",
+      "matching": "Matching the filters",
+      "matchingPage": "Page {page} of {pages}",
+      "byServer": "By server",
+      "byServerHint": "Every binding, site-wide",
+      "noBindings": "No game account bindings yet",
+      "loadFailed": "Could not load the site-wide figures",
+      "retry": "Retry",
+      "sharingTitle": "Sharing on this page",
+      "sharingHint": "Only the {count} bindings the list is showing",
+      "sharingEmpty": "The list has no bindings",
+      "sharingFailed": "The list did not load, so there are no bindings to count",
+      "sharing": {
+        "suitePublicApi": "Suite · public query",
+        "suiteBots": "Suite · synced to a bot",
+        "mysekaiPublicApi": "MySekai · public query",
+        "mysekaiFixtureApi": "MySekai · furniture sharing",
+        "mysekaiBots": "MySekai · synced to a bot"
+      }
+    },
     "filters": {
       "title": "Search and filters",
+      "verification": "Verification",
+      "allVerification": "All",
       "addButton": "Add binding",
       "fuzzySearch": "Fuzzy search",
       "fuzzySearchPlaceholder": "Game ID / Username / Email",
@@ -1308,6 +1793,18 @@ export default {
       "userIdAsc": "User ID ↑"
     },
     "table": {
+      "title": "Bindings",
+      "selectRowOf": "Select game account {gameUserId}",
+      "sharing": {
+        "suite": "Suite {on}/{total}",
+        "mysekai": "MySekai {on}/{total}",
+        "publicApi": "Public query on",
+        "none": "No sharing settings"
+      },
+      "role": {
+        "admin": "Admin",
+        "superAdmin": "Super admin"
+      },
       "selectAll": "Select all",
       "selectRow": "Select row",
       "selectedCount": "{count} selected",
@@ -1318,6 +1815,9 @@ export default {
       "columns": {
         "server": "Server",
         "gameId": "Game ID",
+        "account": "Game account",
+        "verified": "Verified",
+        "sharing": "Sharing switched on",
         "user": "Owner",
         "actions": "Actions"
       },
@@ -1344,7 +1844,20 @@ export default {
       "gameUserId": "Game user ID",
       "gameUserIdPlaceholder": "Enter in-game user ID",
       "suiteSettingsTitle": "Suite settings",
-      "mysekaiSettingsTitle": "MySekai settings"
+      "mysekaiSettingsTitle": "MySekai settings",
+      "accountTitle": "Game account",
+      "owner": "Owner: user ID {userId}",
+      "identityLockedHint": "The server, game ID and owner cannot be changed here; use “Reassign” to move the binding to another user.",
+      "botsHint": "Sync this data to the matching QQ group bot.",
+      "permissionHelp": {
+        "suite": {
+          "allowPublicApi": "When on, anyone who knows this UID can read the account data this user uploaded through the Toolbox API."
+        },
+        "mysekai": {
+          "allowPublicApi": "When on, anyone who knows this UID can read the MySekai data this user uploaded through the Toolbox API.",
+          "allowFixtureApi": "When on, this UID is listed for MySekai furniture sharing and other players can visit."
+        }
+      }
     },
     "reassignDialog": {
       "title": "Reassign game account",
@@ -1398,10 +1911,35 @@ export default {
       "confirm": "Confirm",
       "unbound": "Not bound",
       "openMenu": "Open menu",
-      "fallback": "—"
+      "fallback": "—",
+      "delete": "Delete",
+      "copyId": "Copy user ID",
+      "idCopied": "User ID copied",
+      "copyFailed": "Copy failed"
     },
     "management": {
       "title": "User management",
+      "stats": {
+        "totalUsers": "All users",
+        "newInDays": "+{count} in {days} days",
+        "trendLabel": "Daily sign-ups over the last {days} days",
+        "staff": "Admin team",
+        "staffBreakdown": "Super admins {superAdmin} · Admins {admin}",
+        "banned": "Banned",
+        "shareOfAll": "{percent} of all users",
+        "filtered": "Matching the filters",
+        "listed": "Users in this list",
+        "listScopeSuperAdmin": "Excludes your own account",
+        "listScopeAdmin": "Excludes you and super admins",
+        "loadFailed": "Statistics failed to load",
+        "retry": "Reload statistics"
+      },
+      "pageSummary": {
+        "count": "This page: {count}",
+        "staff": "Admins {count}",
+        "banned": "Banned {count}",
+        "allowCN": "CN MySekai allowed {count}"
+      },
       "filters": {
         "searchLabel": "Search",
         "searchPlaceholder": "Search name, email, user ID or social account…",
@@ -1421,7 +1959,9 @@ export default {
         "createdFromLabel": "Created from",
         "createdFromPlaceholder": "Filter by start time",
         "createdToLabel": "Created to",
-        "createdToPlaceholder": "Filter by end time"
+        "createdToPlaceholder": "Filter by end time",
+        "allowCNShort": "CN MySekai",
+        "toggle": "Filters"
       },
       "batch": {
         "selectedCount": "{count} users selected",
@@ -1464,11 +2004,16 @@ export default {
           "role": "Role",
           "allowCN": "CN MySekai permission",
           "status": "Account status",
-          "createdAt": "Created at"
+          "createdAt": "Created at",
+          "user": "User"
         },
         "empty": "No users found",
         "loadError": "Failed to load user list",
-        "retry": "Retry"
+        "retry": "Retry",
+        "emptyFiltered": "No user matches the current filters.",
+        "selectPage": "Select this page",
+        "selectUser": "Select {name}",
+        "viewDetail": "View details"
       },
       "toast": {
         "loadFailedTitle": "Failed to load user list",
@@ -1493,6 +2038,29 @@ export default {
     "detail": {
       "backToList": "Back to user list",
       "notFound": "User not found; they may have been deleted or the link is wrong.",
+      "header": {
+        "userId": "User ID",
+        "banReason": "Ban reason"
+      },
+      "stats": {
+        "gameBindings": "Game accounts",
+        "verifiedCount": "{count} verified",
+        "authorizedSocials": "Authorized social accounts",
+        "mainSocial": "Main binding: {platform}",
+        "noMainSocial": "No main social binding",
+        "uploads": "Uploads, last {hours} h",
+        "uploadBreakdown": "{success} ok · {failure} failed",
+        "uploadSuccessRate": "{percent} succeeded",
+        "noUploads": "No uploads in this window",
+        "systemLogs": "Log entries, last {hours} h",
+        "lastAt": "Last {time}",
+        "noEvents": "No entries in this window"
+      },
+      "account": {
+        "title": "Account settings",
+        "roleHelp": "The new role's permissions apply immediately.",
+        "iosHelp": "Used by the user's iOS Shortcut to upload data."
+      },
       "tabs": {
         "info": "Basic info",
         "activity": "Activity logs",
@@ -1544,12 +2112,19 @@ export default {
           "path": "Path",
           "time": "Time"
         },
-        "empty": "No activity logs"
+        "empty": "No activity logs",
+        "listedOf": "Showing the latest {listed} of {total}",
+        "listedAll": "{total} entries",
+        "showAll": "Show all {count}",
+        "showFewer": "Show fewer",
+        "byActor": "By {actor}"
       },
       "oauth": {
         "title": "OAuth authorizations",
         "revokeAll": "Revoke all",
         "total": "{count} authorizations in total",
+        "activeCount": "{count} active",
+        "device": "Device: {name}",
         "empty": "No OAuth authorizations",
         "revokeAllDialogTitle": "Revoke all authorizations",
         "revokeAllDialogDescription": "This revokes all {count} OAuth authorizations for this user and logs them out of all connected third-party apps. Continue?",
@@ -1575,6 +2150,9 @@ export default {
         "edit": "Edit game binding",
         "unbind": "Unbind game account",
         "empty": "No game bindings",
+        "total": "{count} accounts",
+        "sharingSuite": "Suite sharing {on}/{total}",
+        "sharingMysekai": "MySekai sharing {on}/{total}",
         "unbindDialogTitle": "Confirm unbind",
         "unbindDialogDescription": "This will unbind game account {gameUserId}. You can re-add it later."
       },
@@ -1582,6 +2160,7 @@ export default {
         "title": "Social platform binding",
         "add": "Add binding",
         "empty": "No social platform binding",
+        "delete": "Delete social binding",
         "deleteDialogTitle": "Confirm delete",
         "deleteDialogDescription": "Delete this primary social platform binding? You can add it again later."
       },
@@ -1594,6 +2173,8 @@ export default {
           "comment": "Comment"
         },
         "empty": "No authorized social platforms",
+        "total": "{count} accounts",
+        "delete": "Delete authorized account",
         "deleteDialogTitle": "Confirm delete",
         "deleteDialogDescription": "Delete this authorized social platform? You can add it again later."
       },
@@ -1602,6 +2183,7 @@ export default {
         "regenerate": "Regenerate",
         "generate": "Generate upload code",
         "empty": "No upload code",
+        "delete": "Delete upload code",
         "deleteDialogTitle": "Confirm delete",
         "deleteDialogDescription": "Delete the current iOS upload code? You can regenerate a new one afterward.",
         "regenerateDialogTitle": "Confirm regenerate",

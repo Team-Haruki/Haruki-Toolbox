@@ -494,93 +494,105 @@ const { refreshing, refresh } = useSuiteRefresh([
     </div>
 
     <template v-if="progress">
-      <!-- Every difficulty at a glance; the rows are also the difficulty switch. -->
-      <MusicProgressOverview
-        :rows="overviewRows"
-        :active="activeDifficulty"
-        :totals-text="rewardTotalsText"
-        :score-rank-text="rewardStats ? rewardsText(rewardStats.scoreRank) : null"
-        :score-rank-has-remaining="rewardStats != null && hasMusicRewardTotals(rewardStats.scoreRank)"
-        :hint="rewardsAvailable ? t('musicProgress.rewards.hint') : (claimedAchievements == null ? t('musicProgress.rewards.unavailable') : null)"
-        @select="selectDifficulty"
-      />
-
-      <!-- Which score ranks each song reached and what is left to get -->
-      <MusicProgressScoreRankCard
-        v-if="scoreRankProgress"
-        :rows="scoreRankRows"
-        :counts="scoreRankCounts"
-        :summary-text="scoreRankSummaryText"
-        :reset-key="scoreRankResetKey"
-      />
-
-      <!-- Level breakdown of the selected difficulty -->
-      <Card v-if="activeProgress">
-        <CardHeader class="pb-2">
-          <CardTitle class="flex flex-wrap items-center gap-x-3 gap-y-1 text-base">
-            <span :class="[resolveMusicDifficultyChipClass(activeDifficulty), 'w-16 px-1 py-1']">
-              {{ difficultyLabel(activeDifficulty) }}
-            </span>
-            <span>{{ t("musicProgress.levelsTitle") }}</span>
-            <span v-if="activeSummaryText" class="text-xs font-normal tabular-nums text-muted-foreground">{{ activeSummaryText }}</span>
-          </CardTitle>
-          <div class="mt-2 flex flex-wrap items-center gap-x-6 gap-y-2">
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("musicProgress.songFilter.label") }}</span>
-              <ToggleGroup type="single" variant="segment" size="sm" :model-value="songFilter" :aria-label="t('musicProgress.songFilter.label')" @update:model-value="setSongFilter">
-                <ToggleGroupItem v-for="option in MUSIC_PROGRESS_SONG_FILTERS" :key="option" :value="option">
-                  {{ t(`musicProgress.songFilter.${option}`) }}
-                </ToggleGroupItem>
-              </ToggleGroup>
-            </div>
-            <span class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-              <span v-for="item in legendItems" :key="item.key" class="inline-flex items-center gap-1.5">
-                <span class="size-2.5 rounded-full" :style="{ backgroundColor: item.color }" />
-                {{ t(`musicProgress.legend.${item.key}`) }}
-              </span>
-            </span>
-            <Button
-              v-if="levelRows.length > 1"
-              variant="ghost"
-              size="sm"
-              class="ml-auto h-7 gap-1 text-xs text-muted-foreground"
-              @click="toggleAllLevels"
-            >
-              <LucideChevronsDownUp v-if="allExpanded" class="size-3.5" />
-              <LucideChevronsUpDown v-else class="size-3.5" />
-              {{ allExpanded ? t("musicProgress.sections.collapseAll") : t("musicProgress.sections.expandAll") }}
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent class="space-y-2">
-          <div v-if="levelRows.length === 0" class="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
-            {{ t("musicProgress.noSongs") }}
-          </div>
-          <MusicProgressLevelRow
-            v-for="entry in levelRows"
-            :key="entry.key"
-            :row="entry.row"
-            :label="entry.label"
-            :color="activeColor"
-            :expanded="expandedLevels.has(entry.key)"
-            :songs="entry.songs"
-            :match-count="entry.matchCount"
-            :filter-active="filterActive"
-            :rewards-text="entry.rewardsText"
-            :has-remaining="entry.hasRemaining"
-            @toggle="toggleLevel(entry.key)"
+      <!-- Side by side on wide screens: every difficulty at a glance on the
+           left (the rows are also the difficulty switch, and stay in view
+           while the right side scrolls), the chosen difficulty by level on
+           the right. -->
+      <div class="grid gap-4 lg:grid-cols-[21rem_minmax(0,1fr)] lg:items-start">
+        <div class="flex min-w-0 flex-col gap-4 lg:sticky lg:top-16">
+          <MusicProgressOverview
+            :rows="overviewRows"
+            :active="activeDifficulty"
+            :totals-text="rewardTotalsText"
+            :score-rank-text="rewardStats ? rewardsText(rewardStats.scoreRank) : null"
+            :score-rank-has-remaining="rewardStats != null && hasMusicRewardTotals(rewardStats.scoreRank)"
+            :hint="rewardsAvailable ? t('musicProgress.rewards.hint') : (claimedAchievements == null ? t('musicProgress.rewards.unavailable') : null)"
+            @select="selectDifficulty"
           />
-        </CardContent>
-      </Card>
+        </div>
+
+        <div class="flex min-w-0 flex-col gap-4">
+          <!-- Level breakdown of the selected difficulty -->
+          <Card v-if="activeProgress" class="gap-3" data-testid="music-progress-detail">
+            <CardHeader class="pb-2">
+              <CardTitle class="flex flex-wrap items-center gap-x-3 gap-y-1 text-base">
+                <span :class="[resolveMusicDifficultyChipClass(activeDifficulty), 'w-16 px-1 py-1']">
+                  {{ difficultyLabel(activeDifficulty) }}
+                </span>
+                <span>{{ t("musicProgress.levelsTitle") }}</span>
+                <span v-if="activeSummaryText" class="text-xs font-normal tabular-nums text-muted-foreground">{{ activeSummaryText }}</span>
+                <Button
+                  v-if="levelRows.length > 1"
+                  variant="ghost"
+                  size="sm"
+                  class="ml-auto h-7 gap-1 px-2 text-xs font-normal text-muted-foreground"
+                  @click="toggleAllLevels"
+                >
+                  <LucideChevronsDownUp v-if="allExpanded" class="size-3.5" />
+                  <LucideChevronsUpDown v-else class="size-3.5" />
+                  {{ allExpanded ? t("musicProgress.sections.collapseAll") : t("musicProgress.sections.expandAll") }}
+                </Button>
+              </CardTitle>
+              <div class="mt-2 flex flex-wrap items-center gap-x-6 gap-y-2">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("musicProgress.songFilter.label") }}</span>
+                  <ToggleGroup type="single" variant="segment" size="sm" :model-value="songFilter" :aria-label="t('musicProgress.songFilter.label')" @update:model-value="setSongFilter">
+                    <ToggleGroupItem v-for="option in MUSIC_PROGRESS_SONG_FILTERS" :key="option" :value="option">
+                      {{ t(`musicProgress.songFilter.${option}`) }}
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
+                <span class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  <span v-for="item in legendItems" :key="item.key" class="inline-flex items-center gap-1.5">
+                    <span class="size-2.5 rounded-full" :style="{ backgroundColor: item.color }" />
+                    {{ t(`musicProgress.legend.${item.key}`) }}
+                  </span>
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div v-if="levelRows.length === 0" class="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
+                {{ t("musicProgress.noSongs") }}
+              </div>
+              <!-- One bordered list, a line per level: the bars and the four counts line up down the page. -->
+              <div v-else class="divide-y divide-border/60 overflow-hidden rounded-xl border" data-testid="music-progress-levels">
+                <MusicProgressLevelRow
+                  v-for="entry in levelRows"
+                  :key="entry.key"
+                  :row="entry.row"
+                  :label="entry.label"
+                  :color="activeColor"
+                  :expanded="expandedLevels.has(entry.key)"
+                  :songs="entry.songs"
+                  :match-count="entry.matchCount"
+                  :filter-active="filterActive"
+                  :rewards-text="entry.rewardsText"
+                  :has-remaining="entry.hasRemaining"
+                  @toggle="toggleLevel(entry.key)"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <!-- Which score ranks each song reached and what is left to get -->
+          <MusicProgressScoreRankCard
+            v-if="scoreRankProgress"
+            :rows="scoreRankRows"
+            :counts="scoreRankCounts"
+            :summary-text="scoreRankSummaryText"
+            :reset-key="scoreRankResetKey"
+          />
+        </div>
+      </div>
     </template>
 
     <div v-else-if="showSkeleton" class="space-y-3">
       <p v-if="!showDownloadProgress" class="rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
         {{ t("musicProgress.loading") }}
       </p>
-      <Skeleton class="h-56 w-full rounded-lg" />
-      <div class="space-y-2">
-        <Skeleton v-for="index in 6" :key="index" class="h-12 w-full rounded-lg" />
+      <div class="grid gap-4 lg:grid-cols-[21rem_minmax(0,1fr)] lg:items-start">
+        <Skeleton class="h-80 w-full rounded-xl" />
+        <Skeleton class="h-96 w-full rounded-xl" />
       </div>
     </div>
   </div>

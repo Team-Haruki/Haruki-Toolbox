@@ -93,7 +93,7 @@ function handleOpenChange(value: boolean) {
               @update:model-value="update('amount', $event)"
             />
           </div>
-          <div class="space-y-1.5">
+          <div class="space-y-1.5 [&_[data-slot=native-select-wrapper]]:w-full">
             <Label for="admin-sponsor-manual-unit">{{ t("adminSponsors.duration.form.unit") }}</Label>
             <NativeSelect
               id="admin-sponsor-manual-unit"

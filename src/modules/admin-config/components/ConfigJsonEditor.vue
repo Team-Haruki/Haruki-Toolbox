@@ -5,7 +5,8 @@
  * `<textarea>` mode so the page stays usable. There is deliberately no retry
  * button: `@monaco-editor/loader` keeps one module-level init promise, so a
  * failed load stays failed until the page reloads. The plain mode can also be
- * chosen directly from the header.
+ * chosen directly from the header. The `hint` slot is a line of text shown
+ * beside that mode button.
  */
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
@@ -68,7 +69,11 @@ const errorId = computed(() => `${props.id}-error`)
 
 <template>
   <div class="flex flex-col gap-2">
-    <div class="flex items-center justify-end">
+    <!-- The caller's note about the document on the left, the editor mode on the right. -->
+    <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+      <p v-if="$slots.hint" class="min-w-0 flex-1 basis-48 text-xs text-muted-foreground">
+        <slot name="hint" />
+      </p>
       <Button
         type="button"
         variant="ghost"
@@ -94,7 +99,7 @@ const errorId = computed(() => `${props.id}-error`)
       :aria-invalid="validationError ? true : undefined"
       :aria-describedby="validationError ? errorId : undefined"
       :class="cn(
-        'min-h-40 w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 font-mono text-sm shadow-xs outline-none transition-[color,box-shadow] dark:bg-input/30',
+        'min-h-40 w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 font-mono text-sm outline-none transition-[color,box-shadow] dark:bg-input/30',
         'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
         'aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40',
         'disabled:cursor-not-allowed disabled:opacity-50',
@@ -105,7 +110,7 @@ const errorId = computed(() => `${props.id}-error`)
     <div
       v-else
       :class="cn(
-        'max-h-[70vh] min-h-40 w-full resize-y overflow-hidden rounded-md border shadow-sm',
+        'max-h-[70vh] min-h-40 w-full resize-y overflow-hidden rounded-md border',
         validationError ? 'border-destructive' : 'border-input',
         heightClass,
       )"

@@ -11,7 +11,7 @@ import { readQueryEnum, writeQueryValue } from "@/lib/query-codec"
 import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { toast } from "vue-sonner"
-import { LucideArrowUpRight, LucideCloudUpload, LucideCopy, LucideRefreshCw, LucideTrophy } from "lucide-vue-next"
+import { LucideArrowUpRight, LucideCloudUpload, LucideCopy, LucideRefreshCw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -25,8 +25,9 @@ import {
   usePlayerProfile,
   type PlayerProfileSource,
 } from "@/modules/player-profile/composables/usePlayerProfile"
-import ProfileRadarChart from "@/modules/player-profile/components/ProfileRadarChart.vue"
-import ProfileUnitLegend from "@/modules/player-profile/components/ProfileUnitLegend.vue"
+import SekaiUnitLogo from "@/shared/components/SekaiUnitLogo.vue"
+import { SEKAI_UNITS } from "@/shared/sekai/catalog"
+import { buildProfileCharacterGroups, summarizeMusicClears } from "@/modules/player-profile/lib/profile-overview"
 import { useProfileHonors } from "@/modules/player-profile/composables/useProfileHonors"
 import HonorBadge from "@/modules/rank-border/components/HonorBadge.vue"
 import {
@@ -34,7 +35,6 @@ import {
   buildCharacterRanks,
   buildDeckThumbnailCard,
   buildPlayerCardMap,
-  buildUnitLegend,
   normalizeMultiLiveTopScoreCount,
   normalizeMusicDifficultyClearCounts,
   normalizePlayerCards,
@@ -306,25 +306,6 @@ const characterRankCells = computed(() => buildCharacterRanks(snapshotData.value
   }
 }))
 
-function unitGroupOf(characterId: number): { groupKey: string | null; groupColor: string | null } {
-  const unit = characterMap.value.get(characterId)?.unit ?? null
-  if (unit == null) {
-    return { groupKey: null, groupColor: null }
-  }
-
-  return { groupKey: unit, groupColor: unitColorMap.value.get(unit) ?? null }
-}
-
-const characterRadarEntries = computed(() => characterRankCells.value.map((cell) => ({
-  key: cell.characterId,
-  label: cell.name,
-  value: cell.characterRank,
-  detail: t("playerProfile.characters.rank", { rank: cell.characterRank }),
-  iconUrl: cell.iconUrl,
-  color: cell.color,
-  ...unitGroupOf(cell.characterId),
-})))
-
 // The realtime profile only carries the single best challenge result, so the
 // per-character scores always come from the snapshot suite subset instead.
 const challengeCells = computed(() => {
@@ -334,29 +315,6 @@ const challengeCells = computed(() => {
     source?.userChallengeLiveSoloStages,
   )
 })
-
-const challengeRadarEntries = computed(() => challengeCells.value.map((cell) => {
-  const character = characterMap.value.get(cell.characterId) ?? null
-  return {
-    key: cell.characterId,
-    label: character?.name ?? t("playerProfile.unknownCharacter"),
-    value: cell.highScore,
-    detail: formatScore(cell.highScore),
-    iconUrl: character?.iconUrl ?? null,
-    color: resolveSekaiCharacterColor(cell.characterId),
-    ...unitGroupOf(cell.characterId),
-  }
-}))
-
-const characterUnitLegend = computed(() => buildUnitLegend(
-  characterRadarEntries.value,
-  (value) => (Math.round(value * 10) / 10).toFixed(1),
-))
-
-const challengeUnitLegend = computed(() => buildUnitLegend(
-  challengeRadarEntries.value,
-  (value) => formatScore(Math.round(value)),
-))
 
 const challengeTop = computed(() => {
   const top = summarizeChallengeLiveTop(challengeCells.value)
@@ -411,9 +369,6 @@ const collectionCards = computed(() => filterCardsByRarity(releasedMasterCards.v
 
 const collectionSummary = computed(() => summarizeCollection(collectionCards.value, collectionOwnedMap.value))
 
-/** Track color for the ring pies; a neutral gray that reads in both themes. */
-const COLLECTION_RING_TRACK = "rgba(148, 163, 184, 0.3)"
-
 const collectionColumns = computed(() => {
   const rows = buildCharacterDistribution(collectionCards.value, collectionOwnedMap.value)
     .filter((row) => row.characterId > 0)
@@ -431,6 +386,65 @@ const collectionColumns = computed(() => {
       barHeight: row.owned > 0 ? `${Math.max(3, row.percent)}%` : "0%",
     }
   })
+})
+
+// One cell per character: level, collection and challenge live score side by
+// side, so the three no longer have to be matched across three charts.
+const characterGroups = computed(() => buildProfileCharacterGroups(
+  {
+    ranks: characterRankCells.value,
+    collection: hasCollectionData.value ? collectionColumns.value : [],
+    challenge: challengeCells.value,
+  },
+  (characterId) => characterMap.value.get(characterId)?.unit ?? null,
+  SEKAI_UNITS,
+).map((group) => ({
+  unit: group.unit,
+  cells: group.cells.map((cell) => {
+    const character = characterMap.value.get(cell.characterId) ?? null
+    return {
+      ...cell,
+      name: character?.name ?? t("playerProfile.unknownCharacter"),
+      iconUrl: character?.iconUrl ?? null,
+      color: resolveSekaiCharacterColor(cell.characterId) ?? "#94a3b8",
+    }
+  }),
+})))
+
+// The numbers people compare first, pulled up next to the name.
+const headlineStats = computed(() => {
+  const stats: { key: string; label: string; value: string; detail?: string }[] = []
+  if (multiLiveCounts.value) {
+    stats.push({ key: "mvp", label: t("playerProfile.multiLive.mvp"), value: formatScore(multiLiveCounts.value.mvp) })
+    stats.push({ key: "superStar", label: t("playerProfile.multiLive.superStar"), value: formatScore(multiLiveCounts.value.superStar) })
+  }
+  if (musicStatRows.value.length > 0) {
+    const clears = summarizeMusicClears(musicStatRows.value)
+    stats.push({ key: "allPerfect", label: t("playerProfile.headline.allPerfect"), value: formatScore(clears.allPerfect), detail: `/ ${formatScore(clears.total)}` })
+    stats.push({ key: "fullCombo", label: t("playerProfile.headline.fullCombo"), value: formatScore(clears.fullCombo), detail: `/ ${formatScore(clears.total)}` })
+  }
+  if (hasCollectionData.value) {
+    stats.push({
+      key: "collection",
+      label: t("playerProfile.headline.collection"),
+      value: `${collectionSummary.value.percent}%`,
+      detail: `${formatScore(collectionSummary.value.owned)} / ${formatScore(collectionSummary.value.total)}`,
+    })
+  }
+  if (challengeTop.value) {
+    stats.push({ key: "challenge", label: t("playerProfile.headline.challenge"), value: formatScore(challengeTop.value.highScore), detail: challengeTop.value.name })
+  }
+  const latestEvent = eventTrend.value.at(-1)
+  if (latestEvent) {
+    const rank = latestEvent.rank ?? latestEvent.derivedRank
+    stats.push({
+      key: "event",
+      label: t("playerProfile.headline.latestEvent"),
+      value: rank != null ? `#${formatScore(rank)}` : formatScore(latestEvent.eventPoint),
+      detail: latestEvent.name,
+    })
+  }
+  return stats
 })
 
 // Keyed on the unfiltered card box so an empty rarity selection still renders
@@ -617,55 +631,23 @@ function retry() {
             </div>
           </div>
         </CardContent>
+        <!-- The numbers people compare first, in one strip. -->
+        <dl
+          v-if="headlineStats.length > 0"
+          class="-mb-6 grid grid-cols-2 gap-px overflow-hidden rounded-b-xl border-t bg-border sm:grid-cols-3 lg:grid-cols-[repeat(auto-fit,minmax(9rem,1fr))]"
+          data-testid="profile-headline"
+        >
+          <div v-for="stat in headlineStats" :key="stat.key" class="min-w-0 bg-card px-4 py-2.5" :data-stat="stat.key">
+            <dt class="truncate text-xs text-muted-foreground">{{ stat.label }}</dt>
+            <dd class="flex min-w-0 items-baseline gap-1.5">
+              <span class="text-lg leading-tight font-semibold tabular-nums">{{ stat.value }}</span>
+              <span v-if="stat.detail" class="min-w-0 truncate text-[11px] text-muted-foreground tabular-nums" :title="stat.detail">{{ stat.detail }}</span>
+            </dd>
+          </div>
+        </dl>
       </Card>
 
-      <!-- Play stats: multi-live counts + per-difficulty clear bars -->
-      <Card v-if="multiLiveCounts || musicStatRows.length > 0">
-        <CardHeader class="pb-2">
-          <CardTitle class="text-base">{{ t("playerProfile.stats.title") }}</CardTitle>
-        </CardHeader>
-        <CardContent class="flex flex-col gap-6 lg:flex-row lg:gap-10">
-          <div v-if="multiLiveCounts" class="flex flex-col gap-2 lg:shrink-0">
-            <h3 class="text-xs font-medium text-muted-foreground">{{ t("playerProfile.multiLive.title") }}</h3>
-            <div class="flex flex-wrap gap-2 lg:flex-col">
-              <span class="inline-flex items-baseline justify-between gap-3 rounded-md border px-3 py-1.5">
-                <span class="text-xs text-muted-foreground">{{ t("playerProfile.multiLive.mvp") }}</span>
-                <span class="text-sm font-semibold tabular-nums">{{ formatScore(multiLiveCounts.mvp) }}</span>
-              </span>
-              <span class="inline-flex items-baseline justify-between gap-3 rounded-md border px-3 py-1.5">
-                <span class="text-xs text-muted-foreground">{{ t("playerProfile.multiLive.superStar") }}</span>
-                <span class="text-sm font-semibold tabular-nums">{{ formatScore(multiLiveCounts.superStar) }}</span>
-              </span>
-            </div>
-          </div>
-
-          <div v-if="musicStatRows.length > 0" class="flex min-w-0 flex-1 flex-col gap-2">
-            <h3 class="text-xs font-medium text-muted-foreground">{{ t("playerProfile.music.title") }}</h3>
-            <div
-              v-for="row in musicStatRows"
-              :key="row.difficulty"
-              class="flex flex-wrap items-center gap-x-2 gap-y-1"
-            >
-              <span :class="[resolveMusicDifficultyChipClass(row.difficulty), 'w-16 px-1 py-1']">
-                {{ t(`musicLibrary.difficulty.${row.difficulty}`) }}
-              </span>
-              <span class="flex h-2.5 min-w-24 flex-1 gap-px overflow-hidden rounded-full bg-muted">
-                <span
-                  v-for="segment in row.segments"
-                  :key="segment.key"
-                  class="h-full"
-                  :style="{ backgroundColor: segment.color, width: `${(segment.count / row.summary.total) * 100}%` }"
-                />
-              </span>
-              <span class="w-44 shrink-0 whitespace-nowrap text-[11px] tabular-nums text-muted-foreground">
-                AP {{ row.summary.allPerfect }} · FC {{ row.summary.fullCombo }} ·
-                CL {{ row.summary.cleared }} / {{ row.summary.total }}
-              </span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
+      <!-- Notice first: it names the modules below that need an upload. -->
       <!-- The sections from here down read the uploaded Suite; with a live profile
            but no upload they are empty, so the notice sits right above them and
            names them instead of calling the whole page "no data". -->
@@ -689,12 +671,71 @@ function retry() {
         </CardContent>
       </Card>
 
-      <!-- Card collection by character -->
-      <Card>
+      <!-- Songs cleared (a compact table) beside the event PT trend. -->
+      <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
+        <Card v-if="musicStatRows.length > 0" data-testid="profile-music">
+          <CardHeader class="pb-2">
+            <CardTitle class="text-base">{{ t("playerProfile.music.title") }}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <table class="w-full text-xs tabular-nums">
+              <thead>
+                <tr class="text-muted-foreground">
+                  <th scope="col" class="w-18 pb-1.5 text-left font-medium"><span class="sr-only">{{ t("musicLibrary.list.filters.difficulty") }}</span></th>
+                  <th scope="col" class="pb-1.5 font-medium"><span class="sr-only">{{ t("playerProfile.music.progress") }}</span></th>
+                  <th scope="col" class="w-12 pb-1.5 text-right font-medium">AP</th>
+                  <th scope="col" class="w-12 pb-1.5 text-right font-medium">FC</th>
+                  <th scope="col" class="w-12 pb-1.5 text-right font-medium">Clear</th>
+                  <th scope="col" class="w-12 pb-1.5 text-right font-medium">{{ t("playerProfile.music.total") }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in musicStatRows" :key="row.difficulty">
+                  <th scope="row" class="py-1 pr-2 text-left font-normal">
+                    <span :class="[resolveMusicDifficultyChipClass(row.difficulty), 'w-16 px-1 py-1']">
+                      {{ t(`musicLibrary.difficulty.${row.difficulty}`) }}
+                    </span>
+                  </th>
+                  <td class="py-1">
+                    <span class="flex h-2.5 min-w-12 gap-px overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                      <span
+                        v-for="segment in row.segments"
+                        :key="segment.key"
+                        class="h-full"
+                        :style="{ flex: `${segment.count} 0 0`, backgroundColor: segment.color }"
+                      />
+                    </span>
+                  </td>
+                  <td class="py-1 text-right font-medium">{{ row.summary.allPerfect }}</td>
+                  <td class="py-1 text-right font-medium">{{ row.summary.fullCombo }}</td>
+                  <td class="py-1 text-right font-medium">{{ row.summary.cleared }}</td>
+                  <td class="py-1 text-right text-muted-foreground">{{ row.summary.total }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+
+        <!-- Always sourced from the suite snapshot; the full chart is on the records page. -->
+        <EventPointTrendChart :trend="eventTrend" :loading="eventTrendLoading" compact>
+          <template #actions>
+            <span v-if="eventsNote" class="text-xs font-normal text-muted-foreground">{{ eventsNote }}</span>
+            <Button as-child variant="ghost" size="sm" class="h-7 gap-1 text-xs font-normal text-muted-foreground">
+              <RouterLink :to="{ name: 'events.records' }">
+                {{ t("playerProfile.links.eventRecords") }}
+                <LucideArrowUpRight class="size-3.5" />
+              </RouterLink>
+            </Button>
+          </template>
+        </EventPointTrendChart>
+      </div>
+
+      <!-- Characters: level, card collection and challenge live score in one cell each, by unit. -->
+      <Card data-testid="profile-characters">
         <CardHeader class="pb-2">
           <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
             <span class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              <span>{{ t("playerProfile.collection.title") }}</span>
+              <span>{{ t("playerProfile.roster.title") }}</span>
               <span v-if="extrasNote" class="text-xs font-normal text-muted-foreground">{{ extrasNote }}</span>
             </span>
             <span class="flex flex-wrap items-center gap-1.5">
@@ -709,20 +750,26 @@ function retry() {
                     : 'border-border text-muted-foreground hover:bg-muted',
                 ]"
                 :aria-pressed="collectionRarities.includes(rarity)"
+                :title="t('playerProfile.roster.rarityFilter')"
                 @click="toggleCollectionRarity(rarity)"
               >
                 {{ t(`cards.rarity.${rarity}`) }}
               </button>
-              <span v-if="hasCollectionData" class="text-sm font-normal tabular-nums text-muted-foreground">
-                {{ t("playerProfile.collection.summary", {
-                  owned: formatScore(collectionSummary.owned),
-                  total: formatScore(collectionSummary.total),
-                  percent: collectionSummary.percent,
-                }) }}
-              </span>
-              <Button as-child variant="ghost" size="sm" class="h-7 gap-1 text-xs font-normal text-muted-foreground">
+              <Button as-child variant="ghost" size="sm" class="h-7 gap-1 px-2 text-xs font-normal text-muted-foreground">
                 <RouterLink :to="{ name: 'cards.box' }">
                   {{ t("cardBox.entryLink") }}
+                  <LucideArrowUpRight class="size-3.5" />
+                </RouterLink>
+              </Button>
+              <Button as-child variant="ghost" size="sm" class="h-7 gap-1 px-2 text-xs font-normal text-muted-foreground">
+                <RouterLink :to="{ name: 'training.missions' }">
+                  {{ t("playerProfile.links.characterMissions") }}
+                  <LucideArrowUpRight class="size-3.5" />
+                </RouterLink>
+              </Button>
+              <Button as-child variant="ghost" size="sm" class="h-7 gap-1 px-2 text-xs font-normal text-muted-foreground">
+                <RouterLink :to="{ name: 'training.challenge' }">
+                  {{ t("playerProfile.links.challengeDetail") }}
                   <LucideArrowUpRight class="size-3.5" />
                 </RouterLink>
               </Button>
@@ -730,113 +777,66 @@ function retry() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p v-if="!hasCollectionData" class="py-4 text-center text-sm text-muted-foreground">
-            {{ t("playerProfile.collection.empty") }}
+          <p v-if="characterGroups.length === 0" class="py-4 text-center text-sm text-muted-foreground">
+            {{ t("playerProfile.characters.empty") }}
           </p>
-          <!-- One column per character; wraps into rows on narrow screens instead of scrolling sideways. -->
-          <div v-else class="grid grid-cols-[repeat(auto-fill,minmax(2.25rem,1fr))] gap-x-1 gap-y-3 pt-1">
-            <div
-              v-for="column in collectionColumns"
-              :key="column.characterId"
-              class="group flex min-w-0 flex-col items-center gap-1"
-              :title="`${column.name} ${column.owned}/${column.total} · ${column.percent}%`"
+          <div v-else class="grid items-start gap-2.5 md:grid-cols-2 xl:grid-cols-3">
+            <section
+              v-for="group in characterGroups"
+              :key="group.unit ?? 'other'"
+              class="rounded-xl border bg-muted/20 p-2.5"
+              :data-unit="group.unit ?? 'other'"
             >
-              <span
-                class="flex size-8 shrink-0 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-125"
-                :style="{ background: `conic-gradient(${column.color} ${column.percent * 3.6}deg, ${COLLECTION_RING_TRACK} 0deg)` }"
-              >
-                <img
-                  v-if="column.iconUrl"
-                  :src="column.iconUrl"
-                  :alt="column.name"
-                  class="size-[26px] rounded-full border border-background bg-background object-cover"
-                  loading="lazy"
+              <h3 class="mb-2 flex h-5 items-center px-0.5 text-xs font-medium text-muted-foreground">
+                <SekaiUnitLogo v-if="group.unit" :unit="group.unit" size="md" show-label :color="unitColorMap.get(group.unit as never) ?? null" />
+                <template v-else>{{ t("playerProfile.roster.otherUnit") }}</template>
+              </h3>
+              <ul class="grid grid-cols-2 gap-1.5">
+                <li
+                  v-for="cell in group.cells"
+                  :key="cell.characterId"
+                  class="min-w-0 rounded-lg border bg-card px-2 py-1.5"
+                  :data-character="cell.characterId"
                 >
-                <span v-else class="size-[26px] rounded-full bg-background" />
-              </span>
-              <span class="flex h-20 w-full max-w-5 items-end overflow-hidden rounded-t-sm bg-muted/40 sm:max-w-6">
-                <span
-                  class="w-full rounded-t-sm opacity-85 transition-[height] duration-300"
-                  :style="{ height: column.barHeight, backgroundColor: column.color }"
-                />
-              </span>
-              <span class="whitespace-nowrap text-[10px] tabular-nums text-muted-foreground">{{ column.owned }}/{{ column.total }}</span>
-            </div>
+                  <div class="flex min-w-0 items-center gap-1.5">
+                    <img
+                      v-if="cell.iconUrl"
+                      :src="cell.iconUrl"
+                      alt=""
+                      class="size-6 shrink-0 rounded-full bg-muted object-cover"
+                      loading="lazy"
+                    >
+                    <span v-else class="size-6 shrink-0 rounded-full bg-muted" />
+                    <span class="min-w-0 flex-1 truncate text-xs font-medium" :title="cell.name">{{ cell.name }}</span>
+                    <span v-if="cell.rank != null" class="shrink-0 text-xs font-semibold tabular-nums" :title="t('playerProfile.characters.title')">
+                      Lv.{{ cell.rank }}
+                    </span>
+                  </div>
+                  <div class="mt-1.5 flex items-center gap-1.5" :title="t('playerProfile.collection.title')">
+                    <span class="flex h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                      <span
+                        v-if="cell.collection"
+                        class="h-full rounded-full"
+                        :style="{ width: `${cell.collection.percent}%`, backgroundColor: cell.color }"
+                      />
+                    </span>
+                    <span class="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                      <template v-if="cell.collection">{{ cell.collection.owned }}/{{ cell.collection.total }}</template>
+                      <template v-else>—</template>
+                    </span>
+                  </div>
+                  <div class="mt-0.5 flex items-baseline justify-between gap-1.5 text-[11px]">
+                    <span class="shrink-0 text-muted-foreground">{{ t("playerProfile.roster.challenge") }}</span>
+                    <span class="min-w-0 truncate tabular-nums">
+                      {{ cell.challengeScore != null ? formatScore(cell.challengeScore) : "—" }}
+                    </span>
+                  </div>
+                </li>
+              </ul>
+            </section>
           </div>
         </CardContent>
       </Card>
-
-      <!-- Event PT trend (always sourced from the suite snapshot); the full chart is on the records page -->
-      <EventPointTrendChart :trend="eventTrend" :loading="eventTrendLoading" compact>
-        <template #actions>
-          <span v-if="eventsNote" class="text-xs font-normal text-muted-foreground">{{ eventsNote }}</span>
-          <Button as-child variant="ghost" size="sm" class="h-7 gap-1 text-xs font-normal text-muted-foreground">
-            <RouterLink :to="{ name: 'events.records' }">
-              {{ t("playerProfile.links.eventRecords") }}
-              <LucideArrowUpRight class="size-3.5" />
-            </RouterLink>
-          </Button>
-        </template>
-      </EventPointTrendChart>
-
-      <!-- Character levels + challenge live radars, side by side on large screens -->
-      <div class="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader class="pb-2">
-            <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
-              <span>{{ t("playerProfile.characters.title") }}</span>
-              <Button as-child variant="ghost" size="sm" class="h-7 gap-1 text-xs font-normal text-muted-foreground">
-                <RouterLink :to="{ name: 'training.missions' }">
-                  {{ t("playerProfile.links.characterMissions") }}
-                  <LucideArrowUpRight class="size-3.5" />
-                </RouterLink>
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p v-if="characterRadarEntries.length === 0" class="py-4 text-center text-sm text-muted-foreground">
-              {{ t("playerProfile.characters.empty") }}
-            </p>
-            <template v-else>
-              <ProfileRadarChart :entries="characterRadarEntries" />
-              <ProfileUnitLegend :items="characterUnitLegend" />
-            </template>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader class="pb-2">
-            <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
-              <span class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <span>{{ t("playerProfile.challenge.title") }}</span>
-                <span v-if="extrasNote" class="text-xs font-normal text-muted-foreground">{{ extrasNote }}</span>
-              </span>
-              <span class="flex flex-wrap items-center gap-1.5">
-                <span
-                  v-if="challengeTop"
-                  class="inline-flex items-center gap-1.5 text-sm font-normal text-muted-foreground"
-                >
-                  <LucideTrophy class="size-4 shrink-0 text-amber-500" />
-                  {{ t("playerProfile.challenge.summary", { name: challengeTop.name, score: formatScore(challengeTop.highScore) }) }}
-                </span>
-                <Button as-child variant="ghost" size="sm" class="h-7 gap-1 text-xs font-normal text-muted-foreground">
-                  <RouterLink :to="{ name: 'training.challenge' }">
-                    {{ t("playerProfile.links.challengeDetail") }}
-                    <LucideArrowUpRight class="size-3.5" />
-                  </RouterLink>
-                </Button>
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p v-if="!challengeTop" class="py-4 text-center text-sm text-muted-foreground">
-              {{ t("playerProfile.challenge.empty") }}
-            </p>
-            <ProfileRadarChart :entries="challengeRadarEntries" />
-            <ProfileUnitLegend :items="challengeUnitLegend" />
-          </CardContent>
-        </Card>
-      </div>
     </template>
   </div>
 </template>

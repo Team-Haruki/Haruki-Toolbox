@@ -6,11 +6,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { formatWithZone, type DateFormatOptions } from "@/lib/date-time"
 import { resolveSekaiRegionLabel } from "@/lib/sekai-region"
 import { cn } from "@/lib/utils"
+import { useSettingsStore } from "@/shared/stores/settings"
 
 /**
- * A timestamp in the viewer's zone. When that differs from the region's
- * server zone (a JP event viewed from Shanghai), the server time is one
- * hover away on pointer devices and printed as a second muted line on touch
+ * A timestamp in the zone the visitor chose with the switch next to it
+ * (`CatalogTimeZoneHint switchable`): their own, or the game server's. When
+ * the two differ (a JP event viewed from Shanghai), the other one is a hover
+ * away on pointer devices and printed as a second muted line on touch
  * devices, where there is nothing to hover.
  *
  * `options` takes a `date-time` preset name (`dateTime` by default: minute
@@ -35,28 +37,41 @@ const zoned = computed(() => formatWithZone(props.value, props.region, props.opt
   fallback: props.fallback,
 }))
 const regionLabel = computed(() => resolveSekaiRegionLabel(props.region, t))
-const serverLine = computed(() => (
-  zoned.value.server ? t("catalog.time.serverTime", { region: regionLabel.value, time: zoned.value.server }) : null
-))
+const settingsStore = useSettingsStore()
+// `server` is null when both zones read the same: then there is one time to show.
+const showServer = computed(() => settingsStore.timeZoneDisplay === "server" && zoned.value.server != null)
+const primary = computed(() => (showServer.value ? zoned.value.server! : zoned.value.local))
+const otherLine = computed(() => {
+  if (zoned.value.server == null) {
+    return null
+  }
+  return showServer.value
+    ? t("catalog.time.localTime", { time: zoned.value.local })
+    : t("catalog.time.serverTime", { region: regionLabel.value, time: zoned.value.server })
+})
 </script>
 
 <template>
-  <span :class="cn('inline-flex min-w-0 flex-col', props.class)" data-slot="catalog-zoned-time">
-    <template v-if="serverLine">
+  <span
+    :class="cn('inline-flex min-w-0 flex-col', props.class)"
+    data-slot="catalog-zoned-time"
+    :data-zone="showServer ? 'server' : 'local'"
+  >
+    <template v-if="otherLine">
       <TooltipProvider :delay-duration="150">
         <Tooltip>
           <TooltipTrigger as-child>
             <span class="tabular-nums underline decoration-dotted decoration-muted-foreground/60 underline-offset-4" tabindex="0">
-              {{ zoned.local }}
+              {{ primary }}
             </span>
           </TooltipTrigger>
-          <TooltipContent>{{ serverLine }}</TooltipContent>
+          <TooltipContent>{{ otherLine }}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
       <span class="text-[11px] leading-tight text-muted-foreground tabular-nums [@media(pointer:fine)]:sr-only">
-        {{ serverLine }}
+        {{ otherLine }}
       </span>
     </template>
-    <span v-else class="tabular-nums">{{ zoned.local }}</span>
+    <span v-else class="tabular-nums">{{ primary }}</span>
   </span>
 </template>

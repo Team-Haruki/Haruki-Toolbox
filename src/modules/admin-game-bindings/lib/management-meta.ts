@@ -6,6 +6,9 @@ type TranslateFn = (key: string, params?: Record<string, unknown>) => string
 export const DEFAULT_SERVER: SekaiRegion = "jp"
 export const DEFAULT_SORT = "id_desc"
 export const FILTER_SERVER_ALL = "all"
+/** Verified filter: "all", or the `verified` query value the list takes. */
+export const FILTER_VERIFIED_ALL = "all"
+export const GAME_BINDING_VERIFIED_FILTER_VALUES: readonly string[] = [FILTER_VERIFIED_ALL, "true", "false"]
 
 export type BindingKeyParts = {
   server: SekaiRegion
@@ -70,6 +73,14 @@ export function getSortOptions(t: TranslateFn): ReadonlyArray<SortFilterOption> 
     value,
     label: t(SORT_LABEL_KEYS[value]),
   }))
+}
+
+export function getVerifiedOptions(t: TranslateFn): ReadonlyArray<SortFilterOption> {
+  return [
+    { value: FILTER_VERIFIED_ALL, label: t("adminGameBindings.filters.allVerification") },
+    { value: "true", label: t("adminGameBindings.status.verified") },
+    { value: "false", label: t("adminGameBindings.status.unverified") },
+  ]
 }
 
 export function toBindingKey(binding: { server: string; gameUserId: string }) {

@@ -68,10 +68,6 @@ export default {
         "title": "综合力",
         "hint": "基础综合力，不含区域道具、称号与角色等级加成。",
         "noData": "暂无综合力数据",
-        "total": "总计",
-        "perf": "演出",
-        "tech": "技巧",
-        "stam": "体力",
         "level": "等级",
         "trained": "特训",
         "episodes": "剧情",
@@ -177,6 +173,8 @@ export default {
       "title": "相关卡池",
       "empty": "没有找到相关卡池。",
       "count": "{count} 个卡池",
+      "showMore": "还有 {count} 个",
+      "showLess": "收起",
       "byPickup": "PICK UP 卡片包含本次活动卡片的卡池",
       "byPeriod": "举办期间与本次活动重叠（前后 3 天）的卡池"
     },
@@ -248,6 +246,9 @@ export default {
     },
     "detail": {
       "pickupCards": "查看 PICK UP 角色卡牌",
+      "period": "开放时间",
+      "startAt": "开始",
+      "endAt": "结束",
       "permanentHint": "常驻卡池，没有结束时间。",
       "lightbox": {
         "banner": "横幅",

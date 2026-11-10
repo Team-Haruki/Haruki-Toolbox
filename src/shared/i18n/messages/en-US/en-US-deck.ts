@@ -115,6 +115,12 @@ export default {
       "ga": "Genetic Algorithm",
       "rl": "Reinforcement Learning"
     },
+    "algorithmsShort": {
+      "dfsGa": "DFS-GA",
+      "dfs": "DFS",
+      "ga": "GA",
+      "rl": "RL"
+    },
     "executionModes": {
       "sequential": "Sequential",
       "parallel": "Parallel"
@@ -508,6 +514,13 @@ export default {
         "unread": "Unread"
       },
       "supportSkillLevel": "SLv.{value}",
+      "columns": {
+        "card": "Card",
+        "power": "Power",
+        "skillLevel": "Skill",
+        "scoreUp": "Score up",
+        "eventBonus": "Event bonus"
+      },
       "canvasBonus": "Canvas bonus",
       "noCanvasBonus": "No canvas"
     },

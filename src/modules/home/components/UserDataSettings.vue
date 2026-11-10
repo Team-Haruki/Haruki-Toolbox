@@ -4,7 +4,7 @@ import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-d
 
 import { computed, onMounted, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
-import { Eraser, RefreshCw, UserRound } from "lucide-vue-next"
+import { CloudUpload, Eraser, Gamepad2, HardDrive, History, Info, Layers, RefreshCw } from "lucide-vue-next"
 import { toast } from "vue-sonner"
 import { Button } from "@/components/ui/button"
 import {
@@ -18,7 +18,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Label } from "@/components/ui/label"
+import SettingsFacts, { type SettingsFact } from "@/shared/components/settings/SettingsFacts.vue"
+import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
+import SettingsRow from "@/shared/components/settings/SettingsRow.vue"
 import {
   Select,
   SelectContent,
@@ -289,79 +291,93 @@ function formatTime(value: number | null) {
     minute: "2-digit",
   }).format(suiteUploadTimeToMillis(value))
 }
+
+const lastCheckLabel = computed(() => {
+  if (lastCacheHit.value === true) {
+    return t("homeSettings.userData.cacheHit")
+  }
+  if (lastCacheHit.value === false) {
+    return t("homeSettings.userData.cacheUpdated")
+  }
+  return t("homeSettings.userData.notChecked")
+})
+
+// A profile is fetched live from the game server, so it has no upload time.
+const cacheFacts = computed<SettingsFact[]>(() => [
+  { key: "cached", label: t("homeSettings.userData.cacheUpdatedAt"), value: formatTime(cacheUpdatedAt.value), icon: HardDrive },
+  ...(selectedDataMode.value === "profile"
+    ? []
+    : [{ key: "uploaded", label: t("homeSettings.userData.remoteUploadTime"), value: formatTime(cacheUploadTime.value), icon: CloudUpload }]),
+  { key: "checked", label: t("homeSettings.userData.lastCheck"), value: lastCheckLabel.value, icon: History },
+])
 </script>
 
 <template>
-  <div class="space-y-4">
-    <section class="rounded-lg border bg-muted/20">
-      <div class="grid gap-4 p-4 md:grid-cols-2">
-        <div class="grid content-start gap-2">
-          <Label id="user-data-account-label" for="user-data-account">{{ t("homeSettings.userData.account") }}</Label>
-          <Select id="user-data-account" v-model="selectedAccountKey" :disabled="accountOptions.length === 0 || refreshing || clearing">
-            <SelectTrigger class="w-full" aria-labelledby="user-data-account-label">
+  <div class="space-y-5">
+    <SettingsGroup :title="t('homeSettings.userData.groups.source')">
+      <SettingsRow
+        :icon="Gamepad2"
+        :label="t('homeSettings.userData.account')"
+        :help="t('homeSettings.userData.accountHelp')"
+        label-for="user-data-account"
+        label-id="user-data-account-label"
+        stack
+      >
+        <template v-if="accountOptions.length === 0" #note>
+          <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.userData.noAccount") }}</p>
+        </template>
+        <Select id="user-data-account" v-model="selectedAccountKey" :aria-label="t('homeSettings.userData.account')" :disabled="accountOptions.length === 0 || refreshing || clearing">
+          <SelectTrigger class="w-full @min-[28rem]:w-56" aria-labelledby="user-data-account-label">
+            <GameAccountOption
+              v-if="selectedAccount"
+              :server="selectedAccount.server"
+              :user-id="selectedAccount.uid"
+              :verified="selectedAccount.verified"
+              :is-default="selectedAccount.isDefault"
+              :ownership="selectedAccount.ownership"
+            />
+            <span v-else class="text-sm text-muted-foreground">
+              {{ t("homeSettings.userData.accountPlaceholder") }}
+            </span>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="account in accountOptions" :key="account.key" :value="account.key">
               <GameAccountOption
-                v-if="selectedAccount"
-                :server="selectedAccount.server"
-                :user-id="selectedAccount.uid"
-                :verified="selectedAccount.verified"
-                :is-default="selectedAccount.isDefault"
-                :ownership="selectedAccount.ownership"
+                :server="account.server"
+                :user-id="account.uid"
+                :verified="account.verified"
+                :is-default="account.isDefault"
+                :ownership="account.ownership"
+                :owner-name="account.ownerName"
               />
-              <span v-else class="text-sm text-muted-foreground">
-                {{ t("homeSettings.userData.accountPlaceholder") }}
-              </span>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="account in accountOptions" :key="account.key" :value="account.key">
-                <GameAccountOption
-                  :server="account.server"
-                  :user-id="account.uid"
-                  :verified="account.verified"
-                  :is-default="account.isDefault"
-                  :ownership="account.ownership"
-                  :owner-name="account.ownerName"
-                />
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <p v-if="accountOptions.length === 0" class="text-xs text-muted-foreground">
-            {{ t("homeSettings.userData.noAccount") }}
-          </p>
-        </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </SettingsRow>
 
-        <div class="grid content-start gap-2">
-          <Label id="user-data-mode-label" for="user-data-mode">{{ t("homeSettings.userData.dataType") }}</Label>
-          <Select id="user-data-mode" v-model="selectedDataMode" :disabled="refreshing || clearing">
-            <SelectTrigger class="w-full" aria-labelledby="user-data-mode-label">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="option in dataModeOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <SettingsRow
+        :icon="Layers"
+        :label="t('homeSettings.userData.dataType')"
+        :help="t('homeSettings.userData.dataTypeHelp')"
+        label-for="user-data-mode"
+        label-id="user-data-mode-label"
+        stack
+      >
+        <Select id="user-data-mode" v-model="selectedDataMode" :aria-label="t('homeSettings.userData.dataType')" :disabled="refreshing || clearing">
+          <SelectTrigger class="w-full @min-[28rem]:w-56" aria-labelledby="user-data-mode-label">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="option in dataModeOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </SettingsRow>
+    </SettingsGroup>
 
-      <div :class="['grid gap-x-4 gap-y-3 border-t px-4 py-3', selectedDataMode === 'profile' ? 'sm:grid-cols-2' : 'sm:grid-cols-3']">
-        <div>
-          <p class="text-xs text-muted-foreground">{{ t("homeSettings.userData.cacheUpdatedAt") }}</p>
-          <p class="mt-0.5 text-sm font-medium">{{ formatTime(cacheUpdatedAt) }}</p>
-        </div>
-        <div v-if="selectedDataMode !== 'profile'">
-          <p class="text-xs text-muted-foreground">{{ t("homeSettings.userData.remoteUploadTime") }}</p>
-          <p class="mt-0.5 text-sm font-medium">{{ formatTime(cacheUploadTime) }}</p>
-        </div>
-        <div>
-          <p class="text-xs text-muted-foreground">{{ t("homeSettings.userData.lastCheck") }}</p>
-          <p class="mt-0.5 text-sm font-medium">
-            <template v-if="lastCacheHit === true">{{ t("homeSettings.userData.cacheHit") }}</template>
-            <template v-else-if="lastCacheHit === false">{{ t("homeSettings.userData.cacheUpdated") }}</template>
-            <template v-else>{{ t("homeSettings.userData.notChecked") }}</template>
-          </p>
-        </div>
-      </div>
+    <SettingsGroup :title="t('homeSettings.userData.groups.cache')">
+      <SettingsFacts :items="cacheFacts" />
 
       <MissingGameDataNotice
         v-if="missingDataType"
@@ -369,7 +385,8 @@ function formatTime(value: number | null) {
         :granted="selectedAccount?.ownership === 'granted'"
         class="px-4 py-6"
       />
-      <div class="flex flex-wrap justify-end gap-2 border-t px-4 py-3">
+
+      <template #footer>
         <Button type="button" size="sm" variant="outline" :disabled="!canRefresh" @click="refreshUserData">
           <RefreshCw class="size-3.5" :class="{ 'animate-spin': refreshing }" />
           {{ refreshing ? t("homeSettings.userData.refreshing") : t("homeSettings.userData.refresh") }}
@@ -395,11 +412,11 @@ function formatTime(value: number | null) {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </div>
-    </section>
+      </template>
+    </SettingsGroup>
 
     <p class="flex items-start gap-2 px-1 text-xs text-muted-foreground">
-      <UserRound class="mt-0.5 size-3.5 shrink-0" />
+      <Info class="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
       <span>{{ t("homeSettings.userData.logoutCleanupHint") }}</span>
     </p>
   </div>

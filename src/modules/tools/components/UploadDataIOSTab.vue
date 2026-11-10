@@ -7,10 +7,17 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Check, Copy, KeyRound, Link2, LogIn, LucideInfo, PackageCheck, RefreshCw } from "lucide-vue-next"
+import { BellRing, BookOpen, Check, Copy, ExternalLink, Link2, LogIn, LucideChevronDown, PackageCheck, RefreshCw, Scissors, Server, SlidersHorizontal, TabletSmartphone } from "lucide-vue-next"
 import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
+import UploadPanelHeader from "@/modules/tools/components/upload/UploadPanelHeader.vue"
+import UploadStep from "@/modules/tools/components/upload/UploadStep.vue"
+import ChoiceCards, { type ChoiceOption } from "@/modules/tools/components/upload/ChoiceCards.vue"
+import SettingsRow from "@/shared/components/settings/SettingsRow.vue"
+import { Badge } from "@/components/ui/badge"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import type { UploadMode } from "@/modules/tools/lib/ios-module-meta"
 import { useIOSModuleGenerator } from "@/modules/tools/composables/useIOSModuleGenerator"
 
 const { t, locale } = useI18n()
@@ -54,12 +61,31 @@ const regenerateDialogOpen = ref(false)
 const hasVerifiedBinding = computed(() => (userStore.gameAccountBindings ?? []).some((binding) => binding.verified))
 const needsPrerequisite = computed(() => !userStore.isLoggedIn || !hasVerifiedBinding.value)
 
-const modeOptionsWithDisabled = computed(() =>
-  modeOptions.value.map((opt) => ({
-    ...opt,
-    disabled: opt.value === "script" && selectedSoftware.value === "qx",
-  }))
+// Proxy first: it is the one to pick when unsure.
+const modeChoices = computed<ChoiceOption<UploadMode>[]>(() =>
+  [...modeOptions.value]
+    .sort((left, right) => Number(right.value === "proxy") - Number(left.value === "proxy"))
+    .map((option) => ({
+      value: option.value,
+      label: option.label,
+      hint: t(`tools.iosModules.modeHints.${option.value}`),
+      disabled: option.value === "script" && selectedSoftware.value === "qx",
+    }))
 )
+
+// Server route, chunk size and notifications rarely change: they stay folded
+// away, with their current values shown on the handle.
+const advancedOpen = ref(false)
+const advancedSummary = computed(() => {
+  const items = [endpointOptions.value.find((option) => option.value === selectedEndpoint.value)?.label ?? ""]
+  if (selectedMode.value === "script") {
+    items.push(`${chunkSize.value} ${t("tools.iosModules.sections.chunk.unit")}`)
+  }
+  if (supportsUploadNotifications.value) {
+    items.push(t(uploadNotifications.value ? "tools.iosModules.advanced.notifyOn" : "tools.iosModules.advanced.notifyOff"))
+  }
+  return items.filter(Boolean)
+})
 
 function handleCopyUploadCode() {
   if (!userStore.iosUploadCode) return
@@ -80,141 +106,113 @@ function handleCopyScriptUrl() {
 <template>
   <Card>
     <CardHeader>
-      <CardTitle class="flex items-center gap-2">
-        <PackageCheck class="h-6 w-6" />
-        {{ t("tools.iosModules.title") }}
-      </CardTitle>
-      <CardDescription>{{ t("tools.iosModules.description") }}</CardDescription>
+      <UploadPanelHeader :icon="TabletSmartphone" :title="t('tools.iosModules.title')" :description="t('tools.iosModules.description')">
+        <p v-if="!locale.startsWith('zh')" class="mt-1 text-xs text-muted-foreground">
+          {{ t("tools.iosModules.tutorialAlert.nonZhWarning") }}
+        </p>
+        <template #action>
+          <Button as-child variant="outline" size="sm">
+            <a href="https://neo.haruki.seiunx.com/toolbox-tutorial/ios-module.html" target="_blank" rel="noopener noreferrer">
+              <BookOpen class="size-4" aria-hidden="true" />
+              {{ t("tools.iosModules.tutorialAlert.action") }}
+              <ExternalLink class="size-3.5 text-muted-foreground" aria-hidden="true" />
+            </a>
+          </Button>
+        </template>
+      </UploadPanelHeader>
     </CardHeader>
 
-    <CardContent class="space-y-6">
-      <div class="flex items-start gap-2.5 rounded-md border bg-muted/20 px-3 py-2.5 text-sm">
-        <LucideInfo class="mt-0.5 size-4 shrink-0 text-primary" />
-        <div class="min-w-0 space-y-0.5">
-          <p class="leading-relaxed">
-            {{ t("tools.iosModules.tutorialAlert.label") }}
-            <a
-              href="https://neo.haruki.seiunx.com/toolbox-tutorial/ios-module.html"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="font-medium text-primary underline underline-offset-4 transition-colors hover:text-primary/80 pointer-coarse:inline-block pointer-coarse:-my-3 pointer-coarse:-mx-1.5 pointer-coarse:px-1.5 pointer-coarse:py-3"
-            >
-              {{ t("tools.iosModules.tutorialAlert.linkText") }}
-            </a>
-          </p>
-          <p v-if="!locale.startsWith('zh')" class="text-xs text-muted-foreground">
-            {{ t("tools.iosModules.tutorialAlert.nonZhWarning") }}
+    <CardContent class="@container space-y-6">
+      <UploadStep :step="1" :title="t('tools.iosModules.steps.configure.title')" :description="t('tools.iosModules.steps.configure.description')">
+        <div class="space-y-1.5">
+          <p class="text-sm font-medium">{{ t("tools.iosModules.sections.software.title") }}</p>
+          <ChoiceCards
+            v-model="selectedSoftware"
+            name="ios-software"
+            :label="t('tools.iosModules.sections.software.title')"
+            :options="softwareOptions"
+            compact
+          />
+        </div>
+
+        <div class="space-y-1.5">
+          <p class="text-sm font-medium">{{ t("tools.iosModules.sections.mode.title") }}</p>
+          <ChoiceCards
+            v-model="selectedMode"
+            name="ios-mode"
+            :label="t('tools.iosModules.sections.mode.title')"
+            :options="modeChoices"
+          />
+          <p v-if="selectedSoftware === 'qx'" class="text-xs text-amber-700 dark:text-amber-300">
+            {{ t("tools.iosModules.qxScriptWarning") }}
           </p>
         </div>
-      </div>
 
-      <section class="space-y-4">
-        <header class="flex items-start gap-3">
-          <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">1</span>
-          <div class="space-y-0.5">
-            <h3 class="text-sm font-semibold leading-6">{{ t("tools.iosModules.steps.configure.title") }}</h3>
-            <p class="text-xs text-muted-foreground">{{ t("tools.iosModules.steps.configure.description") }}</p>
-          </div>
-        </header>
+        <!-- Rarely changed: closed until asked for, with the current values on the handle. -->
+        <Collapsible v-model:open="advancedOpen" class="overflow-hidden rounded-xl border bg-muted/20" data-testid="ios-advanced">
+          <CollapsibleTrigger class="flex w-full flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
+            <span class="flex items-center gap-2 text-sm font-medium">
+              <SlidersHorizontal class="size-4 text-muted-foreground" aria-hidden="true" />
+              {{ t("tools.iosModules.advanced.title") }}
+            </span>
+            <span class="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+              <Badge v-for="item in advancedSummary" :key="item" variant="muted" size="sm">{{ item }}</Badge>
+            </span>
+            <LucideChevronDown :class="['size-4 shrink-0 text-muted-foreground transition-transform duration-200', advancedOpen ? 'rotate-180' : '']" aria-hidden="true" />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div class="divide-y divide-border/60 border-t border-border/60">
+              <SettingsRow
+                :icon="Server"
+                :label="t('tools.iosModules.sections.endpoint.title')"
+                :help="t('tools.iosModules.sections.endpoint.description')"
+                label-for="ios-endpoint"
+                label-id="ios-endpoint-label"
+                stack
+              >
+                <Select id="ios-endpoint" v-model="selectedEndpoint" :aria-label="t('tools.iosModules.sections.endpoint.title')">
+                  <SelectTrigger class="w-full @min-[28rem]:w-48" aria-labelledby="ios-endpoint-label">
+                    <SelectValue :placeholder="t('tools.iosModules.sections.endpoint.placeholder')" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="option in endpointOptions" :key="option.value" :value="option.value">
+                      {{ option.label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </SettingsRow>
 
-        <div class="grid gap-4 sm:grid-cols-2">
-          <div class="flex flex-col gap-1.5">
-            <Label id="ios-software-label" for="ios-software">{{ t("tools.iosModules.sections.software.title") }}</Label>
-            <p class="text-xs text-muted-foreground">{{ t("tools.iosModules.sections.software.description") }}</p>
-            <div class="mt-auto pt-1">
-              <Select id="ios-software" v-model="selectedSoftware">
-                <SelectTrigger class="w-full" aria-labelledby="ios-software-label">
-                  <SelectValue :placeholder="t('tools.iosModules.sections.software.placeholder')" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    v-for="option in softwareOptions"
-                    :key="option.value"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <SettingsRow
+                v-if="selectedMode === 'script'"
+                :icon="Scissors"
+                :label="t('tools.iosModules.sections.chunk.title')"
+                :help="t('tools.iosModules.sections.chunk.description')"
+                label-for="ios-chunk-size"
+                stack
+              >
+                <div class="flex w-full items-center gap-2 @min-[28rem]:w-48">
+                  <Input id="ios-chunk-size" v-model.number="chunkSize" type="number" min="1" max="10" class="min-w-0 flex-1" :aria-label="t('tools.iosModules.sections.chunk.title')" />
+                  <span class="whitespace-nowrap text-sm text-muted-foreground">{{ t("tools.iosModules.sections.chunk.unit") }}</span>
+                </div>
+              </SettingsRow>
+
+              <SettingsRow
+                v-if="supportsUploadNotifications"
+                :icon="BellRing"
+                :label="t('tools.iosModules.sections.notify.title')"
+                :help="t(uploadNotificationsNeedReinstall ? 'tools.iosModules.sections.notify.descriptionQx' : 'tools.iosModules.sections.notify.description')"
+                label-for="ios-upload-notifications"
+              >
+                <Switch id="ios-upload-notifications" v-model="uploadNotifications" />
+              </SettingsRow>
             </div>
-          </div>
-
-          <div class="flex flex-col gap-1.5">
-            <Label id="ios-endpoint-label" for="ios-endpoint">{{ t("tools.iosModules.sections.endpoint.title") }}</Label>
-            <p class="whitespace-pre-line text-xs text-muted-foreground">{{ t("tools.iosModules.sections.endpoint.description") }}</p>
-            <div class="mt-auto pt-1">
-              <Select id="ios-endpoint" v-model="selectedEndpoint">
-                <SelectTrigger class="w-full" aria-labelledby="ios-endpoint-label">
-                  <SelectValue :placeholder="t('tools.iosModules.sections.endpoint.placeholder')" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    v-for="option in endpointOptions"
-                    :key="option.value"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div class="flex flex-col gap-1.5">
-            <Label id="ios-mode-label" for="ios-mode">{{ t("tools.iosModules.sections.mode.title") }}</Label>
-            <p class="whitespace-pre-line text-xs text-muted-foreground">{{ t("tools.iosModules.sections.mode.description") }}</p>
-            <div class="mt-auto space-y-1.5 pt-1">
-              <Select id="ios-mode" v-model="selectedMode">
-                <SelectTrigger class="w-full" aria-labelledby="ios-mode-label">
-                  <SelectValue :placeholder="t('tools.iosModules.sections.mode.placeholder')" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    v-for="option in modeOptionsWithDisabled"
-                    :key="option.value"
-                    :value="option.value"
-                    :disabled="option.disabled"
-                  >
-                    {{ option.label }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <p v-if="selectedSoftware === 'qx'" class="text-xs text-amber-600 dark:text-amber-400">
-                {{ t("tools.iosModules.qxScriptWarning") }}
-              </p>
-            </div>
-          </div>
-
-          <div v-if="selectedMode === 'script'" class="flex flex-col gap-1.5">
-            <Label for="ios-chunk-size">{{ t("tools.iosModules.sections.chunk.title") }}</Label>
-            <p class="whitespace-pre-line text-xs text-muted-foreground">{{ t("tools.iosModules.sections.chunk.description") }}</p>
-            <div class="mt-auto flex items-center gap-2 pt-1">
-              <Input id="ios-chunk-size" v-model.number="chunkSize" type="number" min="1" max="10" class="min-w-0 flex-1" />
-              <span class="whitespace-nowrap text-sm text-muted-foreground">{{ t("tools.iosModules.sections.chunk.unit") }}</span>
-            </div>
-          </div>
-
-          <div v-if="supportsUploadNotifications" class="flex items-start justify-between gap-3 rounded-md border bg-muted/20 p-3 sm:col-span-2">
-            <div class="min-w-0 space-y-0.5">
-              <Label for="ios-upload-notifications">{{ t("tools.iosModules.sections.notify.title") }}</Label>
-              <p class="text-xs text-muted-foreground">{{ t(uploadNotificationsNeedReinstall ? "tools.iosModules.sections.notify.descriptionQx" : "tools.iosModules.sections.notify.description") }}</p>
-            </div>
-            <Switch id="ios-upload-notifications" v-model="uploadNotifications" class="shrink-0" />
-          </div>
-        </div>
-      </section>
+          </CollapsibleContent>
+        </Collapsible>
+      </UploadStep>
 
       <Separator />
 
-      <section class="space-y-4">
-        <header class="flex items-start gap-3">
-          <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">2</span>
-          <div class="space-y-0.5">
-            <h3 class="text-sm font-semibold leading-6">{{ t("tools.iosModules.steps.scope.title") }}</h3>
-            <p class="text-xs text-muted-foreground">{{ t("tools.iosModules.steps.scope.description") }}</p>
-          </div>
-        </header>
-
+      <UploadStep :step="2" :title="t('tools.iosModules.steps.scope.title')" :description="t('tools.iosModules.steps.scope.description')">
         <div class="flex flex-col gap-1.5">
           <p class="text-sm font-medium">{{ t("tools.iosModules.sections.regions.title") }}</p>
           <p class="text-xs text-muted-foreground">{{ t("tools.iosModules.sections.regions.description") }}</p>
@@ -274,26 +272,16 @@ function handleCopyScriptUrl() {
         >
           {{ t("tools.iosModules.cnRestriction") }}
         </p>
-      </section>
+      </UploadStep>
 
       <Separator />
 
-      <section class="space-y-4">
-        <header class="flex items-start gap-3">
-          <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">3</span>
-          <div class="space-y-0.5">
-            <h3 class="text-sm font-semibold leading-6">{{ t("tools.iosModules.steps.install.title") }}</h3>
-            <p v-if="needsPrerequisite" class="text-xs font-medium text-amber-700 dark:text-amber-300" data-testid="ios-install-prerequisite">{{ t("tools.iosModules.steps.install.prerequisite") }}</p>
-            <p class="text-xs text-muted-foreground">{{ t("tools.iosModules.steps.install.description") }}</p>
-          </div>
-        </header>
-
-        <div class="flex flex-col gap-1.5">
-          <Label for="ios-upload-code" class="flex items-center gap-2">
-            <KeyRound class="size-4" />
-            {{ t("tools.iosModules.uploadCode.title") }}
-          </Label>
-          <p class="text-xs text-muted-foreground">{{ t("tools.iosModules.uploadCode.description") }}</p>
+      <UploadStep :step="3" :title="t('tools.iosModules.steps.code.title')" :description="t('tools.iosModules.uploadCode.description')">
+        <template v-if="needsPrerequisite" #note>
+          <p class="text-xs font-medium text-amber-700 dark:text-amber-300" data-testid="ios-install-prerequisite">{{ t("tools.iosModules.steps.install.prerequisite") }}</p>
+        </template>
+        <div>
+          <Label for="ios-upload-code" class="sr-only">{{ t("tools.iosModules.uploadCode.title") }}</Label>
           <div v-if="hasUploadCode" class="flex flex-col gap-2 pt-1 sm:flex-row">
             <div class="flex min-w-0 flex-1 items-center rounded-md border bg-muted/20">
               <Input
@@ -339,6 +327,20 @@ function handleCopyScriptUrl() {
               </Button>
             </div>
           </div>
+        </div>
+      </UploadStep>
+
+      <Separator />
+
+      <UploadStep :step="4" :title="t('tools.iosModules.steps.install.title')" :description="t('tools.iosModules.steps.install.description')">
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Button :disabled="!canInstall" @click="installModule">
+            <PackageCheck class="size-4" />
+            {{ t("tools.iosModules.installButton") }}
+          </Button>
+          <p class="min-w-0 flex-1 basis-48 text-xs text-muted-foreground">
+            {{ t("tools.iosModules.installHint") }}
+          </p>
         </div>
 
         <div v-if="moduleUrl" class="flex flex-col gap-1.5">
@@ -393,19 +395,10 @@ function handleCopyScriptUrl() {
           </div>
         </div>
 
-        <div class="space-y-2 pt-1">
-          <Button class="w-full" :disabled="!canInstall" @click="installModule">
-            <PackageCheck class="mr-2 size-4" />
-            {{ t("tools.iosModules.installButton") }}
-          </Button>
-          <p class="text-center text-xs text-muted-foreground">
-            {{ t("tools.iosModules.installHint") }}
-          </p>
-          <p class="rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-            {{ t("tools.iosModules.steps.install.after") }}
-          </p>
-        </div>
-      </section>
+        <p class="rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          {{ t("tools.iosModules.steps.install.after") }}
+        </p>
+      </UploadStep>
     </CardContent>
   </Card>
 

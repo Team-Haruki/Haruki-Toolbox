@@ -1,30 +1,18 @@
-import { onBeforeUnmount, onMounted, ref, watch } from "vue"
+import { onBeforeUnmount, onMounted, watch } from "vue"
 import { createAdminUserDetailActions } from "@/modules/admin-users/composables/useAdminUserDetailActions"
 import { createAdminUserDetailAsync } from "@/modules/admin-users/composables/useAdminUserDetailAsync"
 import { createAdminUserDetailLoaders } from "@/modules/admin-users/composables/useAdminUserDetailLoaders"
 import { createAdminUserDetailState } from "@/modules/admin-users/composables/useAdminUserDetailState"
 
-type UserDetailTab = "info" | "activity" | "oauth" | "game" | "social" | "auth-social" | "ios"
 type ValueOrGetter<T> = T | (() => T)
 
 function resolveValue<T>(value: ValueOrGetter<T>): T {
   return typeof value === "function" ? (value as () => T)() : value
 }
 
-function isUserDetailTab(tab: string): tab is UserDetailTab {
-  return tab === "info"
-    || tab === "activity"
-    || tab === "oauth"
-    || tab === "game"
-    || tab === "social"
-    || tab === "auth-social"
-    || tab === "ios"
-}
-
 export function useAdminUserDetail(userId: ValueOrGetter<string>) {
   const state = createAdminUserDetailState()
   const { refs } = state
-  const activeTab = ref<UserDetailTab>("info")
   const resolvedUserId = () => resolveValue(userId)
   let latestUserRouteRequestId = 0
 
@@ -38,14 +26,6 @@ export function useAdminUserDetail(userId: ValueOrGetter<string>) {
     loaders,
   })
 
-  function onTabChange(tab: string | number) {
-    const value = String(tab)
-    if (isUserDetailTab(value)) {
-      activeTab.value = value
-    }
-    loaders.onTabChange(tab)
-  }
-
   async function loadUserForCurrentRoute() {
     const requestId = ++latestUserRouteRequestId
     invalidateLoads()
@@ -53,8 +33,9 @@ export function useAdminUserDetail(userId: ValueOrGetter<string>) {
     state.resetForUserChange()
     await loaders.loadUser()
     if (requestId !== latestUserRouteRequestId) return
-    if (activeTab.value !== "info") {
-      loaders.onTabChange(activeTab.value)
+    // Nothing to show the sections under when the user itself did not load.
+    if (refs.user.value) {
+      loaders.loadSections()
     }
   }
 
@@ -78,9 +59,25 @@ export function useAdminUserDetail(userId: ValueOrGetter<string>) {
 
   return {
     ...refs,
-    onTabChange,
+    sectionLoaded: state.sectionLoaded,
     reloadUser: () => {
       void loadUserForCurrentRoute()
+    },
+    // A section's inline retry.
+    reloadActivity: () => {
+      void loaders.loadActivities()
+    },
+    reloadOAuth: () => {
+      void loaders.loadOAuth()
+    },
+    reloadGameBindings: () => {
+      void loaders.loadGameBindings()
+    },
+    reloadSocial: () => {
+      void loaders.loadSocialPlatform()
+    },
+    reloadAuthorizedSocials: () => {
+      void loaders.loadAuthorizedSocials()
     },
     ...actions,
   }

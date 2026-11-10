@@ -13,20 +13,13 @@ import {
   Plus,
   Save,
   Send,
-  Shield,
   Trash2,
   User,
   X,
   Zap,
 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
 import {
   Dialog,
   DialogDescription,
@@ -86,35 +79,32 @@ function getPlatformIcon(platform: SocialPlatform) {
 </script>
 
 <template>
-  <Card class="w-full">
-    <CardHeader>
-      <div class="flex items-center justify-between gap-2">
-        <div>
-          <CardTitle class="flex items-center gap-2">
-            <Shield class="h-6 w-6" />
-            {{ t("userSettings.imAuthorization.title") }}
-          </CardTitle>
-          <CardDescription>{{ t("userSettings.imAuthorization.description") }}</CardDescription>
-        </div>
-        <Button size="sm" class="shrink-0" @click="startAdd">
-          <Plus class="h-4 w-4 mr-2" />
+  <div class="flex flex-col gap-1.5">
+    <SettingsGroup
+      :title="tableData.length > 0 ? `${t('userSettings.imAuthorization.title')} · ${tableData.length}` : t('userSettings.imAuthorization.title')"
+      surface="card"
+      data-testid="im-authorizations"
+    >
+      <template #action>
+        <Button variant="outline" size="sm" class="h-7 gap-1 px-2 text-xs" @click="startAdd">
+          <Plus class="size-3.5" />
           {{ t("userSettings.imAuthorization.addButton") }}
         </Button>
-      </div>
-    </CardHeader>
-    <CardContent>
-      <ul v-if="tableData.length" class="flex flex-col gap-2">
+      </template>
+
+      <ul v-if="tableData.length" class="divide-y divide-border/60">
         <li
           v-for="row in tableData"
           :key="`${row.platform}:${row.userId}:${row.id}`"
-          class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border bg-muted/20 p-3"
+          class="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3"
         >
-          <div class="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-            <component :is="getPlatformIcon(row.platform)" class="size-5" />
-          </div>
+          <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground" aria-hidden="true">
+            <component :is="getPlatformIcon(row.platform)" class="size-4" />
+          </span>
           <div class="min-w-0 flex-1 basis-40">
-            <div class="flex items-center gap-2">
-              <p class="text-sm font-semibold leading-tight">{{ getPlatformLabel(row.platform) }}</p>
+            <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <p class="text-sm font-medium">{{ getPlatformLabel(row.platform) }}</p>
+              <p class="min-w-0 truncate text-sm tabular-nums text-muted-foreground" :title="row.userId">{{ row.userId }}</p>
               <span
                 v-if="row.allowFastVerification"
                 class="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
@@ -123,8 +113,7 @@ function getPlatformIcon(platform: SocialPlatform) {
                 {{ t("userSettings.imAuthorization.fastVerificationBadge") }}
               </span>
             </div>
-            <p class="truncate text-sm text-muted-foreground" :title="row.userId">{{ row.userId }}</p>
-            <p v-if="row.comment" class="truncate text-xs text-muted-foreground/80" :title="row.comment">
+            <p v-if="row.comment" class="mt-0.5 truncate text-xs text-muted-foreground" :title="row.comment">
               {{ row.comment }}
             </p>
           </div>
@@ -132,42 +121,35 @@ function getPlatformIcon(platform: SocialPlatform) {
             <Button
               variant="ghost"
               size="icon"
+              class="size-8 text-muted-foreground pointer-coarse:size-10"
               :title="t('userSettings.imAuthorization.actions.edit')"
               :aria-label="t('userSettings.imAuthorization.actions.edit')"
               @click="startEdit(row)"
             >
-              <Pencil class="h-4 w-4" />
+              <Pencil class="size-4" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              class="text-destructive hover:text-destructive"
+              class="size-8 text-destructive hover:text-destructive pointer-coarse:size-10"
               :title="t('userSettings.imAuthorization.actions.delete')"
               :aria-label="t('userSettings.imAuthorization.actions.delete')"
               @click="confirmDelete(row)"
             >
-              <Trash2 class="h-4 w-4" />
+              <Trash2 class="size-4" />
             </Button>
           </div>
         </li>
       </ul>
 
-      <div
-        v-else
-        class="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-10 text-center"
-      >
-        <Inbox class="h-8 w-8 text-muted-foreground/60" />
-        <div class="space-y-1">
-          <p class="text-sm font-medium">{{ t("userSettings.imAuthorization.emptyTitle") }}</p>
-          <p class="text-sm text-muted-foreground">{{ t("userSettings.imAuthorization.emptyDescription") }}</p>
-        </div>
-        <Button size="sm" @click="startAdd">
-          <Plus class="h-4 w-4 mr-2" />
-          {{ t("userSettings.imAuthorization.addButton") }}
-        </Button>
+      <div v-else class="flex flex-col items-center justify-center gap-2 px-4 py-8 text-center">
+        <Inbox class="size-8 text-muted-foreground/60" />
+        <p class="text-sm font-medium">{{ t("userSettings.imAuthorization.emptyTitle") }}</p>
+        <p class="max-w-sm text-xs text-muted-foreground">{{ t("userSettings.imAuthorization.emptyDescription") }}</p>
       </div>
-    </CardContent>
-  </Card>
+    </SettingsGroup>
+    <p class="px-1 text-xs text-muted-foreground">{{ t("userSettings.imAuthorization.description") }}</p>
+  </div>
 
   <Dialog v-model:open="showEditDialog">
     <DialogScrollContent class="sm:max-w-xl">

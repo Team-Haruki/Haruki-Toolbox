@@ -12,9 +12,11 @@ import { writeQueryValue } from "@/lib/query-codec"
 import { ADMIN_DEFAULT_PAGE_SIZE, readAdminPage, readAdminPageSize } from "@/modules/admin/lib/pagination"
 import {
   getBotSecurityAlerts,
+  getBotSecurityAlertTotal,
   getBotSecuritySummary,
   updateBotSecurityAlert,
 } from "@/modules/admin-bot-security/api/alerts"
+import { buildBotSecurityTimeline, summarizeBotSecurityRows } from "@/modules/admin-bot-security/lib/alert-stats"
 import {
   BOT_SECURITY_ACTION_TARGET,
   BOT_SECURITY_QUERY_KEYS,
@@ -33,6 +35,11 @@ import {
 } from "@/modules/admin-bot-security/lib/alert-meta"
 import type { BotSecurityAlert, BotSecurityAlertListResponse, BotSecuritySummary } from "@/types/admin"
 
+/** Alerts no longer open, over every alert. null: that count could not be loaded. */
+export type BotSecurityHandledTotals = {
+  resolved: number | null
+  ignored: number | null
+}
 
 export const BOT_SECURITY_FILTER_IDS = {
   from: "bot-security-filter-from",
@@ -87,18 +94,49 @@ export function useBotSecurityAlerts() {
   // Shown inline in the summary strip (with a retry) instead of a toast.
   const summaryError = ref<ErrorDescription | null>(null)
 
+  let summaryRequestId = 0
+
   async function loadSummary() {
+    const requestId = ++summaryRequestId
     summaryLoading.value = true
     summaryError.value = null
+    void loadHandledTotals(requestId)
     try {
-      summary.value = await getBotSecuritySummary()
+      const loaded = await getBotSecuritySummary()
+      if (requestId !== summaryRequestId) return
+      summary.value = loaded
     } catch (error: unknown) {
+      if (requestId !== summaryRequestId) return
       summary.value = null
       summaryError.value = describeError(error, t("adminBotSecurity.toast.loadFailedFallback"))
     } finally {
-      summaryLoading.value = false
+      if (requestId === summaryRequestId) summaryLoading.value = false
     }
   }
+
+  // The summary only counts open alerts; the other two statuses come from
+  // the list's own total. They are an extra that never holds the summary
+  // back, and a failure only leaves a "—" in their place.
+  const handledTotals = ref<BotSecurityHandledTotals>({ resolved: null, ignored: null })
+  const handledTotalsLoading = ref(true)
+
+  async function loadHandledTotals(requestId: number) {
+    handledTotalsLoading.value = true
+    const [resolved, ignored] = await Promise.allSettled([
+      getBotSecurityAlertTotal("resolved"),
+      getBotSecurityAlertTotal("ignored"),
+    ])
+    if (requestId !== summaryRequestId) return
+    handledTotals.value = {
+      resolved: resolved.status === "fulfilled" ? resolved.value : null,
+      ignored: ignored.status === "fulfilled" ? ignored.value : null,
+    }
+    handledTotalsLoading.value = false
+  }
+
+  // Figures about the rows on screen only; the overview labels them as such.
+  const rowStats = computed(() => summarizeBotSecurityRows(alerts.value))
+  const rowTimeline = computed(() => buildBotSecurityTimeline(alerts.value))
 
   const statusOptions = computed(() => getBotSecurityStatusOptions(t))
   const kindOptions = computed(() => getBotSecurityKindOptions(t, [
@@ -248,6 +286,10 @@ export function useBotSecurityAlerts() {
     summary,
     summaryLoading,
     summaryError,
+    handledTotals,
+    handledTotalsLoading,
+    rowStats,
+    rowTimeline,
     loadSummary,
     detailOpen,
     detailAlert,

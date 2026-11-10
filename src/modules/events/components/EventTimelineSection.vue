@@ -10,7 +10,6 @@ import {
 } from "lucide-vue-next"
 import type { SekaiRegion } from "@/types"
 import CatalogCountdown from "@/shared/components/catalog/CatalogCountdown.vue"
-import CatalogDetailSection from "@/shared/components/catalog/CatalogDetailSection.vue"
 import CatalogInfoList from "@/shared/components/catalog/CatalogInfoList.vue"
 import CatalogInfoRow from "@/shared/components/catalog/CatalogInfoRow.vue"
 import CatalogTimeZoneHint from "@/shared/components/catalog/CatalogTimeZoneHint.vue"
@@ -54,10 +53,14 @@ const countdown = computed(() => resolveEventCountdownTarget(props.event, props.
 </script>
 
 <template>
-  <CatalogDetailSection :title="t('events.detail.timelineTitle')" :icon="LucideCalendarClock" content-class="flex flex-col gap-4">
-    <template #action>
-      <CatalogTimeZoneHint :region="region" />
-    </template>
+  <div class="flex flex-col gap-3" data-testid="event-timeline">
+    <div class="flex items-center justify-between gap-2">
+      <p class="flex items-center gap-1.5 text-sm font-medium">
+        <LucideCalendarClock class="size-4 text-muted-foreground" aria-hidden="true" />
+        {{ t("events.detail.timelineTitle") }}
+      </p>
+      <CatalogTimeZoneHint :region="region" switchable />
+    </div>
     <CatalogCountdown
       v-if="countdown"
       :target-ms="countdown.targetMs"
@@ -82,5 +85,5 @@ const countdown = computed(() => resolveEventCountdownTarget(props.event, props.
         />
       </CatalogInfoRow>
     </CatalogInfoList>
-  </CatalogDetailSection>
+  </div>
 </template>

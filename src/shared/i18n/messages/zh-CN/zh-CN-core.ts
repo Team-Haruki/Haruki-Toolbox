@@ -498,8 +498,87 @@ export default {
     "copyFailed": "复制失败"
   },
   "home": {
-    "title": "欢迎使用 Haruki 工具箱",
-    "description": "请选择您需要的功能",
+    "title": "Haruki 工具箱",
+    "description": "Project SEKAI 的图鉴、冲榜计算和个人数据工具",
+    "search": {
+      "placeholder": "搜索歌曲、卡牌、活动"
+    },
+    "frequent": "常用",
+    "status": {
+      "needsLogin": "需要登录",
+      "needsData": "需要先上传数据"
+    },
+    "account": {
+      "label": "当前账号",
+      "guestTitle": "三步用上个人数据功能",
+      "steps": {
+        "signIn": "注册并登录",
+        "bind": "绑定游戏账号",
+        "upload": "上传数据"
+      }
+    },
+    "live": {
+      "title": "正在进行",
+      "optInTitle": "看看游戏里正在进行什么",
+      "optInHint": "加载游戏数据后，这里会展示当前活动、限时招募和新歌。",
+      "load": "加载游戏数据",
+      "running": "进行中",
+      "upcoming": "即将开始",
+      "ended": "已结束",
+      "endsIn": "剩余 {duration}",
+      "startsIn": "{duration}后开始",
+      "nextStartsIn": "下一期活动 {duration}后开始",
+      "duration": {
+        "days": "{days} 天 {hours} 小时",
+        "hours": "{hours} 小时 {minutes} 分",
+        "minutes": "{minutes} 分钟"
+      },
+      "eventDetail": "活动详情",
+      "eventCards": "本期卡牌",
+      "gachas": "限时招募",
+      "newSongs": "新歌",
+      "none": "这个区服暂时没有可展示的内容。",
+      "error": "游戏数据加载失败，稍后再试。"
+    },
+    "trays": {
+      "event": {
+        "hint": "活动期间组卡、算分、看榜"
+      },
+      "player": {
+        "hint": "上传后查看自己的账号"
+      },
+      "catalog": {
+        "hint": "游戏内容资料库"
+      },
+      "community": {
+        "title": "联机与社区",
+        "hint": "找车、找群、找我们"
+      }
+    },
+    "tools": {
+      "deckRecommend": "从你的卡牌里算出活动最优卡组",
+      "rankBorder": "活动各档位的榜线与涨速",
+      "ptCalculator": "按目标 Pt 反推所需加成和分数区间",
+      "eventPlanner": "在活动日历上排每小时的打歌计划",
+      "uploadData": "把游戏账号数据同步到工具箱",
+      "playerProfile": "账号的游戏档案",
+      "cardBox": "卡牌收集进度",
+      "musicProgress": "打歌进度与可获取奖励",
+      "eventRecords": "参加过的活动与成绩",
+      "training": "各角色的养成进度",
+      "musicLibrary": "歌曲、难度与收录信息",
+      "cards": "卡牌、技能与卡面",
+      "events": "历届活动与加成、奖励",
+      "gachas": "历届卡池与出现的卡牌",
+      "costumes": "组合服装、头饰与发型并 3D 预览",
+      "storyPlayer": "在线阅读游戏剧情",
+      "sekaiStation": "实时汇总国服协力房间号",
+      "friendGroups": "玩家交流群",
+      "friendLinks": "其他好用的 Sekai 站点",
+      "tickets": "反馈 Bug、处理账号问题或提建议",
+      "about": "项目介绍与开发团队",
+      "sponsors": "感谢支持工具箱的各位"
+    },
     "aboutBanner": {
       "badge": "关于 & 赞助",
       "title": "您的帮助是我们继续下去的动力",
@@ -648,6 +727,8 @@ export default {
       "point": "活动 PT",
       "rank": "活动排名",
       "showAll": "查看全部",
+      "rankPanel": "活动排名（越靠上名次越好）",
+      "allHidden": "两项数据都已隐藏，点击上方图例恢复显示。",
       "zoomHint": "拖动或缩放下方选区以查看指定范围的活动"
     },
     "sort": {
@@ -660,6 +741,7 @@ export default {
       "title": "活动历史",
       "event": "活动",
       "type": "类型",
+      "date": "开始日期",
       "point": "活动 PT",
       "rank": "排名",
       "rankFromHonor": "缺少具体排名数据，档位由活动牌子推断"
@@ -918,7 +1000,22 @@ export default {
       "level": "Lv.{level}"
     },
     "music": {
-      "title": "歌曲通关统计"
+      "title": "歌曲通关统计",
+      "progress": "进度",
+      "total": "总数"
+    },
+    "headline": {
+      "allPerfect": "All Perfect",
+      "fullCombo": "Full Combo",
+      "collection": "卡牌收集率",
+      "challenge": "挑战 Live 最高分",
+      "latestEvent": "最近活动排名"
+    },
+    "roster": {
+      "title": "角色总览",
+      "rarityFilter": "按稀有度统计卡牌收集",
+      "otherUnit": "其他",
+      "challenge": "挑战"
     },
     "multiLive": {
       "title": "多人 Live",
@@ -1003,6 +1100,10 @@ export default {
       "areaItemBonus": "区域道具",
       "fixtureBonus": "MYSEKAI 家具",
       "gateBonus": "MYSEKAI 大门",
+      "total": "合计",
+      "characterColumn": "角色",
+      "unitColumn": "团体",
+      "attrColumn": "属性",
       "gateHint": "虚拟歌手的门加成按无支援团体计算，取已拥有门中的最高等级；带支援团体的卡牌使用对应团体的门。",
       "units": {
         "light_sound": "Leo/need",
@@ -1079,7 +1180,9 @@ export default {
       "nextLevel": "下一级",
       "nextBonus": "下级加成",
       "showAll": "全部等级",
-      "materialsLegend": "材料：拥有 / 所需"
+      "materialsLegend": "材料：拥有 / 所需",
+      "materialEnough": "数量足够",
+      "materialShort": "数量不足"
     },
     "leader": {
       "title": "队长次数",
@@ -1089,6 +1192,7 @@ export default {
       "loadError": "队长统计数据加载失败",
       "noAccountHint": "绑定并选择游戏账号后即可查看队长统计",
       "limit": "任务上限 {count}",
+      "exLimit": "EX 上限 {count}",
       "sortByTotal": "按次数",
       "sortByCharacter": "按角色",
       "normalLabel": "通常",
@@ -1208,6 +1312,10 @@ export default {
       "myTickets": "我的工单",
       "pendingTicketReplies": "{total} 个工单等待你回复",
       "settings": "设置"
+    },
+    "scrollJump": {
+      "top": "回到顶部",
+      "bottom": "跳到底部"
     },
     "footer": {
       "copyright": "Seiunx Network & Haruki Dev Team. 保留所有权利。",
@@ -1624,9 +1732,26 @@ export default {
       }
     }
   },
+  "musicPlayer": {
+    "label": "音乐播放器",
+    "play": "播放",
+    "pause": "暂停",
+    "seek": "播放进度",
+    "vocal": "切换演唱版本",
+    "vocalsTitle": "演唱版本（切换时不中断播放）",
+    "volume": "音量",
+    "mute": "静音",
+    "unmute": "取消静音",
+    "close": "关闭播放器",
+    "openSong": "查看歌曲详情",
+    "error": "音频加载失败，请稍后重试。",
+    "singerSeparator": "、",
+    "playSong": "播放 {title}",
+    "nowPlaying": "正在播放"
+  },
   "homeSettings": {
     "title": "Haruki工具箱设置",
-    "description": "配置Haruki工具箱服务器线路、图片加载线路、外观、语言和性能偏好",
+    "description": "配置Haruki工具箱服务器线路、资产线路、外观、语言和性能偏好",
     "trigger": "设置",
     "tabs": {
       "preferences": "偏好设置",
@@ -1636,7 +1761,7 @@ export default {
     },
     "resetDialog": {
       "title": "重置偏好设置？",
-      "description": "这会将服务器线路、图片加载线路、外观、语言、低特效模式和隐私偏好恢复为默认值。",
+      "description": "这会将服务器线路、资产线路、外观、语言、低特效模式、隐私和歌曲播放偏好恢复为默认值。",
       "confirm": "确认重置"
     },
     "endpoint": {
@@ -1653,8 +1778,8 @@ export default {
       "refreshLatency": "重新测速"
     },
     "assetEndpoint": {
-      "label": "图片加载线路",
-      "help": "用于加载卡牌缩略图等游戏资源。首次进入网站会自动选择延迟最低的线路，打开设置时会重新测速。",
+      "label": "资产线路",
+      "help": "用于加载卡面、音频等游戏资产 (Asset)。首次进入网站会自动选择延迟最低的线路，打开设置时会重新测速。",
       "placeholder": "请选择线路",
       "global": "海外推荐",
       "chinaCdn": "中国大陆推荐（腾讯云）",
@@ -1695,6 +1820,7 @@ export default {
     },
     "appUpdate": {
       "title": "应用更新",
+      "installedTitle": "当前版本",
       "description": "检查 Haruki 工具箱的版本更新。",
       "current": "已是最新",
       "available": "有新版本",
@@ -1711,7 +1837,13 @@ export default {
     },
     "userData": {
       "description": "这里保存的是你各游戏账号已上传数据在本浏览器的副本。点「刷新」会检查服务器上是否有更新的上传；「个人档案」会直接从游戏服务器获取最新信息。",
+      "groups": {
+        "source": "选择数据",
+        "cache": "缓存状态"
+      },
       "account": "账号",
+      "accountHelp": "要查看或清理哪个游戏账号的数据",
+      "dataTypeHelp": "这个账号下的哪一类数据",
       "accountPlaceholder": "请选择已绑定账号",
       "noAccount": "当前账号还没有绑定游戏账号。",
       "dataType": "数据类型",
@@ -1754,7 +1886,22 @@ export default {
     "groups": {
       "appearance": "外观",
       "network": "网络",
-      "privacy": "隐私与内容"
+      "privacy": "隐私与内容",
+      "music": "歌曲播放",
+      "reset": "重置"
+    },
+    "reset": {
+      "label": "恢复默认设置"
+    },
+    "music": {
+      "preferredVocal": {
+        "label": "优先演唱版本",
+        "help": "点封面或列表里的播放按钮时，先播哪个版本。歌曲没有这个版本时，播放它的第一个版本。",
+        "options": {
+          "sekai": "SEKAI 版",
+          "original": "原曲（原版）"
+        }
+      }
     }
   },
   "core": {
@@ -1944,22 +2091,40 @@ export default {
       "assetNameCopied": "已复制内部名称",
       "period": "期间",
       "viewAllCount": "查看全部 ({count})",
-      "zoom": "点击放大查看",
+      "zoom": "查看大图",
       "showMore": "展开",
       "showLess": "收起",
       "tryOtherRegion": "可能存在于其他区服，切换后会自动重新加载。"
     },
     "lightbox": {
-      "description": "图片预览",
-      "zoomIn": "放大",
-      "zoomOut": "缩小",
+      "description": "图片查看器",
       "openInNewTab": "新标签页打开",
       "items": "图片",
-      "touchZoom": "双击放大 / 缩小",
-      "touchSwipe": "左右滑动切换图片"
+      "tools": "图片工具",
+      "loading": "正在加载图片…",
+      "loadFailed": "图片加载失败，可以在新标签页打开原图。",
+      "rotateLeft": "逆时针旋转 90°",
+      "rotateRight": "顺时针旋转 90°",
+      "flipHorizontal": "左右镜像",
+      "flipVertical": "上下镜像",
+      "crop": "裁剪",
+      "applyCrop": "应用裁剪",
+      "cropAspect": "裁剪比例",
+      "cropFree": "自由",
+      "undo": "撤销上一步",
+      "reset": "还原为原图",
+      "saveOriginal": "保存原图",
+      "saveEdited": "保存编辑后的图片",
+      "zoom": "缩放",
+      "zoomIn": "放大",
+      "zoomOut": "缩小",
+      "zoomReset": "恢复适应屏幕"
     },
     "time": {
-      "localLabel": "当地时间",
+      "localLabel": "本地时间",
+      "serverLabel": "{region}时间",
+      "localTime": "本地时间：{time}",
+      "switchLabel": "时间显示的时区",
       "serverTime": "{region}时间：{time}",
       "hint": "时间按你所在的时区（{zone}）显示；与{region}时间（{serverZone}）不同时，会在旁边标出{region}时间。",
       "sameZone": "你所在的时区（{zone}）与{region}时间一致。"

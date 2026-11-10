@@ -26,9 +26,21 @@ export interface UserOAuthAuthorization {
   /** Older payloads named the grant time this way. */
   authorizedAt?: string
   revoked?: boolean
+  /** "device" or "browser"; `deviceLabel` is empty for browser authorizations. */
+  flowType?: string
+  deviceLabel?: string
 }
 
-export function normalizeGameAccountBinding(item: UnknownRecord): AdminGameAccountBinding | null {
+/**
+ * A binding as the admin endpoints return it: the shared binding plus the
+ * two flags the list shows. Both are absent on payloads that do not say.
+ */
+export interface AdminUserGameBinding extends AdminGameAccountBinding {
+  verified?: boolean
+  isDefault?: boolean
+}
+
+export function normalizeGameAccountBinding(item: UnknownRecord): AdminUserGameBinding | null {
   const server = normalizeSekaiRegion(item.server)
   if (!server) return null
 
@@ -40,6 +52,8 @@ export function normalizeGameAccountBinding(item: UnknownRecord): AdminGameAccou
     gameUserId,
     suite: item.suite == null ? null : normalizeSuitePermissions(item.suite),
     mysekai: item.mysekai == null ? null : normalizeMysekaiPermissions(item.mysekai),
+    verified: typeof item.verified === "boolean" ? item.verified : undefined,
+    isDefault: typeof item.isDefault === "boolean" ? item.isDefault : undefined,
   }
 }
 

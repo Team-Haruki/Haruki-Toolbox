@@ -117,7 +117,7 @@ function accountLabel(entry: { server: string; gameUserId: string; verified: boo
         </Card>
       </div>
       <!-- Phones: the selection and Save stay in reach while the grid scrolls. -->
-      <div class="sticky bottom-0 -mx-4 flex items-center gap-3 border-t bg-background/95 px-4 py-3 backdrop-blur lg:hidden">
+      <div class="sticky bottom-0 -mx-4 flex items-center gap-3 border-t bg-background/95 px-4 py-3 backdrop-blur lg:hidden" data-page-bottom-bar>
         <div class="min-w-0 flex-1">
           <p class="truncate text-sm font-medium">{{ selectedName }}</p>
           <p class="text-xs text-muted-foreground" role="status">{{ t(saveStatusKey) }}</p>

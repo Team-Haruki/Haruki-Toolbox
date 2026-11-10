@@ -41,8 +41,8 @@ const { t } = useI18n()
           {{ t("adminUsers.detail.dialog.email.description", { name: userName }) }}
         </DialogDescription>
       </DialogHeader>
-      <form id="admin-user-email-form" class="flex flex-col gap-4 py-2" novalidate @submit.prevent="emit('save')">
-        <div class="flex flex-col gap-1.5">
+      <form id="admin-user-email-form" class="flex flex-col gap-4 py-1" novalidate @submit.prevent="emit('save')">
+        <div class="grid gap-1.5">
           <Label :for="ADMIN_USER_EMAIL_FIELD_ID">{{ t("adminUsers.detail.dialog.email.newEmail") }}</Label>
           <Input
             :id="ADMIN_USER_EMAIL_FIELD_ID"

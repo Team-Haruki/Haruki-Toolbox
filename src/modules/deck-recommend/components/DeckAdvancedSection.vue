@@ -124,7 +124,7 @@ function setAttrFilters(values: string[]) {
                 @click="open = !open"
               >
                     <span class="min-w-0 space-y-1">
-                      <span class="flex min-w-0 items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      <span class="flex min-w-0 items-center gap-2 text-sm font-semibold text-foreground">
                         <LucideSettings2 class="size-3.5 shrink-0" />
                         {{ t("deckRecommend.layers.advanced.title") }}
                       </span>
@@ -141,7 +141,7 @@ function setAttrFilters(values: string[]) {
               </button>
 
               <div v-show="open" class="grid min-w-0 grid-cols-1 gap-3 sm:gap-4">
-                    <section class="grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+                    <section class="grid min-w-0 grid-cols-1 gap-3 border-t border-border/60 pt-3">
                       <div class="space-y-1">
                         <h3 class="text-sm font-medium">{{ t("deckRecommend.training.title") }}</h3>
                         <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.training.description") }}</p>
@@ -151,7 +151,7 @@ function setAttrFilters(values: string[]) {
 
                     <div class="grid min-w-0 grid-cols-1 gap-3 sm:gap-4 @5xl:grid-cols-2 @5xl:items-start">
                       <div class="@container grid min-w-0 grid-cols-1 gap-3 sm:gap-4">
-                        <section class="grid min-w-0 grid-cols-1 h-full content-start gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+                        <section class="grid min-w-0 grid-cols-1 h-full content-start gap-3 border-t border-border/60 pt-3">
                           <div class="space-y-1">
                             <h3 class="text-sm font-medium">{{ t("deckRecommend.options.filters.title") }}</h3>
                             <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.filters.description") }}</p>
@@ -204,7 +204,7 @@ function setAttrFilters(values: string[]) {
                       </div>
 
                       <div class="@container grid min-w-0 grid-cols-1 gap-3 sm:gap-4">
-                        <section class="grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+                        <section class="grid min-w-0 grid-cols-1 gap-3 border-t border-border/60 pt-3">
                           <div class="space-y-1">
                             <h3 class="text-sm font-medium">{{ t("deckRecommend.options.dataOverrides.title") }}</h3>
                             <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.dataOverrides.description") }}</p>
@@ -292,7 +292,7 @@ function setAttrFilters(values: string[]) {
                             {{ t("deckRecommend.options.dataOverrides.invalid") }}
                           </p>
                         </section>
-                        <section class="grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+                        <section class="grid min-w-0 grid-cols-1 gap-3 border-t border-border/60 pt-3">
                           <div class="space-y-1">
                             <h3 class="text-sm font-medium">{{ t("deckRecommend.options.runParameters.title") }}</h3>
                             <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.runParameters.description") }}</p>
@@ -317,7 +317,7 @@ function setAttrFilters(values: string[]) {
                           </p>
                         </section>
 
-                        <section class="grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+                        <section class="grid min-w-0 grid-cols-1 gap-3 border-t border-border/60 pt-3">
                           <div class="space-y-1">
                             <h3 class="text-sm font-medium">{{ t("deckRecommend.options.multiLive.title") }}</h3>
                             <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.multiLive.description") }}</p>
@@ -373,7 +373,7 @@ function setAttrFilters(values: string[]) {
                       </div>
                     </div>
 
-                    <section class="grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+                    <section class="grid min-w-0 grid-cols-1 gap-3 border-t border-border/60 pt-3">
                       <div class="space-y-1">
                         <h3 class="text-sm font-medium">{{ t("deckRecommend.options.constraints.title") }}</h3>
                         <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.constraints.description") }}</p>

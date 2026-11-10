@@ -118,15 +118,16 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
 </script>
 
 <template>
-  <section class="grid min-w-0 grid-cols-1 gap-5">
+  <section class="grid min-w-0 grid-cols-1 gap-4">
     <div class="grid min-w-0 grid-cols-1 gap-3">
-      <h2 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <h2 class="text-sm font-semibold">
         {{ t("deckRecommend.groups.accountTarget") }}
       </h2>
-      <div class="grid min-w-0 grid-cols-1 gap-3 @sm:grid-cols-2 @5xl:grid-cols-4">
+      <!-- Label left, control right, so the selects line up down the pane; two columns of rows once the form is wide. -->
+      <div class="grid min-w-0 grid-cols-1 gap-x-6 gap-y-2 @3xl:grid-cols-2">
         <!-- The account option (server, id, badges) needs the full pane width; it shares a row only on wide forms. -->
-        <div class="grid min-w-0 grid-cols-1 content-start gap-2 @sm:col-span-2 @5xl:col-span-1">
-          <Label id="deck-account-label" for="deck-account">{{ t("deckRecommend.form.account") }}</Label>
+        <div class="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
+          <Label id="deck-account-label" for="deck-account" class="text-sm leading-tight font-normal text-muted-foreground">{{ t("deckRecommend.form.account") }}</Label>
           <Select id="deck-account" :model-value="selectedAccountKey" :disabled="accountOptions.length === 0" @update:model-value="updateAccount">
             <SelectTrigger class="w-full" aria-labelledby="deck-account-label">
               <GameAccountOption
@@ -154,7 +155,7 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
               </SelectItem>
             </SelectContent>
           </Select>
-          <p v-if="accountOptions.length === 0" class="text-xs text-muted-foreground">
+          <p v-if="accountOptions.length === 0" class="col-start-2 text-xs text-muted-foreground">
             {{ t("deckRecommend.form.noAccount") }}
             <RouterLink :to="{ name: 'user.gameAccountBindings' }" class="text-primary underline-offset-4 hover:underline">
               {{ t("deckRecommend.form.bindAccount") }}
@@ -162,8 +163,8 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
           </p>
         </div>
 
-        <div class="grid min-w-0 grid-cols-1 content-start gap-2">
-          <Label id="deck-data-region-label" for="deck-data-region">{{ t("deckRecommend.form.dataRegion") }}</Label>
+        <div class="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
+          <Label id="deck-data-region-label" for="deck-data-region" class="text-sm leading-tight font-normal text-muted-foreground">{{ t("deckRecommend.form.dataRegion") }}</Label>
           <Select id="deck-data-region" :model-value="dataRegion" @update:model-value="updateDataRegion">
             <SelectTrigger class="w-full" aria-labelledby="deck-data-region-label">
               <SelectValue />
@@ -176,8 +177,8 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
           </Select>
         </div>
 
-        <div v-if="showRecommendTargetSelect" class="grid min-w-0 grid-cols-1 content-start gap-2">
-          <Label id="deck-target-label" for="deck-target">{{ t("deckRecommend.form.target") }}</Label>
+        <div v-if="showRecommendTargetSelect" class="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
+          <Label id="deck-target-label" for="deck-target" class="text-sm leading-tight font-normal text-muted-foreground">{{ t("deckRecommend.form.target") }}</Label>
           <Select id="deck-target" :model-value="activeRecommendTarget" @update:model-value="updateRecommendTarget">
             <SelectTrigger class="w-full" aria-labelledby="deck-target-label">
               <SelectValue :key="`recommend-target-${recommendMode}-${activeRecommendTarget}-${locale}`">
@@ -192,8 +193,8 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
           </Select>
         </div>
 
-        <div v-if="showLiveTypeSelect" class="grid min-w-0 grid-cols-1 content-start gap-2">
-          <Label id="deck-live-type-label" for="deck-live-type">{{ t("deckRecommend.form.liveType") }}</Label>
+        <div v-if="showLiveTypeSelect" class="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
+          <Label id="deck-live-type-label" for="deck-live-type" class="text-sm leading-tight font-normal text-muted-foreground">{{ t("deckRecommend.form.liveType") }}</Label>
           <Select
             id="deck-live-type"
             :model-value="liveType"
@@ -211,8 +212,8 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
           </Select>
         </div>
 
-        <div v-if="showChallengeCharacterSelect" class="grid min-w-0 grid-cols-1 content-start gap-2">
-          <p class="text-sm font-medium">{{ t("deckRecommend.form.character") }}</p>
+        <div v-if="showChallengeCharacterSelect" class="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
+          <p class="text-sm leading-tight font-normal text-muted-foreground">{{ t("deckRecommend.form.character") }}</p>
           <CharacterSelect
             v-model="selectedCharacterId"
             :region="dataRegion"
@@ -223,12 +224,12 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
     </div>
 
     <div class="grid min-w-0 grid-cols-1 gap-3 border-t pt-4">
-      <h2 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <h2 class="text-sm font-semibold">
         {{ t("deckRecommend.groups.musicAlgorithm") }}
       </h2>
       <div class="grid min-w-0 grid-cols-1 gap-3 @3xl:grid-cols-2">
         <div class="grid min-w-0 grid-cols-1 content-start gap-2">
-          <p class="text-sm font-medium">{{ t("deckRecommend.form.music") }}</p>
+          <p class="text-sm leading-tight font-normal text-muted-foreground">{{ t("deckRecommend.form.music") }}</p>
           <MusicSelect
             v-model="selectedMusicId"
             v-model:difficulty-value="selectedDifficulty"
@@ -240,7 +241,7 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
         <div class="grid min-w-0 grid-cols-1 content-start gap-3">
           <div class="grid min-w-0 grid-cols-1 gap-2">
             <div class="flex flex-wrap items-center gap-1.5">
-              <p class="text-sm font-medium">{{ t("deckRecommend.form.algorithm") }}</p>
+              <p class="text-sm leading-tight font-normal text-muted-foreground">{{ t("deckRecommend.form.algorithm") }}</p>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger as-child>
@@ -307,7 +308,7 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
     <div v-if="showEventConditionSection" class="grid min-w-0 grid-cols-1 gap-3 border-t pt-4">
       <div class="flex flex-col gap-2 @lg:flex-row @lg:items-start @lg:justify-between">
         <div class="space-y-1">
-          <h2 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <h2 class="text-sm font-semibold">
             {{ t("deckRecommend.options.eventCondition.title") }}
           </h2>
           <p class="text-xs leading-5 text-muted-foreground">
@@ -326,7 +327,7 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
       </div>
       <div class="grid min-w-0 grid-cols-1 gap-3 @3xl:grid-cols-2">
         <div class="grid min-w-0 grid-cols-1 content-start gap-2">
-          <p class="text-sm font-medium">{{ t("deckRecommend.form.event") }}</p>
+          <p class="text-sm leading-tight font-normal text-muted-foreground">{{ t("deckRecommend.form.event") }}</p>
           <EventSelect
             v-model="selectedEventId"
             v-model:event-type="selectedEventType"
@@ -338,24 +339,23 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
           </p>
         </div>
 
-        <div v-if="showWorldBloomCharacterSelect" class="grid min-w-0 grid-cols-1 content-start gap-2 @3xl:grid-rows-[auto_1fr] @3xl:content-stretch">
-          <p class="text-sm font-medium">{{ t("deckRecommend.form.character") }}</p>
+        <div v-if="showWorldBloomCharacterSelect" class="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
+          <p class="text-sm leading-tight font-normal text-muted-foreground">{{ t("deckRecommend.form.character") }}</p>
           <CharacterSelect
             v-model="selectedCharacterId"
             :region="dataRegion"
             :allowed-character-ids="characterSelectAllowedIds"
             :allow-none-option="worldBloomCharacterSelectAllowNone"
             :disabled="!dataReady || worldBloomCharactersLoading"
-            trigger-class="@3xl:!h-full @3xl:min-h-9"
           />
         </div>
       </div>
       <p v-if="!isEventSimulationAvailable" class="text-xs text-muted-foreground">
         {{ t("deckRecommend.options.eventSimulation.unavailable") }}
       </p>
-      <div v-else-if="eventSimulationEnabled" class="grid min-w-0 grid-cols-1 gap-3 @lg:grid-cols-2 @3xl:grid-cols-3">
-        <div class="grid min-w-0 grid-cols-1 content-start gap-2">
-          <Label id="deck-simulation-type-label" for="deck-simulation-type">
+      <div v-else-if="eventSimulationEnabled" class="grid min-w-0 grid-cols-1 gap-x-6 gap-y-2 @3xl:grid-cols-2">
+        <div class="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
+          <Label id="deck-simulation-type-label" for="deck-simulation-type" class="text-sm leading-tight font-normal text-muted-foreground">
             {{ t("deckRecommend.options.eventSimulation.type") }}
           </Label>
           <Select
@@ -376,8 +376,8 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
         </div>
 
         <template v-if="!isWorldBloomSimulation">
-          <div v-if="!isMemoryEventSimulation" class="grid min-w-0 grid-cols-1 content-start gap-2">
-            <Label id="deck-simulation-attr-label" for="deck-simulation-attr">
+          <div v-if="!isMemoryEventSimulation" class="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
+            <Label id="deck-simulation-attr-label" for="deck-simulation-attr" class="text-sm leading-tight font-normal text-muted-foreground">
               {{ t("deckRecommend.options.eventSimulation.attr") }}
             </Label>
             <Select
@@ -396,8 +396,8 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
               </SelectContent>
             </Select>
           </div>
-          <div class="grid min-w-0 grid-cols-1 content-start gap-2">
-            <Label id="deck-simulation-unit-label" for="deck-simulation-unit">
+          <div class="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
+            <Label id="deck-simulation-unit-label" for="deck-simulation-unit" class="text-sm leading-tight font-normal text-muted-foreground">
               {{ t("deckRecommend.options.eventSimulation.unit") }}
             </Label>
             <Select
@@ -443,8 +443,8 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
         </template>
 
         <template v-else>
-          <div class="grid min-w-0 grid-cols-1 content-start gap-2">
-            <Label id="deck-world-bloom-turn-label" for="deck-world-bloom-turn">
+          <div class="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
+            <Label id="deck-world-bloom-turn-label" for="deck-world-bloom-turn" class="text-sm leading-tight font-normal text-muted-foreground">
               {{ t("deckRecommend.options.eventSimulation.worldBloomTurn") }}
             </Label>
             <Select
@@ -463,8 +463,8 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
               </SelectContent>
             </Select>
           </div>
-          <div class="grid min-w-0 grid-cols-1 content-start gap-2">
-            <p class="text-sm font-medium">{{ t("deckRecommend.options.eventSimulation.worldBloomCharacter") }}</p>
+          <div class="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
+            <p class="text-sm leading-tight font-normal text-muted-foreground">{{ t("deckRecommend.options.eventSimulation.worldBloomCharacter") }}</p>
             <CharacterSelect
               v-model="simulatedWorldBloomCharacterId"
               :region="dataRegion"
@@ -483,7 +483,7 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
 
     <div v-if="showBonusTargetsInput" class="grid min-w-0 grid-cols-1 gap-3 border-t pt-4">
       <div class="space-y-1">
-        <h2 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <h2 class="text-sm font-semibold">
           {{ t("deckRecommend.options.bonus.title") }}
         </h2>
         <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.bonus.description") }}</p>

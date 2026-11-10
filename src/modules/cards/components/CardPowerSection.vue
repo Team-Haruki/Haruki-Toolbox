@@ -1,25 +1,31 @@
 <script setup lang="ts">
 import { computed, ref, useId, watch } from "vue"
 import { useI18n } from "vue-i18n"
-import { LucideGauge, LucideMinus, LucidePlus } from "lucide-vue-next"
+import { LucideGauge, LucideMinus, LucidePlay, LucidePlus } from "lucide-vue-next"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import CatalogDetailSection from "@/shared/components/catalog/CatalogDetailSection.vue"
 import { resolveSekaiEnumLabel } from "@/shared/sekai/labels"
+import { buildStoryPlayerLink } from "@/modules/story"
 import type { CardIndexExtras, CardPowerBonus, CardPowerTable } from "@/modules/cards/composables/useCardsIndex"
 import {
   resolveCardLevelCap,
-  resolveCardPower,
+  resolveCardPowerBreakdown,
+  type CardEpisodeCost,
   type CardEpisodeRow,
   type CardRarityInfo,
 } from "@/modules/cards/lib/card-power"
 
 /**
- * Interactive base-power calculator: level slider, special training,
- * side-story toggles, master rank stepper and MySekai canvas bonus. Every
- * number comes from `resolveCardPower` (lib/card-power.ts).
+ * Interactive base-power calculator. The game shows one power number, so the
+ * section does too: the total up top, then one line per thing that feeds it
+ * (level, special training, each side story, master rank, the MySekai canvas)
+ * with its control and what it adds. A side story's line also carries its
+ * play link and unlock cost, so the stories need no section of their own. Every number comes from
+ * `resolveCardPowerBreakdown` (lib/card-power.ts).
  */
 const props = defineProps<{
   table: CardPowerTable | null
@@ -32,16 +38,20 @@ const props = defineProps<{
   canTrain: boolean
   /** The card only exists trained (`initialSpecialTrainingStatus: done`). */
   trainedByDefault: boolean
+  /** Material id → name from the `materials` dump; ids fall back to "#id". */
+  materialNames: ReadonlyMap<number, string>
+  /** The card is released, so its side stories can open in the story player. */
+  playable: boolean
   loading: boolean
 }>()
 
 const { t, te } = useI18n()
 const id = useId()
 
-// The shared Switch pads its own hit area on touch devices; the row's label
-// is also a full-width target (its `for` toggles the switch).
-const SWITCH_ROW_CLASS = "flex min-h-11 items-center justify-between gap-3 sm:min-h-9"
-const SWITCH_LABEL_CLASS = "min-h-11 flex-1 cursor-pointer items-center py-2 text-sm sm:min-h-0 sm:py-0"
+// One line of the list: name, control, and what it adds (right-aligned, so
+// the amounts form a column). The label's `for` makes the whole name a target.
+const ROW_CLASS = "grid min-h-11 grid-cols-[minmax(0,1fr)_auto_4.75rem] items-center gap-3 px-4 py-1.5"
+const ROW_LABEL_CLASS = "flex min-h-8 min-w-0 cursor-pointer items-center text-sm font-normal"
 
 const trained = ref(props.canTrain)
 const episodeFlags = ref<boolean[]>([])
@@ -73,40 +83,33 @@ watch(() => props.table, () => {
 
 const maxMasterRank = computed(() => props.masterLessons.length)
 
-const power = computed(() => resolveCardPower(
-  props.table,
-  {
-    level: level.value,
-    trained: effectiveTrained.value,
-    episodes: episodeFlags.value,
-    masterRank: masterRank.value,
-    canvas: canvas.value,
-  },
-  props.extras,
-  props.episodes.map((episode) => episode.bonus),
-  props.masterLessons,
-  props.canvasBonus,
-))
+const episodeBonuses = computed(() => props.episodes.map((episode) => episode.bonus))
 
-const shares = computed(() => {
-  const total = power.value.total
-  if (total <= 0) {
-    return { p1: 0, p2: 0, p3: 0 }
-  }
-  return {
-    p1: (power.value.p1 / total) * 100,
-    p2: (power.value.p2 / total) * 100,
-    p3: (power.value.p3 / total) * 100,
-  }
-})
+function breakdownFor(options: { trained: boolean; episodes: boolean[]; canvas: boolean }) {
+  return resolveCardPowerBreakdown(
+    props.table,
+    { level: level.value, masterRank: masterRank.value, ...options },
+    props.extras,
+    episodeBonuses.value,
+    props.masterLessons,
+    props.canvasBonus,
+  )
+}
 
-const parameters = computed(() => [
-  { key: "p1", label: t("cardCatalog.detail.power.perf"), value: power.value.p1, share: shares.value.p1, dot: "bg-rose-400" },
-  { key: "p2", label: t("cardCatalog.detail.power.tech"), value: power.value.p2, share: shares.value.p2, dot: "bg-sky-400" },
-  { key: "p3", label: t("cardCatalog.detail.power.stam"), value: power.value.p3, share: shares.value.p3, dot: "bg-emerald-400" },
-])
+const power = computed(() => breakdownFor({
+  trained: effectiveTrained.value,
+  episodes: episodeFlags.value,
+  canvas: canvas.value,
+}))
+// What each switch would add when on: shown dimmed while it is off.
+const potential = computed(() => breakdownFor({
+  trained: props.canTrain,
+  episodes: props.episodes.map(() => true),
+  canvas: true,
+}))
 
 const formatNumber = (value: number) => value.toLocaleString()
+const formatBonus = (value: number) => `+${value.toLocaleString()}`
 
 function handleLevel(value: number[] | undefined) {
   const next = value?.[0]
@@ -121,6 +124,13 @@ function toggleEpisode(index: number, enabled: boolean) {
   episodeFlags.value = next
 }
 
+function costLabel(cost: CardEpisodeCost): string {
+  const resource = cost.resourceType === "material" && cost.resourceId != null
+    ? props.materialNames.get(cost.resourceId) ?? t("cardCatalog.detail.episodes.material", { id: cost.resourceId })
+    : `${cost.resourceType}${cost.resourceId != null ? ` #${cost.resourceId}` : ""}`
+  return t("cardCatalog.detail.episodes.cost", { resource, quantity: cost.quantity })
+}
+
 function episodeLabel(episode: CardEpisodeRow): string {
   return resolveSekaiEnumLabel({ t, te }, "cardCatalog.detail.episodes.partType", episode.partType, episode.title || undefined)
 }
@@ -130,41 +140,26 @@ function episodeLabel(episode: CardEpisodeRow): string {
   <CatalogDetailSection
     :title="t('cardCatalog.detail.power.title')"
     :icon="LucideGauge"
-    :description="t('cardCatalog.detail.power.hint')"
     :loading="loading && !table"
     :empty="!loading && !table"
     :empty-message="t('cardCatalog.detail.power.noData')"
     content-class="flex flex-col gap-4"
   >
-    <div class="flex flex-col gap-3">
-      <div class="flex items-baseline justify-between gap-3">
-        <span class="text-sm text-muted-foreground">{{ t("cardCatalog.detail.power.total") }}</span>
-        <span class="text-2xl font-bold tabular-nums">{{ formatNumber(power.total) }}</span>
-      </div>
-      <div class="flex h-2.5 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
-        <div
-          v-for="parameter in parameters"
-          :key="parameter.key"
-          :class="['h-full transition-[width]', parameter.dot]"
-          :style="{ width: `${parameter.share}%` }"
-        />
-      </div>
-      <dl class="grid grid-cols-3 gap-2">
-        <div v-for="parameter in parameters" :key="parameter.key" class="rounded-md bg-muted/50 px-2.5 py-2">
-          <dt class="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span :class="['size-2 shrink-0 rounded-full', parameter.dot]" aria-hidden="true" />
-            <span class="truncate">{{ parameter.label }}</span>
-          </dt>
-          <dd class="mt-0.5 text-base font-semibold tabular-nums">{{ formatNumber(parameter.value) }}</dd>
-        </div>
-      </dl>
+    <div class="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
+      <p class="text-4xl leading-none font-bold tracking-tight tabular-nums" data-testid="card-power-total" aria-live="polite">
+        {{ formatNumber(power.total) }}
+      </p>
+      <p class="max-w-64 text-xs leading-relaxed text-muted-foreground sm:text-right">{{ t("cardCatalog.detail.power.hint") }}</p>
     </div>
 
-    <div class="flex flex-col gap-3 border-t pt-4">
-      <div class="flex flex-col gap-2">
-        <div class="flex items-center justify-between text-sm">
-          <Label :for="`${id}-level`">{{ t("cardCatalog.detail.power.level") }}</Label>
-          <span class="tabular-nums text-muted-foreground">Lv. {{ level }} / {{ levelCap }}</span>
+    <div class="divide-y divide-border/60 overflow-hidden rounded-xl border bg-muted/20" data-testid="card-power-sources">
+      <div class="flex flex-col gap-2 px-4 py-3">
+        <div class="flex items-center justify-between gap-3 text-sm">
+          <Label :for="`${id}-level`" class="font-normal">
+            {{ t("cardCatalog.detail.power.level") }}
+            <span class="tabular-nums text-muted-foreground">Lv. {{ level }} / {{ levelCap }}</span>
+          </Label>
+          <span class="font-medium tabular-nums">{{ formatNumber(power.level) }}</span>
         </div>
         <Slider
           :id="`${id}-level`"
@@ -177,63 +172,89 @@ function episodeLabel(episode: CardEpisodeRow): string {
         />
       </div>
 
-      <div class="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-        <div v-if="canTrain" :class="SWITCH_ROW_CLASS">
-          <Label :for="`${id}-trained`" :class="SWITCH_LABEL_CLASS">{{ t("cardCatalog.detail.power.trained") }}</Label>
-          <Switch
-            :id="`${id}-trained`"
-            :model-value="effectiveTrained"
-            :disabled="trainedByDefault"
-            @update:model-value="trained = $event"
-          />
-        </div>
+      <div v-if="canTrain" :class="ROW_CLASS">
+        <Label :for="`${id}-trained`" :class="ROW_LABEL_CLASS">{{ t("cardCatalog.detail.power.trained") }}</Label>
+        <Switch
+          :id="`${id}-trained`"
+          :model-value="effectiveTrained"
+          :disabled="trainedByDefault"
+          @update:model-value="trained = $event"
+        />
+        <span :class="['text-right text-sm tabular-nums', effectiveTrained ? 'font-medium' : 'text-muted-foreground/70']">
+          {{ formatBonus(potential.training) }}
+        </span>
+      </div>
 
-        <div
-          v-for="(episode, index) in episodes"
-          :key="episode.id"
-          :class="SWITCH_ROW_CLASS"
-        >
-          <Label :for="`${id}-episode-${index}`" :class="[SWITCH_LABEL_CLASS, 'min-w-0']">
-            <span class="truncate">{{ t("cardCatalog.detail.power.episodes") }} · {{ episodeLabel(episode) }}</span>
-          </Label>
+      <!-- A side story: what reading it adds, the way to read it, and what unlocking it costs. -->
+      <div v-for="(episode, index) in episodes" :key="episode.id" data-slot="card-power-episode">
+        <div :class="ROW_CLASS">
+          <div class="flex min-w-0 items-center gap-1.5">
+            <Label :for="`${id}-episode-${index}`" :class="ROW_LABEL_CLASS" :title="episode.title || undefined">
+              <span class="truncate">{{ t("cardCatalog.detail.power.episodes") }} · {{ episodeLabel(episode) }}</span>
+            </Label>
+            <Button v-if="playable && episode.scenarioId" as-child variant="ghost" size="sm" class="h-7 shrink-0 gap-1 px-1.5 text-xs text-primary hover:text-primary pointer-coarse:h-9">
+              <RouterLink :to="buildStoryPlayerLink(episode.scenarioId)">
+                <LucidePlay class="size-3.5" />
+                {{ t("cardCatalog.detail.episodes.play") }}
+              </RouterLink>
+            </Button>
+          </div>
           <Switch
             :id="`${id}-episode-${index}`"
             :model-value="episodeFlags[index] ?? false"
             @update:model-value="toggleEpisode(index, $event)"
           />
+          <span :class="['text-right text-sm tabular-nums', episodeFlags[index] ? 'font-medium' : 'text-muted-foreground/70']">
+            {{ formatBonus(potential.episodes[index] ?? 0) }}
+          </span>
         </div>
+        <div v-if="episode.costs.length > 0" class="-mt-1 flex flex-wrap items-center gap-1.5 px-4 pb-2.5 text-xs text-muted-foreground">
+          <span>{{ t("cardCatalog.detail.episodes.costs") }}</span>
+          <Badge v-for="(cost, costIndex) in episode.costs" :key="costIndex" variant="outline" size="sm" class="bg-background tabular-nums dark:bg-input/30">
+            {{ costLabel(cost) }}
+          </Badge>
+        </div>
+      </div>
 
-        <div v-if="canvasBonus" :class="SWITCH_ROW_CLASS">
-          <Label :for="`${id}-canvas`" :class="SWITCH_LABEL_CLASS">{{ t("cardCatalog.detail.power.canvas") }}</Label>
-          <Switch :id="`${id}-canvas`" :model-value="canvas" @update:model-value="canvas = $event" />
+      <div v-if="maxMasterRank > 0" :class="ROW_CLASS">
+        <span class="min-w-0 text-sm">
+          {{ t("cardCatalog.detail.power.masterRank") }}
+          <span class="tabular-nums text-muted-foreground">{{ masterRank }} / {{ maxMasterRank }}</span>
+        </span>
+        <div class="inline-flex items-center rounded-md border bg-background dark:bg-input/30" role="group" :aria-label="t('cardCatalog.detail.power.masterRank')">
+          <Button
+            variant="ghost"
+            size="sm"
+            class="size-9 rounded-r-none p-0 sm:size-8"
+            :disabled="masterRank <= 0"
+            :aria-label="`${t('cardCatalog.detail.power.masterRank')} -1`"
+            @click="masterRank -= 1"
+          >
+            <LucideMinus class="size-4" />
+          </Button>
+          <span class="w-8 text-center text-sm font-medium tabular-nums" aria-live="polite">{{ masterRank }}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            class="size-9 rounded-l-none p-0 sm:size-8"
+            :disabled="masterRank >= maxMasterRank"
+            :aria-label="`${t('cardCatalog.detail.power.masterRank')} +1`"
+            @click="masterRank += 1"
+          >
+            <LucidePlus class="size-4" />
+          </Button>
         </div>
+        <span :class="['text-right text-sm tabular-nums', masterRank > 0 ? 'font-medium' : 'text-muted-foreground/70']">
+          {{ formatBonus(power.masterRank) }}
+        </span>
+      </div>
 
-        <div v-if="maxMasterRank > 0" class="flex min-h-9 items-center justify-between gap-3">
-          <span class="text-sm">{{ t("cardCatalog.detail.power.masterRank") }}</span>
-          <div class="inline-flex items-center rounded-md border" role="group" :aria-label="t('cardCatalog.detail.power.masterRank')">
-            <Button
-              variant="ghost"
-              size="sm"
-              class="size-9 rounded-r-none p-0 sm:size-8"
-              :disabled="masterRank <= 0"
-              :aria-label="`${t('cardCatalog.detail.power.masterRank')} -1`"
-              @click="masterRank -= 1"
-            >
-              <LucideMinus class="size-4" />
-            </Button>
-            <span class="w-8 text-center text-sm font-medium tabular-nums" aria-live="polite">{{ masterRank }}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              class="size-9 rounded-l-none p-0 sm:size-8"
-              :disabled="masterRank >= maxMasterRank"
-              :aria-label="`${t('cardCatalog.detail.power.masterRank')} +1`"
-              @click="masterRank += 1"
-            >
-              <LucidePlus class="size-4" />
-            </Button>
-          </div>
-        </div>
+      <div v-if="canvasBonus" :class="ROW_CLASS">
+        <Label :for="`${id}-canvas`" :class="ROW_LABEL_CLASS">{{ t("cardCatalog.detail.power.canvas") }}</Label>
+        <Switch :id="`${id}-canvas`" :model-value="canvas" @update:model-value="canvas = $event" />
+        <span :class="['text-right text-sm tabular-nums', canvas ? 'font-medium' : 'text-muted-foreground/70']">
+          {{ formatBonus(potential.canvas) }}
+        </span>
       </div>
     </div>
   </CatalogDetailSection>

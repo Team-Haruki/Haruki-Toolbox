@@ -10,7 +10,7 @@ const linkClass = "font-medium text-foreground underline underline-offset-2 hove
 </script>
 
 <template>
-  <div class="space-y-1.5 rounded-md border bg-muted/20 p-2.5 text-xs leading-6 text-muted-foreground sm:p-3 xl:p-4">
+  <div class="space-y-0.5 border-t border-border/60 px-3 pt-3 text-xs leading-5 text-muted-foreground sm:px-0">
     <p>
       {{ t("deckRecommend.attribution.originalPrefix") }}<a
         :class="linkClass"

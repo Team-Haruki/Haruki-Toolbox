@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { ref, watch } from "vue"
-import { useRoute, useRouter } from "vue-router"
+import { ref, watch, type Component } from "vue"
+import { RouterLink, useRoute, useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge, type BadgeVariants } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Download, ExternalLink, FileUp, KeyRound, LucideAlertTriangle, LucideInfo, MonitorSmartphone, Smartphone } from "lucide-vue-next"
+import { FileUp, KeyRound, LifeBuoy, MonitorSmartphone, TabletSmartphone, Ticket } from "lucide-vue-next"
 import PageHeader from "@/shared/components/PageHeader.vue"
-import { UploadDataFileTab, UploadDataInheritTab, UploadDataIOSTab } from "@/modules/tools/components"
+import { UploadDataFileTab, UploadDataInheritTab, UploadDataIOSTab, UploadDataProxyTab } from "@/modules/tools/components"
 import { useUploadDataTool } from "@/modules/tools/composables/useUploadDataTool"
 import { loadActiveInheritJob } from "@/modules/tools/lib/inherit-job-storage"
 import { useUserStore } from "@/shared/stores/user"
@@ -16,11 +15,6 @@ import { useUserStore } from "@/shared/stores/user"
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
-
-const HARUKI_PROXY_VERSION = "v3.0.0-beta.7"
-const HARUKI_PROXY_WINDOWS_URL = "https://haruki-dl-esa-cn.seiunx.com/HarukiProxy/v3.0.0-beta.7/HarukiProxy-v3.0.0-beta.7-windows-x64.zip"
-const HARUKI_PROXY_ANDROID_URL = "https://haruki-dl-esa-cn.seiunx.com/HarukiProxy/v3.0.0-beta.7/HarukiProxy-v3.0.0-beta.7-android-arm64.apk"
-const HARUKI_PROXY_TUTORIAL_URL = "https://neo.haruki.seiunx.com/haruki-proxy/android"
 
 const {
   fileDataType,
@@ -97,164 +91,130 @@ watch(
   { immediate: true },
 )
 
-const noticeTileClass = "rounded-md border bg-muted/20 px-3 py-2 text-center"
-const tabTriggerClass = "flex min-h-9 items-center gap-1.5 whitespace-normal py-1.5 text-xs sm:text-sm pointer-coarse:min-h-10"
+// The four ways in, in the order we recommend them. The picker is the page's
+// tab list: one card per method, with who it is for.
+type MethodTag = "recommended" | "fallback" | "advanced"
+const METHODS: readonly { value: TabValue; icon: Component; tag: MethodTag }[] = [
+  { value: "ios", icon: TabletSmartphone, tag: "recommended" },
+  { value: "proxy", icon: MonitorSmartphone, tag: "recommended" },
+  { value: "inherit", icon: KeyRound, tag: "fallback" },
+  { value: "file", icon: FileUp, tag: "advanced" },
+]
+const TAG_VARIANT: Record<MethodTag, BadgeVariants["variant"]> = {
+  recommended: "default",
+  fallback: "amber",
+  advanced: "muted",
+}
+const QQ_GROUPS = [
+  { key: "group1Label", id: "730020933" },
+  { key: "group2Label", id: "1023178678" },
+] as const
 </script>
 
 <template>
-  <div class="w-full flex-1 flex flex-col items-center justify-center gap-3 px-0 py-4">
-    <!-- What this page is for, before any tab-specific warnings. -->
-    <PageHeader
-      :title="t('tools.uploadData.intro.title')"
-      :description="t('tools.uploadData.intro.description')"
-      class="w-full max-w-2xl"
-    />
-    <Card class="w-full max-w-2xl">
-      <CardContent class="pt-4 sm:pt-6">
-        <div class="grid gap-2 sm:grid-cols-3">
-          <button type="button" :class="[noticeTileClass, 'transition-colors hover:bg-muted/40']" @click="activeTab = 'ios'">
-            <span class="block text-[11px] font-medium text-muted-foreground">{{ t("tools.uploadData.intro.iosPlatform") }}</span>
-            <span class="mt-0.5 block text-sm font-semibold">{{ t("tools.uploadData.intro.iosMethod") }}</span>
-          </button>
-          <button type="button" :class="[noticeTileClass, 'transition-colors hover:bg-muted/40']" @click="activeTab = 'proxy'">
-            <span class="block text-[11px] font-medium text-muted-foreground">{{ t("tools.uploadData.intro.proxyPlatform") }}</span>
-            <span class="mt-0.5 block text-sm font-semibold">{{ t("tools.uploadData.intro.proxyMethod") }}</span>
-          </button>
-          <button type="button" :class="[noticeTileClass, 'transition-colors hover:bg-muted/40']" @click="activeTab = 'inherit'">
-            <span class="block text-[11px] font-medium text-muted-foreground">{{ t("tools.uploadData.intro.fallbackPlatform") }}</span>
-            <span class="mt-0.5 block text-sm font-semibold">{{ t("tools.uploadData.intro.fallbackMethod") }}</span>
-          </button>
-        </div>
-      </CardContent>
-    </Card>
+  <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-0 py-4" data-testid="upload-data-page">
+    <PageHeader :title="t('tools.uploadData.intro.title')" :description="t('tools.uploadData.intro.description')" />
 
-    <Tabs v-model="activeTab" class="w-full max-w-2xl">
-      <TabsList class="grid h-auto w-full grid-cols-2 sm:grid-cols-4">
-        <TabsTrigger value="ios" :class="tabTriggerClass">
-          <Smartphone class="h-4 w-4 shrink-0" />
-          {{ t("tools.uploadData.tabs.ios") }}
-        </TabsTrigger>
-        <TabsTrigger value="proxy" :class="tabTriggerClass">
-          <MonitorSmartphone class="h-4 w-4 shrink-0" />
-          {{ t("tools.uploadData.tabs.proxy") }}
-        </TabsTrigger>
-        <TabsTrigger value="inherit" :class="tabTriggerClass">
-          <KeyRound class="h-4 w-4 shrink-0" />
-          {{ t("tools.uploadData.tabs.inherit") }}
-        </TabsTrigger>
-        <TabsTrigger value="file" :class="tabTriggerClass">
-          <FileUp class="h-4 w-4 shrink-0" />
-          {{ t("tools.uploadData.tabs.file") }}
-        </TabsTrigger>
-      </TabsList>
+    <Tabs
+      v-model="activeTab"
+      class="grid gap-x-6 gap-y-4 lg:grid-cols-[19rem_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:items-start"
+    >
+      <!-- Pick a method: who it is for, then what it is. -->
+      <div class="min-w-0 lg:col-start-1 lg:row-start-1">
+        <p id="upload-methods-label" class="px-0.5 pb-2 text-[13px] font-medium text-muted-foreground">
+          {{ t("tools.uploadData.methods.label") }}
+        </p>
+        <TabsList
+          aria-labelledby="upload-methods-label"
+          class="grid h-auto w-full grid-cols-2 items-stretch gap-2 rounded-none bg-transparent p-0 lg:grid-cols-1"
+        >
+          <TabsTrigger
+            v-for="method in METHODS"
+            :key="method.value"
+            :value="method.value"
+            :data-testid="`upload-method-${method.value}`"
+            class="group h-auto min-w-0 flex-none flex-col items-start justify-start gap-2 whitespace-normal min-[360px]:flex-row min-[360px]:gap-3 rounded-xl border-border bg-card p-3 text-left font-normal text-foreground hover:bg-muted/40 data-[state=active]:border-primary data-[state=active]:bg-primary/5 data-[state=active]:shadow-none dark:text-foreground dark:data-[state=active]:border-primary dark:data-[state=active]:bg-primary/10"
+          >
+            <span
+              class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground transition-colors group-data-[state=active]:bg-primary group-data-[state=active]:text-primary-foreground"
+              aria-hidden="true"
+            >
+              <component :is="method.icon" class="size-4.5" />
+            </span>
+            <span class="min-w-0 flex-1">
+              <span class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span class="min-w-0 break-words text-sm font-semibold">{{ t(`tools.uploadData.methods.${method.value}.name`) }}</span>
+                <Badge :variant="TAG_VARIANT[method.tag]" size="sm">{{ t(`tools.uploadData.methods.tags.${method.tag}`) }}</Badge>
+              </span>
+              <span class="mt-0.5 block text-xs text-muted-foreground">{{ t(`tools.uploadData.methods.${method.value}.platform`) }}</span>
+              <span class="mt-1 hidden text-xs leading-relaxed text-muted-foreground lg:block">{{ t(`tools.uploadData.methods.${method.value}.note`) }}</span>
+            </span>
+          </TabsTrigger>
+        </TabsList>
+      </div>
 
-      <TabsContent value="ios">
-        <UploadDataIOSTab />
-      </TabsContent>
+      <div class="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+        <TabsContent value="ios">
+          <UploadDataIOSTab />
+        </TabsContent>
 
-      <TabsContent value="proxy">
-        <Card>
-          <CardHeader>
-            <CardTitle class="flex items-center gap-2">
-              <MonitorSmartphone class="h-6 w-6" />
-              {{ t("tools.uploadData.proxyTab.title") }}
-            </CardTitle>
-            <CardDescription>{{ t("tools.uploadData.proxyTab.description") }}</CardDescription>
-          </CardHeader>
-          <CardContent class="space-y-4">
-            <!-- The v1/v2 cutoff is in the past: background for a new user, a nudge for an old one. -->
-            <Alert class="border-amber-500/40 bg-amber-500/5 text-amber-900 dark:text-amber-100" data-testid="harukiproxy-upgrade-warning">
-              <LucideAlertTriangle aria-hidden="true" />
-              <AlertTitle>{{ t("tools.uploadData.proxyTab.upgradeWarning.title") }}</AlertTitle>
-              <AlertDescription class="text-current">
-                {{ t("tools.uploadData.proxyTab.upgradeWarning.deadline") }}
-                {{ t("tools.uploadData.proxyTab.upgradeWarning.upgrade") }}
-              </AlertDescription>
-            </Alert>
-            <ol class="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
-              <li>{{ t("tools.uploadData.proxyTab.steps.install") }}</li>
-              <li>{{ t("tools.uploadData.proxyTab.steps.bind") }}</li>
-              <li>{{ t("tools.uploadData.proxyTab.steps.run") }}</li>
-            </ol>
-            <div class="space-y-2 rounded-lg border bg-muted/20 p-3" data-testid="harukiproxy-downloads">
-              <p class="text-sm font-medium">{{ t("tools.uploadData.proxyTab.downloads.title") }}</p>
-              <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                <Button as-child variant="outline" size="sm" class="justify-start sm:justify-center">
-                  <a :href="HARUKI_PROXY_WINDOWS_URL" target="_blank" rel="noopener noreferrer">
-                    <Download class="size-4" aria-hidden="true" />
-                    {{ t("tools.uploadData.proxyTab.upgradeWarning.windowsDownload") }}
-                  </a>
-                </Button>
-                <Button as-child variant="outline" size="sm" class="justify-start sm:justify-center">
-                  <a :href="HARUKI_PROXY_ANDROID_URL" target="_blank" rel="noopener noreferrer">
-                    <Download class="size-4" aria-hidden="true" />
-                    {{ t("tools.uploadData.proxyTab.upgradeWarning.androidDownload") }}
-                  </a>
-                </Button>
-              </div>
-              <p class="text-xs text-muted-foreground">
-                {{ t("tools.uploadData.proxyTab.upgradeWarning.release", { version: HARUKI_PROXY_VERSION }) }}
-                {{ t("tools.uploadData.proxyTab.upgradeWarning.feedback") }}
-              </p>
-            </div>
-            <Button as-child class="w-full sm:w-auto">
-              <a :href="HARUKI_PROXY_TUTORIAL_URL" target="_blank" rel="noopener noreferrer">
-                {{ t("tools.uploadData.proxyTab.tutorialButton") }}
-                <ExternalLink class="h-4 w-4" aria-hidden="true" />
-              </a>
-            </Button>
-          </CardContent>
-        </Card>
-      </TabsContent>
+        <TabsContent value="proxy">
+          <UploadDataProxyTab />
+        </TabsContent>
 
-      <TabsContent value="inherit">
-        <UploadDataInheritTab :can-show-my-sekai-data-type="hasVerifiedQQ" />
-      </TabsContent>
+        <TabsContent value="inherit">
+          <UploadDataInheritTab :can-show-my-sekai-data-type="hasVerifiedQQ" />
+        </TabsContent>
 
-      <TabsContent value="file">
-        <UploadDataFileTab
-          v-model:data-type="fileDataType"
-          v-model:selected-account-key="selectedAccountKey"
-          :upload-accounts="uploadAccounts"
-          :selected-account="selectedAccount"
-          :selected-file-name="selectedFileName"
-          :targets-loading="targetsLoading"
-          :targets-failed="targetsFailed"
-          :can-show-my-sekai-data-type="hasVerifiedQQ"
-          :can-select-suite-data-type="canSelectSuiteDataType"
-          :can-select-my-sekai-data-type="canSelectMySekaiDataType"
-          :disabled-reason="disabledReason"
-          :disabled-reason-kind="disabledReasonKind"
-          :is-cn-my-sekai-forbidden="isCNMySekaiForbidden"
-          :is-submitting-file="isSubmittingFile"
-          :upload-progress="uploadProgress"
-          :upload-status="uploadStatus"
-          @file-change="onFileChange"
-          @refresh-targets="loadUploadTargets"
-          @submit="submitFileUpload"
-        />
-      </TabsContent>
+        <TabsContent value="file">
+          <UploadDataFileTab
+            v-model:data-type="fileDataType"
+            v-model:selected-account-key="selectedAccountKey"
+            :upload-accounts="uploadAccounts"
+            :selected-account="selectedAccount"
+            :selected-file-name="selectedFileName"
+            :targets-loading="targetsLoading"
+            :targets-failed="targetsFailed"
+            :can-show-my-sekai-data-type="hasVerifiedQQ"
+            :can-select-suite-data-type="canSelectSuiteDataType"
+            :can-select-my-sekai-data-type="canSelectMySekaiDataType"
+            :disabled-reason="disabledReason"
+            :disabled-reason-kind="disabledReasonKind"
+            :is-cn-my-sekai-forbidden="isCNMySekaiForbidden"
+            :is-submitting-file="isSubmittingFile"
+            :upload-progress="uploadProgress"
+            :upload-status="uploadStatus"
+            @file-change="onFileChange"
+            @refresh-targets="loadUploadTargets"
+            @submit="submitFileUpload"
+          />
+        </TabsContent>
+      </div>
+
+      <!-- Where to ask: usage questions go to the groups, bugs to tickets. -->
+      <aside
+        class="min-w-0 rounded-xl border bg-card p-4 lg:col-start-1 lg:row-start-2"
+        aria-labelledby="upload-help-title"
+        data-testid="upload-help"
+      >
+        <h2 id="upload-help-title" class="flex items-center gap-2 text-sm font-semibold">
+          <LifeBuoy class="size-4 text-muted-foreground" aria-hidden="true" />
+          {{ t("tools.uploadData.help.title") }}
+        </h2>
+        <p class="mt-1 text-xs leading-relaxed text-muted-foreground">{{ t("tools.uploadData.help.description") }}</p>
+        <dl class="mt-3 divide-y divide-border/60 rounded-lg border bg-muted/20">
+          <div v-for="group in QQ_GROUPS" :key="group.id" class="flex items-center justify-between gap-3 px-3 py-2">
+            <dt class="text-xs text-muted-foreground">{{ t("tools.uploadData.groupTitle") }} {{ t(`tools.uploadData.${group.key}`) }}</dt>
+            <dd class="select-all font-mono text-sm font-medium tabular-nums">{{ group.id }}</dd>
+          </div>
+        </dl>
+        <Button as-child variant="outline" size="sm" class="mt-3 w-full">
+          <RouterLink to="/tickets">
+            <Ticket class="size-4" aria-hidden="true" />
+            {{ t("tools.uploadData.help.ticket") }}
+          </RouterLink>
+        </Button>
+      </aside>
     </Tabs>
-
-    <Alert variant="default" class="w-full max-w-2xl rounded-lg bg-card/90 px-4 py-3">
-      <AlertDescription class="col-start-1 col-end-3 w-full gap-0 justify-items-stretch">
-        <div class="flex items-center justify-center gap-2 text-muted-foreground">
-          <LucideInfo class="h-4 w-4" />
-          <span class="text-xs font-medium">{{ t("tools.uploadData.groupTitle") }}</span>
-        </div>
-
-        <div class="mt-2 grid grid-cols-2 gap-2">
-          <div :class="noticeTileClass">
-            <span class="block text-[11px] font-medium text-muted-foreground">{{ t("tools.uploadData.group1Label") }}</span>
-            <span class="mt-0.5 block text-sm font-semibold text-foreground">730020933</span>
-          </div>
-          <div :class="noticeTileClass">
-            <span class="block text-[11px] font-medium text-muted-foreground">{{ t("tools.uploadData.group2Label") }}</span>
-            <span class="mt-0.5 block text-sm font-semibold text-foreground">1023178678</span>
-          </div>
-        </div>
-      </AlertDescription>
-    </Alert>
-
   </div>
 </template>

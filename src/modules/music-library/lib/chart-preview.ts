@@ -5,7 +5,14 @@
  * shared afterwards.
  */
 
+import chartThemeCss from "../wasm/pjsekai-scores/black.css?raw"
+import { CHART_WEB_FONT_CSS, stretchChartNoteMiddles } from "./chart-svg"
+
 type ChartEngine = typeof import("../wasm/pjsekai-scores/pjsekai_scores_rs.js")
+
+// The engine's built-in theme is the white one, whose title and labels are
+// white on white; the bot renders with the black theme, so the page does too.
+const CHART_STYLE_SHEET = `${chartThemeCss}\n${CHART_WEB_FONT_CSS}`
 
 let enginePromise: Promise<ChartEngine> | null = null
 
@@ -54,7 +61,8 @@ export async function renderChartSvg(request: ChartSvgRequest): Promise<string> 
     try {
       drawing.setNoteHost(CHART_NOTE_HOST)
       drawing.setGenerator("Haruki Toolbox")
-      return drawing.svg(score)
+      drawing.setStyleSheet(CHART_STYLE_SHEET)
+      return stretchChartNoteMiddles(drawing.svg(score))
     } finally {
       drawing.free()
     }

@@ -31,7 +31,8 @@ test("gacha catalog route renders its list page", async ({ page }) => {
 test("home navigation links into the sekai catalog", async ({ page }) => {
   await page.goto("/")
 
-  await page.getByRole("link", { name: /^(歌曲一览|Music catalog)$/ }).first().click()
+  // The home tile's name also carries its one-line description.
+  await page.getByTestId("home-toolbox").getByRole("link", { name: /^(歌曲一览|Music catalog)/ }).first().click()
   // Catalog pages name their server in the URL so the link is shareable.
   await expect(page).toHaveURL(/\/music(\?region=[a-z]{2})?$/)
 })

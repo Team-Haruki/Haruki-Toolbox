@@ -2,35 +2,27 @@
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { LucideBookOpen, LucideUsers } from "lucide-vue-next"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { isNarrowViewport } from "@/composables/useCatalogViewPreference"
 import CatalogDetailShell from "@/shared/components/catalog/CatalogDetailShell.vue"
 import { applyCatalogRegionQuery } from "@/shared/sekai/catalog-region"
-import SekaiAttrIcon from "@/shared/components/SekaiAttrIcon.vue"
-import SekaiRarityStars from "@/shared/components/SekaiRarityStars.vue"
-import { resolveSekaiSupplyLabel } from "@/shared/sekai/labels"
 import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import CardCostumesSection from "@/modules/cards/components/CardCostumesSection.vue"
-import CardEpisodesSection from "@/modules/cards/components/CardEpisodesSection.vue"
 import CardHero from "@/modules/cards/components/CardHero.vue"
-import CardInfoSection from "@/modules/cards/components/CardInfoSection.vue"
 import CardPowerSection from "@/modules/cards/components/CardPowerSection.vue"
 import CardRelatedEventsSection from "@/modules/cards/components/CardRelatedEventsSection.vue"
 import CardRelatedGachasSection from "@/modules/cards/components/CardRelatedGachasSection.vue"
 import CardSameCharacterSection from "@/modules/cards/components/CardSameCharacterSection.vue"
 import CardSkillSection from "@/modules/cards/components/CardSkillSection.vue"
 import { useCardDetail } from "@/modules/cards/composables/useCardDetail"
-import { CARD_FULL_ART_ASPECT_CLASS } from "@/modules/cards/lib/card-assets"
-import { resolveCardSupplyBadgeVariant } from "@/modules/cards/lib/card-display"
 import { buildStoryPlayerLink, firstPlayableScenario } from "@/modules/story"
 
 const props = defineProps<{
   cardId: string
 }>()
 
-const { t, te } = useI18n()
+const { t } = useI18n()
 
 const cardId = computed(() => {
   const parsed = Number(props.cardId)
@@ -46,8 +38,6 @@ const card = detail.card
 const title = computed(() => (card.value ? card.value.prefix ?? `#${card.value.id}` : null))
 const notFound = computed(() => detail.notFound.value || (cardId.value == null && !detail.loading.value))
 const blurArt = computed(() => detail.unreleased.value && blurUnreleased.value)
-const supplyLabel = computed(() => resolveSekaiSupplyLabel({ t, te }, detail.supplyType.value))
-const supplyVariant = computed(() => resolveCardSupplyBadgeVariant(detail.supplyType.value) ?? "muted")
 // side stories open in the player once the card is released
 const storyPlayable = computed(() => card.value != null && !detail.unreleased.value)
 const storyLink = computed(() => {
@@ -82,14 +72,6 @@ const sectionsOpen = !isNarrowViewport()
     :unreleased="detail.unreleased.value"
     @retry="detail.reload"
   >
-    <template #badges>
-      <template v-if="card">
-        <SekaiRarityStars :card-rarity-type="card.cardRarityType" :trained="card.trainedByDefault" size="sm" />
-        <SekaiAttrIcon v-if="card.attr" :attr="card.attr" size="sm" show-label class="text-sm" />
-        <Badge v-if="detail.supplyType.value" :variant="supplyVariant" size="sm">{{ supplyLabel }}</Badge>
-      </template>
-    </template>
-
     <template #actions>
       <Button v-if="characterRoute" as-child variant="outline" size="sm">
         <RouterLink :to="characterRoute">
@@ -106,88 +88,71 @@ const sectionsOpen = !isNarrowViewport()
     </template>
 
     <template #skeleton>
-      <Skeleton :class="['w-full rounded-lg', CARD_FULL_ART_ASPECT_CLASS]" />
+      <Skeleton class="h-80 w-full rounded-2xl" />
       <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
-        <div class="flex flex-col gap-4">
-          <Skeleton class="h-64 w-full rounded-xl" />
-          <Skeleton class="h-40 w-full rounded-xl" />
-        </div>
-        <div class="flex flex-col gap-4">
-          <Skeleton class="h-80 w-full rounded-xl" />
-          <Skeleton class="h-72 w-full rounded-xl" />
-        </div>
+        <Skeleton class="h-80 w-full rounded-xl" />
+        <Skeleton class="h-80 w-full rounded-xl" />
       </div>
     </template>
 
-    <template v-if="card">
+    <!-- The header block carries the title, so the shell's own heading is replaced. -->
+    <template v-if="card" #heading>
       <CardHero
         :card="card"
         :region="detail.region.value"
         :asset-endpoint="detail.assetEndpoint.value"
         :blur="blurArt"
-      />
+        :unreleased="detail.unreleased.value"
+        :character="detail.character.value"
+        :unit="detail.unit.value"
+        :support-unit="detail.supportUnit.value"
+        :supply-type="detail.supplyType.value"
+        :unit-color-map="detail.unitColorMap.value"
+        :extras="detail.extras.value"
+      >
+        <template v-if="detail.relatedEvents.value.length > 0 || detail.relatedGachas.value.length > 0" #footer>
+          <div class="grid gap-x-6 gap-y-3 lg:grid-cols-2">
+            <CardRelatedEventsSection
+              :events="detail.relatedEvents.value"
+              :region="detail.region.value"
+              :asset-endpoint="detail.assetEndpoint.value"
+            />
+            <CardRelatedGachasSection
+              :gachas="detail.relatedGachas.value"
+              :banner-alias-map="detail.gachaBannerAliasMap.value"
+              :region="detail.region.value"
+              :asset-endpoint="detail.assetEndpoint.value"
+            />
+          </div>
+        </template>
+      </CardHero>
+    </template>
 
-      <!-- Two independent stacks, not three rows of pairs. Every section's
-           height is decided by its data (an episode list, N events, N gachas,
-           a skill table), so row-pairing always left one side of each row
-           short. Each column flows on its own; only the column totals differ,
-           and those are close: facts + episodes + related on the left, the
-           two calculators on the right. -->
+    <template v-if="card">
+      <!-- Two cards under the header: what the card is worth (its side
+           stories feed the number, so they live in that list) and its skill. -->
       <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
-        <div class="flex min-w-0 flex-col gap-4">
-          <CardInfoSection
-            :card="card"
-            :region="detail.region.value"
-            :character="detail.character.value"
-            :unit="detail.unit.value"
-            :support-unit="detail.supportUnit.value"
-            :supply-type="detail.supplyType.value"
-            :unit-color-map="detail.unitColorMap.value"
-            :extras="detail.extras.value"
-          />
-          <CardEpisodesSection
-            :episodes="detail.episodes.value"
-            :material-names="detail.materialNames.value"
-            :loading="detail.detailExtrasLoading.value"
-            :default-open="sectionsOpen"
-            :playable="storyPlayable"
-          />
-          <CardRelatedEventsSection
-            :events="detail.relatedEvents.value"
-            :region="detail.region.value"
-            :asset-endpoint="detail.assetEndpoint.value"
-            :loading="detail.eventsLoading.value"
-          />
-          <CardRelatedGachasSection
-            :gachas="detail.relatedGachas.value"
-            :banner-alias-map="detail.gachaBannerAliasMap.value"
-            :region="detail.region.value"
-            :asset-endpoint="detail.assetEndpoint.value"
-            :loading="detail.gachasLoading.value"
-          />
-        </div>
-
-        <div class="flex min-w-0 flex-col gap-4">
-          <CardPowerSection
-            :table="detail.powerTable.value"
-            :extras="detail.extras.value"
-            :rarity="detail.rarityInfo.value"
-            :episodes="detail.episodes.value"
-            :master-lessons="detail.masterLessons.value"
-            :canvas-bonus="detail.canvasBonus.value"
-            :can-train="detail.hasTrainedArt.value"
-            :trained-by-default="card.trainedByDefault === true"
-            :loading="detail.detailExtrasLoading.value"
-          />
-          <CardSkillSection
-            :skill="detail.skill.value"
-            :trained-skill="detail.trainedSkill.value"
-            :skill-name="card.skillName ?? null"
-            :trained-skill-name="detail.extras.value?.specialTrainingSkillName ?? null"
-            :character-name="detail.character.value?.name ?? null"
-            :loading="detail.skillsLoading.value"
-          />
-        </div>
+        <CardPowerSection
+          :table="detail.powerTable.value"
+          :extras="detail.extras.value"
+          :rarity="detail.rarityInfo.value"
+          :episodes="detail.episodes.value"
+          :master-lessons="detail.masterLessons.value"
+          :canvas-bonus="detail.canvasBonus.value"
+          :can-train="detail.hasTrainedArt.value"
+          :trained-by-default="card.trainedByDefault === true"
+          :material-names="detail.materialNames.value"
+          :playable="storyPlayable"
+          :loading="detail.detailExtrasLoading.value"
+        />
+        <CardSkillSection
+          :skill="detail.skill.value"
+          :trained-skill="detail.trainedSkill.value"
+          :skill-name="card.skillName ?? null"
+          :trained-skill-name="detail.extras.value?.specialTrainingSkillName ?? null"
+          :character-name="detail.character.value?.name ?? null"
+          :loading="detail.skillsLoading.value"
+        />
       </div>
 
       <CardCostumesSection

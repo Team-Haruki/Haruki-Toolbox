@@ -11,7 +11,8 @@ export interface DashboardData {
   bindings: {
     total: number
     verified: number
-    byServer: Array<{ server: string; count: number }>
+    /** Backend `statisticsKeyCount`: `key` is the server. */
+    byServer: Array<{ key: string; count: number }>
   }
   uploads: {
     windowHours: number
@@ -21,9 +22,10 @@ export interface DashboardData {
     total: number
     success: number
     failed: number
-    byMethod: Array<{ method: string; count: number }>
-    byDataType: Array<{ dataType: string; count: number }>
-    byMethodAndDataType: Array<{ method: string; dataType: string; count: number }>
+    /** Backend `statisticsKeyCount`: `key` is the upload method / data type. */
+    byMethod: Array<{ key: string; count: number }>
+    byDataType: Array<{ key: string; count: number }>
+    byMethodAndDataType: Array<{ uploadMethod: string; dataType: string; count: number }>
   }
 }
 

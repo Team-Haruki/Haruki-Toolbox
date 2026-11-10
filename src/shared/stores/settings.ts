@@ -20,6 +20,24 @@ export type AssetEndpointLatencyStatus = EndpointLatencyStatus
 export type AssetEndpointLatencyResult = EndpointLatencyResult
 
 const SYSTEM_THEME_MEDIA_QUERY = '(prefers-color-scheme: dark)'
+
+export const TIME_ZONE_DISPLAYS = ["local", "server"] as const
+/** `local`: the viewer's own zone; `server`: the game server's clock (JST for JP, …). */
+export type TimeZoneDisplay = (typeof TIME_ZONE_DISPLAYS)[number]
+export const DEFAULT_TIME_ZONE_DISPLAY: TimeZoneDisplay = "local"
+
+export function isTimeZoneDisplay(value: unknown): value is TimeZoneDisplay {
+    return (TIME_ZONE_DISPLAYS as readonly unknown[]).includes(value)
+}
+
+export const PREFERRED_VOCAL_TYPES = ["sekai", "original"] as const
+/** `sekai`: the unit's SEKAI version first; `original`: the original song first. */
+export type PreferredVocalType = (typeof PREFERRED_VOCAL_TYPES)[number]
+export const DEFAULT_PREFERRED_VOCAL_TYPE: PreferredVocalType = "sekai"
+
+export function isPreferredVocalType(value: unknown): value is PreferredVocalType {
+    return (PREFERRED_VOCAL_TYPES as readonly unknown[]).includes(value)
+}
 const ENDPOINT_TIMEOUT_MS = 5000
 const SERVER_ENDPOINT_HEALTH_PATH = '/api/health'
 const ENDPOINT_TYPES: EndpointType[] = ['direct', 'cdn']
@@ -124,6 +142,10 @@ export const useSettingsStore = defineStore("settings", () => {
     // low-end devices can opt into reduced effects automatically.
     const reducedVisualEffectsUserSet = ref(false)
     const hideGameUserId = ref(false)
+    // Which vocal version a play button starts with; a song without it plays its first version.
+    const preferredVocalType = ref<PreferredVocalType>(DEFAULT_PREFERRED_VOCAL_TYPE)
+    // Which clock catalog timestamps are printed in (the switch next to them sets it).
+    const timeZoneDisplay = ref<TimeZoneDisplay>(DEFAULT_TIME_ZONE_DISPLAY)
     const showUnreleasedContent = ref(false)
     const blurUnreleasedContent = ref(true)
     const sekaiCatalogRegion = ref<SekaiRegion>('jp')
@@ -205,6 +227,12 @@ export const useSettingsStore = defineStore("settings", () => {
     }
     function setHideGameUserId(enabled: boolean) {
         hideGameUserId.value = enabled
+    }
+    function setTimeZoneDisplay(value: TimeZoneDisplay) {
+        timeZoneDisplay.value = isTimeZoneDisplay(value) ? value : DEFAULT_TIME_ZONE_DISPLAY
+    }
+    function setPreferredVocalType(value: PreferredVocalType) {
+        preferredVocalType.value = isPreferredVocalType(value) ? value : DEFAULT_PREFERRED_VOCAL_TYPE
     }
     function setShowUnreleasedContent(enabled: boolean) {
         showUnreleasedContent.value = enabled
@@ -359,6 +387,8 @@ export const useSettingsStore = defineStore("settings", () => {
         reducedVisualEffects,
         reducedVisualEffectsUserSet,
         hideGameUserId,
+        preferredVocalType,
+        timeZoneDisplay,
         showUnreleasedContent,
         blurUnreleasedContent,
         sekaiCatalogRegion,
@@ -373,6 +403,8 @@ export const useSettingsStore = defineStore("settings", () => {
         setLocale,
         setReducedVisualEffects,
         setHideGameUserId,
+        setPreferredVocalType,
+        setTimeZoneDisplay,
         setShowUnreleasedContent,
         setBlurUnreleasedContent,
         setSekaiCatalogRegion,
@@ -399,6 +431,8 @@ export const useSettingsStore = defineStore("settings", () => {
             'reducedVisualEffects',
             'reducedVisualEffectsUserSet',
             'hideGameUserId',
+            'preferredVocalType',
+            'timeZoneDisplay',
             'showUnreleasedContent',
             'blurUnreleasedContent',
             'sekaiCatalogRegion',

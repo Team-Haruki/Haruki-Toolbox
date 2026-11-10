@@ -8,6 +8,7 @@ import type { MusicDifficultyPill, MusicEventBoxView } from "@/modules/music-lib
 import MusicDifficultyPills from "./MusicDifficultyPills.vue"
 import MusicEventBoxHint from "./MusicEventBoxHint.vue"
 import MusicJacket from "./MusicJacket.vue"
+import MusicPlayButton from "./MusicPlayButton.vue"
 
 /** Grid tile: square jacket, title, release date, box hint and level pills. */
 defineProps<{
@@ -24,12 +25,12 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <RouterLink
-    :to="`/music/${entry.id}`"
-    class="group flex flex-col gap-2 rounded-lg border bg-card p-2.5 shadow-xs transition-colors hover:bg-accent/50 sm:p-3 dark:hover:bg-accent/30"
+  <!-- The title link stretches over the whole tile; the play button sits above it. -->
+  <article
+    class="group relative flex flex-col gap-2 rounded-xl border bg-card p-2.5 shadow-xs transition-colors hover:bg-accent/50 has-[a:focus-visible]:ring-[3px] has-[a:focus-visible]:ring-ring/50 sm:p-3 dark:hover:bg-accent/30"
     data-slot="music-tile"
   >
-    <div class="relative aspect-square w-full overflow-hidden rounded-md">
+    <div class="relative aspect-square w-full overflow-hidden rounded-lg">
       <MusicJacket :url="jacketUrl" :alt="entry.title" class="size-full" :blur="unreleased && blur" />
       <Badge
         v-if="unreleased"
@@ -38,9 +39,16 @@ const { t } = useI18n()
       >
         {{ t("sekaiUnreleased.badge") }}
       </Badge>
+      <MusicPlayButton :entry="entry" class="absolute right-2 bottom-2 z-10" />
     </div>
     <div class="min-w-0 space-y-1">
-      <p class="line-clamp-2 text-sm leading-snug font-medium" :title="entry.title">{{ entry.title }}</p>
+      <RouterLink
+        :to="`/music/${entry.id}`"
+        class="line-clamp-2 text-sm leading-snug font-medium outline-none after:absolute after:inset-0 after:rounded-xl after:content-['']"
+        :title="entry.title"
+      >
+        {{ entry.title }}
+      </RouterLink>
       <p class="flex items-center gap-1 text-xs text-muted-foreground">
         <CalendarDays class="size-3.5 shrink-0" aria-hidden="true" />
         {{ dateLabel ?? t("musicLibrary.list.unknownDate") }}
@@ -54,5 +62,5 @@ const { t } = useI18n()
       />
     </div>
     <MusicDifficultyPills :pills="pills" class="mt-auto" />
-  </RouterLink>
+  </article>
 </template>

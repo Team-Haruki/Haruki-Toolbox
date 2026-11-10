@@ -64,17 +64,17 @@ const emit = defineEmits<{
 
 <template>
   <Dialog :open="props.open" @update:open="value => emit('update:open', value)">
-    <DialogContent class="max-h-[85vh] overflow-y-auto">
+    <DialogContent class="max-h-[85vh] overflow-y-auto sm:max-w-xl">
       <DialogHeader>
         <DialogTitle>{{ t("adminOAuthClients.editDialog.title") }}</DialogTitle>
         <DialogDescription>
           {{ t("adminOAuthClients.editDialog.descriptionPrefix") }}
-          <code class="bg-muted px-1 py-0.5 rounded text-xs">{{ props.editClientId }}</code>
+          <code class="rounded bg-muted px-1 py-0.5 font-mono text-xs [overflow-wrap:anywhere]">{{ props.editClientId }}</code>
           {{ t("adminOAuthClients.editDialog.descriptionSuffix") }}
         </DialogDescription>
       </DialogHeader>
       <form novalidate @submit.prevent="emit('submit')">
-        <div class="flex flex-col gap-4 py-4">
+        <div class="flex flex-col gap-5 py-4">
           <OAuthClientFormFields
             :name="props.name"
             :client-type="props.clientType"
@@ -104,7 +104,7 @@ const emit = defineEmits<{
             {{ t("adminOAuthClients.editDialog.cancel") }}
           </Button>
           <Button type="submit" :disabled="props.saving">
-            <LucideLoader2 v-if="props.saving" class="w-4 h-4 mr-1 animate-spin" />
+            <LucideLoader2 v-if="props.saving" class="size-4 animate-spin" />
             {{ t("common.save") }}
           </Button>
         </DialogFooter>

@@ -1,43 +1,31 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import { useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card"
+import { LucideArrowLeft, LucideUserX } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import {
-  LucideArrowLeft,
-  LucideBan,
-  LucideCalendar,
-  LucideCheckCircle2,
-  LucideHash,
-  LucideMail,
-  LucideShield,
-  LucideShieldAlert,
-  LucideTrash2,
-  LucideUser,
-  LucideUserX,
-} from "lucide-vue-next"
 import { useUserStore } from "@/shared/stores/user"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import {
   UserDetailDialogs,
-  UserDetailTabActivity,
-  UserDetailTabAuthorizedSocial,
-  UserDetailTabGameBindings,
-  UserDetailTabIOSCode,
-  UserDetailTabInfo,
-  UserDetailTabOAuth,
-  UserDetailTabSocial,
+  UserDetailHeader,
+  UserDetailSectionAccount,
+  UserDetailSectionActivity,
+  UserDetailSectionAuthorizedSocial,
+  UserDetailSectionGameBindings,
+  UserDetailSectionOAuth,
+  UserDetailSectionSocial,
+  UserDetailStats,
 } from "@/modules/admin-users/components"
-import type { UserDetailInfoActions } from "@/modules/admin-users/components/UserDetailTabInfo.vue"
-import type { UserDetailIOSCodeActions } from "@/modules/admin-users/components/UserDetailTabIOSCode.vue"
+import type { UserDetailHeaderActions } from "@/modules/admin-users/components/UserDetailHeader.vue"
+import type { UserDetailAccountActions } from "@/modules/admin-users/components/UserDetailSectionAccount.vue"
 import { useAdminUserDetail } from "@/modules/admin-users/composables/useAdminUserDetail"
-import { formatDateTime, roleLabel } from "@/modules/admin-users/constants"
+import {
+  mergeUserDetailCounts,
+  readUserActivityWindow,
+  readUserDetailCounts,
+} from "@/modules/admin-users/lib/user-stats"
 
 const props = defineProps<{ userId: string }>()
 const router = useRouter()
@@ -61,17 +49,24 @@ const {
   user,
   userNotFound,
   userLoadError,
+  sectionLoaded,
   activities,
   uploadLogs,
+  activityScope,
   activityLoading,
+  activityError,
   oauthAuths,
   oauthLoading,
+  oauthError,
   gameBindings,
   gameBindingLoading,
+  gameBindingError,
   socialPlatform,
   socialLoading,
+  socialError,
   authorizedSocials,
   authSocialLoading,
+  authSocialError,
   iosUploadCode,
   emailDialogOpen,
   editEmail,
@@ -92,8 +87,12 @@ const {
   editAuthSocialPlatform,
   editAuthSocialUserId,
   editAuthSocialComment,
-  onTabChange,
   reloadUser,
+  reloadActivity,
+  reloadOAuth,
+  reloadGameBindings,
+  reloadSocial,
+  reloadAuthorizedSocials,
   openEmailEdit,
   updateEditEmail,
   openAddGameBinding,
@@ -121,9 +120,9 @@ const {
   handleDeleteIOS,
 } = useAdminUserDetail(() => props.userId)
 
-// Confirmed in the tabs' ConfirmDialogs; the handlers rethrow so a failure
-// stays in the dialog instead of dropping the admin back with a toast.
-const infoActions: UserDetailInfoActions = {
+// Confirmed in ConfirmDialogs; the handlers rethrow so a failure stays in the
+// dialog instead of dropping the admin back with a toast.
+const headerActions: UserDetailHeaderActions = {
   ban: handleBan,
   delete: async (confirmUserId) => {
     await handleDelete(confirmUserId)
@@ -131,230 +130,145 @@ const infoActions: UserDetailInfoActions = {
   },
   forceLogout: handleForceLogout,
   resetPassword: handleResetPassword,
+}
+const accountActions: UserDetailAccountActions = {
   changeRole: handleRoleChange,
+  regenerateIOS: handleRegenerateIOS,
+  deleteIOS: handleDeleteIOS,
 }
-const iosCodeActions: UserDetailIOSCodeActions = {
-  regenerate: handleRegenerateIOS,
-  delete: handleDeleteIOS,
-}
+
+// The tiles start from what the detail response lists and follow the section
+// lists once those have loaded, so adding a binding here moves the count.
+const counts = computed(() => mergeUserDetailCounts(readUserDetailCounts(user.value), {
+  gameBindings: sectionLoaded.value.game ? gameBindings.value : null,
+  authorizedSocials: sectionLoaded.value["auth-social"] ? authorizedSocials.value : null,
+  socialPlatform: sectionLoaded.value.social ? socialPlatform.value : undefined,
+}))
+const activityWindow = computed(() => readUserActivityWindow(user.value))
 </script>
+
 <template>
-  <div class="w-full flex flex-col gap-4">
-    <Button variant="ghost" size="sm" class="self-start" @click="goBack">
-      <LucideArrowLeft class="w-4 h-4 mr-1" /> {{ t("adminUsers.detail.backToList") }}
+  <div class="@container flex w-full flex-col gap-4">
+    <Button variant="ghost" size="sm" class="-ml-2 self-start text-muted-foreground" @click="goBack">
+      <LucideArrowLeft class="size-4" aria-hidden="true" /> {{ t("adminUsers.detail.backToList") }}
     </Button>
 
-    <template v-if="loading">
-      <Card>
-        <CardContent class="flex items-center gap-4">
+    <!-- Only the first load of a user replaces the page: a refresh after an
+         action keeps everything on screen. -->
+    <template v-if="loading && !user">
+      <div class="rounded-xl border bg-card">
+        <div class="flex items-center gap-3 px-4 py-4">
           <Skeleton class="size-14 shrink-0 rounded-full" />
-          <div class="min-w-0 flex-1 flex flex-col gap-2">
+          <div class="flex min-w-0 flex-1 flex-col gap-2">
             <Skeleton class="h-5 w-44 max-w-full" />
-            <Skeleton class="h-4 w-72 max-w-full" />
+            <Skeleton class="h-4 w-28 max-w-full" />
           </div>
-        </CardContent>
-      </Card>
-      <Skeleton class="h-9 w-full max-w-xl" />
-      <Skeleton class="h-64 w-full" />
+        </div>
+        <div class="border-t border-border/60 px-4 py-3">
+          <Skeleton class="h-9 w-full max-w-xl" />
+        </div>
+      </div>
+      <Skeleton class="h-20 w-full rounded-xl" />
+      <Skeleton class="h-64 w-full rounded-xl" />
     </template>
 
     <template v-else-if="user">
-      <!-- Identity header: keeps the viewed user visible regardless of active tab -->
-      <Card>
-        <CardContent class="flex flex-wrap items-center gap-4">
-          <Avatar class="size-14 border">
-            <AvatarImage
-              v-if="user.userData.avatarPath"
-              :src="user.userData.avatarPath"
-              :alt="user.userData.name"
-            />
-            <AvatarFallback class="text-lg font-semibold">
-              {{ user.userData.name?.charAt(0)?.toUpperCase() || "?" }}
-            </AvatarFallback>
-          </Avatar>
-          <div class="min-w-0 flex-1 flex flex-col gap-1.5">
-            <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <h2 class="max-w-full truncate text-lg font-semibold leading-tight">
-                {{ user.userData.name }}
-              </h2>
-              <span
-                :class="[
-                  'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
-                  user.userData.role === 'super_admin'
-                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                    : user.userData.role === 'admin'
-                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                      : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400',
-                ]"
-              >
-                <LucideShieldAlert v-if="user.userData.role === 'super_admin'" class="w-3.5 h-3.5" />
-                <LucideShield v-else-if="user.userData.role === 'admin'" class="w-3.5 h-3.5" />
-                <LucideUser v-else class="w-3.5 h-3.5" />
-                {{ roleLabel(user.userData.role, t) }}
-              </span>
-              <span
-                :class="[
-                  'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
-                  user.banned
-                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                    : user.deleted
-                      ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                      : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-                ]"
-              >
-                <LucideBan v-if="user.banned" class="w-3.5 h-3.5" />
-                <LucideTrash2 v-else-if="user.deleted" class="w-3.5 h-3.5" />
-                <LucideCheckCircle2 v-else class="w-3.5 h-3.5" />
-                {{
-                  user.banned
-                    ? t("adminUsers.status.banned")
-                    : user.deleted
-                      ? t("adminUsers.status.deleted")
-                      : t("adminUsers.status.normal")
-                }}
-              </span>
-            </div>
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-              <span class="inline-flex items-center gap-1.5 font-mono text-xs tabular-nums">
-                <LucideHash class="h-3.5 w-3.5 shrink-0" />
-                {{ user.userData.userId }}
-              </span>
-              <!-- Long addresses wrap instead of truncating; the full text is also in the tooltip. -->
-              <span class="inline-flex min-w-0 max-w-full items-start gap-1.5">
-                <LucideMail class="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span class="min-w-0 break-all" :title="user.userData.emailInfo?.email || t('adminUsers.common.unbound')">
-                  {{ user.userData.emailInfo?.email || t("adminUsers.common.unbound") }}
-                </span>
-              </span>
-              <span
-                v-if="user.createdAt"
-                class="inline-flex items-center gap-1.5"
-                :title="t('adminUsers.detail.info.registeredAt')"
-              >
-                <LucideCalendar class="h-3.5 w-3.5 shrink-0" />
-                {{ formatDateTime(user.createdAt) }}
-              </span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <UserDetailHeader
+        :user="user"
+        :action-loading="actionLoading"
+        :actions="headerActions"
+        @open-email-edit="openEmailEdit"
+        @unban="handleUnban"
+        @restore="handleRestore"
+      />
 
-      <Tabs default-value="info" @update:model-value="onTabChange">
-        <div class="w-full overflow-x-auto pb-1 [-ms-overflow-style:'none'] [scrollbar-width:'none'] [&::-webkit-scrollbar]:hidden">
-          <TabsList class="flex w-max">
-            <TabsTrigger class="shrink-0" value="info">{{ t("adminUsers.detail.tabs.info") }}</TabsTrigger>
-            <TabsTrigger class="shrink-0" value="activity">{{ t("adminUsers.detail.tabs.activity") }}</TabsTrigger>
-            <TabsTrigger class="shrink-0" value="oauth">{{ t("adminUsers.detail.tabs.oauth") }}</TabsTrigger>
-            <TabsTrigger class="shrink-0" value="game">{{ t("adminUsers.detail.tabs.game") }}</TabsTrigger>
-            <TabsTrigger class="shrink-0" value="social">{{ t("adminUsers.detail.tabs.social") }}</TabsTrigger>
-            <TabsTrigger class="shrink-0" value="auth-social">{{ t("adminUsers.detail.tabs.authSocial") }}</TabsTrigger>
-            <TabsTrigger class="shrink-0" value="ios">{{ t("adminUsers.detail.tabs.ios") }}</TabsTrigger>
-          </TabsList>
-        </div>
+      <UserDetailStats :counts="counts" :activity="activityWindow" />
 
-        <TabsContent value="info">
-          <UserDetailTabInfo
+      <!-- Two columns once the page is wide enough for two lists side by side. -->
+      <div class="grid items-start gap-4 @min-[52rem]:grid-cols-2">
+        <div class="flex min-w-0 flex-col gap-4">
+          <UserDetailSectionAccount
             :user="user"
             :is-super-admin="userStore.isSuperAdmin"
             :action-loading="actionLoading"
             :busy="taskLoading"
-            :actions="infoActions"
-            @open-email-edit="openEmailEdit"
+            :upload-code="iosUploadCode"
+            :actions="accountActions"
             @toggle-cn-mysekai="handleToggleCNMysekai"
-            @unban="handleUnban"
-            @restore="handleRestore"
           />
-        </TabsContent>
-
-        <TabsContent value="activity">
-          <UserDetailTabActivity
-            :loading="activityLoading"
-            :activities="activities"
-            :upload-logs="uploadLogs"
-            :game-bindings="gameBindings"
-          />
-        </TabsContent>
-
-        <TabsContent value="oauth">
-          <UserDetailTabOAuth
-            :loading="oauthLoading"
-            :busy="taskLoading"
-            :authorizations="oauthAuths"
-            :revoke-all="handleRevokeOAuth"
-          />
-        </TabsContent>
-
-        <TabsContent value="game">
-          <UserDetailTabGameBindings
-            :loading="gameBindingLoading"
-            :busy="taskLoading"
-            :game-bindings="gameBindings"
-            :delete-binding="handleDeleteGameBinding"
-            @add="openAddGameBinding"
-            @edit="openEditGameBinding"
-          />
-        </TabsContent>
-
-        <TabsContent value="social">
-          <UserDetailTabSocial
+          <UserDetailSectionSocial
             :loading="socialLoading"
             :busy="taskLoading"
+            :error="socialError"
             :social-platform="socialPlatform"
             :delete-social="handleDeleteSocial"
             @edit="openEditSocial"
+            @retry="reloadSocial"
           />
-        </TabsContent>
-
-        <TabsContent value="auth-social">
-          <UserDetailTabAuthorizedSocial
+          <UserDetailSectionAuthorizedSocial
             :loading="authSocialLoading"
             :busy="taskLoading"
+            :error="authSocialError"
             :authorized-socials="authorizedSocials"
             :delete-social="handleDeleteAuthSocial"
             @add="openAddAuthSocial"
             @edit="openEditAuthSocial"
+            @retry="reloadAuthorizedSocials"
           />
-        </TabsContent>
-
-        <TabsContent value="ios">
-          <UserDetailTabIOSCode
-            :upload-code="iosUploadCode"
-            :user-name="user.userData.name"
+        </div>
+        <div class="flex min-w-0 flex-col gap-4">
+          <UserDetailSectionGameBindings
+            :loading="gameBindingLoading"
             :busy="taskLoading"
-            :actions="iosCodeActions"
+            :error="gameBindingError"
+            :game-bindings="gameBindings"
+            :delete-binding="handleDeleteGameBinding"
+            @add="openAddGameBinding"
+            @edit="openEditGameBinding"
+            @retry="reloadGameBindings"
           />
-        </TabsContent>
-      </Tabs>
+          <UserDetailSectionOAuth
+            :loading="oauthLoading"
+            :busy="taskLoading"
+            :error="oauthError"
+            :authorizations="oauthAuths"
+            :revoke-all="handleRevokeOAuth"
+            @retry="reloadOAuth"
+          />
+        </div>
+      </div>
+
+      <UserDetailSectionActivity
+        :user-id="user.userData.userId"
+        :loading="activityLoading"
+        :error="activityError"
+        :activities="activities"
+        :upload-logs="uploadLogs"
+        :scope="activityScope"
+        :game-bindings="gameBindings"
+        @retry="reloadActivity"
+      />
     </template>
 
     <!-- A failed load is retryable; a 404 is a different state with a different next step. -->
-    <template v-else-if="userLoadError && !userNotFound">
-      <Card>
-        <CardContent>
-          <LoadErrorState
-            :title="t('adminUsers.detail.toast.loadUserFailedTitle')"
-            :description="userLoadError.message"
-            :detail="userLoadError.detail"
-            :retrying="loading"
-            @retry="reloadUser"
-          />
-        </CardContent>
-      </Card>
-    </template>
+    <div v-else-if="userLoadError && !userNotFound" class="rounded-xl border bg-card">
+      <LoadErrorState
+        :title="t('adminUsers.detail.toast.loadUserFailedTitle')"
+        :description="userLoadError.message"
+        :detail="userLoadError.detail"
+        :retrying="loading"
+        @retry="reloadUser"
+      />
+    </div>
 
-    <template v-else>
-      <Card>
-        <CardContent>
-          <div class="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-12 text-center">
-            <LucideUserX class="h-8 w-8 text-muted-foreground/60" />
-            <p class="text-sm text-muted-foreground">{{ t("adminUsers.detail.notFound") }}</p>
-            <Button variant="outline" size="sm" @click="goBack">
-              <LucideArrowLeft class="w-4 h-4 mr-1" /> {{ t("adminUsers.detail.backToList") }}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </template>
+    <div v-else class="flex flex-col items-center justify-center gap-3 rounded-xl border bg-card px-4 py-12 text-center">
+      <LucideUserX class="size-8 text-muted-foreground/60" aria-hidden="true" />
+      <p class="text-sm text-muted-foreground">{{ t("adminUsers.detail.notFound") }}</p>
+      <Button variant="outline" size="sm" @click="goBack">
+        <LucideArrowLeft class="size-4" aria-hidden="true" /> {{ t("adminUsers.detail.backToList") }}
+      </Button>
+    </div>
+
     <UserDetailDialogs
       :user-name="user?.userData.name"
       :has-social="!!socialPlatform"

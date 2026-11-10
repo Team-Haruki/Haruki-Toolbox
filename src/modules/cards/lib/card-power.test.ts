@@ -6,6 +6,7 @@ import {
   resolveCardLevelCap,
   resolveCardMaxPower,
   resolveCardPower,
+  resolveCardPowerBreakdown,
 } from "./card-power"
 
 const table: CardPowerTable = {
@@ -54,6 +55,30 @@ describe("resolveCardPower", () => {
       level: 1, trained: true, episodes: [true], masterRank: 1, canvas: true,
     }, extras, episodes, masterLessons, canvas)
     expect(power).toEqual({ p1: 23, p2: 33, p3: 43, total: 99 })
+  })
+})
+
+describe("resolveCardPowerBreakdown", () => {
+  it("splits the total by where it comes from", () => {
+    const breakdown = resolveCardPowerBreakdown(table, {
+      level: 4, trained: true, episodes: [true, false], masterRank: 2, canvas: true,
+    }, extras, episodes, masterLessons, canvas)
+    expect(breakdown).toEqual({ total: 690 + 60 + 3 + 30 + 21, level: 690, training: 60, episodes: [3, 0], masterRank: 30, canvas: 21 })
+  })
+
+  it("always agrees with the total of resolveCardPower", () => {
+    const options = { level: 3, trained: true, episodes: [true, true], masterRank: 99, canvas: false }
+    const breakdown = resolveCardPowerBreakdown(table, options, extras, episodes, masterLessons, canvas)
+    expect(breakdown.total).toBe(resolveCardPower(table, options, extras, episodes, masterLessons, canvas).total)
+    expect(breakdown.masterRank).toBe(45)
+    expect(breakdown.canvas).toBe(0)
+  })
+
+  it("counts nothing for options that are off or have no data", () => {
+    const breakdown = resolveCardPowerBreakdown(table, {
+      level: 1, trained: false, episodes: [], masterRank: 0, canvas: true,
+    }, null, episodes, [], null)
+    expect(breakdown).toEqual({ total: 600, level: 600, training: 0, episodes: [0, 0], masterRank: 0, canvas: 0 })
   })
 })
 

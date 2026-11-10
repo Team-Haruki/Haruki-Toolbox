@@ -157,7 +157,9 @@ function togglePreview(costume3dId: number) {
       </div>
     </template>
 
-    <div v-for="group in groups" :key="group.costume3dGroupId" class="flex flex-col gap-2">
+    <!-- Two groups to a line on wide screens: one group rarely fills half the card. -->
+    <div class="grid gap-x-8 gap-y-4 lg:grid-cols-2">
+    <div v-for="group in groups" :key="group.costume3dGroupId" class="flex min-w-0 flex-col gap-2">
       <p class="text-sm font-medium">{{ groupName(group) }}</p>
       <div class="flex flex-wrap gap-3">
         <figure v-for="color in group.colors" :key="color.costume3dId" class="flex w-20 flex-col gap-1">
@@ -187,6 +189,7 @@ function togglePreview(costume3dId: number) {
           </figcaption>
         </figure>
       </div>
+    </div>
     </div>
 
     <div v-if="viewerRecipe" class="mx-auto w-full max-w-xl">

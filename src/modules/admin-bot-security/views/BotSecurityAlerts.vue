@@ -3,8 +3,8 @@ import {
   BotSecurityAlertActionDialog,
   BotSecurityAlertDetailDialog,
   BotSecurityAlertsTable,
-  BotSecurityFiltersCard,
-  BotSecuritySummaryStrip,
+  BotSecurityFilters,
+  BotSecurityOverview,
 } from "@/modules/admin-bot-security/components"
 import { useBotSecurityAlerts } from "@/modules/admin-bot-security/composables/useBotSecurityAlerts"
 import type { BotSecurityAlertAction } from "@/modules/admin-bot-security/lib/alert-meta"
@@ -34,6 +34,10 @@ const {
   summary,
   summaryLoading,
   summaryError,
+  handledTotals,
+  handledTotalsLoading,
+  rowStats,
+  rowTimeline,
   loadSummary,
   detailOpen,
   detailAlert,
@@ -60,16 +64,24 @@ function openActionFromDetail(alert: BotSecurityAlert, action: BotSecurityAlertA
 
 <template>
   <div class="w-full flex flex-col gap-4">
-    <BotSecuritySummaryStrip
+    <BotSecurityOverview
       :loading="summaryLoading"
       :summary="summary"
       :error="summaryError"
+      :handled-totals="handledTotals"
+      :handled-totals-loading="handledTotalsLoading"
+      :rows-loading="loading"
+      :rows-failed="!!loadError"
+      :row-stats="rowStats"
+      :row-timeline="rowTimeline"
       :kind-label="kindLabel"
+      :status-label="statusLabel"
+      :format-short-time="formatShortTime"
       @select-kind="filterByOpenKind"
       @retry="loadSummary"
     />
 
-    <BotSecurityFiltersCard
+    <BotSecurityFilters
       v-model:filters="filters"
       v-model:expanded="filtersExpanded"
       :status-options="statusOptions"

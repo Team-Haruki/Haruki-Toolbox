@@ -62,7 +62,7 @@ export default {
     "create": {
       "backButton": "返回工單列表",
       "title": "建立工單",
-      "description": "把關鍵資訊寫清楚，管理員會更容易判斷下一步。",
+      "description": "工單用於反饋 Bug、處理工具箱帳號相關的問題和提出建議，不提供使用教程指導。把關鍵資訊寫清楚，管理員會更容易判斷下一步。",
       "submit": "提交工單",
       "submitting": "提交中...",
       "fields": {
@@ -131,7 +131,25 @@ export default {
       "refreshButton": "重新整理",
       "unassigned": "未分配",
       "empty": "暫無工單",
+      "emptyFiltered": "沒有符合篩選條件的工單",
       "total": "共 {total} 個工單",
+      "stats": {
+        "label": "工單統計",
+        "labelCount": "{label} {count}",
+        "openDetail": "新提交、尚未處理",
+        "mine": "分配給我",
+        "totalDetail": "未結 {active} · 已結 {done}",
+        "byStatus": "按狀態",
+        "byPriority": "按優先順序",
+        "byCategory": "按分類",
+        "scopeAll": "全部 {total} 個工單",
+        "scopeAllUnknown": "全部工單",
+        "scopePage": "僅本頁顯示的 {count} 個工單",
+        "share": "{count} · {percent}%",
+        "empty": "暫無資料",
+        "loadFailed": "統計資料載入失敗",
+        "partialFailed": "統計資料沒有全部加載出來。"
+      },
       "quickFilters": {
         "all": "全部工單",
         "pendingAdmin": "待管理員處理",
@@ -142,6 +160,8 @@ export default {
       },
       "table": {
         "subject": "主題",
+        "people": "建立者 / 處理人",
+        "category": "分類",
         "status": "狀態",
         "priority": "優先順序",
         "creator": "建立者",
@@ -157,9 +177,11 @@ export default {
         "none": "暫無動態"
       },
       "notifications": {
+        "title": "通知",
         "label": "工單郵件通知",
         "description": "開啟後接收新工單和使用者回覆提醒",
         "manageButton": "管理接收者",
+        "manageHelp": "選擇哪些管理員接收工單郵件提醒",
         "manageDialogTitle": "工單通知接收者",
         "manageDialogDescription": "選擇哪些管理員會收到使用者建立工單和使用者回覆工單的郵件提醒。使用者只會收到管理員公開回復提醒。",
         "manageDialogSummary": "當前顯示 {total} 個管理員帳號",
@@ -203,7 +225,38 @@ export default {
         "creator": "建立者",
         "assignee": "處理人",
         "createdAt": "建立時間",
-        "updatedAt": "最近更新"
+        "updatedAt": "最近更新",
+        "lastMessageAt": "最近訊息",
+        "closedAt": "關閉時間"
+      },
+      "viewUser": "檢視 {name} 的使用者資料",
+      "stats": {
+        "label": "會話概況",
+        "userMessages": "使用者訊息",
+        "adminReplies": "公開回復",
+        "internalNotes": "內部備註 {count}",
+        "firstResponse": "首次響應用時",
+        "firstResponseNone": "尚未回覆",
+        "firstResponseDetail": "從建立到首條公開回復",
+        "waitingAdmin": "使用者已等待",
+        "waitingAdminDetail": "自使用者最後一條訊息起",
+        "waitingUser": "等待使用者回覆",
+        "waitingUserDetail": "自最後一條公開回復起",
+        "closedAfter": "處理時長",
+        "closedAfterDetail": "從建立到關閉",
+        "waitingNone": "當前等待"
+      },
+      "duration": {
+        "days": "{days} 天 {hours} 小時",
+        "hours": "{hours} 小時 {minutes} 分",
+        "minutes": "{minutes} 分鐘",
+        "moment": "不到 1 分鐘"
+      },
+      "system": {
+        "statusChanged": "狀態由「{from}」變更為「{to}」",
+        "assigneeChanged": "處理人由 {from} 變更為 {to}",
+        "assigned": "已分配給 {to}",
+        "assigneeCleared": "已取消分配（原處理人 {from}）"
       },
       "actionsTitle": "處理操作",
       "actionsDescription": "更新工單狀態或分配處理人。",

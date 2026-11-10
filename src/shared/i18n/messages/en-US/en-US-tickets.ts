@@ -62,7 +62,7 @@ export default {
     "create": {
       "backButton": "Back to ticket list",
       "title": "Create ticket",
-      "description": "Clear details help admins decide the next step faster.",
+      "description": "Tickets are for reporting bugs, sorting out Toolbox account issues and suggesting ideas, not for how-to guidance. Clear details help admins decide the next step faster.",
       "submit": "Submit ticket",
       "submitting": "Submitting...",
       "fields": {
@@ -131,7 +131,25 @@ export default {
       "refreshButton": "Refresh",
       "unassigned": "Unassigned",
       "empty": "No tickets",
+      "emptyFiltered": "No tickets match these filters",
       "total": "{total} tickets in total",
+      "stats": {
+        "label": "Ticket statistics",
+        "labelCount": "{label} {count}",
+        "openDetail": "New, not handled yet",
+        "mine": "Assigned to me",
+        "totalDetail": "{active} active · {done} done",
+        "byStatus": "By status",
+        "byPriority": "By priority",
+        "byCategory": "By category",
+        "scopeAll": "All {total} tickets",
+        "scopeAllUnknown": "All tickets",
+        "scopePage": "Only the {count} tickets on this page",
+        "share": "{count} · {percent}%",
+        "empty": "No data",
+        "loadFailed": "Could not load the statistics",
+        "partialFailed": "Not all statistics could be loaded."
+      },
       "quickFilters": {
         "all": "All tickets",
         "pendingAdmin": "Pending admin",
@@ -142,6 +160,8 @@ export default {
       },
       "table": {
         "subject": "Subject",
+        "people": "Creator / assignee",
+        "category": "Category",
         "status": "Status",
         "priority": "Priority",
         "creator": "Creator",
@@ -157,9 +177,11 @@ export default {
         "none": "No activity"
       },
       "notifications": {
+        "title": "Notifications",
         "label": "Ticket email notifications",
         "description": "Receive new-ticket and user-reply emails",
         "manageButton": "Manage recipients",
+        "manageHelp": "Choose which admins receive ticket emails",
         "manageDialogTitle": "Ticket notification recipients",
         "manageDialogDescription": "Choose which admins receive emails for new tickets and user replies. Users only receive emails for public admin replies.",
         "manageDialogSummary": "{total} admin accounts shown",
@@ -203,7 +225,38 @@ export default {
         "creator": "Creator",
         "assignee": "Assignee",
         "createdAt": "Created",
-        "updatedAt": "Updated"
+        "updatedAt": "Updated",
+        "lastMessageAt": "Last message",
+        "closedAt": "Closed"
+      },
+      "viewUser": "View {name}'s user profile",
+      "stats": {
+        "label": "Conversation at a glance",
+        "userMessages": "User messages",
+        "adminReplies": "Public replies",
+        "internalNotes": "{count} internal notes",
+        "firstResponse": "First response time",
+        "firstResponseNone": "No reply yet",
+        "firstResponseDetail": "Creation to first public reply",
+        "waitingAdmin": "User has waited",
+        "waitingAdminDetail": "Since the user's last message",
+        "waitingUser": "Waiting on the user",
+        "waitingUserDetail": "Since the last public reply",
+        "closedAfter": "Time to close",
+        "closedAfterDetail": "Creation to closing",
+        "waitingNone": "Waiting"
+      },
+      "duration": {
+        "days": "{days} d {hours} h",
+        "hours": "{hours} h {minutes} min",
+        "minutes": "{minutes} min",
+        "moment": "Under a minute"
+      },
+      "system": {
+        "statusChanged": "Status changed from {from} to {to}",
+        "assigneeChanged": "Assignee changed from {from} to {to}",
+        "assigned": "Assigned to {to}",
+        "assigneeCleared": "Unassigned (was {from})"
       },
       "actionsTitle": "Ticket actions",
       "actionsDescription": "Update status or assign an admin owner.",

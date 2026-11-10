@@ -1,3 +1,4 @@
+export { default as AdminWebhookOverview } from "./AdminWebhookOverview.vue"
 export { default as AdminWebhookSettingsCard } from "./AdminWebhookSettingsCard.vue"
 export { default as AdminWebhookTable } from "./AdminWebhookTable.vue"
 export { default as AdminWebhookFormDialog } from "./AdminWebhookFormDialog.vue"

@@ -1782,7 +1782,7 @@ provideDeckRecommendFormContext({
     <div class="mx-auto min-w-0 w-full max-w-[100rem] space-y-3 sm:space-y-4">
       <PageHeader :title="t('deckRecommend.title')" :description="t('deckRecommend.description')" class="px-3 sm:px-0" />
       <!-- Wide screens: config pane on the left stays put while the results scroll on the right. -->
-      <div class="grid min-w-0 grid-cols-1 gap-3 sm:gap-4 xl:grid-cols-[minmax(22rem,27rem)_minmax(0,1fr)] xl:items-start">
+      <div class="grid min-w-0 grid-cols-1 gap-3 sm:gap-4 xl:grid-cols-[24rem_minmax(0,1fr)] xl:items-start">
         <div class="min-w-0 xl:sticky xl:top-16 xl:max-h-[calc(100dvh-5rem)] xl:overflow-y-auto xl:overscroll-contain xl:rounded-lg">
           <!-- Compact card with its own header/footer paddings: the vertical padding and gap are owned by the sections. -->
           <Card v-show="showConfigCard" size="compact" class="gap-0 py-0">
@@ -1800,7 +1800,7 @@ provideDeckRecommendFormContext({
                 </TabsList>
               </Tabs>
             </CardHeader>
-            <CardContent class="@container grid min-w-0 grid-cols-1 gap-5 px-3 py-4 sm:px-5 sm:py-5">
+            <CardContent class="@container grid min-w-0 grid-cols-1 gap-4 px-3 py-4 sm:px-4">
               <DeckBasicSection />
 
               <DeckAdvancedSection v-model:open="advancedConfigOpen" />
@@ -1808,7 +1808,7 @@ provideDeckRecommendFormContext({
               <DeckExpertSheet v-model:open="expertConfigOpen" />
             </CardContent>
             <!-- Sticks to the bottom of the scrolling pane, so the run button is always reachable. -->
-            <div class="sticky bottom-0 z-10 rounded-b-lg border-t bg-card">
+            <div class="sticky bottom-0 z-10 rounded-b-lg border-t bg-card" data-page-bottom-bar>
               <DeckConfigActions
                 :running="runner.running.value"
                 :can-run="canRunRecommend"

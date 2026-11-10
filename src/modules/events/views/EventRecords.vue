@@ -324,9 +324,9 @@ const { refreshing, refresh: reloadAll } = useSuiteRefresh([
         <p class="text-xs text-muted-foreground">{{ t("eventRecords.loading") }}</p>
         <Progress :model-value="master.regionState.value?.progress ?? 0" />
       </div>
-      <Skeleton class="h-12 w-full" />
-      <Skeleton class="h-64 w-full" />
-      <Skeleton class="h-96 w-full" />
+      <Skeleton class="h-12 w-full rounded-xl" />
+      <Skeleton class="h-96 w-full rounded-xl" />
+      <Skeleton class="h-96 w-full rounded-xl" />
     </template>
 
     <!-- Missing upload: guidance, not an error -->
@@ -364,9 +364,12 @@ const { refreshing, refresh: reloadAll } = useSuiteRefresh([
         <EventRecordsFilterFields :state="fieldState" :unit-color-map="null" @patch="patchFilters" />
       </CatalogFilterPanel>
 
-      <EventRecordsSummary :items="summaryItems" />
-
-      <EventPointTrendChart :trend="trend" />
+      <!-- The figures and the trend describe the same filtered rows: one card. -->
+      <EventPointTrendChart :trend="trend">
+        <template #lead>
+          <EventRecordsSummary :items="summaryItems" />
+        </template>
+      </EventPointTrendChart>
 
       <!-- History -->
       <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
@@ -396,11 +399,16 @@ const { refreshing, refresh: reloadAll } = useSuiteRefresh([
         </template>
         <p v-else>{{ t("eventRecords.noData") }}</p>
       </div>
-      <div v-else class="flex flex-col gap-2">
-        <!-- Column captions for the numbers; phones label each row instead. -->
-        <div class="hidden items-center gap-3 px-3 text-xs text-muted-foreground sm:flex">
-          <span class="flex-1">{{ t("eventRecords.table.event") }}</span>
-          <span class="grid w-56 grid-cols-2 gap-x-6 text-right">
+      <!-- One bordered table: a line per event, the numbers in fixed columns.
+           The rows size themselves by this list's width (`@container`). -->
+      <div v-else class="@container divide-y divide-border/60 overflow-hidden rounded-xl border bg-card" data-testid="event-records-list">
+        <!-- Column captions; a narrow list labels each row instead. -->
+        <div class="hidden items-center gap-3 bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground @min-[44rem]:flex">
+          <span class="w-16 shrink-0" />
+          <span class="min-w-0 flex-1">{{ t("eventRecords.table.event") }}</span>
+          <span class="w-24 shrink-0">{{ t("eventRecords.table.type") }}</span>
+          <span class="w-36 shrink-0">{{ t("eventRecords.table.date") }}</span>
+          <span class="grid w-52 shrink-0 grid-cols-2 gap-x-4 text-right">
             <span>{{ t("eventRecords.table.point") }}</span>
             <span>{{ t("eventRecords.table.rank") }}</span>
           </span>

@@ -6,10 +6,20 @@ import {
   CircleCheck,
   Clock3,
   Eraser,
+  Files,
+  Globe,
+  HardDrive,
+  History,
+  ListChecks,
+  ListTodo,
   LoaderCircle,
   RefreshCw,
 } from "lucide-vue-next"
+import { Badge, type BadgeVariants } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import SettingsFacts, { type SettingsFact } from "@/shared/components/settings/SettingsFacts.vue"
+import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
+import SettingsRow, { type SettingsRowTone } from "@/shared/components/settings/SettingsRow.vue"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,6 +51,18 @@ const cachedFileCount = computed(() => regionRows.value.reduce((total, row) => t
 const activeQueueCount = computed(() =>
   queueItems.value.filter((item) => item.status === "queued" || item.status === "running").length
 )
+
+const summaryFacts = computed<SettingsFact[]>(() => [
+  {
+    key: "regions",
+    label: t("userSettings.sekaiData.summary.readyRegions"),
+    value: `${readyRegionCount.value}/${regionRows.value.length}`,
+    icon: Globe,
+    mono: true,
+  },
+  { key: "files", label: t("userSettings.sekaiData.summary.cachedFiles"), value: cachedFileCount.value, icon: Files, mono: true },
+  { key: "tasks", label: t("userSettings.sekaiData.summary.activeTasks"), value: activeQueueCount.value, icon: ListTodo, mono: true },
+])
 
 onMounted(() => {
   for (const region of SEKAI_REGIONS) {
@@ -101,31 +123,53 @@ function shouldShowQueuePhase(item: Pick<SekaiDataQueueItem, "status" | "phase">
   return item.status !== "done" || item.phase !== "ready"
 }
 
-function queueStatusClass(status: SekaiDataQueueItem["status"]) {
+type StatusTone = { badge: BadgeVariants["variant"]; row: SettingsRowTone }
+
+const STATUS_TONES = {
+  busy: { badge: "sky", row: "info" },
+  ready: { badge: "emerald", row: "success" },
+  error: { badge: "destructive", row: "danger" },
+  idle: { badge: "muted", row: "default" },
+} as const satisfies Record<string, StatusTone>
+
+function queueStatusTone(status: SekaiDataQueueItem["status"]): StatusTone {
   switch (status) {
     case "done":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"
+      return STATUS_TONES.ready
     case "error":
-      return "border-destructive/40 bg-destructive/5 text-destructive"
+      return STATUS_TONES.error
     case "running":
-      return "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200"
+      return STATUS_TONES.busy
     case "queued":
-      return "border-muted bg-muted/40 text-muted-foreground"
+      return STATUS_TONES.idle
   }
 }
 
-function regionStatusClass(status: string, refreshing: boolean) {
+function queueStatusIcon(status: SekaiDataQueueItem["status"]) {
+  switch (status) {
+    case "done":
+      return CircleCheck
+    case "error":
+      return CircleAlert
+    case "running":
+      return LoaderCircle
+    case "queued":
+      return Clock3
+  }
+}
+
+function regionStatusTone(status: string, refreshing: boolean): StatusTone {
   if (refreshing || status === "loading" || status === "clearing") {
-    return "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200"
+    return STATUS_TONES.busy
   }
   if (status === "ready") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"
+    return STATUS_TONES.ready
   }
   if (status === "error") {
-    return "border-destructive/40 bg-destructive/5 text-destructive"
+    return STATUS_TONES.error
   }
 
-  return "border-muted bg-muted/40 text-muted-foreground"
+  return STATUS_TONES.idle
 }
 
 function formatTime(value: number | null) {
@@ -144,80 +188,28 @@ function formatTime(value: number | null) {
 
 <template>
   <div class="space-y-5">
-    <div class="grid grid-cols-3 gap-2">
-      <div class="rounded-lg border bg-muted/20 p-3">
-        <p class="text-xs text-muted-foreground">{{ t("userSettings.sekaiData.summary.readyRegions") }}</p>
-        <p class="mt-1 font-mono text-lg font-semibold">{{ readyRegionCount }}/{{ regionRows.length }}</p>
-      </div>
-      <div class="rounded-lg border bg-muted/20 p-3">
-        <p class="text-xs text-muted-foreground">{{ t("userSettings.sekaiData.summary.cachedFiles") }}</p>
-        <p class="mt-1 font-mono text-lg font-semibold">{{ cachedFileCount }}</p>
-      </div>
-      <div class="rounded-lg border bg-muted/20 p-3">
-        <p class="text-xs text-muted-foreground">{{ t("userSettings.sekaiData.summary.activeTasks") }}</p>
-        <p class="mt-1 font-mono text-lg font-semibold">{{ activeQueueCount }}</p>
-      </div>
-    </div>
+    <SettingsGroup :title="t('userSettings.sekaiData.summaryTitle')">
+      <SettingsFacts :items="summaryFacts" />
+    </SettingsGroup>
 
-    <section>
-      <h3 class="px-1 pb-2 text-[13px] font-medium text-muted-foreground">
-        {{ t("userSettings.sekaiData.regionCacheTitle") }}
-      </h3>
-      <div class="divide-y divide-border/60 rounded-lg border bg-muted/20">
-        <div v-for="row in regionRows" :key="row.region" class="space-y-2 px-4 py-3">
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="text-sm font-medium">{{ resolveSekaiRegionLabel(row.region, t) }}</span>
-            <span
-              :class="[
-                'rounded-md border px-2 py-0.5 text-xs font-medium',
-                regionStatusClass(row.status, row.refreshing),
-              ]"
-            >
-              {{ row.refreshing ? phaseLabel(row.phase) : statusLabel(row.status) }}
-            </span>
-            <div class="ml-auto flex items-center gap-1.5">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                :disabled="row.refreshing"
-                @click="refreshMasterData(row.region)"
-              >
-                <RefreshCw class="size-3.5" :class="{ 'animate-spin': row.refreshing }" />
-                {{ t("userSettings.sekaiData.refreshMasterData") }}
-              </Button>
-              <AlertDialog>
-                <AlertDialogTrigger as-child>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    class="text-destructive hover:text-destructive"
-                    :disabled="row.refreshing"
-                  >
-                    <Eraser class="size-3.5" />
-                    {{ t("userSettings.sekaiData.clear") }}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>{{ t("userSettings.sekaiData.clearDialog.title") }}</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {{ t("userSettings.sekaiData.clearDialog.description", { region: resolveSekaiRegionLabel(row.region, t) }) }}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>{{ t("common.cancel") }}</AlertDialogCancel>
-                    <AlertDialogAction class="bg-destructive text-white hover:bg-destructive/90" @click="clearRegion(row.region)">
-                      {{ t("userSettings.sekaiData.clearDialog.confirm") }}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          </div>
-
-          <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+    <SettingsGroup :title="t('userSettings.sekaiData.regionCacheTitle')">
+      <SettingsRow
+        v-for="row in regionRows"
+        :key="row.region"
+        :label="resolveSekaiRegionLabel(row.region, t)"
+        :tone="regionStatusTone(row.status, row.refreshing).row"
+        :data-testid="`settings-region-${row.region}`"
+      >
+        <template #icon>
+          <span class="font-mono uppercase">{{ row.region }}</span>
+        </template>
+        <template #label>
+          <Badge :variant="regionStatusTone(row.status, row.refreshing).badge" size="sm">
+            {{ row.refreshing ? phaseLabel(row.phase) : statusLabel(row.status) }}
+          </Badge>
+        </template>
+        <template #help>
+          <span class="flex flex-wrap items-center gap-x-3 gap-y-0.5">
             <span>
               {{ t("userSettings.sekaiData.localVersion") }}
               <span class="font-mono text-foreground">{{ row.masterLocalVersion ?? row.masterDisplayVersion ?? "–" }}</span>
@@ -226,67 +218,96 @@ function formatTime(value: number | null) {
               {{ t("userSettings.sekaiData.remoteVersion") }}
               <span class="font-mono text-foreground">{{ row.masterRemoteVersion ?? "–" }}</span>
             </span>
-            <span>{{ t("userSettings.sekaiData.fileCount", { count: row.files.length }) }}</span>
-            <span class="ml-auto">{{ formatTime(row.updatedAt) }}</span>
-          </div>
+            <span class="inline-flex items-center gap-1">
+              <HardDrive class="size-3" aria-hidden="true" />
+              {{ t("userSettings.sekaiData.fileCount", { count: row.files.length }) }}
+            </span>
+            <span class="inline-flex items-center gap-1">
+              <History class="size-3" aria-hidden="true" />
+              {{ formatTime(row.updatedAt) }}
+            </span>
+          </span>
+        </template>
 
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          :disabled="row.refreshing"
+          @click="refreshMasterData(row.region)"
+        >
+          <RefreshCw class="size-3.5" :class="{ 'animate-spin': row.refreshing }" />
+          {{ t("userSettings.sekaiData.refreshMasterData") }}
+        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger as-child>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              class="text-destructive hover:text-destructive"
+              :disabled="row.refreshing"
+            >
+              <Eraser class="size-3.5" />
+              {{ t("userSettings.sekaiData.clear") }}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{{ t("userSettings.sekaiData.clearDialog.title") }}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {{ t("userSettings.sekaiData.clearDialog.description", { region: resolveSekaiRegionLabel(row.region, t) }) }}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{{ t("common.cancel") }}</AlertDialogCancel>
+              <AlertDialogAction class="bg-destructive text-white hover:bg-destructive/90" @click="clearRegion(row.region)">
+                {{ t("userSettings.sekaiData.clearDialog.confirm") }}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <template v-if="row.refreshing || row.status === 'loading' || row.status === 'clearing' || row.error" #below>
           <div v-if="row.refreshing || row.status === 'loading' || row.status === 'clearing'" class="space-y-1">
             <div class="flex items-center justify-between gap-3 text-xs text-muted-foreground">
               <span>{{ t("userSettings.sekaiData.progress") }}</span>
-              <span>{{ row.progress }}%</span>
+              <span class="tabular-nums">{{ row.progress }}%</span>
             </div>
             <Progress :model-value="row.progress" />
           </div>
           <p v-if="row.error" class="text-xs text-destructive" role="alert">
             {{ describeSekaiDataError(row.error) }}
           </p>
-        </div>
-      </div>
-    </section>
+        </template>
+      </SettingsRow>
+    </SettingsGroup>
 
-    <section>
-      <h3 class="px-1 pb-2 text-[13px] font-medium text-muted-foreground">
-        {{ t("userSettings.sekaiData.queueTitle") }}
-      </h3>
-      <div v-if="queueItems.length === 0" class="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-        {{ t("userSettings.sekaiData.queueEmpty") }}
-      </div>
-      <div v-else class="divide-y divide-border/60 rounded-lg border bg-muted/20">
-        <div v-for="item in queueItems" :key="item.id" class="flex gap-3 px-4 py-3">
-          <span
-            :class="[
-              'mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full border',
-              queueStatusClass(item.status),
-            ]"
-          >
-            <CircleCheck v-if="item.status === 'done'" class="size-4" />
-            <CircleAlert v-else-if="item.status === 'error'" class="size-4" />
-            <LoaderCircle v-else-if="item.status === 'running'" class="size-4 animate-spin" />
-            <Clock3 v-else class="size-4" />
-          </span>
-          <div class="min-w-0 flex-1 space-y-1.5">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="text-sm font-medium">{{ resolveSekaiRegionLabel(item.region, t) }}</span>
-                <span
-                  :class="[
-                    'rounded-md border px-2 py-0.5 text-xs font-medium',
-                    queueStatusClass(item.status),
-                  ]"
-                >
-                  {{ queueStatusLabel(item) }}
-                </span>
-                <span v-if="shouldShowQueuePhase(item)" class="text-xs text-muted-foreground">{{ phaseLabel(item.phase) }}</span>
-              </div>
-              <span class="text-xs text-muted-foreground">{{ formatTime(item.updatedAt) }}</span>
-            </div>
-            <p class="text-xs text-muted-foreground">
-              {{ queueItemDetail(item) }}
-            </p>
-            <Progress v-if="item.status === 'running' || item.status === 'queued'" :model-value="item.progress" />
-          </div>
-        </div>
-      </div>
-    </section>
+    <SettingsGroup :title="t('userSettings.sekaiData.queueTitle')">
+      <SettingsRow
+        v-if="queueItems.length === 0"
+        :icon="ListChecks"
+        :label="t('userSettings.sekaiData.queueEmpty')"
+      />
+      <SettingsRow
+        v-for="item in queueItems"
+        v-else
+        :key="item.id"
+        :icon="queueStatusIcon(item.status)"
+        :spin="item.status === 'running'"
+        :tone="queueStatusTone(item.status).row"
+        :label="resolveSekaiRegionLabel(item.region, t)"
+        :help="queueItemDetail(item)"
+      >
+        <template #label>
+          <Badge :variant="queueStatusTone(item.status).badge" size="sm">{{ queueStatusLabel(item) }}</Badge>
+          <span v-if="shouldShowQueuePhase(item)" class="text-xs text-muted-foreground">{{ phaseLabel(item.phase) }}</span>
+        </template>
+        <span class="text-xs tabular-nums text-muted-foreground">{{ formatTime(item.updatedAt) }}</span>
+        <template v-if="item.status === 'running' || item.status === 'queued'" #below>
+          <Progress :model-value="item.progress" />
+        </template>
+      </SettingsRow>
+    </SettingsGroup>
   </div>
 </template>

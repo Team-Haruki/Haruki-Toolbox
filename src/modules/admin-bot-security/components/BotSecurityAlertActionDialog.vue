@@ -57,7 +57,7 @@ const clearsNote = computed(() => !!props.alert?.note.trim() && !note.value.trim
     <DialogScrollContent class="sm:max-w-[480px]">
       <DialogHeader>
         <DialogTitle>{{ t(`adminBotSecurity.actionDialog.title.${props.action}`) }}</DialogTitle>
-        <DialogDescription class="break-all">{{ subject }}</DialogDescription>
+        <DialogDescription class="[overflow-wrap:anywhere]">{{ subject }}</DialogDescription>
       </DialogHeader>
 
       <div class="space-y-2">
@@ -84,8 +84,8 @@ const clearsNote = computed(() => !!props.alert?.note.trim() && !note.value.trim
           <Button variant="outline" :disabled="props.saving">{{ t("common.cancel") }}</Button>
         </DialogClose>
         <Button :disabled="props.saving || !props.alert" @click="emit('confirm')">
-          <LucideLoader2 v-if="props.saving" class="w-4 h-4 animate-spin" />
-          <component :is="ACTION_ICONS[props.action]" v-else class="w-4 h-4" />
+          <LucideLoader2 v-if="props.saving" class="size-4 animate-spin" aria-hidden="true" />
+          <component :is="ACTION_ICONS[props.action]" v-else class="size-4" aria-hidden="true" />
           {{ t(`adminBotSecurity.actions.${props.action}`) }}
         </Button>
       </DialogFooter>

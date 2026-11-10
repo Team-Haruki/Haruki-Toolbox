@@ -7,9 +7,10 @@ import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import type { AcceptableValue } from "reka-ui"
 import { Card, CardContent } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import TrainingMeter from "@/modules/training/components/TrainingMeter.vue"
+import TrainingTile from "@/modules/training/components/TrainingTile.vue"
 import { useTrainingRefresh } from "@/modules/training/composables/training-context"
 import { useTrainingLeader } from "@/modules/training/composables/useTrainingLeader"
 import {
@@ -149,60 +150,40 @@ function retry() {
 
     <!-- Loading skeleton -->
     <template v-else-if="isLoading">
-      <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        <Skeleton v-for="index in 9" :key="index" class="h-20 w-full rounded-lg" />
+      <Skeleton class="h-8 w-full rounded-lg" />
+      <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <Skeleton v-for="index in 12" :key="index" class="h-20 w-full rounded-lg" />
       </div>
     </template>
 
     <template v-else-if="isReady">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <p v-if="maxPlayCount > 0" class="text-xs tabular-nums text-muted-foreground">
-          {{ t("training.leader.limit", { count: formatCount(maxPlayCount) }) }}
-        </p>
+      <!-- The two caps are the same for every character: say them once here
+           instead of "/60,000" on every bar. -->
+      <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+        <p v-if="maxPlayCount > 0" class="tabular-nums">{{ t("training.leader.limit", { count: formatCount(maxPlayCount) }) }}</p>
+        <p v-if="maxExCount > 0" class="tabular-nums">{{ t("training.leader.exLimit", { count: formatCount(maxExCount) }) }}</p>
         <ToggleGroup type="single" variant="segment" size="sm" class="ml-auto" :model-value="sortMode" :aria-label="t('catalog.sort.label')" @update:model-value="handleSortChange">
           <ToggleGroupItem value="total">{{ t("training.leader.sortByTotal") }}</ToggleGroupItem>
           <ToggleGroupItem value="character">{{ t("training.leader.sortByCharacter") }}</ToggleGroupItem>
         </ToggleGroup>
       </div>
 
-      <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        <Card
-          v-for="cell in leaderCells"
-          :key="cell.characterId"
-          class="border-l-4 py-3"
-          :style="cell.color ? { borderLeftColor: cell.color } : {}"
-        >
-          <CardContent class="flex items-center gap-3 px-4">
-            <img
-              v-if="cell.iconUrl"
-              :src="cell.iconUrl"
-              alt=""
-              class="size-10 shrink-0 rounded-full"
-              loading="lazy"
-            >
-            <div class="min-w-0 flex-1">
-              <div class="flex items-baseline justify-between gap-2">
-                <p class="truncate text-sm font-medium" :title="cell.name">{{ cell.name }}</p>
-                <p class="shrink-0 text-sm font-semibold tabular-nums">
-                  {{ formatCount(cell.playCount + cell.exCount) }}
-                </p>
-              </div>
-              <div class="mt-1.5 grid grid-cols-[auto_1fr_auto] items-center gap-x-2 gap-y-1">
-                <span class="text-center text-[11px] text-muted-foreground">{{ t("training.leader.normalLabel") }}</span>
-                <Progress :model-value="cell.percent" :color="cell.color ?? undefined" class="h-1.5" />
-                <span class="text-center text-[11px] tabular-nums text-muted-foreground">
-                  {{ formatCount(cell.playCount) }}<template v-if="maxPlayCount > 0">/{{ formatCount(maxPlayCount) }}</template>
-                </span>
-
-                <span class="text-center text-[11px] text-muted-foreground">{{ t("training.leader.exLevel", { level: cell.exLevel }) }}</span>
-                <Progress :model-value="cell.exPercent" :color="cell.color ?? undefined" class="h-1.5" />
-                <span class="text-center text-[11px] tabular-nums text-muted-foreground">
-                  {{ formatCount(cell.exCount) }}<template v-if="maxExCount > 0">/{{ formatCount(maxExCount) }}</template>
-                </span>
-              </div>
+      <div class="@container">
+        <div class="grid grid-cols-1 gap-2 @min-[30rem]:grid-cols-2 @min-[46rem]:grid-cols-3 @min-[64rem]:grid-cols-4" data-testid="leader-grid">
+          <TrainingTile
+            v-for="cell in leaderCells"
+            :key="cell.characterId"
+            :name="cell.name"
+            :icon-url="cell.iconUrl"
+            :color="cell.color"
+            :value="formatCount(cell.playCount + cell.exCount)"
+          >
+            <div class="mt-1.5 grid grid-cols-[auto_1fr_auto] items-center gap-x-2 gap-y-1">
+              <TrainingMeter :label="t('training.leader.normalLabel')" :percent="cell.percent" :color="cell.color" :value="formatCount(cell.playCount)" />
+              <TrainingMeter :label="t('training.leader.exLevel', { level: cell.exLevel })" :percent="cell.exPercent" :color="cell.color" :value="formatCount(cell.exCount)" />
             </div>
-          </CardContent>
-        </Card>
+          </TrainingTile>
+        </div>
       </div>
     </template>
   </div>

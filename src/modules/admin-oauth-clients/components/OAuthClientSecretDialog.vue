@@ -33,10 +33,10 @@ const emit = defineEmits<{
     :confirm-label="t('adminOAuthClients.secretDialog.confirmSaved')"
     @update:open="(value) => emit('update:open', value)"
   >
-    <div class="flex items-center justify-between gap-2 p-3 bg-muted rounded-md border text-sm font-mono break-all">
-      <span class="text-foreground">{{ secret }}</span>
-      <Button variant="ghost" size="sm" class="shrink-0 flex items-center" @click="emit('copy')">
-        <LucideCopy class="w-4 h-4 mr-1" /> {{ t("adminOAuthClients.secretDialog.copy") }}
+    <div class="flex items-center justify-between gap-2 rounded-xl border bg-muted/40 px-3 py-2.5">
+      <span class="min-w-0 font-mono text-sm text-foreground select-all [overflow-wrap:anywhere]">{{ secret }}</span>
+      <Button variant="outline" size="sm" class="shrink-0" @click="emit('copy')">
+        <LucideCopy class="size-4" /> {{ t("adminOAuthClients.secretDialog.copy") }}
       </Button>
     </div>
   </ConfirmDialog>

@@ -30,26 +30,22 @@ const { t } = useI18n()
     :confirm-label="t('adminWebhooks.tokenDialog.confirmSaved')"
     @update:open="emit('update:open', $event)"
   >
-    <div class="space-y-4">
-      <div class="space-y-2">
-        <p class="text-sm font-medium">{{ t("adminWebhooks.tokenDialog.headerNameLabel") }}</p>
-        <div class="rounded-md border bg-muted/20 px-3 py-2 text-sm font-mono">
-          {{ props.tokenHeaderName }}
-        </div>
+    <div class="divide-y divide-border/60 overflow-hidden rounded-xl border bg-muted/20">
+      <div class="px-4 py-3">
+        <p class="text-xs text-muted-foreground">{{ t("adminWebhooks.tokenDialog.headerNameLabel") }}</p>
+        <p class="mt-1 font-mono text-sm [overflow-wrap:anywhere]">{{ props.tokenHeaderName }}</p>
       </div>
-
-      <div class="space-y-2">
-        <p class="text-sm font-medium">{{ t("adminWebhooks.tokenDialog.tokenLabel") }}</p>
-        <div class="max-h-56 overflow-auto rounded-md border bg-muted/20 px-3 py-2 text-sm font-mono break-all select-all">
-          {{ props.token }}
+      <div class="px-4 py-3">
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-xs text-muted-foreground">{{ t("adminWebhooks.tokenDialog.tokenLabel") }}</p>
+          <Button variant="outline" size="sm" class="h-7 shrink-0 gap-1 px-2 text-xs pointer-coarse:h-10" @click="emit('copy')">
+            <LucideCopy class="size-3.5" />
+            {{ t("adminWebhooks.actions.copyToken") }}
+          </Button>
         </div>
-        <p class="text-xs text-muted-foreground">{{ t("adminWebhooks.tokenDialog.tokenHelp") }}</p>
+        <p class="mt-1 max-h-56 overflow-auto font-mono text-sm select-all [overflow-wrap:anywhere]">{{ props.token }}</p>
+        <p class="mt-2 text-xs text-muted-foreground">{{ t("adminWebhooks.tokenDialog.tokenHelp") }}</p>
       </div>
-
-      <Button variant="outline" size="sm" @click="emit('copy')">
-        <LucideCopy class="w-4 h-4 mr-2" />
-        {{ t("adminWebhooks.actions.copyToken") }}
-      </Button>
     </div>
   </ConfirmDialog>
 </template>

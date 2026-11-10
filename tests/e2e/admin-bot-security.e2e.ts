@@ -167,12 +167,14 @@ async function openBotSecurity(page: Page, options: { failingListCalls?: number 
       })
     }
     if (call.path === `${BASE_PATH}/alerts` && call.method === "GET") {
-      if (failingListCalls > 0) {
+      const page = Number(call.query.page ?? 1)
+      const pageSize = Number(call.query.pageSize ?? 20)
+      // The overview asks for one row per status just to read `total`; only
+      // the list's own request is failed here.
+      if (pageSize > 1 && failingListCalls > 0) {
         failingListCalls -= 1
         return route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ status: 500, message: "failed to query bot security alerts" }) })
       }
-      const page = Number(call.query.page ?? 1)
-      const pageSize = Number(call.query.pageSize ?? 20)
       const items = alerts
         .filter((alert) => !call.query.status || alert.status === call.query.status)
         .filter((alert) => !call.query.kind || alert.kind === call.query.kind)
@@ -223,8 +225,11 @@ test.describe("admin bot security alerts", () => {
     await expect(alertRow(page, 40)).toBeVisible()
     await expect(alertRow(page, 39)).toHaveCount(0)
 
-    const listCall = calls.find((call) => call.path === `${BASE_PATH}/alerts`)
+    const listCall = calls.find((call) => call.path === `${BASE_PATH}/alerts` && call.query.pageSize !== "1")
     expect(listCall?.query).toEqual({ page: "1", pageSize: "20", status: "open" })
+    // The per-status totals behind the overview: one row each, never the list's page.
+    const totalCalls = calls.filter((call) => call.path === `${BASE_PATH}/alerts` && call.query.pageSize === "1")
+    expect(totalCalls.map((call) => call.query.status).sort()).toEqual(["ignored", "resolved"])
 
     await expect(alertRow(page, 42)).toContainText(/认证失败|Authentication failed/)
     await expect(alertRow(page, 41)).toContainText(/仅记录|Log only/)
@@ -233,8 +238,15 @@ test.describe("admin bot security alerts", () => {
     await expect(alertRow(page, 41).locator("td").nth(2)).toContainText("—")
     await expect(alertRow(page, 41).locator("td").nth(2)).toContainText("198.51.100.9")
 
-    // Summary: open count and per-kind chips.
+    // Overview: open alerts per kind as buttons, the status split over every
+    // alert (3 open + 1 resolved), and the figures about the rows shown.
     await expect(page.getByRole("button", { name: /quantum_tunnel/ })).toBeVisible()
+    const overview = page.getByTestId("bot-security-overview")
+    await expect(overview).toContainText(/全部 4 条告警|All 4 alerts/)
+    await expect(page.getByTestId("bot-security-page-stats")).toContainText(/已拦截\s*2 · 67%|Blocked\s*2 · 67%/)
+    await expect(overview.getByRole("img", { name: /本页 3 条告警|3 alerts on this page/ })).toBeVisible()
+
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0)
   })
 
   test("resolves an alert with a note and refreshes the row and summary", async ({ page }) => {

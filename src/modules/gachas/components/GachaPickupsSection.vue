@@ -2,45 +2,38 @@
 import { useI18n } from "vue-i18n"
 import { LucideSparkles } from "lucide-vue-next"
 import type { SekaiRegion } from "@/types"
-import { Skeleton } from "@/components/ui/skeleton"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
-import CatalogDetailSection from "@/shared/components/catalog/CatalogDetailSection.vue"
 import GachaCardTile from "@/modules/gachas/components/GachaCardTile.vue"
 import type { GachaPoolCard } from "@/modules/gachas/lib/gacha-pool"
 
-withDefaults(defineProps<{
+/**
+ * The gacha's PICK UP members as a strip of card tiles for the gacha header.
+ * Renders nothing for a gacha without any.
+ */
+defineProps<{
   cards: readonly GachaPoolCard[]
   region: SekaiRegion
   assetEndpoint: SekaiAssetEndpointPreference
   blurUnreleased: boolean
-  loading: boolean
   wishSelectCount: number
-  /** Sidebar layout: a fixed three-column grid instead of wrapped fixed-width tiles. */
-  compact?: boolean
-}>(), { compact: false })
+}>()
 
 const { t } = useI18n()
 </script>
 
 <template>
-  <CatalogDetailSection
-    :title="t('gachas.detail.pickups')"
-    :icon="LucideSparkles"
-    :loading="loading"
-    :empty="cards.length === 0"
-    :empty-message="t('gachaCatalog.pickups.empty')"
-    :description="wishSelectCount > 0 ? t('gachaCatalog.pickups.wishHint', { count: wishSelectCount }) : null"
-  >
-    <template #skeleton>
-      <div class="flex flex-wrap gap-3">
-        <div v-for="index in 4" :key="index" class="flex w-24 flex-col gap-1.5 sm:w-28">
-          <Skeleton class="aspect-square w-full rounded-md" />
-          <Skeleton class="h-3 w-4/5" />
-          <Skeleton class="h-3 w-1/2" />
-        </div>
-      </div>
-    </template>
-    <div :class="compact ? 'grid grid-cols-3 gap-2' : 'flex flex-wrap gap-3'">
+  <div v-if="cards.length > 0" class="flex min-w-0 flex-col gap-2" data-testid="gacha-pickups">
+    <div class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+      <p class="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <LucideSparkles class="size-4 shrink-0 self-center" aria-hidden="true" />
+        {{ t("gachas.detail.pickups") }}
+        <span class="tabular-nums">{{ cards.length }}</span>
+      </p>
+      <p v-if="wishSelectCount > 0" class="text-xs text-muted-foreground/80">
+        {{ t("gachaCatalog.pickups.wishHint", { count: wishSelectCount }) }}
+      </p>
+    </div>
+    <div class="flex flex-wrap gap-3">
       <GachaCardTile
         v-for="entry in cards"
         :key="entry.card.id"
@@ -52,8 +45,8 @@ const { t } = useI18n()
         :unreleased="entry.unreleased"
         :blur-unreleased="blurUnreleased"
         :wish="entry.isWish && wishSelectCount > 0"
-        :class="compact ? 'w-full' : 'w-24 sm:w-28'"
+        class="w-20 sm:w-24"
       />
     </div>
-  </CatalogDetailSection>
+  </div>
 </template>

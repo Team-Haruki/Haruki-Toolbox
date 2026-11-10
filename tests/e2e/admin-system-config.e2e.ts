@@ -26,6 +26,8 @@ async function openSystemConfig(
   runtime: { current: Record<string, unknown> },
   applyPut: (body: Record<string, unknown>) => void,
   reauth: ReauthState = { required: false },
+  // The public API allowlist: GET reports it, PUT replaces it and answers with what was stored.
+  apiKeys: { current: string[] } = { current: [] },
 ) {
   const calls: ApiCall[] = []
   await page.addInitScript((userId) => {
@@ -72,7 +74,13 @@ async function openSystemConfig(
     const call: ApiCall = { method: request.method(), path: url.pathname, body: request.postDataJSON() }
     calls.push(call)
     if (call.path === `${CONFIG_PATH}/public-api-keys`) {
-      return reply({ publicApiAllowedKeys: [] })
+      if (call.method === "PUT") {
+        if (reauth.required) {
+          return fail(403, "reauthentication required")
+        }
+        apiKeys.current = (call.body as { publicApiAllowedKeys: string[] }).publicApiAllowedKeys
+      }
+      return reply({ publicApiAllowedKeys: apiKeys.current })
     }
     if (call.path === `${CONFIG_PATH}/runtime` && call.method === "GET") {
       return reply(runtime.current)
@@ -239,5 +247,103 @@ test.describe("admin re-authentication", () => {
     await expect(deviceFlowSwitch(page)).toHaveAttribute("aria-checked", "false")
     await expect(page.locator("[data-sonner-toast]")).toHaveCount(0)
     expect(calls.filter((call) => call.method !== "GET")).toHaveLength(1)
+  })
+})
+
+// The settings-style page around the switch: a status strip and a read-only
+// credentials list fed by GET /api/admin/config/runtime, and the public API
+// allowlist (GET/PUT /api/admin/config/public-api-keys, body
+// { publicApiAllowedKeys: string[] }) edited as a list.
+test.describe("admin system config lists", () => {
+  test.describe.configure({ timeout: 60_000 })
+
+  test("reports what the runtime configuration carries and nothing it does not", async ({ page }) => {
+    const runtime = { current: {
+      oauth2DeviceFlowEnabled: true,
+      webhookEnabled: false,
+      privateApiTokenConfigured: true,
+      harukiProxySecretConfigured: false,
+      harukiProxyVersion: "v3.2.1",
+      privateApiUserAgent: "",
+    } as Record<string, unknown> }
+    await openSystemConfig(page, runtime, () => undefined, { required: false }, { current: ["userCards", "userDecks", "userAreas"] })
+
+    const status = page.getByTestId("config-status")
+    await expect(status).toContainText("v3.2.1", { timeout: 30_000 })
+    const fact = (label: RegExp) => status.locator("dl > div").filter({ hasText: label }).locator("dd")
+    await expect(fact(/设备授权|Device authorization/)).toHaveText(/已开启|On/)
+    await expect(fact(/Webhook/)).toHaveText(/已关闭|Off/)
+    await expect(fact(/允许的数据键|Allowed data keys/)).toHaveText("3")
+    // Two of the four secrets are reported; the others are unknown, not "unset".
+    await expect(fact(/密钥|Secrets/)).toHaveText(/^1 \/ 2 /)
+
+    const credentials = page.getByTestId("config-credentials")
+    await expect(credentials.locator("[data-secret=privateApiTokenConfigured]")).toContainText(/已配置|Set/)
+    await expect(credentials.locator("[data-secret=harukiProxySecretConfigured]")).toContainText(/未配置|Not set/)
+    await expect(credentials.locator("[data-secret=webhookJwtSecretConfigured]")).toContainText("—")
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  })
+
+  test("edits the allowlist as a list and sends it only on save", async ({ page }) => {
+    const runtime = { current: { oauth2DeviceFlowEnabled: false } as Record<string, unknown> }
+    const apiKeys = { current: ["userCards", "userDecks"] }
+    const calls = await openSystemConfig(page, runtime, () => undefined, { required: false }, apiKeys)
+
+    const group = page.getByTestId("config-allowed-keys")
+    const row = (key: string) => group.locator(`[data-key="${key}"]`)
+    await expect(group.locator("[data-key]")).toHaveCount(2, { timeout: 30_000 })
+    const save = group.getByRole("button", { name: /^(保存|Save)$/ })
+    await expect(save).toBeDisabled()
+
+    // Removing strikes the key out in place; it can be brought back until saved.
+    await group.getByRole("button", { name: /移除 userDecks|Remove userDecks/ }).click()
+    await expect(row("userDecks")).toHaveAttribute("data-state", "removed")
+    await group.getByRole("button", { name: /恢复 userDecks|Restore userDecks/ }).click()
+    await expect(row("userDecks")).toHaveAttribute("data-state", "kept")
+    await group.getByRole("button", { name: /移除 userDecks|Remove userDecks/ }).click()
+
+    // Several keys at once; one already on the list is reported and left in the field.
+    const input = group.getByRole("textbox", { name: /添加数据键|Add data keys/ })
+    await input.fill("userAreas, userCards userHonors")
+    await group.getByRole("button", { name: /^(添加|Add)$/ }).click()
+    await expect(group.getByRole("alert")).toContainText("userCards")
+    await expect(input).toHaveValue("userCards")
+    await expect(row("userAreas")).toHaveAttribute("data-state", "added")
+    await expect(row("userHonors")).toHaveAttribute("data-state", "added")
+    await expect(group.getByRole("status")).toHaveText(/有未保存的更改|Unsaved changes/)
+    expect(calls.filter((call) => call.method === "PUT")).toEqual([])
+
+    await save.click()
+    await expect(page.locator("[data-sonner-toast][data-type=\"success\"]").filter({ hasText: /允许的数据键已保存|Allowed data keys saved/ })).toBeVisible()
+    expect(calls.filter((call) => call.method === "PUT")).toEqual([
+      { method: "PUT", path: `${CONFIG_PATH}/public-api-keys`, body: { publicApiAllowedKeys: ["userCards", "userAreas", "userHonors"] } },
+    ])
+    await expect(group.locator("[data-key]")).toHaveCount(3)
+    await expect(group.locator("[data-state=kept]")).toHaveCount(3)
+    await expect(save).toBeDisabled()
+  })
+
+  test("reset drops the pending edits without a request", async ({ page }) => {
+    const runtime = { current: {} as Record<string, unknown> }
+    const calls = await openSystemConfig(page, runtime, () => undefined, { required: false }, { current: ["userCards"] })
+    const group = page.getByTestId("config-allowed-keys")
+    await expect(group.locator("[data-key]")).toHaveCount(1, { timeout: 30_000 })
+    await group.getByRole("button", { name: /移除 userCards|Remove userCards/ }).click()
+    await group.getByRole("textbox", { name: /添加数据键|Add data keys/ }).fill("userDecks")
+    await group.getByRole("button", { name: /^(添加|Add)$/ }).click()
+    await expect(group.locator("[data-key]")).toHaveCount(2)
+    await group.getByRole("button", { name: /^(还原|Reset)$/ }).click()
+    await expect(group.locator("[data-key]")).toHaveCount(1)
+    await expect(group.locator("[data-key=userCards]")).toHaveAttribute("data-state", "kept")
+    expect(calls.filter((call) => call.method === "PUT")).toEqual([])
+  })
+
+  test("mobile settings list fits without sideways scrolling", async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    const runtime = { current: { oauth2DeviceFlowEnabled: true, harukiProxyUserAgent: "HarukiProxy/3.2.1 (linux; amd64) with-a-long-suffix-for-wrapping" } as Record<string, unknown> }
+    await openSystemConfig(page, runtime, () => undefined, { required: false }, { current: ["userChallengeLiveSoloHighScoreRewardsAndMoreKeysThanFit", "userCards"] })
+    await expect(page.getByTestId("config-allowed-keys").locator("[data-key]")).toHaveCount(2, { timeout: 30_000 })
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+    await page.screenshot({ path: testInfo.outputPath("admin-system-config-mobile.png"), fullPage: true, animations: "disabled" })
   })
 })

@@ -268,6 +268,53 @@ export function resolveCardPower(
   return { ...power, total: power.p1 + power.p2 + power.p3 }
 }
 
+export type CardPowerBreakdown = {
+  total: number
+  /** What the level alone gives. */
+  level: number
+  /** Added by special training (0 while untrained or when the card has none). */
+  training: number
+  /** Added by each side story, in episode order; 0 for one not yet read. */
+  episodes: number[]
+  /** Added by the master ranks reached so far. */
+  masterRank: number
+  /** Added by the MySekai canvas. */
+  canvas: number
+}
+
+function sumPowerBonus(bonus: CardPowerBonus | null | undefined): number {
+  return bonus ? bonus.p1 + bonus.p2 + bonus.p3 : 0
+}
+
+/**
+ * The single power number the game shows, with where it comes from. The game
+ * no longer splits it into three parameters, so the breakdown is by source:
+ * level, special training, each side story, master rank and the canvas.
+ */
+export function resolveCardPowerBreakdown(
+  table: CardPowerTable | null | undefined,
+  options: CardPowerOptions,
+  extras: Pick<CardIndexExtras, "specialTrainingPowerBonus"> | null | undefined,
+  episodeBonuses: readonly CardPowerBonus[],
+  masterLessonBonuses: readonly CardPowerBonus[],
+  canvasBonus: CardPowerBonus | null | undefined,
+): CardPowerBreakdown {
+  const level = resolveCardPower(table, { level: options.level, trained: false, episodes: [], masterRank: 0, canvas: false }, null, [], [], null).total
+  const training = options.trained ? sumPowerBonus(extras?.specialTrainingPowerBonus) : 0
+  const episodes = episodeBonuses.map((bonus, index) => (options.episodes[index] ? sumPowerBonus(bonus) : 0))
+  const rank = Math.min(Math.max(0, Math.trunc(options.masterRank)), masterLessonBonuses.length)
+  const masterRank = masterLessonBonuses.slice(0, rank).reduce((sum, bonus) => sum + sumPowerBonus(bonus), 0)
+  const canvas = options.canvas ? sumPowerBonus(canvasBonus) : 0
+  return {
+    total: level + training + episodes.reduce((sum, value) => sum + value, 0) + masterRank + canvas,
+    level,
+    training,
+    episodes,
+    masterRank,
+    canvas,
+  }
+}
+
 /** Total base power at the table's highest level (the list's "power" sort key). */
 export function resolveCardMaxPower(table: CardPowerTable | null | undefined): number | null {
   if (!table || table.maxLevel <= 0) {

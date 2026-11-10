@@ -78,7 +78,7 @@ defineExpose({ open: () => { open.value = true } })
         <button
           v-if="collapsible"
           type="button"
-          class="flex min-w-0 flex-1 items-center gap-2 text-left pointer-coarse:-my-2 pointer-coarse:min-h-10"
+          class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-left pointer-coarse:-my-2 pointer-coarse:min-h-10"
           :aria-expanded="open"
           @click="toggle"
         >

@@ -369,9 +369,9 @@ function retry() {
 
     <!-- Loading skeleton -->
     <template v-else-if="isLoading">
-      <Skeleton class="h-10 w-full rounded-lg" />
-      <div class="flex flex-col gap-2">
-        <Skeleton v-for="index in 6" :key="index" class="h-20 w-full rounded-lg" />
+      <Skeleton class="h-12 w-full rounded-xl" />
+      <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <Skeleton v-for="index in 9" :key="index" class="h-32 w-full rounded-lg" />
       </div>
     </template>
 
@@ -401,106 +401,107 @@ function retry() {
         </div>
       </CatalogFilterPanel>
 
-      <Card v-if="itemViews.length === 0">
-        <CardContent class="py-10 text-center text-sm text-muted-foreground">
-          {{ t("training.area.empty") }}
-        </CardContent>
-      </Card>
+      <p v-if="itemViews.length === 0" class="rounded-md border border-dashed py-8 text-center text-sm text-muted-foreground">
+        {{ t("training.area.empty") }}
+      </p>
 
-      <div v-else class="grid grid-cols-1 gap-2 lg:grid-cols-2 2xl:grid-cols-3">
-        <Card
-          v-for="view in itemViews"
-          :key="view.itemId"
-          class="flex flex-col border-l-4 py-3"
-          :style="targetColor(view) ? { borderLeftColor: targetColor(view)! } : {}"
-        >
-          <CardContent class="flex flex-1 flex-col gap-2 px-4">
-            <!-- Item header -->
-            <div class="flex flex-wrap items-center gap-3">
+      <!-- Said once for the whole grid instead of in every tile. -->
+      <p v-if="itemViews.length > 0" class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        <span>{{ t("training.area.materialsLegend") }}</span>
+        <span class="inline-flex items-center gap-1.5"><span class="size-2 rounded-full bg-emerald-500" />{{ t("training.area.materialEnough") }}</span>
+        <span class="inline-flex items-center gap-1.5"><span class="size-2 rounded-full bg-red-500" />{{ t("training.area.materialShort") }}</span>
+      </p>
+
+      <div v-if="itemViews.length > 0" class="@container">
+        <div class="grid grid-cols-1 gap-2 @min-[44rem]:grid-cols-2 @min-[68rem]:grid-cols-3" data-testid="area-grid">
+          <div
+            v-for="view in itemViews"
+            :key="view.itemId"
+            class="flex flex-col gap-2 rounded-lg border border-l-4 bg-card p-2.5"
+            :style="targetColor(view) ? { borderLeftColor: targetColor(view)! } : {}"
+            data-slot="area-tile"
+          >
+            <!-- Item, who it is for, and where it stands: bonus over level. -->
+            <div class="flex items-center gap-2.5">
               <img
                 v-if="itemIconUrl(view)"
                 :src="itemIconUrl(view)!"
                 alt=""
-                class="size-10 shrink-0 rounded-md object-contain"
+                class="size-9 shrink-0 rounded-md object-contain"
                 loading="lazy"
               >
               <div class="min-w-0 flex-1">
                 <!-- Two lines rather than an ellipsis: a `title` tooltip is unreachable on touch. -->
-                <p class="line-clamp-2 text-sm font-medium break-words" :title="view.name">{{ view.name }}</p>
-                <div class="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                  <span v-if="targetLabel(view)" class="inline-flex items-center gap-1">
-                    <img
-                      v-if="targetIconUrl(view)"
-                      :src="targetIconUrl(view)!"
-                      alt=""
-                      class="size-4 rounded-full"
-                      loading="lazy"
-                    >
-                    <img
-                      v-else-if="targetUnitLogoUrl(view)"
-                      :src="targetUnitLogoUrl(view)!"
-                      alt=""
-                      class="h-4 w-auto max-w-9 object-contain"
-                      loading="lazy"
-                      @error="view.target?.type === 'unit' && markUnitLogoFailed(view.target.unit)"
-                    >
-                    <span
-                      v-else-if="targetUnitColor(view)"
-                      class="inline-block size-2.5 rounded-full"
-                      :style="{ backgroundColor: targetUnitColor(view)! }"
-                    />
-                    {{ targetLabel(view) }}
-                  </span>
-                </div>
+                <p class="line-clamp-2 text-sm leading-tight font-medium break-words" :title="view.name">{{ view.name }}</p>
+                <p v-if="targetLabel(view)" class="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                  <img
+                    v-if="targetIconUrl(view)"
+                    :src="targetIconUrl(view)!"
+                    alt=""
+                    class="size-4 shrink-0 rounded-full"
+                    loading="lazy"
+                  >
+                  <img
+                    v-else-if="targetUnitLogoUrl(view)"
+                    :src="targetUnitLogoUrl(view)!"
+                    alt=""
+                    class="h-4 w-auto max-w-9 shrink-0 object-contain"
+                    loading="lazy"
+                    @error="view.target?.type === 'unit' && markUnitLogoFailed(view.target.unit)"
+                  >
+                  <span
+                    v-else-if="targetUnitColor(view)"
+                    class="inline-block size-2.5 shrink-0 rounded-full"
+                    :style="{ backgroundColor: targetUnitColor(view)! }"
+                  />
+                  <span class="min-w-0 truncate">{{ targetLabel(view) }}</span>
+                </p>
               </div>
-              <span class="shrink-0 text-sm font-semibold tabular-nums">
-                {{ t("training.area.bonus", { bonus: formatAreaBonusRate(view.currentBonus) }) }}
-              </span>
+              <div class="shrink-0 text-right">
+                <p class="text-sm font-semibold tabular-nums">
+                  {{ t("training.area.bonus", { bonus: formatAreaBonusRate(view.currentBonus) }) }}
+                </p>
+                <p class="text-[11px] tabular-nums text-muted-foreground">
+                  {{ t("training.area.level", { level: view.currentLevel }) }}/{{ maxLevel(view) }}
+                </p>
+              </div>
               <Button
                 v-if="upgradeRows(view).length > 1"
                 variant="ghost"
-                size="sm"
-                class="h-7 gap-1 text-xs text-muted-foreground"
+                size="icon"
+                class="-mr-1 size-7 shrink-0 text-muted-foreground pointer-coarse:size-10"
+                :aria-label="t('training.area.showAll')"
+                :title="t('training.area.showAll')"
                 @click="dialogItemId = view.itemId"
               >
-                <LucideList class="size-3.5" />
-                {{ t("training.area.showAll") }}
+                <LucideList class="size-4" />
               </Button>
+            </div>
+
+            <div
+              class="h-1.5 overflow-hidden rounded-full bg-primary/15"
+              :style="targetColor(view) ? { backgroundColor: `color-mix(in srgb, ${targetColor(view)} 15%, transparent)` } : undefined"
+            >
+              <div
+                class="h-full rounded-full bg-primary transition-all"
+                :style="{ width: `${levelPercent(view)}%`, ...(targetColor(view) ? { backgroundColor: targetColor(view)! } : {}) }"
+              />
             </div>
 
             <p v-if="view.currentMultiUnitBonus > 0" class="text-xs text-muted-foreground">
               {{ t("training.area.multiUnitBonus", { bonus: formatAreaBonusRate(view.currentMultiUnitBonus) }) }}
             </p>
 
-            <!-- Level progress -->
-            <div class="flex items-center gap-2">
-              <span class="shrink-0 text-[11px] font-semibold tabular-nums">
-                {{ t("training.area.level", { level: view.currentLevel }) }}/{{ maxLevel(view) }}
-              </span>
-              <div
-                class="h-1.5 flex-1 overflow-hidden rounded-full bg-primary/15"
-                :style="targetColor(view) ? { backgroundColor: `color-mix(in srgb, ${targetColor(view)} 15%, transparent)` } : undefined"
-              >
-                <div
-                  class="h-full rounded-full bg-primary transition-all"
-                  :style="{ width: `${levelPercent(view)}%`, ...(targetColor(view) ? { backgroundColor: targetColor(view)! } : {}) }"
-                />
-              </div>
-            </div>
+            <!-- Fully upgraded -->
+            <p v-if="!nextRow(view)" class="mt-auto border-t border-border/60 pt-2 text-xs text-muted-foreground">
+              {{ t("training.area.maxed") }}
+            </p>
 
-            <!-- Fully upgraded: same box shape as the next-level row below. -->
-            <div
-              v-if="!nextRow(view)"
-              class="flex min-h-14 flex-1 items-center justify-center rounded-md border border-dashed px-2.5 py-1.5"
-            >
-              <p class="text-xs text-muted-foreground">{{ t("training.area.maxed") }}</p>
-            </div>
-
-            <!-- Next level -->
+            <!-- Next level: under a rule, not in a box of its own. -->
             <div
               v-for="row in nextRow(view) ? [nextRow(view)!] : []"
               :key="row.level"
-              class="flex-1 rounded-md border px-2.5 py-1.5"
+              class="mt-auto flex flex-col gap-1.5 border-t border-border/60 pt-2"
             >
               <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span class="text-xs text-muted-foreground">
@@ -525,12 +526,11 @@ function retry() {
                   {{ t("training.area.canUpgrade") }}
                 </span>
               </div>
-              <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span v-if="row.materials.length === 0" class="text-xs text-muted-foreground">
-                  {{ t("training.area.notInShop") }}
-                </span>
-                <!-- A legend for the icon-only pairs: "3,000/1,400" is have/need. -->
-                <span v-else class="text-[11px] text-muted-foreground">{{ t("training.area.materialsLegend") }}</span>
+              <p v-if="row.materials.length === 0" class="text-xs text-muted-foreground">
+                {{ t("training.area.notInShop") }}
+              </p>
+              <!-- Icon-only pairs are have/need: the list's legend says so once, above the grid. -->
+              <div v-else class="flex flex-wrap items-center gap-x-3 gap-y-1" :title="t('training.area.materialsLegend')">
                 <span
                   v-for="material in row.materials"
                   :key="material.materialId"
@@ -553,8 +553,8 @@ function retry() {
                 </span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       <!-- All upgrade levels dialog -->

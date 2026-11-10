@@ -1,5 +1,5 @@
 // AUTO-GENERATED zh-TW locale bundle (OpenCC s2twp from zh-CN).
-// Namespaces: uploadedGameData, app, common, backendMessages, turnstile, auth, sidebar, sidebarUser, home, gameAccountSelect, cardBox, eventRecords, musicProgress, globalSearch, costumes, gachas, playerProfile, training, searchAlias, sekaiRegion, sekaiUnreleased, navigation, webLayout, route, musicLibrary, cards, events, homeSettings, core, catalog
+// Namespaces: uploadedGameData, app, common, backendMessages, turnstile, auth, sidebar, sidebarUser, home, gameAccountSelect, cardBox, eventRecords, musicProgress, globalSearch, costumes, gachas, playerProfile, training, searchAlias, sekaiRegion, sekaiUnreleased, navigation, webLayout, route, musicLibrary, cards, events, musicPlayer, homeSettings, core, catalog
 export default {
   "uploadedGameData": {
     "missingTitle": "尚未上傳遊戲資料",
@@ -498,8 +498,87 @@ export default {
     "copyFailed": "複製失敗"
   },
   "home": {
-    "title": "歡迎使用 Haruki 工具箱",
-    "description": "請選擇您需要的功能",
+    "title": "Haruki 工具箱",
+    "description": "Project SEKAI 的圖鑑、衝榜計算和個人資料工具",
+    "search": {
+      "placeholder": "搜尋歌曲、卡牌、活動"
+    },
+    "frequent": "常用",
+    "status": {
+      "needsLogin": "需要登入",
+      "needsData": "需要先上傳資料"
+    },
+    "account": {
+      "label": "當前帳號",
+      "guestTitle": "三步用上個人資料功能",
+      "steps": {
+        "signIn": "註冊並登入",
+        "bind": "綁定遊戲帳號",
+        "upload": "上傳資料"
+      }
+    },
+    "live": {
+      "title": "正在進行",
+      "optInTitle": "看看遊戲里正在進行什麼",
+      "optInHint": "載入遊戲資料後，這裡會展示當前活動、限時招募和新歌。",
+      "load": "載入遊戲資料",
+      "running": "進行中",
+      "upcoming": "即將開始",
+      "ended": "已結束",
+      "endsIn": "剩餘 {duration}",
+      "startsIn": "{duration}後開始",
+      "nextStartsIn": "下一期活動 {duration}後開始",
+      "duration": {
+        "days": "{days} 天 {hours} 小時",
+        "hours": "{hours} 小時 {minutes} 分",
+        "minutes": "{minutes} 分鐘"
+      },
+      "eventDetail": "活動詳情",
+      "eventCards": "本期卡牌",
+      "gachas": "限時招募",
+      "newSongs": "新歌",
+      "none": "這個區服暫時沒有可展示的內容。",
+      "error": "遊戲資料載入失敗，稍後再試。"
+    },
+    "trays": {
+      "event": {
+        "hint": "活動期間組卡、算分、看榜"
+      },
+      "player": {
+        "hint": "上傳後檢視自己的帳號"
+      },
+      "catalog": {
+        "hint": "遊戲內容資料庫"
+      },
+      "community": {
+        "title": "聯機與社群",
+        "hint": "找車、找群、找我們"
+      }
+    },
+    "tools": {
+      "deckRecommend": "從你的卡牌裡算出活動最優卡組",
+      "rankBorder": "活動各檔位的榜線與漲速",
+      "ptCalculator": "按目標 Pt 反推所需加成和分數區間",
+      "eventPlanner": "在活動日曆上排每小時的打歌計畫",
+      "uploadData": "把遊戲帳號資料同步到工具箱",
+      "playerProfile": "帳號的遊戲檔案",
+      "cardBox": "卡牌收集進度",
+      "musicProgress": "打歌進度與可獲取獎勵",
+      "eventRecords": "參加過的活動與成績",
+      "training": "各角色的養成進度",
+      "musicLibrary": "歌曲、難度與收錄資訊",
+      "cards": "卡牌、技能與卡面",
+      "events": "歷屆活動與加成、獎勵",
+      "gachas": "歷屆卡池與出現的卡牌",
+      "costumes": "組合服裝、頭飾與髮型並 3D 預覽",
+      "storyPlayer": "線上閱讀遊戲劇情",
+      "sekaiStation": "即時彙總國服協力房間號",
+      "friendGroups": "玩家交流群",
+      "friendLinks": "其他好用的 Sekai 站點",
+      "tickets": "反饋 Bug、處理帳號問題或提建議",
+      "about": "專案介紹與開發團隊",
+      "sponsors": "感謝支援工具箱的各位"
+    },
     "aboutBanner": {
       "badge": "關於 & 贊助",
       "title": "您的幫助是我們繼續下去的動力",
@@ -648,6 +727,8 @@ export default {
       "point": "活動 PT",
       "rank": "活動排名",
       "showAll": "檢視全部",
+      "rankPanel": "活動排名（越靠上名次越好）",
+      "allHidden": "兩項資料都已隱藏，點選上方圖例恢復顯示。",
       "zoomHint": "拖動或縮放下方選區以檢視指定範圍的活動"
     },
     "sort": {
@@ -660,6 +741,7 @@ export default {
       "title": "活動歷史",
       "event": "活動",
       "type": "類型",
+      "date": "開始日期",
       "point": "活動 PT",
       "rank": "排名",
       "rankFromHonor": "缺少具體排名資料，檔位由活動牌子推斷"
@@ -918,7 +1000,22 @@ export default {
       "level": "Lv.{level}"
     },
     "music": {
-      "title": "歌曲通關統計"
+      "title": "歌曲通關統計",
+      "progress": "進度",
+      "total": "總數"
+    },
+    "headline": {
+      "allPerfect": "All Perfect",
+      "fullCombo": "Full Combo",
+      "collection": "卡牌收集率",
+      "challenge": "挑戰 Live 最高分",
+      "latestEvent": "最近活動排名"
+    },
+    "roster": {
+      "title": "角色總覽",
+      "rarityFilter": "按稀有度統計卡牌收集",
+      "otherUnit": "其他",
+      "challenge": "挑戰"
     },
     "multiLive": {
       "title": "多人 Live",
@@ -1003,6 +1100,10 @@ export default {
       "areaItemBonus": "區域道具",
       "fixtureBonus": "MYSEKAI 家具",
       "gateBonus": "MYSEKAI 大門",
+      "total": "合計",
+      "characterColumn": "角色",
+      "unitColumn": "團體",
+      "attrColumn": "屬性",
       "gateHint": "虛擬歌手的門加成按無支援團體計算，取已擁有門中的最高等級；帶支援團體的卡牌使用對應團體的門。",
       "units": {
         "light_sound": "Leo/need",
@@ -1079,7 +1180,9 @@ export default {
       "nextLevel": "下一級",
       "nextBonus": "下級加成",
       "showAll": "全部等級",
-      "materialsLegend": "材料：擁有 / 所需"
+      "materialsLegend": "材料：擁有 / 所需",
+      "materialEnough": "數量足夠",
+      "materialShort": "數量不足"
     },
     "leader": {
       "title": "隊長次數",
@@ -1089,6 +1192,7 @@ export default {
       "loadError": "隊長統計資料載入失敗",
       "noAccountHint": "綁定並選擇遊戲帳號後即可檢視隊長統計",
       "limit": "任務上限 {count}",
+      "exLimit": "EX 上限 {count}",
       "sortByTotal": "按次數",
       "sortByCharacter": "按角色",
       "normalLabel": "通常",
@@ -1208,6 +1312,10 @@ export default {
       "myTickets": "我的工單",
       "pendingTicketReplies": "{total} 個工單等待你回覆",
       "settings": "設定"
+    },
+    "scrollJump": {
+      "top": "回到頂部",
+      "bottom": "跳到底部"
     },
     "footer": {
       "copyright": "Seiunx Network & Haruki Dev Team. 保留所有權利。",
@@ -1624,9 +1732,26 @@ export default {
       }
     }
   },
+  "musicPlayer": {
+    "label": "音樂播放器",
+    "play": "播放",
+    "pause": "暫停",
+    "seek": "播放進度",
+    "vocal": "切換演唱版本",
+    "vocalsTitle": "演唱版本（切換時不中斷播放）",
+    "volume": "音量",
+    "mute": "靜音",
+    "unmute": "取消靜音",
+    "close": "關閉播放器",
+    "openSong": "檢視歌曲詳情",
+    "error": "音訊載入失敗，請稍後重試。",
+    "singerSeparator": "、",
+    "playSong": "播放 {title}",
+    "nowPlaying": "正在播放"
+  },
   "homeSettings": {
     "title": "Haruki工具箱設定",
-    "description": "配置Haruki工具箱伺服器線路、圖片載入線路、外觀、語言和效能偏好",
+    "description": "配置Haruki工具箱伺服器線路、資產線路、外觀、語言和效能偏好",
     "trigger": "設定",
     "tabs": {
       "preferences": "偏好設定",
@@ -1636,7 +1761,7 @@ export default {
     },
     "resetDialog": {
       "title": "重置偏好設定？",
-      "description": "這會將伺服器線路、圖片載入線路、外觀、語言、低特效模式和隱私偏好恢復為預設值。",
+      "description": "這會將伺服器線路、資產線路、外觀、語言、低特效模式、隱私和歌曲播放偏好恢復為預設值。",
       "confirm": "確認重置"
     },
     "endpoint": {
@@ -1653,8 +1778,8 @@ export default {
       "refreshLatency": "重新測速"
     },
     "assetEndpoint": {
-      "label": "圖片載入線路",
-      "help": "用於載入卡牌縮圖等遊戲資源。首次進入網站會自動選擇延遲最低的線路，開啟設定時會重新測速。",
+      "label": "資產線路",
+      "help": "用於載入卡面、音訊等遊戲資產 (Asset)。首次進入網站會自動選擇延遲最低的線路，開啟設定時會重新測速。",
       "placeholder": "請選擇線路",
       "global": "海外推薦",
       "chinaCdn": "中國大陸推薦（騰訊雲）",
@@ -1695,6 +1820,7 @@ export default {
     },
     "appUpdate": {
       "title": "應用更新",
+      "installedTitle": "當前版本",
       "description": "檢查 Haruki 工具箱的版本更新。",
       "current": "已是最新",
       "available": "有新版本",
@@ -1711,7 +1837,13 @@ export default {
     },
     "userData": {
       "description": "這裡儲存的是你各遊戲帳號已上傳資料在本瀏覽器的副本。點「重新整理」會檢查伺服器上是否有更新的上傳；「個人檔案」會直接從遊戲伺服器獲取最新資訊。",
+      "groups": {
+        "source": "選擇資料",
+        "cache": "快取狀態"
+      },
       "account": "帳號",
+      "accountHelp": "要檢視或清理哪個遊戲帳號的資料",
+      "dataTypeHelp": "這個帳號下的哪一類資料",
       "accountPlaceholder": "請選擇已綁定帳號",
       "noAccount": "當前帳號還沒有綁定遊戲帳號。",
       "dataType": "資料類型",
@@ -1754,7 +1886,22 @@ export default {
     "groups": {
       "appearance": "外觀",
       "network": "網路",
-      "privacy": "隱私與內容"
+      "privacy": "隱私與內容",
+      "music": "歌曲播放",
+      "reset": "重置"
+    },
+    "reset": {
+      "label": "恢復預設設定"
+    },
+    "music": {
+      "preferredVocal": {
+        "label": "優先演唱版本",
+        "help": "點封面或列表裡的播放按鈕時，先播哪個版本。歌曲沒有這個版本時，播放它的第一個版本。",
+        "options": {
+          "sekai": "SEKAI 版",
+          "original": "原曲（原版）"
+        }
+      }
     }
   },
   "core": {
@@ -1944,22 +2091,40 @@ export default {
       "assetNameCopied": "已複製內部名稱",
       "period": "期間",
       "viewAllCount": "檢視全部 ({count})",
-      "zoom": "點選放大檢視",
+      "zoom": "檢視大圖",
       "showMore": "展開",
       "showLess": "收起",
       "tryOtherRegion": "可能存在於其他區服，切換後會自動重新載入。"
     },
     "lightbox": {
-      "description": "圖片預覽",
-      "zoomIn": "放大",
-      "zoomOut": "縮小",
+      "description": "圖片檢視器",
       "openInNewTab": "新標籤頁開啟",
       "items": "圖片",
-      "touchZoom": "雙擊放大 / 縮小",
-      "touchSwipe": "左右滑動切換圖片"
+      "tools": "圖片工具",
+      "loading": "正在載入圖片…",
+      "loadFailed": "圖片載入失敗，可以在新標籤頁開啟原圖。",
+      "rotateLeft": "逆時針旋轉 90°",
+      "rotateRight": "順時針旋轉 90°",
+      "flipHorizontal": "左右映象",
+      "flipVertical": "上下映象",
+      "crop": "裁剪",
+      "applyCrop": "應用裁剪",
+      "cropAspect": "裁剪比例",
+      "cropFree": "自由",
+      "undo": "撤銷上一步",
+      "reset": "還原為原圖",
+      "saveOriginal": "儲存原圖",
+      "saveEdited": "儲存編輯後的圖片",
+      "zoom": "縮放",
+      "zoomIn": "放大",
+      "zoomOut": "縮小",
+      "zoomReset": "恢復適應螢幕"
     },
     "time": {
-      "localLabel": "當地時間",
+      "localLabel": "本地時間",
+      "serverLabel": "{region}時間",
+      "localTime": "本地時間：{time}",
+      "switchLabel": "時間顯示的時區",
       "serverTime": "{region}時間：{time}",
       "hint": "時間按你所在的時區（{zone}）顯示；與{region}時間（{serverZone}）不同時，會在旁邊標出{region}時間。",
       "sameZone": "你所在的時區（{zone}）與{region}時間一致。"

@@ -117,6 +117,7 @@ export default {
       "progress": "狀態",
       "actions": "操作",
       "never": "從未更新",
+      "summaryTitle": "概覽",
       "regionCacheTitle": "區服快取",
       "summary": {
         "readyRegions": "可用區服",
@@ -133,8 +134,8 @@ export default {
       "queueTitle": "更新佇列",
       "queueEmpty": "暫無更新任務。",
       "errors": {
-        "network": "無法連線遊戲資料伺服器，請檢查網路；若仍然失敗，可在「偏好設定」中切換圖片載入線路後重試。",
-        "timeout": "連線遊戲資料伺服器超時，請稍後重試或切換圖片載入線路。"
+        "network": "無法連線遊戲資料伺服器，請檢查網路；若仍然失敗，可在「偏好設定」中切換資產線路後重試。",
+        "timeout": "連線遊戲資料伺服器超時，請稍後重試或切換資產線路。"
       },
       "queueDetails": {
         "cacheHit": "快取已是最新，沒有下載新檔案。",
@@ -250,6 +251,9 @@ export default {
       "nicknameLabel": "暱稱",
       "nicknamePlaceholder": "請輸入暱稱",
       "changeButton": "管理信箱和暱稱",
+      "changeHelp": "在身份頁面修改，完成後會自動返回這裡。",
+      "unverifiedTitle": "信箱尚未驗證",
+      "unverifiedHelp": "驗證信箱後才能用愛發電訂單號驗證贊助資格。",
       "verifyButton": "驗證信箱"
     },
     "password": {
@@ -428,6 +432,7 @@ export default {
       "title": "已授權的應用",
       "description": "檢視並隨時撤銷已授權訪問你帳號資料的第三方應用。",
       "refresh": "重新整理",
+      "count": "共 {count} 個應用",
       "emptyTitle": "暫無已授權的應用",
       "emptyDescription": "當你授權第三方應用訪問帳號資料後，它們會顯示在這裡。",
       "authorizedAtPrefix": "授權於",
@@ -477,6 +482,17 @@ export default {
       },
       "addButton": "綁定新帳號",
       "empty": "暫無資料",
+      "listTitle": "已綁定的帳號 · {count}",
+      "listTitleEmpty": "已綁定的帳號",
+      "emptyTitle": "還沒有綁定遊戲帳號",
+      "emptyHint": "綁定並驗證遊戲帳號後，就可以上傳資料並檢視自己的遊戲資料。",
+      "unverifiedHint": "驗證後才能設為預設帳號或授權給他人。",
+      "relatedTitle": "授權與 Bot",
+      "sharing": {
+        "label": "已開啟的共享",
+        "suite": "帳號資料 {count}",
+        "mysekai": "烤森資料 {count}"
+      },
       "region": {
         "jp": "日服",
         "en": "國際服",
@@ -550,6 +566,14 @@ export default {
       },
       "permissions": {
         "sharedHint": "只在你使用對應 Bot 時需要開啟。",
+        "botsTitle": "同步給 QQ 群 Bot",
+        "unsafeBadge": "不安全",
+        "bots": {
+          "allowSakura": "SakuraBot",
+          "allow8823": "烤森Bot",
+          "allowResona": "ResonaBot",
+          "allowLuna": "LunaBot"
+        },
         "suite": {
           "allowPublicApi": {
             "title": "允許其他網站/Bot 公開查詢",

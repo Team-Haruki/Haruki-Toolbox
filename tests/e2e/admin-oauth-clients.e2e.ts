@@ -512,6 +512,162 @@ test.describe("admin OAuth clients", () => {
     expect(update).not.toHaveProperty("devicePolicy")
   })
 
+  test("counts the stat panel from the client list", async ({ page }) => {
+    const disabled: MockClient = { clientId: "old-tool", name: "Old Tool", clientType: "confidential", active: false }
+    await openOAuthClientAdmin(page, { current: [DEVICE_CLIENT, CONFIDENTIAL_CLIENT, disabled] }, () => undefined)
+
+    // The numbers count up; the final text is the exact figure.
+    const overview = page.getByTestId("oauth-client-overview")
+    await expect(overview.locator('[data-stat="total"]')).toContainText("3")
+    await expect(overview.locator('[data-stat="enabled"]')).toContainText("2")
+    await expect(overview.locator('[data-stat="enabled"]')).toContainText(/禁用 1|1 disabled/)
+    await expect(overview.locator('[data-stat="confidential"]')).toContainText("2")
+    await expect(overview.locator('[data-stat="confidential"]')).toContainText(/Public 1|1 public/)
+    await expect(overview.locator('[data-stat="device"]')).toContainText("1")
+    // The whole list fits one page, so nothing is marked as partial.
+    await expect(page.getByTestId("oauth-client-overview-partial")).toHaveCount(0)
+
+    // The figures describe every loaded client, whatever the search shows.
+    await page.getByRole("textbox", { name: /搜索名称或 Client ID|Search name or client ID/ }).fill("old-tool")
+    await expect(clientCard(page, CONFIDENTIAL_CLIENT.clientId)).toHaveCount(0)
+    await expect(overview.locator('[data-stat="total"]')).toContainText("3")
+
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0)
+  })
+
+  test("shows a client's statistics with the trend and the audit summary", async ({ page }) => {
+    const statisticsPath = `${CLIENTS_PATH}/${CONFIDENTIAL_CLIENT.clientId}/statistics`
+    const auditPath = `${CLIENTS_PATH}/${CONFIDENTIAL_CLIENT.clientId}/audit-summary`
+    const calls = await openOAuthClientAdmin(page, { current: [PUBLIC_CLIENT, CONFIDENTIAL_CLIENT] }, (call) => {
+      if (call.method === "GET" && call.path === statisticsPath) {
+        return {
+          status: 200,
+          message: "success",
+          updatedData: {
+            clientId: CONFIDENTIAL_CLIENT.clientId,
+            from: "2026-11-09T00:00:00Z",
+            to: "2026-11-09T03:00:00Z",
+            bucket: "hour",
+            summary: {
+              authorizationTotal: 40,
+              authorizationActive: 30,
+              authorizationRevoked: 10,
+              authorizationCreatedInRange: 6,
+              tokenTotal: 200,
+              tokenActive: 50,
+              tokenRevoked: 150,
+              tokenIssuedInRange: 9,
+            },
+            trend: [
+              { bucketStart: "2026-11-09T00:00:00Z", authorizationCreated: 0, tokenIssued: 0 },
+              { bucketStart: "2026-11-09T01:00:00Z", authorizationCreated: 4, tokenIssued: 6 },
+              { bucketStart: "2026-11-09T02:00:00Z", authorizationCreated: 2, tokenIssued: 3 },
+              { bucketStart: "2026-11-09T03:00:00Z", authorizationCreated: 0, tokenIssued: 0 },
+            ],
+          },
+        }
+      }
+      if (call.method === "GET" && call.path === auditPath) {
+        return {
+          status: 200,
+          message: "success",
+          updatedData: {
+            clientId: CONFIDENTIAL_CLIENT.clientId,
+            total: 8,
+            success: 6,
+            failure: 2,
+            byAction: [
+              { key: "admin.oauth_client.statistics.query", count: 5 },
+              { key: "admin.oauth_client.rotate_secret", count: 2 },
+              { key: "admin.oauth_client.future_action", count: 1 },
+            ],
+          },
+        }
+      }
+      return undefined
+    })
+
+    await clientCard(page, CONFIDENTIAL_CLIENT.clientId).getByRole("button", { name: /^(访问统计|View stats)$/ }).click()
+    const dialog = page.getByRole("dialog", { name: /客户端统计|Client statistics/ })
+    await expect(dialog).toContainText(CONFIDENTIAL_CLIENT.name)
+
+    const content = dialog.getByTestId("oauth-stats-content")
+    await expect(content.locator('[data-stat="authorizationTotal"]')).toContainText("40")
+    await expect(content.locator('[data-stat="authorizationCreatedInRange"]')).toContainText("6")
+    await expect(content.locator('[data-stat="tokenTotal"]')).toContainText("200")
+    await expect(content.locator('[data-stat="tokenIssuedInRange"]')).toContainText("9")
+    // Active against revoked, as shares of the totals.
+    await expect(content.getByRole("listitem").filter({ hasText: /^(有效|Active)/ }).first()).toContainText(/30 · 75%/)
+    await expect(content.getByRole("listitem").filter({ hasText: /^(已撤销|Revoked)/ }).last()).toContainText(/150 · 75%/)
+
+    // Two series were active, so the chart carries a legend with their sums.
+    const legend = dialog.getByTestId("oauth-client-trend-legend").getByRole("listitem")
+    await expect(legend).toHaveCount(2)
+    await expect(legend.nth(0)).toContainText("6")
+    await expect(legend.nth(1)).toContainText("9")
+    // The table view lists the buckets with data.
+    await dialog.getByRole("button", { name: /^(数据表|Data table)$/ }).click()
+    await expect(dialog.getByRole("table").getByRole("row")).toHaveCount(3)
+
+    // The audit summary names the actions it knows and prints the others as sent.
+    const audit = dialog.getByTestId("oauth-stats-audit")
+    await expect(audit.locator("dd").nth(0)).toHaveText("8")
+    await expect(audit.locator("dd").nth(1)).toHaveText(/^75(\.0)?%$/)
+    await expect(audit.getByRole("listitem").nth(0)).toContainText(/查看统计|View statistics/)
+    await expect(audit.getByRole("listitem").nth(1)).toContainText(/轮换 Secret|Rotate secret/)
+    await expect(audit.getByRole("listitem").nth(2)).toContainText("admin.oauth_client.future_action")
+
+    // Both requests carry the same range; only the statistics take a bucket.
+    expect(calls.filter((call) => call.path === statisticsPath)).toHaveLength(1)
+    expect(calls.filter((call) => call.path === auditPath)).toHaveLength(1)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0)
+  })
+
+  test("keeps the statistics when only the audit summary fails", async ({ page }) => {
+    await openOAuthClientAdmin(page, { current: [PUBLIC_CLIENT, CONFIDENTIAL_CLIENT] }, (call) => {
+      if (call.method === "GET" && call.path.endsWith("/statistics")) {
+        // What the Hydra-backed backend answers today: no token numbers and one live series.
+        return {
+          status: 200,
+          message: "success",
+          updatedData: {
+            from: "2026-11-09T00:00:00Z",
+            to: "2026-11-09T01:00:00Z",
+            bucket: "hour",
+            summary: {
+              authorizationTotal: 3,
+              authorizationActive: 3,
+              authorizationRevoked: 0,
+              authorizationCreatedInRange: 1,
+              tokenTotal: 0,
+              tokenActive: 0,
+              tokenRevoked: 0,
+              tokenIssuedInRange: 0,
+            },
+            trend: [
+              { bucketStart: "2026-11-09T00:00:00Z", authorizationCreated: 1, tokenIssued: 0 },
+              { bucketStart: "2026-11-09T01:00:00Z", authorizationCreated: 0, tokenIssued: 0 },
+            ],
+          },
+        }
+      }
+      if (call.method === "GET" && call.path.endsWith("/audit-summary")) {
+        return { status: 403, message: "permission denied" }
+      }
+      return undefined
+    })
+
+    await clientCard(page, CONFIDENTIAL_CLIENT.clientId).getByRole("button", { name: /^(访问统计|View stats)$/ }).click()
+    const dialog = page.getByRole("dialog", { name: /客户端统计|Client statistics/ })
+    await expect(dialog.getByTestId("oauth-stats-content").locator('[data-stat="authorizationTotal"]')).toContainText("3")
+    // One series only: no legend box, and no token share to draw.
+    await expect(dialog.getByTestId("oauth-client-trend")).toContainText(/新增授权|New authorizations/)
+    await expect(dialog.getByTestId("oauth-client-trend-legend")).toHaveCount(0)
+    await expect(dialog).toContainText(/没有令牌记录|No tokens on record/)
+    await expect(dialog.getByTestId("oauth-stats-audit").getByRole("alert")).toContainText(/管理操作统计加载失败|admin activity summary failed to load/)
+    await expect(dialog.locator("[data-slot=load-error-state]")).toHaveCount(0)
+  })
+
   test("explains a refused device policy in the admin's language", async ({ page }) => {
     await openOAuthClientAdmin(page, { current: [DEVICE_CLIENT, CONFIDENTIAL_CLIENT] }, (call) => {
       if (call.method === "PUT" && call.path === `${CLIENTS_PATH}/${DEVICE_CLIENT.clientId}`) {

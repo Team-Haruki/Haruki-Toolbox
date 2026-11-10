@@ -126,7 +126,9 @@ const showContent = computed(() => !props.loading && !props.error && !props.notF
     </CatalogEmptyState>
 
     <template v-else-if="showContent">
-      <div class="flex flex-col gap-1.5">
+      <!-- A page with its own header block (the song page) renders the h1 itself. -->
+      <slot v-if="$slots.heading" name="heading" />
+      <div v-else class="flex flex-col gap-1.5">
         <div class="flex flex-wrap items-center gap-2">
           <h1 class="min-w-0 text-2xl font-bold leading-tight">{{ title }}</h1>
           <span

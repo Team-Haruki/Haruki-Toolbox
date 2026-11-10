@@ -14,6 +14,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { formatNumberCN } from "@/lib/number-format"
+import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
+import BotSecurityKindChip from "@/modules/admin-bot-security/components/BotSecurityKindChip.vue"
 import BotSecurityEnforcementBadge from "@/modules/admin-bot-security/components/BotSecurityEnforcementBadge.vue"
 import BotSecurityStatusBadge from "@/modules/admin-bot-security/components/BotSecurityStatusBadge.vue"
 import {
@@ -50,17 +52,15 @@ function orFallback(value: string | null | undefined) {
   return value && value.trim() ? value : t("adminBotSecurity.common.fallback")
 }
 
-const rows = computed(() => {
+type Fact = { key: string; label: string; value: string; mono?: boolean }
+
+// The facts in three groups: what fired, who it was about, what was done.
+const alertFacts = computed<Fact[]>(() => {
   const alert = props.alert
   if (!alert) return []
   return [
     { key: "alertTime", label: t("adminBotSecurity.table.alertTime"), value: props.formatTime(alert.alertTime) },
     { key: "receivedAt", label: t("adminBotSecurity.detail.receivedAt"), value: props.formatTime(alert.receivedAt) },
-    { key: "botId", label: t("adminBotSecurity.detail.botId"), value: orFallback(alert.botId), mono: true },
-    { key: "ownerQq", label: t("adminBotSecurity.detail.ownerQq"), value: orFallback(alert.ownerQq), mono: true },
-    { key: "sourceIp", label: t("adminBotSecurity.table.sourceIp"), value: orFallback(alert.sourceIp), mono: true },
-    { key: "node", label: t("adminBotSecurity.detail.node"), value: orFallback(alert.node), mono: true },
-    { key: "clientVersion", label: t("adminBotSecurity.detail.clientVersion"), value: orFallback(alert.clientVersion) },
     {
       key: "count",
       label: t("adminBotSecurity.table.count"),
@@ -70,6 +70,19 @@ const rows = computed(() => {
         window: formatBotSecurityWindow(alert.windowSeconds, t),
       }),
     },
+    { key: "node", label: t("adminBotSecurity.detail.node"), value: orFallback(alert.node), mono: true },
+  ]
+})
+
+const sourceFacts = computed<Fact[]>(() => {
+  const alert = props.alert
+  if (!alert) return []
+  return [
+    { key: "botId", label: t("adminBotSecurity.detail.botId"), value: orFallback(alert.botId), mono: true },
+    { key: "ownerQq", label: t("adminBotSecurity.detail.ownerQq"), value: orFallback(alert.ownerQq), mono: true },
+    { key: "sourceIp", label: t("adminBotSecurity.table.sourceIp"), value: orFallback(alert.sourceIp), mono: true },
+    { key: "clientVersion", label: t("adminBotSecurity.detail.clientVersion"), value: orFallback(alert.clientVersion) },
+    { key: "buildId", label: t("adminBotSecurity.detail.buildId"), value: orFallback(alert.buildId), mono: true },
   ]
 })
 
@@ -84,61 +97,68 @@ const actions = computed(() => props.alert ? botSecurityActionsFor(props.alert.s
         <DialogDescription>{{ t("adminBotSecurity.detail.description") }}</DialogDescription>
       </DialogHeader>
 
-      <div v-if="props.alert" class="min-w-0 space-y-4">
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="text-sm font-medium break-all">{{ props.kindLabel(props.alert.kind) }}</span>
-          <span
-            v-if="props.kindLabel(props.alert.kind) !== props.alert.kind"
-            class="font-mono text-xs text-muted-foreground break-all"
-          >{{ props.alert.kind }}</span>
+      <div v-if="props.alert" class="flex min-w-0 flex-col gap-4">
+        <div class="flex min-w-0 flex-wrap items-center gap-1.5">
+          <BotSecurityKindChip :kind="props.alert.kind" :label="props.kindLabel(props.alert.kind)" />
           <BotSecurityEnforcementBadge :enforced="props.alert.enforced" />
           <BotSecurityStatusBadge :status="props.alert.status" :label="props.statusLabel(props.alert.status)" />
+          <span
+            v-if="props.kindLabel(props.alert.kind) !== props.alert.kind"
+            class="font-mono text-xs text-muted-foreground [overflow-wrap:anywhere]"
+          >{{ props.alert.kind }}</span>
         </div>
 
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div v-for="row in rows" :key="row.key" class="min-w-0 space-y-1">
-            <div class="text-xs text-muted-foreground">{{ row.label }}</div>
-            <div :class="['text-sm break-all', row.mono ? 'font-mono' : '']">{{ row.value }}</div>
-          </div>
-          <div class="min-w-0 space-y-1">
-            <div class="text-xs text-muted-foreground">{{ t("adminBotSecurity.table.handler") }}</div>
-            <div v-if="props.alert.handledBy" class="text-sm break-all">
-              <RouterLink
-                :to="{ name: 'admin.userDetail', params: { userId: props.alert.handledBy.userId } }"
-                class="text-primary hover:underline"
-              >
-                {{ resolveBotSecurityHandlerLabel(props.alert.handledBy) }}
-              </RouterLink>
-              <span v-if="!props.alert.handledBy.name.trim()" class="ml-1 text-xs text-muted-foreground">
-                {{ t("adminBotSecurity.detail.handlerNameUnavailable") }}
-              </span>
+        <SettingsGroup :title="t('adminBotSecurity.detail.groups.alert')">
+          <dl class="divide-y divide-border/60">
+            <div v-for="fact in alertFacts" :key="fact.key" class="flex gap-3 px-4 py-2.5">
+              <dt class="w-24 shrink-0 text-xs leading-5 text-muted-foreground">{{ fact.label }}</dt>
+              <dd :class="['min-w-0 flex-1 text-sm tabular-nums [overflow-wrap:anywhere]', fact.mono ? 'font-mono text-[13px]' : '']">{{ fact.value }}</dd>
             </div>
-            <div v-else class="text-sm">{{ t("adminBotSecurity.common.fallback") }}</div>
-          </div>
-          <div class="min-w-0 space-y-1">
-            <div class="text-xs text-muted-foreground">{{ t("adminBotSecurity.detail.handledAt") }}</div>
-            <div class="text-sm">{{ props.formatTime(props.alert.handledAt) }}</div>
-          </div>
-        </div>
+            <div class="flex gap-3 px-4 py-2.5">
+              <dt class="w-24 shrink-0 text-xs leading-5 text-muted-foreground">{{ t("adminBotSecurity.detail.reason") }}</dt>
+              <dd class="min-w-0 flex-1 whitespace-pre-wrap text-sm [overflow-wrap:anywhere]">{{ orFallback(props.alert.reason) }}</dd>
+            </div>
+          </dl>
+        </SettingsGroup>
 
-        <div class="space-y-1">
-          <div class="text-xs text-muted-foreground">{{ t("adminBotSecurity.detail.buildId") }}</div>
-          <div class="rounded-md border bg-muted/20 px-3 py-2 font-mono text-xs whitespace-pre-wrap break-all">
-            {{ orFallback(props.alert.buildId) }}
-          </div>
-        </div>
-        <div class="space-y-1">
-          <div class="text-xs text-muted-foreground">{{ t("adminBotSecurity.detail.reason") }}</div>
-          <div class="rounded-md border bg-muted/20 px-3 py-2 text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-            {{ orFallback(props.alert.reason) }}
-          </div>
-        </div>
-        <div class="space-y-1">
-          <div class="text-xs text-muted-foreground">{{ t("adminBotSecurity.detail.note") }}</div>
-          <div class="rounded-md border bg-muted/20 px-3 py-2 text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-            {{ props.alert.note || t("adminBotSecurity.detail.noNote") }}
-          </div>
-        </div>
+        <SettingsGroup :title="t('adminBotSecurity.detail.groups.source')">
+          <dl class="divide-y divide-border/60">
+            <div v-for="fact in sourceFacts" :key="fact.key" class="flex gap-3 px-4 py-2.5">
+              <dt class="w-24 shrink-0 text-xs leading-5 text-muted-foreground">{{ fact.label }}</dt>
+              <dd :class="['min-w-0 flex-1 whitespace-pre-wrap text-sm [overflow-wrap:anywhere]', fact.mono ? 'font-mono text-[13px]' : '']">{{ fact.value }}</dd>
+            </div>
+          </dl>
+        </SettingsGroup>
+
+        <SettingsGroup :title="t('adminBotSecurity.detail.groups.handling')">
+          <dl class="divide-y divide-border/60">
+            <div class="flex gap-3 px-4 py-2.5">
+              <dt class="w-24 shrink-0 text-xs leading-5 text-muted-foreground">{{ t("adminBotSecurity.table.handler") }}</dt>
+              <dd v-if="props.alert.handledBy" class="min-w-0 flex-1 text-sm [overflow-wrap:anywhere]">
+                <RouterLink
+                  :to="{ name: 'admin.userDetail', params: { userId: props.alert.handledBy.userId } }"
+                  class="text-primary underline-offset-4 hover:underline"
+                >
+                  {{ resolveBotSecurityHandlerLabel(props.alert.handledBy) }}
+                </RouterLink>
+                <span v-if="!props.alert.handledBy.name.trim()" class="ml-1 text-xs text-muted-foreground">
+                  {{ t("adminBotSecurity.detail.handlerNameUnavailable") }}
+                </span>
+              </dd>
+              <dd v-else class="min-w-0 flex-1 text-sm">{{ t("adminBotSecurity.common.fallback") }}</dd>
+            </div>
+            <div class="flex gap-3 px-4 py-2.5">
+              <dt class="w-24 shrink-0 text-xs leading-5 text-muted-foreground">{{ t("adminBotSecurity.detail.handledAt") }}</dt>
+              <dd class="min-w-0 flex-1 text-sm tabular-nums">{{ props.formatTime(props.alert.handledAt) }}</dd>
+            </div>
+            <div class="flex gap-3 px-4 py-2.5">
+              <dt class="w-24 shrink-0 text-xs leading-5 text-muted-foreground">{{ t("adminBotSecurity.detail.note") }}</dt>
+              <dd :class="['min-w-0 flex-1 whitespace-pre-wrap text-sm [overflow-wrap:anywhere]', props.alert.note ? '' : 'text-muted-foreground']">
+                {{ props.alert.note || t("adminBotSecurity.detail.noNote") }}
+              </dd>
+            </div>
+          </dl>
+        </SettingsGroup>
       </div>
 
       <DialogFooter class="gap-2">
@@ -152,7 +172,7 @@ const actions = computed(() => props.alert ? botSecurityActionsFor(props.alert.s
           :disabled="props.actionSaving"
           @click="props.alert && emit('action', props.alert, action)"
         >
-          <component :is="ACTION_ICONS[action]" class="w-4 h-4" />
+          <component :is="ACTION_ICONS[action]" class="size-4" aria-hidden="true" />
           {{ t(`adminBotSecurity.actions.${action}`) }}
         </Button>
       </DialogFooter>

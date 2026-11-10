@@ -10,10 +10,12 @@ import {
   updateTicketStatus,
 } from "@/modules/tickets/api/admin"
 import type { AdminUser } from "@/types/admin"
+import type { UserRole } from "@/types/common"
 import type { TicketDetail, TicketMessage } from "@/types/ticket"
 import { ticketStatusLabel } from "@/modules/tickets/lib/display"
 import { getTicketStatusOptions, isTicketStatus } from "@/modules/tickets/lib/meta"
 import { bumpAdminTicketRefresh } from "@/modules/tickets/lib/admin-ticket-refresh"
+import { summarizeTicketThread } from "@/modules/tickets/lib/admin-ticket-thread"
 import { describeError, extractErrorMessage, isNotFoundError, type ErrorDescription } from "@/lib/error-utils"
 
 function normalizeCreatorInfo(ticketDetail: TicketDetail) {
@@ -60,6 +62,29 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
   const adminUsersLoading = ref(false)
   const adminUsersLoadFailed = ref(false)
   const statusOptions = computed(() => getTicketStatusOptions(t))
+  // When the ticket on screen was read: the waiting times are measured to it.
+  const loadedAt = ref(Date.now())
+  const threadSummary = computed(() =>
+    ticket.value ? summarizeTicketThread(ticket.value, ticket.value.messages, loadedAt.value) : null
+  )
+
+  // The page already loads every admin and super admin for the assignee
+  // picker, so an account's role can be told from that list: on it, that
+  // role; off it (once the list is complete), an ordinary user.
+  const adminRoleById = computed(() => new Map(adminUsers.value.map((admin) => [admin.userId, admin.role])))
+  const adminRolesKnown = computed(() => !adminUsersLoading.value && !adminUsersLoadFailed.value)
+
+  /** The creator's account role, or null while the admin list is not there to tell. */
+  const creatorRole = computed<UserRole | null>(() => {
+    const creatorId = ticket.value?.creatorUserId
+    if (!creatorId) return null
+    return adminRoleById.value.get(creatorId) ?? (adminRolesKnown.value ? "user" : null)
+  })
+
+  /** A sender's account role; without the admin list, what the message itself says (admin or user). */
+  function messageRole(message: TicketMessage): UserRole {
+    return adminRoleById.value.get(message.senderId) ?? (message.senderRole === "admin" ? "admin" : "user")
+  }
   let latestLoadRequestId = 0
   let actionGeneration = 0
   const resolveTicketId = () => resolveValue(ticketId).trim()
@@ -152,9 +177,13 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
       if (requestId !== latestLoadRequestId) return
       normalizeCreatorInfo(detail)
       ticket.value = detail
+      loadedAt.value = Date.now()
       notFound.value = false
       loadError.value = null
       assigneeId.value = detail.assigneeAdminId || "__none__"
+      // The thread only exists in the DOM once the skeleton is gone: show the
+      // ticket first, or the first load could never scroll to the latest message.
+      loading.value = false
       await nextTick()
       if (requestId !== latestLoadRequestId) return
       scrollToBottom()
@@ -331,6 +360,9 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
     adminUsersLoading,
     adminUsersLoadFailed,
     statusOptions,
+    threadSummary,
+    creatorRole,
+    messageRole,
     sendMessage,
     handleStatusChange,
     handleAssign,

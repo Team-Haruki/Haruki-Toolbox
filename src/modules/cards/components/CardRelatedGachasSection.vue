@@ -5,7 +5,6 @@ import type { SekaiRegion } from "@/types"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import { Badge } from "@/components/ui/badge"
 import { formatLocalizedDateRange } from "@/lib/date-time"
-import CatalogDetailSection from "@/shared/components/catalog/CatalogDetailSection.vue"
 import SekaiAssetImage from "@/shared/components/SekaiAssetImage.vue"
 import { resolveSekaiGachaTypeLabel } from "@/shared/sekai/labels"
 import type { CatalogGachaSummary } from "@/modules/gachas"
@@ -20,7 +19,6 @@ const props = defineProps<{
   bannerAliasMap: ReadonlyMap<number, number>
   region: SekaiRegion
   assetEndpoint: SekaiAssetEndpointPreference
-  loading: boolean
 }>()
 
 const { t, te } = useI18n()
@@ -39,33 +37,30 @@ function period(gacha: CatalogGachaSummary): string {
 </script>
 
 <template>
-  <CatalogDetailSection
-    :title="t('cardCatalog.detail.relatedGachas.title')"
-    :icon="LucideTicket"
-    :loading="loading && gachas.length === 0"
-    :empty="!loading && gachas.length === 0"
-    :empty-message="t('cardCatalog.detail.relatedGachas.empty')"
-  >
-    <ul class="flex flex-col gap-2">
+  <div v-if="gachas.length > 0" class="flex min-w-0 flex-col gap-1.5" data-testid="card-related-gachas">
+    <p class="flex items-center gap-1.5 text-sm text-muted-foreground">
+      <LucideTicket class="size-4 shrink-0" aria-hidden="true" />
+      {{ t("cardCatalog.detail.relatedGachas.title") }}
+    </p>
+    <ul class="flex flex-col gap-1.5">
       <li v-for="gacha in gachas" :key="gacha.id">
         <RouterLink
           :to="{ name: 'gachas.detail', params: { gachaId: gacha.id } }"
-          class="flex items-center gap-3 rounded-md border bg-muted/20 p-2.5 transition-colors hover:bg-accent/50 dark:hover:bg-accent/30"
+          class="flex items-center gap-2.5 rounded-lg border bg-background/70 p-1.5 pr-2 outline-none transition-colors hover:bg-accent/50 focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:bg-input/30 dark:hover:bg-accent/30"
         >
-          <div class="relative aspect-[2/1] w-28 shrink-0 overflow-hidden rounded-md bg-muted sm:w-36">
-            <SekaiAssetImage :sources="imageSources(gacha)" :alt="gacha.name" />
+          <div class="relative aspect-[488/208] w-24 shrink-0 overflow-hidden rounded-md bg-muted">
+            <SekaiAssetImage :sources="imageSources(gacha)" :alt="gacha.name" fit="contain" />
           </div>
-          <div class="flex min-w-0 flex-1 flex-col gap-1">
+          <div class="min-w-0 flex-1">
             <p class="truncate text-sm font-medium">{{ gacha.name }}</p>
-            <div class="flex flex-wrap items-center gap-1">
+            <div class="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
+              <span class="tabular-nums">{{ period(gacha) }}</span>
               <Badge v-if="typeLabel(gacha)" variant="muted" size="sm">{{ typeLabel(gacha) }}</Badge>
-              <span class="font-mono text-[11px] text-muted-foreground">#{{ gacha.id }}</span>
             </div>
-            <p class="text-xs text-muted-foreground tabular-nums">{{ period(gacha) }}</p>
           </div>
           <LucideChevronRight class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </RouterLink>
       </li>
     </ul>
-  </CatalogDetailSection>
+  </div>
 </template>

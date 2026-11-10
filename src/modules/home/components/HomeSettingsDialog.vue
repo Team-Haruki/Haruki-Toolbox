@@ -4,13 +4,28 @@ import { useI18n } from "vue-i18n"
 import { ensureI18nBundles } from "@/shared/i18n"
 import type { Component } from "vue"
 import {
+  CalendarClock,
+  CircleAlert,
+  CircleArrowUp,
+  CircleCheck,
+  Clock,
   Database,
   Download,
+  Droplets,
+  EyeOff,
+  Gauge,
+  GitCommitHorizontal,
+  Languages,
+  MicVocal,
+  Package,
   RefreshCw,
   RotateCcw,
+  Server,
   Settings,
   SlidersHorizontal,
   Smartphone,
+  SunMoon,
+  Tag,
   UserRoundCog,
 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
@@ -32,7 +47,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -42,9 +56,13 @@ import {
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import SekaiDataSettings from "@/modules/home/components/SekaiDataSettings.vue"
+import SettingsFacts, { type SettingsFact } from "@/shared/components/settings/SettingsFacts.vue"
+import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
+import SettingsRow, { type SettingsRowTone } from "@/shared/components/settings/SettingsRow.vue"
 import UserDataSettings from "@/modules/home/components/UserDataSettings.vue"
 import { useHomeSettings } from "@/modules/home/composables/useHomeSettings"
 import { appUpdateState, applyAppUpdate, checkForAppUpdate } from "@/pwa"
+import { PREFERRED_VOCAL_TYPES } from "@/shared/stores/settings"
 
 interface SettingsSection {
   value: string
@@ -70,6 +88,7 @@ const {
   selectedLocale,
   selectedReducedVisualEffects,
   selectedHideGameUserId,
+  selectedPreferredVocalType,
   selectedShowUnreleasedContent,
   selectedBlurUnreleasedContent,
   endpointOptions,
@@ -105,8 +124,22 @@ const settingsTab = computed({
   },
 })
 const visitedSettingsTabs = ref(new Set(["preferences"]))
-const currentBuildTimeLabel = computed(() => formatBuildTime(appUpdateState.current.buildTime))
-const remoteBuildTimeLabel = computed(() => appUpdateState.remote ? formatBuildTime(appUpdateState.remote.buildTime) : null)
+const currentBuildFacts = computed<SettingsFact[]>(() => [
+  { key: "version", label: t("webLayout.footer.version"), value: appUpdateState.current.version, icon: Tag, mono: true },
+  { key: "commit", label: t("webLayout.footer.gitCommit"), value: appUpdateState.current.gitCommit, icon: GitCommitHorizontal, mono: true },
+  { key: "built", label: t("webLayout.footer.buildTime"), value: formatBuildTime(appUpdateState.current.buildTime), icon: Clock },
+])
+const remoteBuildFacts = computed<SettingsFact[]>(() => {
+  const remote = appUpdateState.remote
+  if (!remote) {
+    return []
+  }
+  return [
+    { key: "version", label: t("homeSettings.appUpdate.remoteVersion"), value: remote.version, icon: Tag, mono: true },
+    { key: "commit", label: t("homeSettings.appUpdate.remoteCommit"), value: remote.gitCommit, icon: GitCommitHorizontal, mono: true },
+    { key: "built", label: t("homeSettings.appUpdate.remoteBuildTime"), value: formatBuildTime(remote.buildTime), icon: Clock },
+  ]
+})
 
 const settingsSections = computed<SettingsSection[]>(() => [
   {
@@ -180,6 +213,23 @@ async function runUserUpdateCheck() {
   await checkForAppUpdate({ silent: true })
   userCheckFailed.value = appUpdateState.lastError !== null
 }
+
+// A failed boot-time background check is not the user's doing: it reads as
+// "not checked yet" in a neutral tone. Only a check they asked for reports
+// its failure, inline rather than as a second toast.
+const updateCheckFailed = computed(() => appUpdateState.lastError !== null && userCheckFailed.value)
+const updateStatus = computed<{ icon: Component; tone: SettingsRowTone; label: string; help: string }>(() => {
+  const help = appUpdateState.checkedAt
+    ? t("homeSettings.appUpdate.checkedAt", { time: formatBuildTime(appUpdateState.checkedAt) })
+    : t("homeSettings.appUpdate.notCheckedYet")
+  if (appUpdateState.updateAvailable) {
+    return { icon: CircleArrowUp, tone: "warning", label: t("homeSettings.appUpdate.available"), help }
+  }
+  if (updateCheckFailed.value) {
+    return { icon: CircleAlert, tone: "danger", label: t("homeSettings.appUpdate.lastError"), help }
+  }
+  return { icon: CircleCheck, tone: "success", label: t("homeSettings.appUpdate.current"), help }
+})
 </script>
 
 <template>
@@ -264,76 +314,78 @@ async function runUserUpdateCheck() {
           </nav>
           </div>
 
-          <header class="shrink-0 border-b px-4 py-3.5 sm:px-5 sm:py-4 sm:pr-14">
-            <h2 class="text-base font-semibold">{{ activeSection.label }}</h2>
-            <p class="mt-0.5 text-sm text-muted-foreground">{{ activeSection.description }}</p>
+          <header class="flex shrink-0 items-start gap-3 border-b px-4 py-3.5 sm:px-5 sm:py-4 sm:pr-14">
+            <span class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary" aria-hidden="true">
+              <component :is="activeSection.icon" class="size-4.5" />
+            </span>
+            <div class="min-w-0">
+              <h2 class="text-base font-semibold">{{ activeSection.label }}</h2>
+              <p class="mt-0.5 text-sm text-muted-foreground">{{ activeSection.description }}</p>
+            </div>
           </header>
 
           <div class="@container min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
             <div v-show="settingsTab === 'preferences'" class="space-y-5">
-              <section>
-                <h3 class="px-1 pb-2 text-[13px] font-medium text-muted-foreground">
-                  {{ t("homeSettings.groups.appearance") }}
-                </h3>
-                <div class="divide-y divide-border/60 rounded-lg border bg-muted/20">
-                  <div class="flex flex-col gap-3 px-4 py-3 @min-[28rem]:flex-row @min-[28rem]:items-center @min-[28rem]:justify-between @min-[28rem]:gap-4">
-                    <div class="min-w-0">
-                      <Label id="dialog-theme-label" for="dialog-theme" class="text-sm font-medium">{{ t("homeSettings.theme.label") }}</Label>
-                      <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.theme.help") }}</p>
-                    </div>
-                    <Select id="dialog-theme" v-model="selectedTheme">
-                      <SelectTrigger aria-labelledby="dialog-theme-label" class="w-full @min-[28rem]:w-40 @min-[28rem]:shrink-0">
-                        <SelectValue :placeholder="t('homeSettings.theme.placeholder')">
-                          <span class="truncate">{{ selectedThemeLabel }}</span>
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem v-for="opt in themeOptions" :key="opt.value" :value="opt.value">
-                          <div class="flex items-center gap-2">
-                            <component :is="opt.icon" class="size-4" />
-                            {{ opt.label }}
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div class="flex flex-col gap-3 px-4 py-3 @min-[28rem]:flex-row @min-[28rem]:items-center @min-[28rem]:justify-between @min-[28rem]:gap-4">
-                    <div class="min-w-0">
-                      <Label id="dialog-locale-label" for="dialog-locale" class="text-sm font-medium">{{ t("homeSettings.locale.label") }}</Label>
-                      <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.locale.help") }}</p>
-                    </div>
-                    <Select id="dialog-locale" v-model="selectedLocale">
-                      <SelectTrigger aria-labelledby="dialog-locale-label" class="w-full @min-[28rem]:w-40 @min-[28rem]:shrink-0">
-                        <SelectValue :placeholder="t('homeSettings.locale.placeholder')">
-                          <span class="truncate">{{ selectedLocaleLabel }}</span>
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem v-for="opt in localeOptions" :key="opt.value" :value="opt.value">
+              <SettingsGroup :title="t('homeSettings.groups.appearance')">
+                <SettingsRow
+                  :icon="SunMoon"
+                  :label="t('homeSettings.theme.label')"
+                  :help="t('homeSettings.theme.help')"
+                  label-for="dialog-theme"
+                  label-id="dialog-theme-label"
+                  stack
+                >
+                  <Select id="dialog-theme" v-model="selectedTheme" :aria-label="t('homeSettings.theme.label')">
+                    <SelectTrigger aria-labelledby="dialog-theme-label" class="w-full @min-[28rem]:w-56">
+                      <SelectValue :placeholder="t('homeSettings.theme.placeholder')">
+                        <span class="truncate">{{ selectedThemeLabel }}</span>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="opt in themeOptions" :key="opt.value" :value="opt.value">
+                        <div class="flex items-center gap-2">
+                          <component :is="opt.icon" class="size-4" />
                           {{ opt.label }}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </SettingsRow>
 
-                  <div class="flex items-center justify-between gap-4 px-4 py-3">
-                    <div class="min-w-0">
-                      <Label for="dialog-reduced-visual-effects" class="text-sm font-medium">
-                        {{ t("homeSettings.visualEffects.label") }}
-                      </Label>
-                      <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.visualEffects.help") }}</p>
-                    </div>
-                    <Switch id="dialog-reduced-visual-effects" v-model="selectedReducedVisualEffects" class="shrink-0" />
-                  </div>
-                </div>
-              </section>
+                <SettingsRow
+                  :icon="Languages"
+                  :label="t('homeSettings.locale.label')"
+                  :help="t('homeSettings.locale.help')"
+                  label-for="dialog-locale"
+                  label-id="dialog-locale-label"
+                  stack
+                >
+                  <Select id="dialog-locale" v-model="selectedLocale" :aria-label="t('homeSettings.locale.label')">
+                    <SelectTrigger aria-labelledby="dialog-locale-label" class="w-full @min-[28rem]:w-56">
+                      <SelectValue :placeholder="t('homeSettings.locale.placeholder')">
+                        <span class="truncate">{{ selectedLocaleLabel }}</span>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="opt in localeOptions" :key="opt.value" :value="opt.value">
+                        {{ opt.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </SettingsRow>
 
-              <section>
-                <div class="flex items-center justify-between gap-3 px-1 pb-2">
-                  <h3 class="text-[13px] font-medium text-muted-foreground">
-                    {{ t("homeSettings.groups.network") }}
-                  </h3>
+                <SettingsRow
+                  :icon="Gauge"
+                  :label="t('homeSettings.visualEffects.label')"
+                  :help="t('homeSettings.visualEffects.help')"
+                  label-for="dialog-reduced-visual-effects"
+                >
+                  <Switch id="dialog-reduced-visual-effects" v-model="selectedReducedVisualEffects" />
+                </SettingsRow>
+              </SettingsGroup>
+
+              <SettingsGroup :title="t('homeSettings.groups.network')">
+                <template #action>
                   <button
                     type="button"
                     class="flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-50 pointer-coarse:min-h-10 pointer-coarse:px-2.5"
@@ -343,216 +395,202 @@ async function runUserUpdateCheck() {
                     <RefreshCw :class="['size-3.5', latencyChecking ? 'animate-spin' : '']" />
                     {{ t("homeSettings.endpoint.refreshLatency") }}
                   </button>
-                </div>
-                <div class="divide-y divide-border/60 rounded-lg border bg-muted/20">
-                  <div class="flex flex-col gap-3 px-4 py-3 @min-[28rem]:flex-row @min-[28rem]:items-center @min-[28rem]:justify-between @min-[28rem]:gap-4">
-                    <div class="min-w-0">
-                      <Label id="dialog-endpoint-label" for="dialog-endpoint" class="text-sm font-medium">{{ t("homeSettings.endpoint.label") }}</Label>
-                      <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.endpoint.help") }}</p>
-                      <p v-if="endpointUnavailable" class="mt-0.5 text-xs text-destructive">
-                        {{ t("homeSettings.endpoint.unavailable") }}
-                      </p>
-                    </div>
-                    <Select id="dialog-endpoint" v-model="selectedEndpoint" :disabled="endpointSelectionDisabled || endpointUnavailable">
-                      <SelectTrigger aria-labelledby="dialog-endpoint-label" class="w-full @min-[28rem]:w-56 @min-[28rem]:shrink-0">
-                        <SelectValue :placeholder="t('homeSettings.endpoint.placeholder')">
-                          <span class="truncate">{{ selectedEndpointLabel }}</span>
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem v-for="opt in endpointOptions" :key="opt.value" :value="opt.value">
-                          <div class="flex w-full min-w-0 items-center justify-between gap-3">
-                            <div class="flex min-w-0 items-center gap-2">
-                              <component :is="opt.icon" class="size-4 shrink-0" />
-                              <span class="truncate">{{ opt.label }}</span>
-                            </div>
-                            <span
-                              :class="[
-                                'shrink-0 rounded-md border px-2 py-0.5 text-xs font-medium',
-                                latencyTagClass(opt.latencyStatus),
-                              ]"
-                            >
-                              {{ opt.latencyLabel }}
-                            </span>
+                </template>
+
+                <SettingsRow
+                  :icon="Server"
+                  :label="t('homeSettings.endpoint.label')"
+                  :help="t('homeSettings.endpoint.help')"
+                  label-for="dialog-endpoint"
+                  label-id="dialog-endpoint-label"
+                  stack
+                >
+                  <template v-if="endpointUnavailable" #note>
+                    <p class="mt-0.5 text-xs text-destructive">{{ t("homeSettings.endpoint.unavailable") }}</p>
+                  </template>
+                  <Select id="dialog-endpoint" v-model="selectedEndpoint" :aria-label="t('homeSettings.endpoint.label')" :disabled="endpointSelectionDisabled || endpointUnavailable">
+                    <SelectTrigger aria-labelledby="dialog-endpoint-label" class="w-full @min-[28rem]:w-56">
+                      <SelectValue :placeholder="t('homeSettings.endpoint.placeholder')">
+                        <span class="truncate">{{ selectedEndpointLabel }}</span>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="opt in endpointOptions" :key="opt.value" :value="opt.value">
+                        <div class="flex w-full min-w-0 items-center justify-between gap-3">
+                          <div class="flex min-w-0 items-center gap-2">
+                            <component :is="opt.icon" class="size-4 shrink-0" />
+                            <span class="truncate">{{ opt.label }}</span>
                           </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                          <span
+                            :class="[
+                              'shrink-0 rounded-md border px-2 py-0.5 text-xs font-medium',
+                              latencyTagClass(opt.latencyStatus),
+                            ]"
+                          >
+                            {{ opt.latencyLabel }}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </SettingsRow>
 
-                  <div class="flex flex-col gap-3 px-4 py-3 @min-[28rem]:flex-row @min-[28rem]:items-center @min-[28rem]:justify-between @min-[28rem]:gap-4">
-                    <div class="min-w-0">
-                      <Label id="dialog-asset-endpoint-label" for="dialog-asset-endpoint" class="text-sm font-medium">{{ t("homeSettings.assetEndpoint.label") }}</Label>
-                      <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.assetEndpoint.help") }}</p>
-                    </div>
-                    <Select id="dialog-asset-endpoint" v-model="selectedAssetEndpoint">
-                      <SelectTrigger aria-labelledby="dialog-asset-endpoint-label" class="w-full @min-[28rem]:w-56 @min-[28rem]:shrink-0">
-                        <SelectValue :placeholder="t('homeSettings.assetEndpoint.placeholder')">
-                          <span class="truncate">{{ selectedAssetEndpointLabel }}</span>
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem v-for="opt in assetEndpointOptions" :key="opt.value" :value="opt.value">
-                          <div class="flex w-full min-w-0 items-center justify-between gap-3">
-                            <div class="flex min-w-0 items-center gap-2">
-                              <component :is="opt.icon" class="size-4 shrink-0" />
-                              <span class="truncate">{{ opt.label }}</span>
-                            </div>
-                            <span
-                              :class="[
-                                'shrink-0 rounded-md border px-2 py-0.5 text-xs font-medium',
-                                latencyTagClass(opt.latencyStatus),
-                              ]"
-                            >
-                              {{ opt.latencyLabel }}
-                            </span>
+                <SettingsRow
+                  :icon="Package"
+                  :label="t('homeSettings.assetEndpoint.label')"
+                  :help="t('homeSettings.assetEndpoint.help')"
+                  label-for="dialog-asset-endpoint"
+                  label-id="dialog-asset-endpoint-label"
+                  stack
+                >
+                  <Select id="dialog-asset-endpoint" v-model="selectedAssetEndpoint" :aria-label="t('homeSettings.assetEndpoint.label')">
+                    <SelectTrigger aria-labelledby="dialog-asset-endpoint-label" class="w-full @min-[28rem]:w-56">
+                      <SelectValue :placeholder="t('homeSettings.assetEndpoint.placeholder')">
+                        <span class="truncate">{{ selectedAssetEndpointLabel }}</span>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="opt in assetEndpointOptions" :key="opt.value" :value="opt.value">
+                        <div class="flex w-full min-w-0 items-center justify-between gap-3">
+                          <div class="flex min-w-0 items-center gap-2">
+                            <component :is="opt.icon" class="size-4 shrink-0" />
+                            <span class="truncate">{{ opt.label }}</span>
                           </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </section>
+                          <span
+                            :class="[
+                              'shrink-0 rounded-md border px-2 py-0.5 text-xs font-medium',
+                              latencyTagClass(opt.latencyStatus),
+                            ]"
+                          >
+                            {{ opt.latencyLabel }}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </SettingsRow>
+              </SettingsGroup>
 
-              <section>
-                <h3 class="px-1 pb-2 text-[13px] font-medium text-muted-foreground">
-                  {{ t("homeSettings.groups.privacy") }}
-                </h3>
-                <div class="divide-y divide-border/60 rounded-lg border bg-muted/20">
-                  <div class="flex items-center justify-between gap-4 px-4 py-3">
-                    <div class="min-w-0">
-                      <Label for="dialog-hide-game-user-id" class="text-sm font-medium">
-                        {{ t("homeSettings.privacy.hideGameUserIdLabel") }}
-                      </Label>
-                      <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.privacy.hideGameUserIdHelp") }}</p>
-                    </div>
-                    <Switch id="dialog-hide-game-user-id" v-model="selectedHideGameUserId" class="shrink-0" />
-                  </div>
+              <SettingsGroup :title="t('homeSettings.groups.privacy')">
+                <SettingsRow
+                  :icon="EyeOff"
+                  :label="t('homeSettings.privacy.hideGameUserIdLabel')"
+                  :help="t('homeSettings.privacy.hideGameUserIdHelp')"
+                  label-for="dialog-hide-game-user-id"
+                >
+                  <Switch id="dialog-hide-game-user-id" v-model="selectedHideGameUserId" />
+                </SettingsRow>
 
-                  <div class="flex items-center justify-between gap-4 px-4 py-3">
-                    <div class="min-w-0">
-                      <Label for="dialog-show-unreleased-content" class="text-sm font-medium">
-                        {{ t("homeSettings.unreleased.showLabel") }}
-                      </Label>
-                      <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.unreleased.showHelp") }}</p>
-                    </div>
-                    <Switch id="dialog-show-unreleased-content" v-model="selectedShowUnreleasedContent" class="shrink-0" />
-                  </div>
+                <SettingsRow
+                  :icon="CalendarClock"
+                  :label="t('homeSettings.unreleased.showLabel')"
+                  :help="t('homeSettings.unreleased.showHelp')"
+                  label-for="dialog-show-unreleased-content"
+                >
+                  <Switch id="dialog-show-unreleased-content" v-model="selectedShowUnreleasedContent" />
+                </SettingsRow>
 
-                  <div
-                    class="flex items-center justify-between gap-4 px-4 py-3"
-                    :class="selectedShowUnreleasedContent ? '' : 'opacity-50'"
-                  >
-                    <div class="min-w-0">
-                      <Label for="dialog-blur-unreleased-content" class="text-sm font-medium">
-                        {{ t("homeSettings.unreleased.blurLabel") }}
-                      </Label>
-                      <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.unreleased.blurHelp") }}</p>
-                    </div>
-                    <Switch
-                      id="dialog-blur-unreleased-content"
-                      v-model="selectedBlurUnreleasedContent"
-                      :disabled="!selectedShowUnreleasedContent"
-                      class="shrink-0"
-                    />
-                  </div>
-                </div>
-              </section>
+                <SettingsRow
+                  :icon="Droplets"
+                  :label="t('homeSettings.unreleased.blurLabel')"
+                  :help="t('homeSettings.unreleased.blurHelp')"
+                  label-for="dialog-blur-unreleased-content"
+                  :dimmed="!selectedShowUnreleasedContent"
+                >
+                  <Switch
+                    id="dialog-blur-unreleased-content"
+                    v-model="selectedBlurUnreleasedContent"
+                    :disabled="!selectedShowUnreleasedContent"
+                  />
+                </SettingsRow>
+              </SettingsGroup>
 
-              <div class="flex justify-end pt-1">
-                <AlertDialog>
-                  <AlertDialogTrigger as-child>
-                    <Button type="button" variant="outline" size="sm" class="text-destructive hover:text-destructive">
-                      <RotateCcw class="size-4" />
-                      {{ t("common.reset") }}
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>{{ t("homeSettings.resetDialog.title") }}</AlertDialogTitle>
-                      <AlertDialogDescription>{{ t("homeSettings.resetDialog.description") }}</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>{{ t("common.cancel") }}</AlertDialogCancel>
-                      <AlertDialogAction class="bg-destructive text-white hover:bg-destructive/90" @click="resetSettings">
-                        {{ t("homeSettings.resetDialog.confirm") }}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
+              <SettingsGroup :title="t('homeSettings.groups.music')">
+                <SettingsRow
+                  :icon="MicVocal"
+                  :label="t('homeSettings.music.preferredVocal.label')"
+                  :help="t('homeSettings.music.preferredVocal.help')"
+                  label-for="dialog-preferred-vocal"
+                  label-id="dialog-preferred-vocal-label"
+                  stack
+                >
+                  <Select id="dialog-preferred-vocal" v-model="selectedPreferredVocalType" :aria-label="t('homeSettings.music.preferredVocal.label')">
+                    <SelectTrigger aria-labelledby="dialog-preferred-vocal-label" class="w-full @min-[28rem]:w-56">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="option in PREFERRED_VOCAL_TYPES" :key="option" :value="option">
+                        {{ t(`homeSettings.music.preferredVocal.options.${option}`) }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </SettingsRow>
+              </SettingsGroup>
+
+              <SettingsGroup :title="t('homeSettings.groups.reset')">
+                <SettingsRow
+                  :icon="RotateCcw"
+                  :label="t('homeSettings.reset.label')"
+                  :help="t('homeSettings.resetDialog.description')"
+                >
+                  <AlertDialog>
+                    <AlertDialogTrigger as-child>
+                      <Button type="button" variant="outline" size="sm" class="text-destructive hover:text-destructive">
+                        <RotateCcw class="size-3.5" />
+                        {{ t("common.reset") }}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{{ t("homeSettings.resetDialog.title") }}</AlertDialogTitle>
+                        <AlertDialogDescription>{{ t("homeSettings.resetDialog.description") }}</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>{{ t("common.cancel") }}</AlertDialogCancel>
+                        <AlertDialogAction class="bg-destructive text-white hover:bg-destructive/90" @click="resetSettings">
+                          {{ t("homeSettings.resetDialog.confirm") }}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </SettingsRow>
+              </SettingsGroup>
             </div>
 
-            <div v-show="settingsTab === 'app'">
-              <section class="grid gap-4 rounded-lg border bg-muted/20 p-4">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <span
-                    :class="[
-                      'inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-xs font-medium',
-                      appUpdateState.updateAvailable
-                        ? 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200'
-                        : 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200',
-                    ]"
+            <div v-show="settingsTab === 'app'" class="space-y-5">
+              <SettingsGroup :title="t('homeSettings.appUpdate.installedTitle')">
+                <SettingsFacts :items="currentBuildFacts" />
+              </SettingsGroup>
+
+              <SettingsGroup :title="t('homeSettings.appUpdate.title')">
+                <SettingsRow
+                  :icon="updateStatus.icon"
+                  :tone="updateStatus.tone"
+                  :label="updateStatus.label"
+                  :help="updateStatus.help"
+                  data-testid="settings-update-status"
+                >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    :disabled="appUpdateState.checking || appUpdateState.applying"
+                    @click="runUserUpdateCheck"
                   >
-                    {{ appUpdateState.updateAvailable ? t("homeSettings.appUpdate.available") : t("homeSettings.appUpdate.current") }}
-                  </span>
-                  <span v-if="appUpdateState.checkedAt" class="text-xs text-muted-foreground">
-                    {{ t("homeSettings.appUpdate.checkedAt", { time: formatBuildTime(appUpdateState.checkedAt) }) }}
-                  </span>
-                </div>
-
-                <div class="grid gap-3 md:grid-cols-3">
-                  <div class="rounded-md border border-border/70 bg-background/60 p-3">
-                    <p class="text-xs text-muted-foreground">{{ t("webLayout.footer.version") }}</p>
-                    <p class="mt-1 font-mono text-sm font-medium">{{ appUpdateState.current.version }}</p>
-                  </div>
-                  <div class="rounded-md border border-border/70 bg-background/60 p-3">
-                    <p class="text-xs text-muted-foreground">{{ t("webLayout.footer.gitCommit") }}</p>
-                    <p class="mt-1 font-mono text-sm font-medium">{{ appUpdateState.current.gitCommit }}</p>
-                  </div>
-                  <div class="rounded-md border border-border/70 bg-background/60 p-3">
-                    <p class="text-xs text-muted-foreground">{{ t("webLayout.footer.buildTime") }}</p>
-                    <p class="mt-1 text-sm font-medium">{{ currentBuildTimeLabel }}</p>
-                  </div>
-                </div>
-
-                <div v-if="appUpdateState.remote" class="grid gap-3 rounded-md border border-dashed bg-background/40 p-3 md:grid-cols-3">
-                  <div>
-                    <p class="text-xs text-muted-foreground">{{ t("homeSettings.appUpdate.remoteVersion") }}</p>
-                    <p class="mt-1 font-mono text-sm font-medium">{{ appUpdateState.remote.version }}</p>
-                  </div>
-                  <div>
-                    <p class="text-xs text-muted-foreground">{{ t("homeSettings.appUpdate.remoteCommit") }}</p>
-                    <p class="mt-1 font-mono text-sm font-medium">{{ appUpdateState.remote.gitCommit }}</p>
-                  </div>
-                  <div>
-                    <p class="text-xs text-muted-foreground">{{ t("homeSettings.appUpdate.remoteBuildTime") }}</p>
-                    <p class="mt-1 text-sm font-medium">{{ remoteBuildTimeLabel }}</p>
-                  </div>
-                </div>
-
-                <!-- A failed boot-time background check is not the user's doing:
-                     say "not checked yet" in neutral tone; only a check they
-                     asked for reports its failure, and inline rather than as
-                     a second toast. -->
-                <p v-if="appUpdateState.lastError && userCheckFailed" class="text-xs text-destructive" role="alert">
-                  {{ t("homeSettings.appUpdate.lastError") }}
-                </p>
-                <p v-else-if="!appUpdateState.checkedAt && !appUpdateState.checking" class="text-xs text-muted-foreground">
-                  {{ t("homeSettings.appUpdate.notCheckedYet") }}
-                </p>
-
-                <div class="grid gap-2 sm:grid-cols-2">
-                  <Button type="button" variant="outline" :disabled="appUpdateState.checking || appUpdateState.applying" @click="runUserUpdateCheck">
-                    <RefreshCw :class="['size-4', appUpdateState.checking ? 'animate-spin' : '']" />
+                    <RefreshCw :class="['size-3.5', appUpdateState.checking ? 'animate-spin' : '']" />
                     {{ appUpdateState.checking ? t("homeSettings.appUpdate.checking") : t("homeSettings.appUpdate.check") }}
                   </Button>
-                  <Button type="button" :disabled="!appUpdateState.updateAvailable || appUpdateState.applying" @click="applyAppUpdate">
-                    <Download :class="['size-4', appUpdateState.applying ? 'animate-pulse' : '']" />
+                </SettingsRow>
+
+                <SettingsFacts v-if="remoteBuildFacts.length" :items="remoteBuildFacts" />
+
+                <template v-if="appUpdateState.updateAvailable || appUpdateState.applying" #footer>
+                  <Button type="button" size="sm" :disabled="appUpdateState.applying" @click="applyAppUpdate">
+                    <Download :class="['size-3.5', appUpdateState.applying ? 'animate-pulse' : '']" />
                     {{ appUpdateState.applying ? t("homeSettings.appUpdate.updating") : t("homeSettings.appUpdate.update") }}
                   </Button>
-                </div>
-              </section>
+                </template>
+              </SettingsGroup>
             </div>
 
             <div v-if="hasVisitedSettingsTab('sekai-data')" v-show="settingsTab === 'sekai-data'">

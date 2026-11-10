@@ -68,10 +68,6 @@ export default {
         "title": "Power",
         "hint": "Base power, without area items, titles or character-rank bonuses.",
         "noData": "No power data",
-        "total": "Total",
-        "perf": "Performance",
-        "tech": "Technique",
-        "stam": "Stamina",
         "level": "Level",
         "trained": "Special training",
         "episodes": "Side story",
@@ -177,6 +173,8 @@ export default {
       "title": "Related gachas",
       "empty": "No related gachas found.",
       "count": "{count} gachas",
+      "showMore": "{count} more",
+      "showLess": "Show fewer",
       "byPickup": "Gachas whose pickup cards include an event card",
       "byPeriod": "Gachas whose run overlaps the event period (±3 days)"
     },
@@ -248,6 +246,9 @@ export default {
     },
     "detail": {
       "pickupCards": "Pickup characters' cards",
+      "period": "Availability",
+      "startAt": "Starts",
+      "endAt": "Ends",
       "permanentHint": "Permanent gacha with no end date.",
       "lightbox": {
         "banner": "Banner",

@@ -9,6 +9,7 @@ import {
   Dices,
   Globe,
   Info,
+  KeyRound,
   Link2,
   Loader2,
   Lock,
@@ -18,14 +19,16 @@ import {
   RefreshCw,
   Repeat,
   ScanSearch,
-  ServerCog,
   ShieldCheck,
   Smartphone,
   User,
 } from "lucide-vue-next"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import UploadPanelHeader from "@/modules/tools/components/upload/UploadPanelHeader.vue"
+import UploadStep from "@/modules/tools/components/upload/UploadStep.vue"
+import { Separator } from "@/components/ui/separator"
 import { Input, InputWithToggle } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -168,11 +171,7 @@ watch(
   <template v-if="!userStore.isLoggedIn">
     <Card data-testid="inherit-login-required">
       <CardHeader>
-        <CardTitle class="flex items-center gap-2">
-          <ServerCog class="h-6 w-6" />
-          {{ t("tools.uploadData.inheritTab.title") }}
-        </CardTitle>
-        <CardDescription>{{ t("tools.uploadData.inheritTab.loginRequired.description") }}</CardDescription>
+        <UploadPanelHeader :icon="KeyRound" :title="t('tools.uploadData.inheritTab.title')" :description="t('tools.uploadData.inheritTab.loginRequired.description')" />
       </CardHeader>
       <CardFooter class="justify-end">
         <Button as-child>
@@ -239,171 +238,203 @@ watch(
 
       <Card>
         <CardHeader>
-          <CardTitle class="flex items-center gap-2">
-            <ServerCog class="h-6 w-6" />
-            {{ t("tools.uploadData.inheritTab.title") }}
-          </CardTitle>
-          <CardDescription>{{ t("tools.uploadData.inheritTab.description") }}</CardDescription>
+          <UploadPanelHeader :icon="KeyRound" :title="t('tools.uploadData.inheritTab.title')" :description="t('tools.uploadData.inheritTab.description')" />
         </CardHeader>
-        <CardContent class="space-y-4">
-          <ul class="space-y-2 rounded-lg border bg-muted/20 p-3 text-xs text-muted-foreground" data-testid="inherit-prep-notes">
-            <li class="flex items-start gap-2">
-              <Link2 class="mt-px size-3.5 shrink-0" aria-hidden="true" />
-              <span class="min-w-0">
-                {{ t("tools.uploadData.inheritTab.prep.bind") }}
-                <RouterLink :to="{ name: 'user.gameAccountBindings' }" :class="['ms-1 font-medium text-primary underline-offset-4 hover:underline', touchLinkClass]">
-                  {{ t("tools.uploadData.inheritTab.prep.bindLink") }}
-                </RouterLink>
-              </span>
-            </li>
-            <li class="flex items-start gap-2" data-testid="inherit-platform-link-tip">
-              <ShieldCheck class="mt-px size-3.5 shrink-0" aria-hidden="true" />
-              <span class="min-w-0">{{ t("tools.uploadData.inheritTab.prep.platformLink") }}</span>
-            </li>
-          </ul>
-          <form id="upload-data-inherit-form" novalidate @submit.prevent="submit">
-            <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
-              <div class="flex min-w-0 flex-col space-y-1.5">
-                <Label :for="INHERIT_FIELD_IDS.inheritId">{{ t("tools.uploadData.inheritTab.fields.inheritId") }}</Label>
-                <div class="relative min-w-0 w-full items-center">
-                  <Input
-                    :id="INHERIT_FIELD_IDS.inheritId"
-                    v-model="form.inheritId.value"
-                    class="pl-10"
+        <CardContent class="@container space-y-6">
+          <UploadStep :step="1" :title="t('tools.uploadData.inheritTab.steps.prep.title')" :description="t('tools.uploadData.inheritTab.steps.prep.description')">
+            <ul class="space-y-2 rounded-lg border bg-muted/20 p-3 text-xs text-muted-foreground" data-testid="inherit-prep-notes">
+              <li class="flex items-start gap-2">
+                <Link2 class="mt-px size-3.5 shrink-0" aria-hidden="true" />
+                <span class="min-w-0">
+                  {{ t("tools.uploadData.inheritTab.prep.bind") }}
+                  <RouterLink :to="{ name: 'user.gameAccountBindings' }" :class="['ms-1 font-medium text-primary underline-offset-4 hover:underline', touchLinkClass]">
+                    {{ t("tools.uploadData.inheritTab.prep.bindLink") }}
+                  </RouterLink>
+                </span>
+              </li>
+              <li class="flex items-start gap-2" data-testid="inherit-platform-link-tip">
+                <ShieldCheck class="mt-px size-3.5 shrink-0" aria-hidden="true" />
+                <span class="min-w-0">{{ t("tools.uploadData.inheritTab.prep.platformLink") }}</span>
+              </li>
+            </ul>
+          </UploadStep>
+
+          <Separator />
+
+          <form id="upload-data-inherit-form" class="space-y-6" novalidate @submit.prevent="submit">
+            <UploadStep :step="2" :title="t('tools.uploadData.inheritTab.steps.target.title')" :description="t('tools.uploadData.inheritTab.steps.target.description')">
+              <div class="grid min-w-0 grid-cols-1 gap-4 @min-[30rem]:grid-cols-2">
+                <div class="flex min-w-0 flex-col space-y-1.5">
+                  <Label for="inherit-server-select">{{ t("tools.uploadData.inheritTab.fields.server") }}</Label>
+                  <div class="relative min-w-0 w-full items-center">
+                    <Select :key="locale" id="inherit-server-select" :model-value="form.server.value" @update:model-value="handleServerChange">
+                      <SelectTrigger class="w-full pl-10">
+                        <SelectValue :placeholder="t('tools.uploadData.inheritTab.fields.serverPlaceholder')" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="jp">{{ t("tools.uploadData.region.jp") }}</SelectItem>
+                        <SelectItem value="en">{{ t("tools.uploadData.region.en") }}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2 pointer-events-none">
+                      <Globe class="size-4 text-muted-foreground" />
+                    </span>
+                  </div>
+                </div>
+                <div class="flex min-w-0 flex-col space-y-1.5">
+                  <Label for="inherit-data-type-select">{{ t("tools.uploadData.inheritTab.fields.dataType") }}</Label>
+                  <div class="relative min-w-0 w-full items-center">
+                    <Select :key="locale" id="inherit-data-type-select" :model-value="form.dataType.value" @update:model-value="handleDataTypeChange">
+                      <SelectTrigger class="w-full pl-10">
+                        <SelectValue :placeholder="t('tools.uploadData.inheritTab.fields.dataTypePlaceholder')" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="suite">{{ t("tools.uploadData.dataTypes.suite") }}</SelectItem>
+                        <SelectItem v-if="canShowMySekaiDataType" value="mysekai">
+                          {{ t("tools.uploadData.dataTypes.mysekai") }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2 pointer-events-none">
+                      <Database class="size-4 text-muted-foreground" />
+                    </span>
+                  </div>
+                  <p v-if="!canShowMySekaiDataType" class="text-xs text-muted-foreground" data-testid="inherit-mysekai-qq-note">
+                    {{ t("tools.uploadData.inheritTab.prep.mysekaiQQ") }}
+                    <RouterLink :to="{ name: 'user.harukiBotAuthorization' }" :class="['ms-1 font-medium text-primary underline-offset-4 hover:underline', touchLinkClass]">
+                      {{ t("tools.uploadData.inheritTab.prep.mysekaiQQLink") }}
+                    </RouterLink>
+                  </p>
+                </div>
+              </div>
+            </UploadStep>
+
+            <Separator />
+
+            <UploadStep :step="3" :title="t('tools.uploadData.inheritTab.steps.code.title')" :description="t('tools.uploadData.inheritTab.steps.code.description')">
+              <!-- Two ways to give the same thing: type both fields, or paste the block the game copies. -->
+              <div class="grid min-w-0 grid-cols-1 gap-x-4 gap-y-3 @min-[36rem]:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+                <div
+                  :class="['flex min-w-0 flex-col gap-4 transition-opacity', form.usesPastedText.value ? 'opacity-50' : '']"
+                  data-testid="inherit-manual-fields"
+                >
+                  <div class="flex min-w-0 flex-col space-y-1.5">
+                    <Label :for="INHERIT_FIELD_IDS.inheritId">{{ t("tools.uploadData.inheritTab.fields.inheritId") }}</Label>
+                    <div class="relative min-w-0 w-full items-center">
+                      <Input
+                        :id="INHERIT_FIELD_IDS.inheritId"
+                        v-model="form.inheritId.value"
+                        class="pl-10"
+                        autocomplete="off"
+                        autocapitalize="off"
+                        spellcheck="false"
+                        :placeholder="t('tools.uploadData.inheritTab.fields.inheritIdPlaceholder')"
+                        :aria-invalid="form.fieldErrors.inheritId ? 'true' : undefined"
+                        :aria-describedby="form.fieldErrors.inheritId ? ERROR_IDS.inheritId : undefined"
+                        @update:model-value="form.clearFieldError('inheritId')"
+                      />
+                      <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                        <User class="size-4 text-muted-foreground" />
+                      </span>
+                    </div>
+                    <FieldError :id="ERROR_IDS.inheritId" :message="form.fieldErrors.inheritId" />
+                  </div>
+                  <div class="flex min-w-0 flex-col space-y-1.5">
+                    <Label :for="INHERIT_FIELD_IDS.inheritPassword">{{ t("tools.uploadData.inheritTab.fields.inheritPassword") }}</Label>
+                    <div class="relative min-w-0 w-full items-center">
+                      <InputWithToggle
+                        :id="INHERIT_FIELD_IDS.inheritPassword"
+                        v-model="form.inheritPassword.value"
+                        type="password"
+                        class="w-full pl-10"
+                        autocomplete="off"
+                        :placeholder="t('tools.uploadData.inheritTab.fields.inheritPasswordPlaceholder')"
+                        :aria-invalid="form.fieldErrors.inheritPassword ? 'true' : undefined"
+                        :aria-describedby="form.fieldErrors.inheritPassword ? ERROR_IDS.inheritPassword : undefined"
+                        @update:model-value="form.clearFieldError('inheritPassword')"
+                      />
+                      <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                        <Lock class="size-4 text-muted-foreground" />
+                      </span>
+                    </div>
+                    <FieldError :id="ERROR_IDS.inheritPassword" :message="form.fieldErrors.inheritPassword" />
+                  </div>
+                </div>
+                <div
+                  class="flex items-center gap-3 text-xs font-medium text-muted-foreground @min-[36rem]:flex-col"
+                  aria-hidden="true"
+                >
+                  <span class="h-px flex-1 bg-border @min-[36rem]:h-auto @min-[36rem]:w-px" />
+                  {{ t("tools.uploadData.inheritTab.paste.or") }}
+                  <span class="h-px flex-1 bg-border @min-[36rem]:h-auto @min-[36rem]:w-px" />
+                </div>
+                <div class="flex min-w-0 flex-col space-y-1.5">
+                  <Label :for="INHERIT_FIELD_IDS.inheritText">{{ t("tools.uploadData.inheritTab.paste.label") }}</Label>
+                  <textarea
+                    :id="INHERIT_FIELD_IDS.inheritText"
+                    v-model="form.inheritText.value"
+                    rows="4"
                     autocomplete="off"
                     autocapitalize="off"
                     spellcheck="false"
-                    :placeholder="t('tools.uploadData.inheritTab.fields.inheritIdPlaceholder')"
-                    :aria-invalid="form.fieldErrors.inheritId ? 'true' : undefined"
-                    :aria-describedby="form.fieldErrors.inheritId ? ERROR_IDS.inheritId : undefined"
-                    @update:model-value="form.clearFieldError('inheritId')"
+                    :placeholder="t('tools.uploadData.inheritTab.paste.placeholder')"
+                    :aria-invalid="form.fieldErrors.inheritText ? 'true' : undefined"
+                    :aria-describedby="form.fieldErrors.inheritText ? ERROR_IDS.inheritText : undefined"
+                    class="flex min-h-28 w-full flex-1 resize-y rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:bg-input/30 dark:aria-invalid:ring-destructive/40 md:text-sm"
+                    @input="form.clearFieldError('inheritText')"
                   />
-                  <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                    <User class="size-4 text-muted-foreground" />
-                  </span>
-                </div>
-                <FieldError :id="ERROR_IDS.inheritId" :message="form.fieldErrors.inheritId" />
-              </div>
-              <div class="flex min-w-0 flex-col space-y-1.5">
-                <Label :for="INHERIT_FIELD_IDS.inheritPassword">{{ t("tools.uploadData.inheritTab.fields.inheritPassword") }}</Label>
-                <div class="relative min-w-0 w-full items-center">
-                  <InputWithToggle
-                    :id="INHERIT_FIELD_IDS.inheritPassword"
-                    v-model="form.inheritPassword.value"
-                    type="password"
-                    class="w-full pl-10"
-                    autocomplete="off"
-                    :placeholder="t('tools.uploadData.inheritTab.fields.inheritPasswordPlaceholder')"
-                    :aria-invalid="form.fieldErrors.inheritPassword ? 'true' : undefined"
-                    :aria-describedby="form.fieldErrors.inheritPassword ? ERROR_IDS.inheritPassword : undefined"
-                    @update:model-value="form.clearFieldError('inheritPassword')"
-                  />
-                  <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                    <Lock class="size-4 text-muted-foreground" />
-                  </span>
-                </div>
-                <FieldError :id="ERROR_IDS.inheritPassword" :message="form.fieldErrors.inheritPassword" />
-              </div>
-              <div class="flex min-w-0 flex-col space-y-1.5 sm:col-span-2">
-                <Label :for="INHERIT_FIELD_IDS.inheritText">{{ t("tools.uploadData.inheritTab.paste.label") }}</Label>
-                <textarea
-                  :id="INHERIT_FIELD_IDS.inheritText"
-                  v-model="form.inheritText.value"
-                  rows="4"
-                  autocomplete="off"
-                  autocapitalize="off"
-                  spellcheck="false"
-                  :placeholder="t('tools.uploadData.inheritTab.paste.placeholder')"
-                  :aria-invalid="form.fieldErrors.inheritText ? 'true' : undefined"
-                  :aria-describedby="form.fieldErrors.inheritText ? ERROR_IDS.inheritText : undefined"
-                  class="flex min-h-28 w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:bg-input/30 dark:aria-invalid:ring-destructive/40 md:text-sm"
-                  @input="form.clearFieldError('inheritText')"
-                />
-                <FieldError :id="ERROR_IDS.inheritText" :message="form.fieldErrors.inheritText" />
-              </div>
-              <div class="flex min-w-0 flex-col space-y-1.5">
-                <Label for="inherit-server-select">{{ t("tools.uploadData.inheritTab.fields.server") }}</Label>
-                <div class="relative min-w-0 w-full items-center">
-                  <Select :key="locale" id="inherit-server-select" :model-value="form.server.value" @update:model-value="handleServerChange">
-                    <SelectTrigger class="w-full pl-10">
-                      <SelectValue :placeholder="t('tools.uploadData.inheritTab.fields.serverPlaceholder')" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="jp">{{ t("tools.uploadData.region.jp") }}</SelectItem>
-                      <SelectItem value="en">{{ t("tools.uploadData.region.en") }}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2 pointer-events-none">
-                    <Globe class="size-4 text-muted-foreground" />
-                  </span>
+                  <FieldError :id="ERROR_IDS.inheritText" :message="form.fieldErrors.inheritText" />
                 </div>
               </div>
-              <div class="flex min-w-0 flex-col space-y-1.5">
-                <Label for="inherit-data-type-select">{{ t("tools.uploadData.inheritTab.fields.dataType") }}</Label>
-                <div class="relative min-w-0 w-full items-center">
-                  <Select :key="locale" id="inherit-data-type-select" :model-value="form.dataType.value" @update:model-value="handleDataTypeChange">
-                    <SelectTrigger class="w-full pl-10">
-                      <SelectValue :placeholder="t('tools.uploadData.inheritTab.fields.dataTypePlaceholder')" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="suite">{{ t("tools.uploadData.dataTypes.suite") }}</SelectItem>
-                      <SelectItem v-if="canShowMySekaiDataType" value="mysekai">
-                        {{ t("tools.uploadData.dataTypes.mysekai") }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2 pointer-events-none">
-                    <Database class="size-4 text-muted-foreground" />
-                  </span>
-                </div>
-                <p v-if="!canShowMySekaiDataType" class="text-xs text-muted-foreground" data-testid="inherit-mysekai-qq-note">
-                  {{ t("tools.uploadData.inheritTab.prep.mysekaiQQ") }}
-                  <RouterLink :to="{ name: 'user.harukiBotAuthorization' }" :class="['ms-1 font-medium text-primary underline-offset-4 hover:underline', touchLinkClass]">
-                    {{ t("tools.uploadData.inheritTab.prep.mysekaiQQLink") }}
-                  </RouterLink>
-                </p>
-              </div>
+              <p v-if="form.usesPastedText.value" class="text-xs text-muted-foreground" data-testid="inherit-paste-overrides">
+                {{ t("tools.uploadData.inheritTab.paste.overrides") }}
+              </p>
+            </UploadStep>
 
-              <fieldset class="min-w-0 space-y-2 sm:col-span-2" data-testid="inherit-new-password-mode">
-                <legend class="mb-1.5 text-sm font-medium">{{ t("tools.uploadData.inheritTab.newPassword.label") }}</legend>
-                <div class="grid gap-2 sm:grid-cols-2">
-                  <label
-                    v-for="mode in PASSWORD_MODES"
-                    :key="mode.value"
-                    :class="[
-                      'flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors',
-                      form.newPasswordMode.value === mode.value ? 'border-primary bg-primary/5' : 'hover:bg-muted/40',
-                    ]"
-                  >
-                    <input
-                      v-model="form.newPasswordMode.value"
-                      type="radio"
-                      name="inherit-new-password-mode"
-                      :value="mode.value"
-                      class="mt-1 accent-primary"
-                      @change="form.clearFieldError(form.usesPastedText.value ? 'inheritText' : 'inheritPassword')"
+            <Separator />
+
+            <UploadStep :step="4" :title="t('tools.uploadData.inheritTab.steps.newPassword.title')" :description="t('tools.uploadData.inheritTab.steps.newPassword.description')">
+                <fieldset class="min-w-0 space-y-2" data-testid="inherit-new-password-mode">
+                  <legend class="sr-only">{{ t("tools.uploadData.inheritTab.newPassword.label") }}</legend>
+                  <div class="grid gap-2 @min-[30rem]:grid-cols-2">
+                    <label
+                      v-for="mode in PASSWORD_MODES"
+                      :key="mode.value"
+                      :class="[
+                        'flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 transition-colors has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/50',
+                        form.newPasswordMode.value === mode.value ? 'border-primary bg-primary/5' : 'bg-muted/20 hover:bg-muted/50',
+                      ]"
                     >
-                    <span class="min-w-0 space-y-0.5">
-                      <span class="flex items-center gap-1.5 text-sm font-medium">
-                        <component :is="mode.icon" class="size-4 text-muted-foreground" />
-                        {{ t(`tools.uploadData.inheritTab.newPassword.${mode.value}`) }}
+                      <input
+                        v-model="form.newPasswordMode.value"
+                        type="radio"
+                        name="inherit-new-password-mode"
+                        :value="mode.value"
+                        class="mt-0.5 size-4 shrink-0 accent-primary"
+                        @change="form.clearFieldError(form.usesPastedText.value ? 'inheritText' : 'inheritPassword')"
+                      >
+                      <span class="min-w-0 space-y-0.5">
+                        <span class="flex items-center gap-1.5 text-sm font-medium">
+                          <component :is="mode.icon" class="size-4 text-muted-foreground" />
+                          {{ t(`tools.uploadData.inheritTab.newPassword.${mode.value}`) }}
+                        </span>
+                        <span class="block text-xs text-muted-foreground">{{ t(`tools.uploadData.inheritTab.newPassword.${mode.value}Hint`) }}</span>
                       </span>
-                      <span class="block text-xs text-muted-foreground">{{ t(`tools.uploadData.inheritTab.newPassword.${mode.value}Hint`) }}</span>
-                    </span>
-                  </label>
-                </div>
-                <p
-                  v-if="form.newPasswordMode.value === 'reuse' && form.reuseBlocked.value"
-                  class="text-xs text-amber-700 dark:text-amber-300"
-                  data-testid="inherit-reuse-blocked"
-                >
-                  {{ t("tools.uploadData.inheritTab.newPassword.reuseBlocked") }}
-                </p>
-              </fieldset>
-            </div>
+                    </label>
+                  </div>
+                  <p
+                    v-if="form.newPasswordMode.value === 'reuse' && form.reuseBlocked.value"
+                    class="text-xs text-amber-700 dark:text-amber-300"
+                    data-testid="inherit-reuse-blocked"
+                  >
+                    {{ t("tools.uploadData.inheritTab.newPassword.reuseBlocked") }}
+                  </p>
+                </fieldset>
+            </UploadStep>
           </form>
         </CardContent>
-        <CardFooter class="flex items-center justify-end">
+        <CardFooter class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+          <p class="min-w-0 flex-1 basis-56 text-xs text-muted-foreground">{{ t("tools.uploadData.inheritTab.submitHint") }}</p>
           <Button type="submit" form="upload-data-inherit-form" :disabled="inheritJob.creating.value">
             <Loader2 v-if="inheritJob.creating.value" class="mr-2 h-4 w-4 animate-spin" />
             <ScanSearch v-else class="mr-2 h-4 w-4" />

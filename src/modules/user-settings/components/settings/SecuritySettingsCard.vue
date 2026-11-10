@@ -2,14 +2,9 @@
 import { useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
 import type { Component } from "vue"
-import {
-  Card,
-  CardTitle,
-  CardHeader,
-  CardContent,
-  CardDescription
-} from "@/components/ui/card"
-import { ChevronRight, KeyRound, Laptop2, Link2, ShieldCheck } from "lucide-vue-next"
+import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
+import SettingsLinkRow from "@/shared/components/settings/SettingsLinkRow.vue"
+import { KeyRound, Laptop2, Link2, ShieldCheck } from "lucide-vue-next"
 
 const router = useRouter()
 const { t } = useI18n()
@@ -64,33 +59,15 @@ const rows: SecurityRow[] = [
 </script>
 
 <template>
-  <Card class="w-full">
-    <CardHeader>
-      <CardTitle class="flex items-center gap-2">
-        <ShieldCheck class="h-5 w-5" />
-        {{ t("userSettings.securityCard.title") }}
-      </CardTitle>
-      <CardDescription>{{ t("userSettings.securityCard.description") }}</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <ul class="flex flex-col gap-2">
-        <li v-for="row in rows" :key="row.key">
-          <button
-            type="button"
-            class="group flex w-full items-center gap-3 rounded-lg border bg-card p-3 text-left transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring"
-            @click="row.onClick"
-          >
-            <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-              <component :is="row.icon" class="size-4.5" />
-            </span>
-            <span class="min-w-0 flex-1">
-              <span class="block text-sm font-medium">{{ t(row.titleKey) }}</span>
-              <span class="block text-xs text-muted-foreground">{{ t(row.descriptionKey) }}</span>
-            </span>
-            <ChevronRight class="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-          </button>
-        </li>
-      </ul>
-    </CardContent>
-  </Card>
+  <SettingsGroup :title="t('userSettings.securityCard.title')" surface="card" data-testid="account-security">
+    <SettingsLinkRow
+      v-for="row in rows"
+      :key="row.key"
+      :icon="row.icon"
+      :label="t(row.titleKey)"
+      :help="t(row.descriptionKey)"
+      :data-row="row.key"
+      @click="row.onClick"
+    />
+  </SettingsGroup>
 </template>

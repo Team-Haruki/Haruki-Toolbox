@@ -1,15 +1,8 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { formatLocalizedDateTime } from "@/lib/date-time"
-import {
-  Card,
-  CardTitle,
-  CardHeader,
-  CardContent,
-  CardDescription,
-} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -22,24 +15,33 @@ import {
 } from "@/components/ui/select"
 import {
   LucideArrowLeft,
-  LucideSend,
+  LucideHourglass,
   LucideLoader2,
-  LucideTicketX,
-  LucideUserCog,
   LucideMessageSquare,
+  LucideMessageSquareReply,
+  LucideSend,
+  LucideTicketX,
+  LucideTimer,
+  LucideUserCog,
 } from "lucide-vue-next"
+import EmptyState from "@/shared/components/EmptyState.vue"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import AdminPanel from "@/modules/admin/components/AdminPanel.vue"
+import AdminStatGrid from "@/modules/admin/components/AdminStatGrid.vue"
+import AdminStatTile, { type AdminStatTone } from "@/modules/admin/components/AdminStatTile.vue"
+import { roleLabel } from "@/modules/admin-users/constants"
+import AdminTicketChip from "@/modules/tickets/components/AdminTicketChip.vue"
+import AdminTicketThread from "@/modules/tickets/components/AdminTicketThread.vue"
+import { adminTicketPriorityTone, adminTicketStatusTone } from "@/modules/tickets/lib/admin-ticket-display"
+import { durationParts } from "@/modules/tickets/lib/admin-ticket-thread"
 import {
-  ticketPriorityBadgeClass,
   ticketPriorityIcon,
   ticketPriorityLabel,
   ticketStatusIcon,
   ticketStatusLabel,
-  ticketStatusTextClass,
 } from "@/modules/tickets/lib/display"
 import { isTicketCategory, ticketCategoryLabel } from "@/modules/tickets/lib/meta"
-import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import { useAdminTicketDetail } from "@/modules/tickets/composables/useAdminTicketDetail"
-import type { TicketDetail, TicketMessage } from "@/types/ticket"
 
 const props = defineProps<{ ticketId: string }>()
 const { t, locale } = useI18n()
@@ -59,12 +61,14 @@ const {
   adminUsersLoading,
   adminUsersLoadFailed,
   statusOptions,
+  threadSummary,
+  creatorRole,
+  messageRole,
   sendMessage,
   handleStatusChange,
   handleAssign,
   loadAdmins,
   goBack,
-  isAdmin,
 } = useAdminTicketDetail(() => props.ticketId)
 
 function handleComposeEnter(event: KeyboardEvent) {
@@ -83,286 +87,331 @@ function formatCategory(category: string) {
   return isTicketCategory(category) ? ticketCategoryLabel(category, t) : category
 }
 
-function formatCreator(ticketDetail: TicketDetail) {
-  if (ticketDetail.creatorUserName && ticketDetail.creatorUserId) {
-    return `${ticketDetail.creatorUserName} (${ticketDetail.creatorUserId})`
-  }
-  return ticketDetail.creatorUserName || ticketDetail.creatorUserId || t("tickets.adminDetail.unknownUser")
-}
-
-function formatAssignee(ticketDetail: TicketDetail) {
-  return ticketDetail.assigneeAdminName || ticketDetail.assigneeAdminId || t("tickets.adminDetail.unassigned")
-}
-
-function messageSenderLabel(message: TicketMessage) {
-  if (message.senderName) return message.senderName
-  switch (message.senderRole) {
-    case "admin":
-      return t("tickets.adminDetail.adminSender")
-    case "system":
-      return t("tickets.adminDetail.systemSender")
-    case "user":
-    default:
-      return t("tickets.adminDetail.userSender")
+function formatDuration(ms: number): string {
+  const parts = durationParts(ms)
+  switch (parts.unit) {
+    case "days":
+      return t("tickets.adminDetail.duration.days", { days: parts.days, hours: parts.hours })
+    case "hours":
+      return t("tickets.adminDetail.duration.hours", { hours: parts.hours, minutes: parts.minutes })
+    case "minutes":
+      return t("tickets.adminDetail.duration.minutes", { minutes: parts.minutes })
+    case "moment":
+      return t("tickets.adminDetail.duration.moment")
   }
 }
+
+const creatorName = computed(() =>
+  ticket.value?.creatorUserName || ticket.value?.creatorUserId || t("tickets.adminDetail.unknownUser"),
+)
+const assigneeName = computed(() =>
+  ticket.value?.assigneeAdminName || ticket.value?.assigneeAdminId || t("tickets.adminDetail.unassigned"),
+)
+
+const firstResponse = computed(() => {
+  const ms = threadSummary.value?.firstResponseMs
+  return ms == null ? t("tickets.adminDetail.stats.firstResponseNone") : formatDuration(ms)
+})
+
+type WaitingTile = { label: string; text: string; detail: string | null; tone: AdminStatTone }
+
+const waitingTile = computed<WaitingTile>(() => {
+  const waiting = threadSummary.value?.waiting
+  if (!waiting) {
+    return { label: t("tickets.adminDetail.stats.waitingNone"), text: "—", detail: null, tone: "default" }
+  }
+  const text = formatDuration(waiting.ms)
+  if (waiting.on === "admin") {
+    return { label: t("tickets.adminDetail.stats.waitingAdmin"), text, detail: t("tickets.adminDetail.stats.waitingAdminDetail"), tone: "warning" }
+  }
+  if (waiting.on === "user") {
+    return { label: t("tickets.adminDetail.stats.waitingUser"), text, detail: t("tickets.adminDetail.stats.waitingUserDetail"), tone: "info" }
+  }
+  return { label: t("tickets.adminDetail.stats.closedAfter"), text, detail: t("tickets.adminDetail.stats.closedAfterDetail"), tone: "default" }
+})
 </script>
 
 <template>
-  <div class="w-full flex flex-col gap-4 h-full">
-    <Button variant="ghost" size="sm" class="self-start" @click="goBack">
-      <LucideArrowLeft class="w-4 h-4 mr-1" /> {{ t("tickets.adminDetail.backButton") }}
-    </Button>
+  <!-- Laid out against this column (it sits beside the admin nav), not the viewport. -->
+  <div class="@container w-full" data-testid="admin-ticket-detail">
+    <div class="flex flex-col gap-4">
+      <Button variant="ghost" size="sm" class="self-start" @click="goBack">
+        <LucideArrowLeft class="w-4 h-4 mr-1" /> {{ t("tickets.adminDetail.backButton") }}
+      </Button>
 
-    <template v-if="loading">
-      <Skeleton class="h-32 w-full" />
-      <Skeleton class="h-28 w-full" />
-      <Skeleton class="h-64 w-full" />
-    </template>
+      <div v-if="loading" class="flex flex-col gap-4" aria-busy="true">
+        <Skeleton class="h-36 w-full rounded-xl" />
+        <Skeleton class="h-24 w-full rounded-xl" />
+        <Skeleton class="h-64 w-full rounded-xl" />
+      </div>
 
-    <template v-else-if="ticket">
-      <!-- Ticket summary -->
-      <Card class="rounded-lg">
-        <CardHeader class="pb-2 gap-4">
-          <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div class="min-w-0">
-              <CardTitle>{{ ticket.subject }}</CardTitle>
-              <CardDescription class="mt-1 break-all">{{ ticket.ticketId }}</CardDescription>
+      <!-- From 52rem: the ticket and its thread on the left, actions and figures in a
+           side column. Below that the same four blocks stack: ticket, actions, thread, figures. -->
+      <div v-else-if="ticket" class="flex flex-col gap-4 @min-[52rem]:flex-row @min-[52rem]:items-start">
+        <div class="contents @min-[52rem]:flex @min-[52rem]:min-w-0 @min-[52rem]:flex-1 @min-[52rem]:flex-col @min-[52rem]:gap-4">
+          <!-- Ticket -->
+          <section class="order-1 overflow-hidden rounded-xl border bg-card" data-testid="admin-ticket-summary">
+            <div class="px-4 py-3.5">
+              <p class="text-xs tabular-nums text-muted-foreground [overflow-wrap:anywhere]">{{ ticket.ticketId }}</p>
+              <h1 class="mt-0.5 text-lg leading-snug font-semibold [overflow-wrap:anywhere]">{{ ticket.subject }}</h1>
+              <div class="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1.5">
+                <AdminTicketChip :tone="adminTicketStatusTone(ticket.status)" :icon="ticketStatusIcon(ticket.status)" data-chip="status">
+                  {{ ticketStatusLabel(ticket.status) }}
+                </AdminTicketChip>
+                <AdminTicketChip :tone="adminTicketPriorityTone(ticket.priority)" :icon="ticketPriorityIcon(ticket.priority)" data-chip="priority">
+                  <span class="sr-only">{{ t("tickets.adminDetail.summary.priority") }}</span>
+                  {{ ticketPriorityLabel(ticket.priority) }}
+                </AdminTicketChip>
+                <AdminTicketChip data-chip="category">
+                  <span class="sr-only">{{ t("tickets.adminDetail.summary.category") }}</span>
+                  {{ formatCategory(ticket.category) }}
+                </AdminTicketChip>
+              </div>
             </div>
-            <span :class="['inline-flex items-center gap-1 text-sm font-medium flex-shrink-0', ticketStatusTextClass(ticket.status)]">
-              <component :is="ticketStatusIcon(ticket.status)" class="w-4 h-4" />
-              {{ ticketStatusLabel(ticket.status) }}
-            </span>
-          </div>
-        </CardHeader>
-        <CardContent class="border-t pt-4">
-          <div class="grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
-            <div>
-              <div class="text-xs text-muted-foreground">{{ t("tickets.adminDetail.summary.category") }}</div>
-              <div class="font-medium">{{ formatCategory(ticket.category) }}</div>
-            </div>
-            <div>
-              <div class="text-xs text-muted-foreground">{{ t("tickets.adminDetail.summary.priority") }}</div>
-              <span :class="['mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium', ticketPriorityBadgeClass(ticket.priority)]">
-                <component :is="ticketPriorityIcon(ticket.priority)" class="w-3.5 h-3.5" v-if="ticketPriorityIcon(ticket.priority)" />
-                {{ ticketPriorityLabel(ticket.priority) }}
-              </span>
-            </div>
-            <div>
-              <div class="text-xs text-muted-foreground">{{ t("tickets.adminDetail.summary.creator") }}</div>
-              <div class="font-medium break-all">{{ formatCreator(ticket) }}</div>
-            </div>
-            <div>
-              <div class="text-xs text-muted-foreground">{{ t("tickets.adminDetail.summary.assignee") }}</div>
-              <div class="font-medium break-all">{{ formatAssignee(ticket) }}</div>
-            </div>
-            <div>
-              <div class="text-xs text-muted-foreground">{{ t("tickets.adminDetail.summary.createdAt") }}</div>
-              <div class="font-medium tabular-nums">{{ formatDateTime(ticket.createdAt) }}</div>
-            </div>
-            <div>
-              <div class="text-xs text-muted-foreground">{{ t("tickets.adminDetail.summary.updatedAt") }}</div>
-              <div class="font-medium tabular-nums">{{ formatDateTime(ticket.updatedAt) }}</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <!-- Ticket actions -->
-      <Card class="rounded-lg">
-        <CardHeader class="pb-3">
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <CardTitle class="text-base">{{ t("tickets.adminDetail.actionsTitle") }}</CardTitle>
-              <CardDescription>{{ t("tickets.adminDetail.actionsDescription") }}</CardDescription>
-            </div>
-            <LucideLoader2 v-if="actionLoading" class="w-4 h-4 animate-spin text-muted-foreground" />
-          </div>
-        </CardHeader>
-        <CardContent class="flex flex-col gap-4 border-t pt-4 lg:flex-row lg:items-end">
-          <div class="flex flex-col gap-1.5">
-            <Label id="admin-ticket-status-label" for="admin-ticket-status" class="text-xs">{{ t("tickets.adminDetail.statusChangeLabel") }}</Label>
-            <Select id="admin-ticket-status" :key="locale" :model-value="ticket.status" @update:model-value="handleStatusChange" :disabled="actionLoading">
-              <SelectTrigger class="w-full lg:w-40" aria-labelledby="admin-ticket-status-label">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="option in statusOptions" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div class="flex min-w-0 flex-1 flex-col gap-1.5">
-            <Label id="admin-ticket-assignee-label" for="admin-ticket-assignee" class="text-xs">{{ t("tickets.adminDetail.assigneeLabel") }}</Label>
-            <div class="flex flex-col gap-2 sm:flex-row">
-              <Select
-                id="admin-ticket-assignee"
-                :key="locale"
-                v-model="assigneeId"
-                :disabled="adminUsersLoading || adminUsersLoadFailed || actionLoading"
-              >
-                <SelectTrigger class="w-full sm:w-72" aria-labelledby="admin-ticket-assignee-label">
-                  <SelectValue :placeholder="t('tickets.adminDetail.assigneePlaceholder')" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">{{ t("tickets.adminDetail.unassigned") }}</SelectItem>
-                  <SelectItem v-for="admin in adminUsers" :key="admin.userId" :value="admin.userId">
-                    {{ admin.name }} ({{ admin.userId }})
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
-                variant="outline"
-                size="sm"
-                class="shrink-0"
-                :disabled="actionLoading || adminUsersLoading || adminUsersLoadFailed"
-                @click="handleAssign"
-              >
-                <LucideUserCog class="w-4 h-4 mr-1" /> {{ t("tickets.adminDetail.assignButton") }}
-              </Button>
-            </div>
-            <div v-if="adminUsersLoading" class="text-xs text-muted-foreground">
-              {{ t("tickets.adminDetail.assigneeLoading") }}
-            </div>
-            <div v-else-if="adminUsersLoadFailed" class="flex items-center gap-2 text-xs text-destructive">
-              <span>{{ t("tickets.adminDetail.assigneeLoadFailedHint") }}</span>
-              <Button variant="ghost" size="sm" class="h-auto px-2 py-1" @click="loadAdmins">
-                {{ t("tickets.adminDetail.retryLoadAssignees") }}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <!-- Message list -->
-      <Card class="rounded-lg flex-1 flex flex-col min-h-0">
-        <CardHeader class="pb-3 border-b">
-          <div class="flex items-center gap-2">
-            <LucideMessageSquare class="w-4 h-4 text-muted-foreground" />
-            <div>
-              <CardTitle class="text-base">{{ t("tickets.adminDetail.messagesTitle") }}</CardTitle>
-              <CardDescription>{{ t("tickets.adminDetail.messagesDescription") }}</CardDescription>
-            </div>
-            <LucideLoader2 v-if="refreshing" class="w-4 h-4 animate-spin text-muted-foreground" />
-          </div>
-        </CardHeader>
-        <CardContent class="flex-1 flex flex-col p-0 min-h-0">
-          <div ref="messageContainer" class="flex-1 overflow-y-auto p-4 space-y-4 max-h-[28rem]">
-            <template v-if="ticket.messages.length > 0">
-              <div
-                v-for="msg in ticket.messages"
-                :key="msg.id"
-                :class="['flex', isAdmin(msg) ? 'justify-end' : 'justify-start']"
-              >
-                <div
-                  :class="[
-                    'max-w-[80%] rounded-2xl px-4 py-2.5',
-                    msg.internal
-                      ? 'bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-br-md'
-                      : isAdmin(msg)
-                        ? 'bg-primary text-primary-foreground rounded-br-md'
-                        : 'bg-muted rounded-bl-md'
-                  ]"
-                >
-                  <div class="flex items-center gap-2 mb-1">
-                    <span :class="['text-xs font-medium', msg.internal ? 'text-amber-600 dark:text-amber-400' : isAdmin(msg) ? 'text-primary-foreground/70' : 'opacity-70']">
-                      {{ messageSenderLabel(msg) }}
-                    </span>
-                    <span
-                      v-if="msg.internal"
-                      class="text-[10px] bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded-full font-medium"
+            <dl class="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border/60 px-4 py-3 text-sm @min-[34rem]:grid-cols-3">
+              <div class="min-w-0">
+                <dt class="text-xs text-muted-foreground">{{ t("tickets.adminDetail.summary.creator") }}</dt>
+                <dd class="mt-0.5 min-w-0">
+                  <span class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
+                    <RouterLink
+                      v-if="ticket.creatorUserId"
+                      :to="{ name: 'admin.userDetail', params: { userId: ticket.creatorUserId } }"
+                      class="max-w-full min-w-0 truncate font-medium underline-offset-4 hover:underline"
+                      :title="t('tickets.adminDetail.viewUser', { name: creatorName })"
                     >
-                      {{ t("tickets.adminDetail.internalTag") }}
-                    </span>
+                      {{ creatorName }}
+                    </RouterLink>
+                    <span v-else class="font-medium">{{ creatorName }}</span>
+                    <AdminTicketChip v-if="creatorRole" :tone="creatorRole === 'user' ? 'neutral' : 'primary'">
+                      {{ roleLabel(creatorRole, t) }}
+                    </AdminTicketChip>
+                  </span>
+                  <span
+                    v-if="ticket.creatorUserName && ticket.creatorUserId"
+                    class="block text-xs tabular-nums text-muted-foreground [overflow-wrap:anywhere]"
+                  >
+                    {{ ticket.creatorUserId }}
+                  </span>
+                </dd>
+              </div>
+              <div class="min-w-0">
+                <dt class="text-xs text-muted-foreground">{{ t("tickets.adminDetail.summary.assignee") }}</dt>
+                <dd class="mt-0.5 min-w-0">
+                  <span :class="['block truncate', ticket.assigneeAdminId ? 'font-medium' : 'text-muted-foreground']" :title="assigneeName">
+                    {{ assigneeName }}
+                  </span>
+                  <span
+                    v-if="ticket.assigneeAdminName && ticket.assigneeAdminId"
+                    class="block text-xs tabular-nums text-muted-foreground [overflow-wrap:anywhere]"
+                  >
+                    {{ ticket.assigneeAdminId }}
+                  </span>
+                </dd>
+              </div>
+              <div class="min-w-0">
+                <dt class="text-xs text-muted-foreground">{{ t("tickets.adminDetail.summary.createdAt") }}</dt>
+                <dd class="mt-0.5 font-medium tabular-nums">{{ formatDateTime(ticket.createdAt) }}</dd>
+              </div>
+              <div class="min-w-0">
+                <dt class="text-xs text-muted-foreground">{{ t("tickets.adminDetail.summary.updatedAt") }}</dt>
+                <dd class="mt-0.5 font-medium tabular-nums">{{ formatDateTime(ticket.updatedAt) }}</dd>
+              </div>
+              <div v-if="ticket.lastMessageAt" class="min-w-0">
+                <dt class="text-xs text-muted-foreground">{{ t("tickets.adminDetail.summary.lastMessageAt") }}</dt>
+                <dd class="mt-0.5 font-medium tabular-nums">{{ formatDateTime(ticket.lastMessageAt) }}</dd>
+              </div>
+              <div v-if="ticket.closedAt" class="min-w-0">
+                <dt class="text-xs text-muted-foreground">{{ t("tickets.adminDetail.summary.closedAt") }}</dt>
+                <dd class="mt-0.5 font-medium tabular-nums">{{ formatDateTime(ticket.closedAt) }}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <!-- Conversation -->
+          <AdminPanel
+            class="order-3"
+            flush
+            :title="t('tickets.adminDetail.messagesTitle')"
+            :description="t('tickets.adminDetail.messagesDescription')"
+            data-testid="admin-ticket-conversation"
+          >
+            <template v-if="refreshing" #actions>
+              <LucideLoader2 class="size-4 animate-spin text-muted-foreground" aria-hidden="true" />
+            </template>
+            <div ref="messageContainer" class="max-h-[32rem] overflow-y-auto">
+              <AdminTicketThread v-if="ticket.messages.length > 0" :messages="ticket.messages" :role-of="messageRole" />
+              <EmptyState v-else size="sm" :icon="LucideMessageSquare" :title="t('tickets.adminDetail.noMessages')" />
+            </div>
+
+            <!-- Reply -->
+            <div :class="['flex flex-col gap-2 border-t border-border/60 p-3', isInternal ? 'bg-amber-500/10' : '']">
+              <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+                <p class="text-sm font-medium">
+                  {{ isInternal ? t("tickets.adminDetail.compose.internalTitle") : t("tickets.adminDetail.compose.replyTitle") }}
+                </p>
+                <div class="flex items-center gap-2">
+                  <Switch id="internal-toggle" :model-value="isInternal" @update:model-value="(v: boolean) => isInternal = v" />
+                  <Label for="internal-toggle" class="text-xs text-muted-foreground">
+                    {{ t("tickets.adminDetail.internalSwitchLabel") }}
+                  </Label>
+                </div>
+              </div>
+              <div class="flex items-end gap-2">
+                <textarea
+                  v-model="newMessage"
+                  :placeholder="isInternal ? t('tickets.adminDetail.internalInputPlaceholder') : t('tickets.adminDetail.replyInputPlaceholder')"
+                  :aria-label="isInternal ? t('tickets.adminDetail.internalInputPlaceholder') : t('tickets.adminDetail.replyInputPlaceholder')"
+                  rows="3"
+                  :class="[
+                    'min-w-0 flex-1 resize-none rounded-md border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:outline-none dark:bg-input/30',
+                    isInternal ? 'border-amber-500/50 focus-visible:ring-amber-500' : 'border-input focus-visible:ring-ring',
+                  ]"
+                  @keydown.enter.exact="handleComposeEnter"
+                />
+                <Button
+                  :class="['shrink-0', isInternal ? 'bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700' : '']"
+                  :disabled="sending || !newMessage.trim()"
+                  @click="sendMessage"
+                >
+                  <LucideLoader2 v-if="sending" class="animate-spin" aria-hidden="true" />
+                  <LucideSend v-else aria-hidden="true" />
+                  {{ isInternal ? t("tickets.adminDetail.noteButton") : t("tickets.adminDetail.sendButton") }}
+                </Button>
+              </div>
+            </div>
+          </AdminPanel>
+        </div>
+
+        <div class="contents @min-[52rem]:flex @min-[52rem]:w-72 @min-[52rem]:shrink-0 @min-[52rem]:flex-col @min-[52rem]:gap-4">
+          <!-- Actions -->
+          <AdminPanel
+            class="order-2"
+            :title="t('tickets.adminDetail.actionsTitle')"
+            :description="t('tickets.adminDetail.actionsDescription')"
+            data-testid="admin-ticket-actions"
+          >
+            <template v-if="actionLoading" #actions>
+              <LucideLoader2 class="size-4 animate-spin text-muted-foreground" aria-hidden="true" />
+            </template>
+            <div class="@container">
+              <div class="grid gap-3 @min-[26rem]:grid-cols-[11rem_minmax(0,1fr)]">
+                <div class="flex min-w-0 flex-col gap-1.5">
+                  <Label id="admin-ticket-status-label" for="admin-ticket-status" class="text-xs">{{ t("tickets.adminDetail.statusChangeLabel") }}</Label>
+                  <Select id="admin-ticket-status" :key="locale" :model-value="ticket.status" :disabled="actionLoading" @update:model-value="handleStatusChange">
+                    <SelectTrigger class="w-full" aria-labelledby="admin-ticket-status-label">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="option in statusOptions" :key="option.value" :value="option.value">
+                        {{ option.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div class="flex min-w-0 flex-col gap-1.5">
+                  <Label id="admin-ticket-assignee-label" for="admin-ticket-assignee" class="text-xs">{{ t("tickets.adminDetail.assigneeLabel") }}</Label>
+                  <div class="flex min-w-0 flex-wrap gap-2">
+                    <div class="min-w-0 flex-1 basis-36">
+                      <Select
+                        id="admin-ticket-assignee"
+                        :key="locale"
+                        v-model="assigneeId"
+                        :disabled="adminUsersLoading || adminUsersLoadFailed || actionLoading"
+                      >
+                        <SelectTrigger class="w-full" aria-labelledby="admin-ticket-assignee-label">
+                          <SelectValue :placeholder="t('tickets.adminDetail.assigneePlaceholder')" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">{{ t("tickets.adminDetail.unassigned") }}</SelectItem>
+                          <SelectItem v-for="admin in adminUsers" :key="admin.userId" :value="admin.userId">
+                            {{ admin.name }} ({{ admin.userId }})
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      variant="outline"
+                      class="shrink-0"
+                      :disabled="actionLoading || adminUsersLoading || adminUsersLoadFailed"
+                      @click="handleAssign"
+                    >
+                      <LucideUserCog aria-hidden="true" /> {{ t("tickets.adminDetail.assignButton") }}
+                    </Button>
                   </div>
-                  <p :class="['text-sm whitespace-pre-wrap break-words', msg.internal ? 'text-amber-900 dark:text-amber-100' : '']">{{ msg.message }}</p>
-                  <div :class="['text-xs mt-1', msg.internal ? 'text-amber-500' : isAdmin(msg) ? 'text-primary-foreground/60' : 'text-muted-foreground']">
-                    {{ formatDateTime(msg.createdAt) }}
+                  <div v-if="adminUsersLoading" class="text-xs text-muted-foreground">
+                    {{ t("tickets.adminDetail.assigneeLoading") }}
+                  </div>
+                  <div v-else-if="adminUsersLoadFailed" class="flex flex-wrap items-center gap-2 text-xs text-destructive-tint-foreground">
+                    <span>{{ t("tickets.adminDetail.assigneeLoadFailedHint") }}</span>
+                    <Button variant="ghost" size="sm" class="h-auto px-2 py-1" @click="loadAdmins">
+                      {{ t("tickets.adminDetail.retryLoadAssignees") }}
+                    </Button>
                   </div>
                 </div>
               </div>
-            </template>
-            <template v-else>
-              <div class="flex flex-col items-center justify-center gap-3 py-10 text-center">
-                <LucideMessageSquare class="h-8 w-8 text-muted-foreground/60" />
-                <p class="text-sm text-muted-foreground">{{ t("tickets.adminDetail.noMessages") }}</p>
-              </div>
-            </template>
-          </div>
-
-          <!-- Input area -->
-          <div
-            data-glass-surface="compose-bar"
-            class="sticky bottom-0 flex flex-col gap-2 border-t p-3"
-          >
-            <div class="flex items-center justify-between gap-3">
-              <div class="text-sm font-medium">
-                {{ isInternal ? t("tickets.adminDetail.compose.internalTitle") : t("tickets.adminDetail.compose.replyTitle") }}
-              </div>
-              <div class="flex items-center gap-2">
-                <Switch :model-value="isInternal" @update:model-value="(v: boolean) => isInternal = v" id="internal-toggle" />
-                <Label for="internal-toggle" class="text-xs text-muted-foreground">
-                  {{ t("tickets.adminDetail.internalSwitchLabel") }}
-                </Label>
-              </div>
             </div>
-            <div class="flex gap-2 items-stretch">
-              <textarea
-                v-model="newMessage"
-                :placeholder="isInternal ? t('tickets.adminDetail.internalInputPlaceholder') : t('tickets.adminDetail.replyInputPlaceholder')"
-                :aria-label="isInternal ? t('tickets.adminDetail.internalInputPlaceholder') : t('tickets.adminDetail.replyInputPlaceholder')"
-                rows="2"
-                :class="[
-                  'flex-1 rounded-md border px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 resize-none',
-                  isInternal
-                    ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700 focus-visible:ring-amber-400'
-                    : 'bg-transparent border-input focus-visible:ring-ring'
-                ]"
-                @keydown.enter.exact="handleComposeEnter"
+          </AdminPanel>
+
+          <!-- Figures of this thread: every message of the ticket, read when it was loaded. -->
+          <section v-if="threadSummary" class="order-4" :aria-label="t('tickets.adminDetail.stats.label')" data-testid="admin-ticket-thread-stats">
+            <AdminStatGrid :columns="2">
+              <AdminStatTile
+                :label="t('tickets.adminDetail.stats.userMessages')"
+                :value="threadSummary.userMessages"
+                :icon="LucideMessageSquare"
+                data-stat="user-messages"
               />
-              <Button
-                :class="['h-auto min-w-[5rem] shrink-0 flex flex-col items-center justify-center gap-1.5 transition-colors', isInternal ? 'bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-600 dark:hover:bg-amber-700' : '']"
-                :disabled="sending || !newMessage.trim()"
-                @click="sendMessage"
-              >
-                <LucideLoader2 v-if="sending" class="w-4 h-4 animate-spin" />
-                <LucideSend v-else class="w-4 h-4" />
-                <span class="text-xs tracking-widest">{{ isInternal ? t("tickets.adminDetail.noteButton") : t("tickets.adminDetail.sendButton") }}</span>
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </template>
+              <AdminStatTile
+                :label="t('tickets.adminDetail.stats.adminReplies')"
+                :value="threadSummary.adminReplies"
+                :icon="LucideMessageSquareReply"
+                tone="primary"
+                :detail="t('tickets.adminDetail.stats.internalNotes', { count: threadSummary.internalNotes })"
+                data-stat="admin-replies"
+              />
+              <AdminStatTile
+                :label="t('tickets.adminDetail.stats.firstResponse')"
+                :text="firstResponse"
+                :icon="LucideTimer"
+                tone="success"
+                :detail="t('tickets.adminDetail.stats.firstResponseDetail')"
+                data-stat="first-response"
+              />
+              <AdminStatTile
+                :label="waitingTile.label"
+                :text="waitingTile.text"
+                :icon="LucideHourglass"
+                :tone="waitingTile.tone"
+                :detail="waitingTile.detail"
+                data-stat="waiting"
+              />
+            </AdminStatGrid>
+          </section>
+        </div>
+      </div>
 
-    <!-- A failed load is retryable; a 404 is a different state with a different next step. -->
-    <template v-else-if="loadError && !notFound">
-      <Card class="rounded-lg">
-        <CardContent class="py-6">
-          <LoadErrorState
-            :title="t('tickets.adminDetail.toast.loadFailedTitle')"
-            :description="loadError.message"
-            :detail="loadError.detail"
-            :retrying="loading"
-            @retry="retryLoad"
-          />
-        </CardContent>
-      </Card>
-    </template>
+      <!-- A failed load is retryable; a 404 is a different state with a different next step. -->
+      <section v-else-if="loadError && !notFound" class="rounded-xl border bg-card px-4">
+        <LoadErrorState
+          :title="t('tickets.adminDetail.toast.loadFailedTitle')"
+          :description="loadError.message"
+          :detail="loadError.detail"
+          :retrying="loading"
+          @retry="retryLoad"
+        />
+      </section>
 
-    <template v-else>
-      <Card class="rounded-lg">
-        <CardContent class="flex flex-col items-center justify-center gap-3 py-16 text-center">
-          <LucideTicketX class="h-8 w-8 text-muted-foreground/60" />
-          <p class="text-sm text-muted-foreground">{{ t("tickets.adminDetail.notFound") }}</p>
-          <Button variant="outline" size="sm" @click="goBack">
-            <LucideArrowLeft class="w-4 h-4 mr-1" />
-            {{ t("tickets.adminDetail.backButton") }}
-          </Button>
-        </CardContent>
-      </Card>
-    </template>
+      <section v-else class="rounded-xl border bg-card px-4">
+        <EmptyState :icon="LucideTicketX" :title="t('tickets.adminDetail.notFound')">
+          <template #action>
+            <Button variant="outline" size="sm" @click="goBack">
+              <LucideArrowLeft class="w-4 h-4 mr-1" />
+              {{ t("tickets.adminDetail.backButton") }}
+            </Button>
+          </template>
+        </EmptyState>
+      </section>
+    </div>
   </div>
 </template>

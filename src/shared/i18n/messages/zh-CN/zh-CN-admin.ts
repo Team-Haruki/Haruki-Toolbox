@@ -70,13 +70,56 @@ export default {
     }
   },
   "adminConfig": {
-    "publicApiKeys": {
-      "title": "公共 API 密钥",
-      "description": "管理公共 API 密钥配置（仅超级管理员可操作）"
+    "status": {
+      "title": "运行状态",
+      "deviceFlow": "设备授权",
+      "webhook": "Webhook 推送",
+      "allowedKeys": "允许的数据键",
+      "secrets": "密钥",
+      "secretsValue": "{configured} / {known} 已配置",
+      "proxyVersion": "HarukiProxy 版本",
+      "on": "已开启",
+      "off": "已关闭"
+    },
+    "allowedKeys": {
+      "title": "公共 API 允许的数据键",
+      "help": "公共接口、OAuth2 游戏数据接口和本人账号数据接口只返回这里列出的顶层游戏数据键，私有 API 不受限制。保存后会清空游戏数据缓存。",
+      "count": "{count} 个",
+      "empty": "列表为空：还没有允许任何数据键。",
+      "addLabel": "添加数据键",
+      "addPlaceholder": "userCards, userDecks",
+      "addHint": "可以一次输入多个，用逗号或空格分隔。",
+      "add": "添加",
+      "remove": "移除 {key}",
+      "restore": "恢复 {key}",
+      "addedMark": "新增",
+      "removedMark": "将移除",
+      "pending": "新增 {added} 个 · 移除 {removed} 个",
+      "reset": "还原",
+      "validation": {
+        "empty": "请输入要添加的数据键",
+        "duplicate": "已在列表中：{keys}"
+      },
+      "loadFailed": "加载允许的数据键失败",
+      "saved": "允许的数据键已保存"
+    },
+    "credentials": {
+      "title": "凭据与连接",
+      "note": "密钥的值不会回传，这里只显示是否已配置。要更换某一项，在下方运行时配置中写入括号里的字段再保存。",
+      "configured": "已配置",
+      "notConfigured": "未配置",
+      "notSet": "未设置",
+      "privateApiToken": "私有 API Token",
+      "harukiProxySecret": "HarukiProxy 密钥",
+      "harukiProxyUnpackKey": "HarukiProxy 解包密钥",
+      "webhookJwtSecret": "Webhook JWT 密钥",
+      "privateApiUserAgent": "私有 API User-Agent",
+      "harukiProxyUserAgent": "HarukiProxy User-Agent",
+      "harukiProxyVersion": "HarukiProxy 版本"
     },
     "runtime": {
       "title": "运行时配置",
-      "description": "管理运行时配置项（修改后立即生效）",
+      "description": "以 JSON 直接编辑运行时配置，保存后立即生效。没有写出的字段保持不变。",
       "saveDialogTitle": "应用运行时配置？",
       "saveDialogDescription": "此更改将立即生效并应用于整个系统。请在继续前确认 JSON 内容正确。",
       "saveDialogConfirm": "应用"
@@ -97,12 +140,9 @@ export default {
       }
     },
     "toast": {
-      "loadApiKeysFailedTitle": "加载公共 API 密钥失败",
       "loadRuntimeFailedTitle": "加载运行时配置失败",
-      "apiKeysUpdated": "公共 API 密钥更新成功",
       "runtimeUpdated": "运行时配置更新成功",
       "invalidJson": "JSON 格式无效",
-      "invalidApiKeysSchema": "公共 API 密钥必须是字符串值组成的 JSON 对象",
       "invalidRuntimeSchema": "运行时配置必须是一个 JSON 对象",
       "saveFailedTitle": "保存失败",
       "saveFailedFallback": "保存失败",
@@ -138,8 +178,59 @@ export default {
       "open": "待处理",
       "resolved": "已解决"
     },
+    "range": {
+      "last24h": "近 24 小时",
+      "last7d": "近 7 天",
+      "last30d": "近 30 天",
+      "last90d": "近 90 天",
+      "last365d": "近 1 年"
+    },
+    "filters": {
+      "range": "时间范围",
+      "status": "状态",
+      "severity": "严重程度",
+      "allStatuses": "全部状态",
+      "allSeverities": "全部严重程度",
+      "severityOption": "严重程度：{severity}"
+    },
+    "stats": {
+      "open": "待处理事件",
+      "urgent": "待处理的严重 / 高",
+      "urgentSplit": "严重 {critical} · 高 {high}",
+      "resolved": "已解决事件",
+      "resolutionRate": "解决率 {rate}",
+      "total": "事件总数",
+      "bySeverity": "待处理事件的严重程度",
+      "bySeverityHint": "{range}内的全部待处理事件",
+      "bySource": "本页事件来源",
+      "bySourceHint": "仅统计列表当前显示的 {count} 条",
+      "bySourceEmpty": "当前列表没有事件",
+      "bySourceFailed": "列表未能加载，没有可统计的事件",
+      "noSource": "未注明来源",
+      "unavailable": "统计暂不可用"
+    },
+    "detail": {
+      "title": "风控事件 #{id}",
+      "noAction": "未记录动作",
+      "targetUser": "目标用户",
+      "actorUser": "触发用户",
+      "ip": "IP",
+      "resolvedAt": "解决时间",
+      "resolvedBy": "处理人",
+      "resolutionReason": "处理说明",
+      "groups": {
+        "event": "事件",
+        "parties": "相关方",
+        "resolution": "处理",
+        "metadata": "附加数据"
+      }
+    },
     "events": {
       "title": "风控事件",
+      "refresh": "刷新",
+      "details": "查看详情",
+      "emptyHint": "{range}内没有符合条件的事件，可以换一个时间范围或筛选条件。",
+      "userShort": "用户 {userId}",
       "createButton": "创建事件",
       "createDialogTitle": "创建风控事件",
       "create": "创建",
@@ -187,6 +278,16 @@ export default {
     "rules": {
       "title": "风控规则",
       "description": "查看和编辑风控规则配置（仅超级管理员可编辑）",
+      "editorLabel": "规则 JSON",
+      "editorHint": "每条规则包含 key（1–64 个字符）、description 和 config。保存只会新增或更新列出的规则。",
+      "formatButton": "整理格式",
+      "revertButton": "还原",
+      "state": {
+        "saving": "保存中…",
+        "invalid": "JSON 有误",
+        "pending": "未保存：新增 {added} · 修改 {changed}",
+        "saved": "已保存"
+      },
       "saveButton": "保存规则",
       "superAdminOnly": "风控规则仅超级管理员可见。",
       "loadError": "加载风控规则失败。",
@@ -194,13 +295,20 @@ export default {
       "validation": {
         "invalidJson": "JSON 格式错误，请检查括号、引号和逗号",
         "notArray": "规则内容必须是 JSON 数组",
-        "invalidRule": "第 {index} 条规则格式不正确：需要 id、name、description（字符串）、enabled（布尔值），config 可选且须为对象"
+        "invalidRule": "第 {index} 条规则格式不正确：需要 key（1–64 个字符的字符串），description 可选且须为字符串，config 可选且须为对象",
+        "duplicateKey": "第 {index} 条规则的 key「{key}」与前面的规则重复",
+        "tooMany": "一次最多保存 {max} 条规则"
       },
       "preview": {
         "title": "规则预览",
         "count": "{count} 条",
-        "invalid": "修正上方的 JSON 后会在这里显示解析结果。",
-        "empty": "规则数组为空，保存后将清空所有规则。",
+        "invalid": "修正 JSON 后会在这里显示解析结果。",
+        "empty": "规则数组为空，没有可保存的内容。",
+        "added": "新增",
+        "changed": "已修改",
+        "updatedAt": "更新于 {time}",
+        "updatedBy": "更新于 {time} · 用户 {user}",
+        "omitted": "未列出的 {count} 条规则保持不变（保存不会删除规则）：{keys}",
         "enabled": "已启用",
         "disabled": "已停用",
         "configKeys": "配置项：{keys}",
@@ -265,6 +373,26 @@ export default {
       "unavailable": "统计暂不可用",
       "filterByKind": "只看待处理的「{kind}」告警"
     },
+    "overview": {
+      "handled": "已处置",
+      "handledSplit": "已处理 {resolved} · 已忽略 {ignored}",
+      "openKinds": "涉及 {count} 种类型",
+      "dailyAverage": "近 7 天日均 {count}",
+      "anyStatus": "含已处置的告警",
+      "byKindHint": "点击一行，只看该类型的待处理告警",
+      "byStatus": "告警状态",
+      "byStatusHint": "全部告警",
+      "byStatusTotal": "全部 {total} 条告警",
+      "onThisPage": "本页告警",
+      "onThisPageHint": "仅统计列表当前显示的 {count} 条",
+      "onThisPageEmpty": "当前列表没有告警",
+      "onThisPageFailed": "列表未能加载，没有可统计的告警",
+      "timeline": "告警时间分布",
+      "timelineRange": "{from} 至 {to}",
+      "timelineLabel": "本页 {count} 条告警按告警时间的分布",
+      "enforcement": "拦截方式",
+      "window": "统计窗口"
+    },
     "filters": {
       "title": "筛选条件",
       "expand": "展开",
@@ -278,7 +406,8 @@ export default {
       "to": "结束时间",
       "toPlaceholder": "不限",
       "allStatuses": "全部状态",
-      "allKinds": "全部类型"
+      "allKinds": "全部类型",
+      "changed": "已设 {count} 项"
     },
     "actions": {
       "search": "查询",
@@ -328,7 +457,12 @@ export default {
       "noNote": "暂无备注",
       "countValue": "{window}内 {count} 次，阈值 {threshold}",
       "handledAt": "处理时间",
-      "handlerNameUnavailable": "（用户名不可用，可能已删除）"
+      "handlerNameUnavailable": "（用户名不可用，可能已删除）",
+      "groups": {
+        "alert": "告警",
+        "source": "Bot 与来源",
+        "handling": "处理"
+      }
     },
     "actionDialog": {
       "title": {
@@ -365,15 +499,33 @@ export default {
       "links": "友情链接管理",
       "groups": "推荐群聊管理"
     },
+    "countShare": "{count} · {percent}",
+    "stats": {
+      "links": "友情链接",
+      "tags": "链接标签",
+      "groups": "群聊分组",
+      "items": "群聊项目",
+      "untagged": "{count} 个未加标签",
+      "allTagged": "全部已加标签",
+      "topTag": "最常用：{tag}（{count}）",
+      "emptyGroups": "{count} 个空分组",
+      "noEmptyGroups": "没有空分组",
+      "largestGroup": "最多：{group}（{count}）"
+    },
     "linksTab": {
       "title": "友情链接管理",
+      "description": "按排序值从小到大展示，相同则按 ID。",
+      "tagPanel": {
+        "title": "标签分布",
+        "description": "带有每个标签的链接数",
+        "empty": "还没有标签",
+        "more": "另有 {count} 个标签未列出"
+      },
       "createButton": "添加友情链接",
       "table": {
         "sortOrder": "排序",
         "name": "名称",
-        "url": "URL",
-        "tags": "标签",
-        "actions": "操作"
+        "tags": "标签"
       },
       "deleteDialog": {
         "title": "确认删除",
@@ -385,6 +537,13 @@ export default {
     },
     "groupsTab": {
       "title": "推荐群聊管理",
+      "summary": "排序 {order} · {count} 个项目",
+      "hasLink": "已设置链接",
+      "hasBackground": "已设置背景图",
+      "sizePanel": {
+        "title": "各分组项目数",
+        "description": "按分组的展示顺序"
+      },
       "createGroupButton": "创建群聊分组",
       "createGroupDialog": {
         "title": "创建分组",
@@ -508,6 +667,11 @@ export default {
     },
     "form": {
       "removeRedirectUri": "删除此URI",
+      "groups": {
+        "basic": "基本信息",
+        "access": "授权方式与范围",
+        "redirects": "回调地址"
+      },
       "nameLabel": "客户端名称",
       "namePlaceholder": "显示名称",
       "clientTypeLabel": "客户端类型",
@@ -556,7 +720,31 @@ export default {
       "typePublic": "Public",
       "typeConfidential": "Confidential",
       "deviceBadge": "设备码",
-      "deviceBadgeTitle": "已开通设备码授权类型"
+      "deviceBadgeTitle": "已开通设备码授权类型",
+      "title": "客户端",
+      "columns": {
+        "client": "客户端",
+        "scopes": "Scope 与授权类型",
+        "redirectUris": "回调URI",
+        "createdAt": "创建时间"
+      },
+      "moreRedirectUris": "还有 {count} 个",
+      "noRedirectUris": "无回调URI"
+    },
+    "overview": {
+      "total": "客户端总数",
+      "enabled": "已启用",
+      "disabledCount": "禁用 {count}",
+      "deletedCount": "已删除 {count}",
+      "confidential": "Confidential 客户端",
+      "publicCount": "Public {count}",
+      "device": "设备码客户端",
+      "shareOfClients": "占全部客户端的 {percent}",
+      "partialNote": "客户端超过一页：除总数外，以上数字只统计已加载的 {loaded} 个（共 {total} 个）。",
+      "scopesTitle": "Scope 分布",
+      "scopesHint": "登记了各 Scope 的客户端数",
+      "grantTypesTitle": "授权类型",
+      "grantTypesHint": "可使用各授权类型的客户端数"
     },
     "table": {
       "actions": "操作",
@@ -625,7 +813,50 @@ export default {
       "trendTitle": "趋势",
       "trendAuthorizations": "新增授权",
       "trendTokens": "签发令牌",
-      "trendEmpty": "所选范围内没有授权或令牌活动"
+      "trendEmpty": "所选范围内没有授权或令牌活动",
+      "stateActive": "有效",
+      "stateRevoked": "已撤销",
+      "authorizationStateHint": "全部用户授权中仍然有效的比例",
+      "tokenStateHint": "全部令牌中仍然有效的比例",
+      "noAuthorizations": "还没有用户授权过此客户端",
+      "noTokens": "没有令牌记录",
+      "trendHintHour": "每小时的新增授权与签发令牌",
+      "trendHintDay": "每天的新增授权与签发令牌",
+      "trendSummary": "范围内共 {buckets} 个时间段，新增授权 {authorizations} 个，签发令牌 {tokens} 个",
+      "trendPeak": "最活跃的时间段：{time}，共 {count} 次",
+      "trendView": "趋势的展示方式",
+      "trendViewChart": "图表",
+      "trendViewTable": "数据表",
+      "trendBucket": "时间段",
+      "trendTableNote": "只列出有数据的 {shown} 个时间段（共 {total} 个）",
+      "audit": {
+        "title": "管理操作",
+        "description": "所选范围内以此客户端为目标的审计日志条目",
+        "loadFailed": "管理操作统计加载失败。",
+        "empty": "所选范围内没有针对此客户端的管理操作",
+        "total": "操作总数",
+        "success": "成功",
+        "failure": "失败",
+        "successRate": "成功率",
+        "other": "其他操作 {count} 次",
+        "action": {
+          "create": "创建客户端",
+          "update": "修改设置",
+          "activeUpdate": "启用 / 禁用",
+          "rotateSecret": "轮换 Secret",
+          "delete": "删除客户端",
+          "restore": "恢复客户端",
+          "revoke": "撤销全部授权",
+          "statisticsQuery": "查看统计",
+          "authorizationsList": "查看授权列表",
+          "auditLogsQuery": "查看审计日志",
+          "auditSummaryQuery": "查看审计汇总",
+          "webhookList": "查看 Webhook",
+          "webhookCreate": "创建 Webhook",
+          "webhookUpdate": "修改 Webhook",
+          "webhookDelete": "删除 Webhook"
+        }
+      }
     },
     "secretDialog": {
       "title": "凭证生成成功",
@@ -637,6 +868,7 @@ export default {
       "title": "OAuth client Webhook",
       "description": "管理客户端 {clientId} 的数据更新通知 endpoint。",
       "placeholderHint": "Callback URL 支持 {'{server}'}、{'{data_type}'}、{'{user_id}'} 占位符。",
+      "summary": "共 {total} 个 endpoint，已启用 {enabled} 个",
       "actions": {
         "refresh": "刷新",
         "create": "创建 endpoint",
@@ -789,7 +1021,24 @@ export default {
       "subscriptions": "订阅数",
       "createdAt": "创建时间",
       "actions": "操作",
-      "empty": "暂无 webhook endpoint"
+      "empty": "暂无 webhook endpoint",
+      "endpoint": "Endpoint",
+      "bearerTitle": "回调请求会附带 Authorization: Bearer 头"
+    },
+    "overview": {
+      "total": "Endpoint 总数",
+      "enabledDisabled": "启用 {enabled} · 禁用 {disabled}",
+      "delivering": "正在投递",
+      "globalOn": "全局投递已启用",
+      "globalOff": "全局投递已关闭，不会发送任何回调",
+      "subscriptions": "订阅总数",
+      "endpointsWithSubscribers": "{count} 个 endpoint 有订阅者",
+      "jwtSecret": "JWT 密钥",
+      "withBearer": "{count} 个带 Bearer",
+      "rankTitle": "订阅分布",
+      "rankHint": "订阅数最多的 endpoint 及其占全部订阅的比例，按上方列表统计。",
+      "rankEmpty": "还没有任何订阅",
+      "rankRest": "其余 endpoint 共 {count} 个订阅"
     },
     "form": {
       "createTitle": "创建 webhook endpoint",
@@ -807,7 +1056,11 @@ export default {
       "bearerPlaceholder": "可选，留空则不附带 Authorization 头",
       "bearerHelp": "填写后，后端会在回调请求中附带 `Authorization: Bearer TOKEN`。",
       "clearBearerLabel": "清空 Bearer Token",
-      "enabledLabel": "启用当前 endpoint"
+      "enabledLabel": "启用当前 endpoint",
+      "groups": {
+        "endpoint": "Endpoint",
+        "auth": "凭证与认证"
+      }
     },
     "deleteDialog": {
       "title": "删除 webhook endpoint",
@@ -830,7 +1083,11 @@ export default {
       "server": "区服",
       "dataType": "数据类型",
       "createdAt": "创建时间",
-      "empty": "当前 endpoint 暂无订阅者"
+      "empty": "当前 endpoint 暂无订阅者",
+      "totalLabel": "订阅数",
+      "usersLabel": "订阅用户",
+      "byServer": "按区服",
+      "byDataType": "按数据类型"
     },
     "toast": {
       "loadFailedFallback": "操作失败",
@@ -897,7 +1154,6 @@ export default {
       "loadFailed": "赞助用户加载失败，请重试。"
     },
     "binding": {
-      "count": "已绑定工具箱的赞助用户",
       "title": "工具箱绑定",
       "bound": "已绑定",
       "unbound": "未绑定"
@@ -922,7 +1178,51 @@ export default {
     "stats": {
       "total": "赞助者总数",
       "active": "当前赞助",
-      "manualProfile": "手动保护资料"
+      "bound": "已绑定工具箱",
+      "amount": "记录金额合计",
+      "newRecords": "12 个月新增 {count}",
+      "formerDetail": "曾经赞助 {count}",
+      "boundShare": "占全部赞助者 {percent}",
+      "amountDetail": "{count} 位有金额记录",
+      "newRecordsTrend": "近 12 个月每月新增的赞助者记录"
+    },
+    "breakdown": {
+      "share": "{count} · {percent}",
+      "empty": "暂无数据",
+      "source": {
+        "title": "来源",
+        "description": "全部赞助者按记录来源",
+        "unknown": "未标注"
+      },
+      "plan": {
+        "title": "赞助档位",
+        "description": "人数最多的 5 个档位",
+        "unnamed": "未设置档位",
+        "other": "其他 {count} 个档位"
+      },
+      "expiry": {
+        "title": "当前赞助到期",
+        "description": "按实际到期时间距今天数",
+        "within7": "7 天内",
+        "within30": "8–30 天",
+        "within90": "31–90 天",
+        "later": "90 天以上",
+        "none": "无到期时间"
+      }
+    },
+    "source": {
+      "afdian": "爱发电",
+      "manual": "手动录入",
+      "legacy": "旧版数据",
+      "imported": "导入"
+    },
+    "filter": {
+      "search": "搜索赞助者",
+      "searchPlaceholder": "名称、ID、档位或来源",
+      "category": "按状态筛选",
+      "all": "全部",
+      "noMatch": "没有符合条件的赞助者",
+      "clear": "清除筛选"
     },
     "category": {
       "current": "当前赞助",
@@ -934,7 +1234,11 @@ export default {
     },
     "list": {
       "title": "赞助者名单",
-      "description": "列表按后端返回顺序展示；分类与到期时间由后端根据爱发电订单和手动时长计算。"
+      "description": "列表按后端返回顺序展示；分类与到期时间由后端根据爱发电订单和手动时长计算。",
+      "total": "共 {total} 位",
+      "filteredTotal": "{count} / {total} 位",
+      "manualProfile": "{count} 位手动保护资料",
+      "migrationPending": "{count} 位待拆分时长"
     },
     "table": {
       "supporter": "赞助者",
@@ -944,12 +1248,17 @@ export default {
       "lastSupport": "最近赞助",
       "effectiveExpiry": "实际到期时间",
       "contribution": "赞助贡献",
-      "afdianSync": "爱发电更新",
-      "actions": "操作",
+      "amount": "记录金额",
+      "toolbox": "工具箱",
+      "protect": "手动保护",
+      "protectLabel": "不从爱发电更新 {name} 的资料",
+      "expiresOn": "{date} 到期",
+      "expiredOn": "{date} 已到期",
       "empty": "暂无赞助者记录"
     },
     "edit": {
       "title": "编辑赞助者资料",
+      "profileGroup": "展示资料",
       "name": "显示名称",
       "avatar": "头像 URL",
       "avatarPlaceholder": "https://example.com/avatar.png",
@@ -1065,53 +1374,121 @@ export default {
     "common": {
       "fallback": "—",
       "success": "成功",
-      "failure": "失败"
+      "failure": "失败",
+      "otherEntries": "另有 {kinds} 项，共 {count} 条"
     },
     "dashboard": {
+      "generatedAt": "数据生成于 {time}",
+      "refresh": "刷新",
       "stat": {
-        "totalUsers": "总用户数",
-        "superAdmin": "超级管理员",
-        "admin": "管理员",
-        "totalBindings": "游戏绑定",
-        "verifiedBindings": "已验证",
-        "totalUploads": "总上传 (全部)"
+        "totalUsers": "用户总数",
+        "bindingsPerUser": "人均绑定 {count} 个游戏账号",
+        "newRegistrations": "24 小时新注册",
+        "vsPrevious24h": "较前 24 小时",
+        "totalBindings": "游戏账号绑定",
+        "verifiedBindings": "已验证 {count} · {percent}",
+        "totalUploads": "累计上传",
+        "uploadsPerUser": "人均 {count} 次",
+        "uploadsWindow": "{hours} 小时上传",
+        "failedWindow": "{hours} 小时上传失败",
+        "failureRate": "失败率 {percent}",
+        "staff": "管理团队",
+        "staffDetail": "超级管理员 {superAdmin} · 管理员 {admin}",
+        "banned": "已封禁用户",
+        "bannedShare": "占全部用户 {percent}"
       },
       "breakdown": {
-        "byServer": "绑定按区服",
-        "byServerHint": "全部游戏绑定",
-        "byMethod": "上传按方式",
-        "byDataType": "上传按数据类型",
-        "windowHint": "最近 {hours} 小时",
+        "byServer": "各区服绑定",
+        "byServerHint": "全部游戏账号绑定",
+        "byMethod": "上传方式",
+        "byDataType": "数据类型",
+        "windowHint": "最近 {hours} 小时的上传",
         "empty": "暂无数据"
       },
-      "upload24h": {
-        "total": "24h 上传总量",
-        "bannedUsers": "被封用户"
-      },
       "chart": {
-        "title": "趋势图",
-        "description": "上传与注册分开展示；上传图的左轴是上传次数，右轴是上传失败次数",
-        "uploadTitle": "上传趋势",
-        "registrationTitle": "注册趋势",
-        "uploadsAxis": "上传次数（左轴）",
-        "failuresAxis": "上传失败次数（右轴）",
+        "title": "趋势",
+        "description": "上传、上传失败和新注册各占一张图，时间轴对齐；鼠标移到任意一张图上可同时查看三项。",
         "uploads": "上传",
-        "registrations": "注册",
+        "registrations": "新注册",
         "failures": "上传失败",
         "successRate": "成功率",
         "rangeLabel": "时间范围",
         "bucketLabel": "时间粒度",
         "range7d": "近 7 天",
+        "range14d": "近 14 天",
         "range30d": "近 30 天",
-        "range90d": "近 90 天",
         "bucketDay": "按日",
         "bucketWeek": "按周",
         "bucketMonth": "按月",
+        "tableTime": "时间",
         "empty": "暂无数据"
+      },
+      "trend": {
+        "compare": {
+          "day": "后 {n} 天对比前 {n} 天",
+          "week": "后 {n} 周对比前 {n} 周",
+          "month": "后 {n} 个月对比前 {n} 个月"
+        },
+        "dailyAverage": "日均",
+        "peak": "峰值",
+        "failureRate": "失败率",
+        "worstRate": "最高失败率",
+        "bestRate": "最低失败率"
+      },
+      "hourly": {
+        "title": "近 24 小时上传",
+        "description": "每小时的上传次数，失败的部分叠在柱顶；最右一柱是还没过完的这一小时。",
+        "successRate": "成功率",
+        "peakHour": "峰值时段",
+        "hourlyAverage": "每小时平均",
+        "previousTotal": "前 24 小时",
+        "succeeded": "上传成功",
+        "failed": "上传失败",
+        "chartLabel": "近 24 小时每小时的上传次数，可用左右方向键逐小时查看",
+        "readout": "{time}：成功 {success} 次，失败 {failed} 次"
+      },
+      "matrix": {
+        "title": "上传方式 × 数据类型",
+        "method": "上传方式",
+        "total": "合计"
+      },
+      "quality": {
+        "title": "上传质量",
+        "description": "近 24 小时每种上传方式的成功率与处理耗时。",
+        "restrictedHint": "管理员看到的数字不含超级管理员和你本人的上传，也不含未通过身份校验的上传。",
+        "latencyP50": "处理耗时 P50",
+        "latencyP50Hint": "一半的上传快于此",
+        "latencyP95": "处理耗时 P95",
+        "latencyP95Hint": "95% 的上传快于此",
+        "activeAccounts": "活跃游戏账号",
+        "activeAccountsHint": "成功上传过的已验证账号",
+        "v3Share": "HarukiProxy V3 占比",
+        "v2OnlyAccounts": "仍只用 V2 的账号 {count} 个",
+        "attempts": "次数",
+        "failed": "失败",
+        "accounts": "活跃账号",
+        "empty": "近 24 小时没有上传"
+      },
+      "failureStage": {
+        "title": "失败阶段",
+        "description": "近 24 小时失败的上传停在哪一步",
+        "empty": "近 24 小时没有失败的上传",
+        "buildContext": "建立上传上下文",
+        "accountPolicy": "账号策略检查",
+        "decodePayload": "解析数据",
+        "validatePayloadIdentity": "校验数据归属",
+        "preprocess": "预处理",
+        "persist": "保存数据",
+        "validateResult": "校验结果",
+        "decrypt": "解密",
+        "stale": "数据已过期",
+        "retrieve": "拉取{type}数据",
+        "unknown": "未记录阶段"
       },
       "toast": {
         "loadFailedTitle": "加载仪表盘失败",
         "loadChartFailedTitle": "加载图表失败",
+        "loadQualityFailedTitle": "加载上传质量失败",
         "loadFailedFallback": "加载失败"
       }
     },
@@ -1121,19 +1498,63 @@ export default {
         "next": "下一页",
         "total": "共 {total} 条日志"
       },
-      "summary": {
-        "total": "总日志"
+      "overview": {
+        "title": "概览",
+        "scope": "符合筛选条件的全部日志"
       },
-      "searchPlaceholder": "搜索日志…",
+      "summary": {
+        "total": "总日志",
+        "successRate": "成功率",
+        "share": "占 {share}",
+        "actionKinds": "{count} 种操作",
+        "topReason": "最多：{reason}",
+        "failureRate": "失败率 {rate}"
+      },
+      "breakdown": {
+        "actions": "操作排行",
+        "actionsHint": "范围内出现最多的操作",
+        "actorTypes": "操作者类型",
+        "actorTypesHint": "这些日志由谁触发",
+        "reasons": "失败原因",
+        "reasonsHint": "失败日志记录的原因",
+        "pageActors": "当前页操作者",
+        "pageActorsHint": "只统计下方表格显示的 {count} 条",
+        "empty": "暂无数据",
+        "noFailures": "范围内没有失败的日志",
+        "unknownReason": "未记录原因"
+      },
+      "actorType": {
+        "anonymous": "匿名",
+        "user": "用户",
+        "admin": "管理员",
+        "system": "系统",
+        "unknown": "未知"
+      },
+      "filters": {
+        "result": "结果",
+        "allResults": "全部",
+        "actorType": "操作者类型",
+        "allActorTypes": "全部操作者",
+        "range": "时间范围"
+      },
+      "range": {
+        "last24h": "最近 24 小时",
+        "last7d": "最近 7 天",
+        "last30d": "最近 30 天"
+      },
+      "searchActionPlaceholder": "按操作名搜索…",
       "resetSearch": "清除搜索",
+      "refresh": "刷新",
       "exportButton": "导出",
       "table": {
         "result": "结果",
         "action": "操作",
-        "request": "方法",
-        "user": "用户",
+        "actionAndRequest": "操作 / 请求",
+        "actor": "操作者",
         "time": "时间",
         "empty": "暂无日志",
+        "emptyHint": "所选时间范围内没有日志",
+        "emptyFiltered": "没有符合筛选条件的日志，可以放宽条件或扩大时间范围",
         "openDetail": "查看详情"
       },
       "detail": {
@@ -1141,8 +1562,11 @@ export default {
         "result": "结果",
         "time": "时间",
         "action": "操作",
+        "target": "对象",
         "request": "请求",
         "user": "用户",
+        "actorType": "操作者类型",
+        "requestId": "请求 ID",
         "detail": "详情",
         "copy": "复制详情",
         "copied": "详情已复制",
@@ -1184,9 +1608,13 @@ export default {
         "allDataTypes": "全部类型",
         "allServers": "全部区服",
         "allStatuses": "全部状态",
-        "selectedMore": "{first} +{count}"
+        "selectedMore": "{first} +{count}",
+        "activeCount": "已选 {count} 项"
       },
-      "timeRangeLabel": "时间范围:",
+      "overview": {
+        "title": "概览",
+        "scope": "符合筛选条件的全部上传"
+      },
       "table": {
         "status": "状态",
         "user": "用户",
@@ -1201,6 +1629,8 @@ export default {
         "viewDetails": "查看详情",
         "viewError": "查看错误",
         "time": "时间",
+        "duration": "耗时",
+        "methodAndDataType": "方式 / 类型",
         "empty": "暂无上传日志"
       },
       "actor": {
@@ -1232,6 +1662,8 @@ export default {
         "client": "客户端 / 版本",
         "platform": "平台",
         "requestId": "请求 ID",
+        "duration": "处理耗时",
+        "requestSize": "请求大小",
         "claimedGameUserId": "载荷声明 UID",
         "failureStage": "失败阶段",
         "errorCode": "错误码"
@@ -1243,13 +1675,34 @@ export default {
       },
       "summary": {
         "totalUploads": "总上传数",
-        "successRate": "成功率"
+        "successRate": "成功率",
+        "failureRate": "失败率 {rate}",
+        "activeAccounts": "活跃游戏账号",
+        "activeAccountsHint": "有成功上传的已验证账号",
+        "latency": "处理耗时中位数",
+        "latencyDetail": "P95 {p95} · {count} 个样本",
+        "latencyNoSamples": "没有耗时记录",
+        "volume": {
+          "hour": "每小时上传量走势",
+          "day": "每日上传量走势"
+        },
+        "failureVolume": {
+          "hour": "每小时失败数走势",
+          "day": "每日失败数走势"
+        },
+        "peak": {
+          "hour": "峰值 {count} 次/小时",
+          "day": "峰值 {count} 次/天"
+        }
       },
       "charts": {
-        "successRateDistribution": "成功率分布",
         "byMethod": "按上传方式",
         "byDataType": "按数据类型",
-        "total": "总计"
+        "byServer": "按区服",
+        "failureStages": "失败阶段",
+        "noFailures": "范围内没有失败的上传",
+        "unknownStage": "未记录阶段",
+        "empty": "暂无数据"
       },
       "method": {
         "manual": "手动上传",
@@ -1273,6 +1726,7 @@ export default {
       },
       "toast": {
         "loadFailedTitle": "加载上传日志失败",
+        "loadAnalyticsFailedTitle": "加载上传统计失败",
         "loadFailedFallback": "加载失败",
         "filterFailedTitle": "筛选失败",
         "invalidTimeRange": "开始时间不能晚于结束时间"
@@ -1284,8 +1738,39 @@ export default {
       "cancel": "取消",
       "create": "创建"
     },
+    "status": {
+      "verified": "已验证",
+      "unverified": "未验证"
+    },
+    "stats": {
+      "total": "绑定总数",
+      "verified": "已验证",
+      "verifiedShare": "占全部绑定的 {share}",
+      "unverified": "未验证",
+      "siteWide": "全站",
+      "matching": "符合当前筛选",
+      "matchingPage": "第 {page} / {pages} 页",
+      "byServer": "区服分布",
+      "byServerHint": "全站的全部绑定",
+      "noBindings": "还没有游戏账号绑定",
+      "loadFailed": "全站统计加载失败",
+      "retry": "重试",
+      "sharingTitle": "本页共享设置",
+      "sharingHint": "仅统计列表当前显示的 {count} 条绑定",
+      "sharingEmpty": "当前列表没有绑定",
+      "sharingFailed": "列表未能加载，没有可统计的绑定",
+      "sharing": {
+        "suitePublicApi": "账号数据 · 公开查询",
+        "suiteBots": "账号数据 · 同步给 Bot",
+        "mysekaiPublicApi": "烤森数据 · 公开查询",
+        "mysekaiFixtureApi": "烤森数据 · 家具互助",
+        "mysekaiBots": "烤森数据 · 同步给 Bot"
+      }
+    },
     "filters": {
       "title": "搜索与筛选",
+      "verification": "验证状态",
+      "allVerification": "全部",
       "addButton": "新增绑定",
       "fuzzySearch": "模糊搜索",
       "fuzzySearchPlaceholder": "游戏ID / 用户名 / 邮箱",
@@ -1308,6 +1793,18 @@ export default {
       "userIdAsc": "用户ID ↑"
     },
     "table": {
+      "title": "绑定列表",
+      "selectRowOf": "选择游戏账号 {gameUserId}",
+      "sharing": {
+        "suite": "账号 {on}/{total}",
+        "mysekai": "烤森 {on}/{total}",
+        "publicApi": "已开启公开查询",
+        "none": "无共享设置"
+      },
+      "role": {
+        "admin": "管理员",
+        "superAdmin": "超级管理员"
+      },
       "selectAll": "全选",
       "selectRow": "选择该行",
       "selectedCount": "已选 {count} 条",
@@ -1318,6 +1815,9 @@ export default {
       "columns": {
         "server": "区服",
         "gameId": "游戏ID",
+        "account": "游戏账号",
+        "verified": "验证",
+        "sharing": "已开启的共享",
         "user": "所属用户",
         "actions": "操作"
       },
@@ -1344,7 +1844,20 @@ export default {
       "gameUserId": "游戏用户ID",
       "gameUserIdPlaceholder": "输入游戏内用户ID",
       "suiteSettingsTitle": "Suite 数据设置",
-      "mysekaiSettingsTitle": "MySekai 数据设置"
+      "mysekaiSettingsTitle": "MySekai 数据设置",
+      "accountTitle": "游戏账号",
+      "owner": "所属用户 ID {userId}",
+      "identityLockedHint": "区服、游戏 ID 和所属用户不能在这里修改；要换绑到其他用户请使用「转移绑定」。",
+      "botsHint": "把这类数据同步给对应的 QQ 群 Bot。",
+      "permissionHelp": {
+        "suite": {
+          "allowPublicApi": "开启后，任何知道这个 UID 的人都能通过工具箱接口查看该用户上传的账号数据。"
+        },
+        "mysekai": {
+          "allowPublicApi": "开启后，任何知道这个 UID 的人都能通过工具箱接口查看该用户上传的烤森数据。",
+          "allowFixtureApi": "开启后，这个 UID 会出现在烤森家具互助列表，其他玩家可以来访。"
+        }
+      }
     },
     "reassignDialog": {
       "title": "转移游戏账号",
@@ -1398,10 +1911,35 @@ export default {
       "confirm": "确认",
       "unbound": "未绑定",
       "openMenu": "打开菜单",
-      "fallback": "—"
+      "fallback": "—",
+      "delete": "删除",
+      "copyId": "复制用户 ID",
+      "idCopied": "用户 ID 已复制",
+      "copyFailed": "复制失败"
     },
     "management": {
       "title": "用户管理",
+      "stats": {
+        "totalUsers": "全站用户",
+        "newInDays": "近 {days} 天 +{count}",
+        "trendLabel": "近 {days} 天每日注册数",
+        "staff": "管理团队",
+        "staffBreakdown": "超级管理员 {superAdmin} · 管理员 {admin}",
+        "banned": "已封禁",
+        "shareOfAll": "占全站 {percent}",
+        "filtered": "符合筛选",
+        "listed": "列表中的用户",
+        "listScopeSuperAdmin": "不含你自己的账号",
+        "listScopeAdmin": "不含你自己和超级管理员",
+        "loadFailed": "统计加载失败",
+        "retry": "重新加载统计"
+      },
+      "pageSummary": {
+        "count": "本页 {count} 人",
+        "staff": "管理员 {count}",
+        "banned": "已封禁 {count}",
+        "allowCN": "允许国服 MySekai {count}"
+      },
       "filters": {
         "searchLabel": "搜索",
         "searchPlaceholder": "搜索用户名、邮箱、用户 ID 或社交账号…",
@@ -1421,7 +1959,9 @@ export default {
         "createdFromLabel": "注册时间起",
         "createdFromPlaceholder": "按起始时间过滤",
         "createdToLabel": "注册时间止",
-        "createdToPlaceholder": "按结束时间过滤"
+        "createdToPlaceholder": "按结束时间过滤",
+        "allowCNShort": "国服 MySekai",
+        "toggle": "筛选条件"
       },
       "batch": {
         "selectedCount": "已选 {count} 个用户",
@@ -1464,11 +2004,16 @@ export default {
           "role": "角色",
           "allowCN": "国服 MySekai 权限",
           "status": "账号状态",
-          "createdAt": "注册时间"
+          "createdAt": "注册时间",
+          "user": "用户"
         },
         "empty": "暂无用户数据",
         "loadError": "加载用户列表失败",
-        "retry": "重试"
+        "retry": "重试",
+        "emptyFiltered": "没有符合当前筛选条件的用户。",
+        "selectPage": "全选本页",
+        "selectUser": "选择 {name}",
+        "viewDetail": "查看详情"
       },
       "toast": {
         "loadFailedTitle": "加载用户列表失败",
@@ -1493,6 +2038,29 @@ export default {
     "detail": {
       "backToList": "返回用户列表",
       "notFound": "用户不存在，可能已被删除或链接有误。",
+      "header": {
+        "userId": "用户 ID",
+        "banReason": "封禁原因"
+      },
+      "stats": {
+        "gameBindings": "游戏账号",
+        "verifiedCount": "已验证 {count}",
+        "authorizedSocials": "授权社交账号",
+        "mainSocial": "主绑定：{platform}",
+        "noMainSocial": "未绑定主社交平台",
+        "uploads": "近 {hours} 小时上传",
+        "uploadBreakdown": "成功 {success} · 失败 {failure}",
+        "uploadSuccessRate": "成功率 {percent}",
+        "noUploads": "该时段内没有上传",
+        "systemLogs": "近 {hours} 小时操作记录",
+        "lastAt": "最近 {time}",
+        "noEvents": "该时段内没有记录"
+      },
+      "account": {
+        "title": "账号设置",
+        "roleHelp": "新角色的权限立即生效。",
+        "iosHelp": "用户在 iOS 快捷指令中上传数据时使用。"
+      },
       "tabs": {
         "info": "基本信息",
         "activity": "活动记录",
@@ -1544,12 +2112,19 @@ export default {
           "path": "路径",
           "time": "时间"
         },
-        "empty": "暂无活动记录"
+        "empty": "暂无活动记录",
+        "listedOf": "显示最近 {listed} 条，共 {total} 条",
+        "listedAll": "共 {total} 条",
+        "showAll": "显示全部 {count} 条",
+        "showFewer": "收起",
+        "byActor": "操作者 {actor}"
       },
       "oauth": {
         "title": "OAuth 授权",
         "revokeAll": "撤销全部",
         "total": "共 {count} 个授权",
+        "activeCount": "{count} 个有效",
+        "device": "设备：{name}",
         "empty": "暂无 OAuth 授权",
         "revokeAllDialogTitle": "撤销全部授权",
         "revokeAllDialogDescription": "此操作将撤销该用户的全部 {count} 个 OAuth 授权，并使其从所有已连接的第三方应用登出。是否继续？",
@@ -1575,6 +2150,9 @@ export default {
         "edit": "编辑游戏绑定",
         "unbind": "解绑游戏账号",
         "empty": "暂无游戏绑定",
+        "total": "共 {count} 个账号",
+        "sharingSuite": "Suite 共享 {on}/{total}",
+        "sharingMysekai": "MySekai 共享 {on}/{total}",
         "unbindDialogTitle": "确认解绑",
         "unbindDialogDescription": "此操作将解绑游戏账号 {gameUserId}，之后可重新添加。"
       },
@@ -1582,6 +2160,7 @@ export default {
         "title": "社交平台绑定",
         "add": "添加绑定",
         "empty": "暂无社交平台绑定",
+        "delete": "删除社交平台绑定",
         "deleteDialogTitle": "确认删除",
         "deleteDialogDescription": "确定要删除此主社交平台绑定吗？之后可重新添加。"
       },
@@ -1594,6 +2173,8 @@ export default {
           "comment": "备注"
         },
         "empty": "暂无授权社交平台",
+        "total": "共 {count} 个账号",
+        "delete": "删除授权社交平台",
         "deleteDialogTitle": "确认删除",
         "deleteDialogDescription": "确定要删除此授权社交平台吗？之后可重新添加。"
       },
@@ -1602,6 +2183,7 @@ export default {
         "regenerate": "重新生成",
         "generate": "生成上传码",
         "empty": "暂无上传码",
+        "delete": "删除上传码",
         "deleteDialogTitle": "确认删除",
         "deleteDialogDescription": "确定要删除当前的 iOS 上传码吗？之后可重新生成一个新的。",
         "regenerateDialogTitle": "确认重新生成上传码",

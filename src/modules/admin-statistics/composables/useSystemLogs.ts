@@ -5,11 +5,11 @@ import { useI18n } from "vue-i18n"
 import { useDebouncedWatch } from "@/composables/useDebouncedWatch"
 import { usePagedList } from "@/composables/usePagedList"
 import { useRouteQuerySync } from "@/composables/useRouteQuerySync"
-import { createPageQuery, type QueryParams, setTrimmedQueryValue } from "@/core/http/query"
+import { createPageQuery } from "@/core/http/query"
 import { copyTextToClipboard, isClipboardSupported } from "@/lib/clipboard"
 import { formatDateKey, formatLocalizedDateTime } from "@/lib/date-time"
 import { describeError, type ErrorDescription } from "@/lib/error-utils"
-import { readQueryString, writeQueryValue } from "@/lib/query-codec"
+import { writeQueryValue } from "@/lib/query-codec"
 import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
 import { ADMIN_DEFAULT_PAGE_SIZE, readAdminPage, readAdminPageSize } from "@/modules/admin/lib/pagination"
 import {
@@ -17,30 +17,53 @@ import {
   getSystemLogDetail,
   getSystemLogs,
   getSystemLogSummary,
+  type SystemLogEntry,
+  type SystemLogListResponse,
+  type SystemLogSummaryDetail,
 } from "@/modules/admin-statistics/api/system-log"
-import type { SystemLog, SystemLogSummary } from "@/types/admin"
+import {
+  DEFAULT_SYSTEM_LOG_RANGE,
+  buildSystemLogFilterParams,
+  countActiveSystemLogFilters,
+  createDefaultSystemLogFilters,
+  formatSystemLogMetadata,
+  parseSystemLogFiltersQuery,
+  type SystemLogActorTypeFilter,
+  type SystemLogFilters,
+  type SystemLogRange,
+  type SystemLogResultFilter,
+} from "@/modules/admin-statistics/lib/logs-system-query"
 
-const QUERY_KEYS = ["q", "page", "size"] as const
+const QUERY_KEYS = ["q", "result", "actor", "range", "page", "size"] as const
 
 /** The detail JSON, pretty-printed when it parses; the raw text otherwise. */
 export function formatSystemLogDetail(detail: string | null | undefined): string {
-  const raw = (detail ?? "").trim()
-  if (!raw) return ""
-  try {
-    return JSON.stringify(JSON.parse(raw), null, 2)
-  } catch {
-    return raw
-  }
+  return formatSystemLogMetadata({ detail })
 }
 
 export function useSystemLogs() {
   const { t } = useI18n()
   const route = useRoute()
-  const search = ref(readQueryString(route.query.q) ?? "")
+  const initial = parseSystemLogFiltersQuery(route.query)
+  const search = ref(initial.search)
+  const result = ref<SystemLogResultFilter>(initial.result)
+  const actorType = ref<SystemLogActorTypeFilter>(initial.actorType)
+  const range = ref<SystemLogRange>(initial.range)
   // The search the list was last loaded with: an Enter-triggered load must not
   // be repeated by the debounce that follows it.
   let loadedSearch = search.value.trim()
+  let skipSelectWatch = false
   const loadError = ref<ErrorDescription | null>(null)
+
+  function currentFilters(): SystemLogFilters {
+    return { search: search.value, result: result.value, actorType: actorType.value, range: range.value }
+  }
+
+  const activeFilterCount = computed(() => countActiveSystemLogFilters(currentFilters()))
+
+  // The window the loaded rows cover, as the backend resolved it.
+  const listFrom = ref("")
+  const listTo = ref("")
 
   const {
     loading,
@@ -54,46 +77,63 @@ export function useSystemLogs() {
     prevPage,
     nextPage,
     goToPage,
-  } = usePagedList<SystemLog>({
+  } = usePagedList<SystemLogEntry, SystemLogListResponse>({
     initialPage: readAdminPage(route.query.page),
     initialPageSize: readAdminPageSize(route.query.size),
     fetchPage: async ({ page, pageSize }) => {
-      const params = createPageQuery(page, pageSize)
       loadedSearch = search.value.trim()
-      setTrimmedQueryValue(params, "q", search.value)
-      return getSystemLogs(params)
+      return getSystemLogs({
+        ...createPageQuery(page, pageSize),
+        ...buildSystemLogFilterParams(currentFilters(), Date.now()),
+      })
     },
+    mapResponse: (response) => ({
+      items: response.items ?? [],
+      total: response.total ?? 0,
+    }),
     onBeforeLoad: () => {
       loadError.value = null
+    },
+    onSuccess: (response) => {
+      listFrom.value = response.from ?? ""
+      listTo.value = response.to ?? ""
     },
     onError: (error) => {
       loadError.value = describeError(error, t("adminStatistics.systemLogs.toast.loadFailedFallback"))
     },
   })
 
-  const summary = ref<SystemLogSummary | null>(null)
+  const summary = ref<SystemLogSummaryDetail | null>(null)
   const summaryLoading = ref(true)
   const summaryError = ref<ErrorDescription | null>(null)
+  let latestSummaryRequestId = 0
 
   const detailOpen = ref(false)
-  const detailLog = ref<SystemLog | null>(null)
+  const detailLog = ref<SystemLogEntry | null>(null)
   const detailLoading = ref(false)
   const detailError = ref<ErrorDescription | null>(null)
   const detailId = ref<string>("")
   let latestDetailRequestId = 0
 
-  const detailText = computed(() => formatSystemLogDetail(detailLog.value?.detail))
+  const detailText = computed(() => formatSystemLogMetadata(detailLog.value))
 
+  /** The summary covers every log matching the filters in the range, so it follows the filters, not the page. */
   async function loadSummary() {
+    const requestId = ++latestSummaryRequestId
     summaryLoading.value = true
     summaryError.value = null
     try {
-      summary.value = await getSystemLogSummary()
+      const data = await getSystemLogSummary(buildSystemLogFilterParams(currentFilters(), Date.now()))
+      if (requestId !== latestSummaryRequestId) return
+      summary.value = data
     } catch (error: unknown) {
+      if (requestId !== latestSummaryRequestId) return
       summary.value = null
       summaryError.value = describeError(error, t("adminStatistics.systemLogs.toast.loadFailedFallback"))
     } finally {
-      summaryLoading.value = false
+      if (requestId === latestSummaryRequestId) {
+        summaryLoading.value = false
+      }
     }
   }
 
@@ -138,9 +178,7 @@ export function useSystemLogs() {
 
   async function handleExport() {
     try {
-      const params: QueryParams = {}
-      setTrimmedQueryValue(params, "q", search.value)
-      const blob = await exportSystemLogs(params)
+      const blob = await exportSystemLogs(buildSystemLogFilterParams(currentFilters(), Date.now()))
       const url = URL.createObjectURL(blob)
       const anchor = document.createElement("a")
       anchor.href = url
@@ -161,24 +199,23 @@ export function useSystemLogs() {
     }
   }
 
-  function resultColor(result?: string) {
-    switch (result) {
-      case "success":
-        return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-      case "failure":
-        return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-      default:
-        return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400"
-    }
-  }
-
   function formatTime(iso?: string) {
     return formatLocalizedDateTime(iso, "dateTimeSeconds", t("adminStatistics.common.fallback"))
   }
 
+  /** "from – to" of the window the figures cover: the summary's, or the list's while that is missing. */
+  const rangeLabel = computed(() => {
+    const from = summary.value?.from || listFrom.value
+    const to = summary.value?.to || listTo.value
+    if (!from || !to) return ""
+    const fallback = t("adminStatistics.common.fallback")
+    return `${formatLocalizedDateTime(from, "dateTime", fallback)} – ${formatLocalizedDateTime(to, "dateTime", fallback)}`
+  })
+
   function reloadFromFirstPage() {
     resetPage()
     void loadLogs()
+    void loadSummary()
   }
 
   /** Enter in the search box: query now instead of waiting for the debounce. */
@@ -191,8 +228,24 @@ export function useSystemLogs() {
     applySearch()
   }
 
+  /** Back to the default view: no search, every result and actor, the last 24 hours. */
+  function resetFilters() {
+    const defaults = createDefaultSystemLogFilters()
+    // One load for the whole reset: the select watcher below would otherwise add its own.
+    skipSelectWatch = result.value !== defaults.result
+      || actorType.value !== defaults.actorType
+      || range.value !== defaults.range
+    search.value = defaults.search
+    result.value = defaults.result
+    actorType.value = defaults.actorType
+    range.value = defaults.range
+    reloadFromFirstPage()
+  }
+
+  /** Reloads the page of rows and the figures above it. */
   function reload() {
     void loadLogs()
+    void loadSummary()
   }
 
   useDebouncedWatch(
@@ -204,12 +257,24 @@ export function useSystemLogs() {
     400
   )
 
-  watch(pageSize, () => {
+  watch([result, actorType, range], () => {
+    if (skipSelectWatch) {
+      skipSelectWatch = false
+      return
+    }
     reloadFromFirstPage()
+  })
+
+  watch(pageSize, () => {
+    resetPage()
+    void loadLogs()
   })
 
   useRouteQuerySync(QUERY_KEYS, () => ({
     q: writeQueryValue(search.value.trim()),
+    result: writeQueryValue(result.value, "all"),
+    actor: writeQueryValue(actorType.value, "all"),
+    range: writeQueryValue(range.value, DEFAULT_SYSTEM_LOG_RANGE),
     page: writeQueryValue(page.value, 1),
     size: writeQueryValue(pageSize.value, ADMIN_DEFAULT_PAGE_SIZE),
   }))
@@ -228,6 +293,11 @@ export function useSystemLogs() {
     total,
     totalPages,
     search,
+    result,
+    actorType,
+    range,
+    activeFilterCount,
+    rangeLabel,
     summary,
     summaryLoading,
     summaryError,
@@ -242,12 +312,12 @@ export function useSystemLogs() {
     handleExport,
     applySearch,
     resetSearch,
+    resetFilters,
     reload,
     loadSummary,
     prevPage,
     nextPage,
     goToPage,
-    resultColor,
     formatTime,
   }
 }

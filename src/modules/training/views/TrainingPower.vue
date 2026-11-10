@@ -3,12 +3,13 @@ import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
 import { useUserDataPageState } from "@/shared/sekai/user-snapshot/use-user-data-page-state"
 
-import { computed, ref } from "vue"
+import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { useTrainingRefresh } from "@/modules/training/composables/training-context"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { SEKAI_CARD_ATTR_COLORS, resolveSekaiCharacterColor, type SekaiUnit } from "@/shared/sekai/catalog"
+import TrainingBonusTable, { type TrainingBonusRow } from "@/modules/training/components/TrainingBonusTable.vue"
+import { SEKAI_CARD_ATTR_COLORS, resolveSekaiCharacterColor } from "@/shared/sekai/catalog"
 import { resolveCardAttrRoundIconUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import { useTrainingPower } from "@/modules/training/composables/useTrainingPower"
 import {
@@ -85,18 +86,60 @@ const attrRows = computed(() => bonuses.value.attrs.map((bonus) => ({
   color: SEKAI_CARD_ATTR_COLORS[bonus.attr] ?? null,
 })))
 
-// Units whose emblem image failed to load just drop the image.
-const failedUnitLogos = ref<Set<SekaiUnit>>(new Set())
-
-function markUnitLogoFailed(unit: SekaiUnit) {
-  const next = new Set(failedUnitLogos.value)
-  next.add(unit)
-  failedUnitLogos.value = next
-}
-
 function formatPercent(value: number): string {
   return formatPowerBonusPercent(value)
 }
+
+/** A source that contributes nothing shows as a blank cell, not "0.0%". */
+function cell(value: number): string | null {
+  return value > 0 ? formatPercent(value) : null
+}
+
+// --- Tables -------------------------------------------------------------------
+const characterColumns = computed(() => [
+  t("training.power.rankBonus"),
+  t("training.power.areaItemBonus"),
+  t("training.power.fixtureBonus"),
+])
+
+/** Characters 1–12 are the first three units; the other half takes the rest. */
+const FIRST_TABLE_LAST_CHARACTER_ID = 12
+
+const characterTables = computed<TrainingBonusRow[][]>(() => {
+  const rows = characterRows.value.map((row) => ({
+    key: row.characterId,
+    name: row.name,
+    iconUrl: row.iconUrl,
+    color: row.color,
+    values: [cell(row.rank), cell(row.areaItem), cell(row.fixture)],
+    total: formatPercent(row.total),
+    characterId: row.characterId,
+  }))
+  return [
+    rows.filter((row) => row.characterId <= FIRST_TABLE_LAST_CHARACTER_ID),
+    rows.filter((row) => row.characterId > FIRST_TABLE_LAST_CHARACTER_ID),
+  ].filter((table) => table.length > 0)
+})
+
+const unitColumns = computed(() => [t("training.power.areaItemBonus"), t("training.power.gateBonus")])
+
+const unitTableRows = computed<TrainingBonusRow[]>(() => unitRows.value.map((row) => ({
+  key: row.unit,
+  name: row.label,
+  iconUrl: row.logoUrl,
+  color: row.color,
+  values: [cell(row.areaItem), cell(row.gate)],
+  total: formatPercent(row.total),
+})))
+
+const attrTableRows = computed<TrainingBonusRow[]>(() => attrRows.value.map((row) => ({
+  key: row.attr,
+  name: row.label,
+  iconUrl: row.iconUrl,
+  color: row.color,
+  values: [],
+  total: formatPercent(row.total),
+})))
 
 function refresh() {
   reloadMaster()
@@ -146,126 +189,74 @@ function retry() {
 
     <!-- Loading skeleton -->
     <template v-else-if="isLoading">
-      <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-        <Skeleton v-for="index in 8" :key="index" class="h-20 w-full rounded-lg" />
+      <Skeleton class="h-14 w-full rounded-xl" />
+      <div class="grid gap-3 lg:grid-cols-2">
+        <Skeleton class="h-96 w-full rounded-xl" />
+        <Skeleton class="h-96 w-full rounded-xl" />
       </div>
-      <Skeleton class="h-48 w-full rounded-lg" />
-      <Skeleton class="h-40 w-full rounded-lg" />
     </template>
 
     <template v-else-if="isReady">
-      <Card v-if="bonuses.allCharacterAreaItem > 0 || bonuses.multiUnitAreaItem > 0">
-        <CardHeader class="pb-2">
-          <CardTitle class="text-base">{{ t("training.power.sharedAreaTitle") }}</CardTitle>
-        </CardHeader>
-        <CardContent class="space-y-2 text-sm">
-          <p v-if="bonuses.allCharacterAreaItem > 0">
-            {{ t("training.power.allCharacterBonus") }}
-            <span class="font-semibold tabular-nums">{{ formatPercent(bonuses.allCharacterAreaItem) }}</span>
-          </p>
-          <p v-if="bonuses.multiUnitAreaItem > 0">
-            {{ t("training.power.multiUnitBonus") }}
-            <span class="font-semibold tabular-nums">{{ formatPercent(bonuses.multiUnitAreaItem) }}</span>
-          </p>
-          <p class="text-xs text-muted-foreground">{{ t("training.power.sharedAreaHint") }}</p>
-        </CardContent>
-      </Card>
-
-      <!-- Character bonuses -->
-      <Card>
-        <CardHeader class="pb-2">
-          <CardTitle class="text-base">{{ t("training.power.charactersTitle") }}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            <div
-              v-for="row in characterRows"
-              :key="row.characterId"
-              class="flex items-center gap-2 rounded-md border border-l-4 p-2"
-              :style="row.color ? { borderLeftColor: row.color } : {}"
-            >
-              <img
-                v-if="row.iconUrl"
-                :src="row.iconUrl"
-                alt=""
-                class="size-9 shrink-0 rounded-full"
-                loading="lazy"
-              >
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-xs" :title="row.name">{{ row.name }}</p>
-                <p class="flex flex-wrap gap-x-3 text-[11px] tabular-nums text-muted-foreground">
-                  <span>{{ t("training.power.rankBonus") }} {{ formatPercent(row.rank) }}</span>
-                  <span>{{ t("training.power.areaItemBonus") }} {{ formatPercent(row.areaItem) }}</span>
-                  <span v-if="row.fixture > 0">{{ t("training.power.fixtureBonus") }} {{ formatPercent(row.fixture) }}</span>
-                </p>
-              </div>
-              <span class="shrink-0 text-sm font-semibold tabular-nums">
-                {{ formatPercent(row.total) }}
-              </span>
-            </div>
+      <!-- Two shared bonuses and what they mean: a strip, not a card. -->
+      <div
+        v-if="bonuses.allCharacterAreaItem > 0 || bonuses.multiUnitAreaItem > 0"
+        class="flex flex-wrap items-center gap-x-8 gap-y-2 rounded-xl border bg-muted/20 px-4 py-2.5"
+        data-testid="power-shared"
+      >
+        <dl class="flex flex-wrap gap-x-8 gap-y-2">
+          <div v-if="bonuses.allCharacterAreaItem > 0" class="flex flex-col gap-0.5">
+            <dt class="text-[11px] text-muted-foreground">{{ t("training.power.allCharacterBonus") }}</dt>
+            <dd class="text-base font-semibold leading-tight tabular-nums">{{ formatPercent(bonuses.allCharacterAreaItem) }}</dd>
           </div>
-        </CardContent>
-      </Card>
-
-      <!-- Unit bonuses -->
-      <Card>
-        <CardHeader class="pb-2">
-          <CardTitle class="text-base">{{ t("training.power.unitsTitle") }}</CardTitle>
-        </CardHeader>
-        <CardContent class="flex flex-col gap-3">
-          <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            <div
-              v-for="row in unitRows"
-              :key="row.unit"
-              class="flex items-center gap-2 rounded-md border border-l-4 p-2.5"
-              :style="row.color ? { borderLeftColor: row.color } : {}"
-            >
-              <img
-                v-if="!failedUnitLogos.has(row.unit)"
-                :src="row.logoUrl"
-                alt=""
-                class="h-5 w-auto max-w-10 shrink-0 object-contain"
-                loading="lazy"
-                @error="markUnitLogoFailed(row.unit)"
-              >
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-sm" :title="row.label">{{ row.label }}</p>
-                <p class="flex flex-wrap gap-x-3 text-[11px] tabular-nums text-muted-foreground">
-                  <span>{{ t("training.power.areaItemBonus") }} {{ formatPercent(row.areaItem) }}</span>
-                  <span v-if="row.gate > 0">{{ t("training.power.gateBonus") }} {{ formatPercent(row.gate) }}</span>
-                </p>
-              </div>
-              <span class="shrink-0 text-sm font-semibold tabular-nums">
-                {{ formatPercent(row.total) }}
-              </span>
-            </div>
+          <div v-if="bonuses.multiUnitAreaItem > 0" class="flex flex-col gap-0.5">
+            <dt class="text-[11px] text-muted-foreground">{{ t("training.power.multiUnitBonus") }}</dt>
+            <dd class="text-base font-semibold leading-tight tabular-nums">{{ formatPercent(bonuses.multiUnitAreaItem) }}</dd>
           </div>
+        </dl>
+        <p class="min-w-0 flex-1 basis-64 text-xs text-muted-foreground">{{ t("training.power.sharedAreaHint") }}</p>
+      </div>
+
+      <!-- Characters: two tables side by side on a wide page, split at the
+           unit boundary (Leo/need – Vivid BAD SQUAD | the rest). -->
+      <section class="flex flex-col gap-2" data-testid="power-characters">
+        <h2 class="text-sm font-semibold">{{ t("training.power.charactersTitle") }}</h2>
+        <div class="grid items-start gap-3 lg:grid-cols-2">
+          <TrainingBonusTable
+            v-for="(rows, index) in characterTables"
+            :key="index"
+            :name-label="t('training.power.characterColumn')"
+            :total-label="t('training.power.total')"
+            :columns="characterColumns"
+            :rows="rows"
+            icon="round"
+          />
+        </div>
+      </section>
+
+      <div class="grid items-start gap-4 lg:grid-cols-2">
+        <section class="flex flex-col gap-2" data-testid="power-units">
+          <h2 class="text-sm font-semibold">{{ t("training.power.unitsTitle") }}</h2>
+          <TrainingBonusTable
+            :name-label="t('training.power.unitColumn')"
+            :total-label="t('training.power.total')"
+            :columns="unitColumns"
+            :rows="unitTableRows"
+            icon="logo"
+          />
           <p class="text-xs text-muted-foreground">{{ t("training.power.gateHint") }}</p>
-        </CardContent>
-      </Card>
+        </section>
 
-      <!-- Attribute bonuses -->
-      <Card>
-        <CardHeader class="pb-2">
-          <CardTitle class="text-base">{{ t("training.power.attrsTitle") }}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            <div
-              v-for="row in attrRows"
-              :key="row.attr"
-              class="flex items-center gap-2 rounded-md border border-l-4 p-2.5"
-              :style="row.color ? { borderLeftColor: row.color } : {}"
-            >
-              <img :src="row.iconUrl" alt="" class="size-5 shrink-0" loading="lazy">
-              <p class="min-w-0 flex-1 truncate text-sm" :title="row.label">{{ row.label }}</p>
-              <span class="shrink-0 text-sm font-semibold tabular-nums">
-                {{ formatPercent(row.total) }}
-              </span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        <section class="flex flex-col gap-2" data-testid="power-attrs">
+          <h2 class="text-sm font-semibold">{{ t("training.power.attrsTitle") }}</h2>
+          <TrainingBonusTable
+            :name-label="t('training.power.attrColumn')"
+            :total-label="t('training.power.total')"
+            :columns="[]"
+            :rows="attrTableRows"
+            icon="logo"
+          />
+        </section>
+      </div>
     </template>
   </div>
 </template>

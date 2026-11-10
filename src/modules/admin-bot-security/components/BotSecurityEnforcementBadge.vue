@@ -12,15 +12,15 @@ const { t } = useI18n()
 <template>
   <span
     :class="[
-      'inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium',
+      'inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium',
       props.enforced
-        ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-        : 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
+        ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300'
+        : 'bg-sky-500/15 text-sky-700 dark:text-sky-300',
     ]"
     :title="props.enforced ? t('adminBotSecurity.enforcement.enforcedHint') : t('adminBotSecurity.enforcement.logOnlyHint')"
   >
-    <LucideShieldBan v-if="props.enforced" class="h-3 w-3 shrink-0" />
-    <LucideFileText v-else class="h-3 w-3 shrink-0" />
+    <LucideShieldBan v-if="props.enforced" class="size-3 shrink-0" aria-hidden="true" />
+    <LucideFileText v-else class="size-3 shrink-0" aria-hidden="true" />
     {{ props.enforced ? t("adminBotSecurity.enforcement.enforced") : t("adminBotSecurity.enforcement.logOnly") }}
   </span>
 </template>

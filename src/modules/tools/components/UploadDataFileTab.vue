@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import UploadPanelHeader from "@/modules/tools/components/upload/UploadPanelHeader.vue"
 import {
   Select,
   SelectContent,
@@ -23,13 +24,13 @@ import type { UploadTargetAccount } from "@/modules/tools/lib/upload-targets"
 import type { UploadDisabledReasonKind } from "@/modules/tools/composables/useUploadDataAccounts"
 import {
   Database,
+  FileUp,
   FolderOpen,
   Loader2,
   LogIn,
   LucideAlertTriangle,
   LucideRefreshCw,
   LucideShieldAlert,
-  Upload,
   UploadCloud,
 } from "lucide-vue-next"
 
@@ -160,11 +161,7 @@ function accountOptionTitle(account: UploadTargetAccount): string | undefined {
 <template>
   <Card class="dark:green">
     <CardHeader>
-      <CardTitle class="flex items-center gap-2">
-        <Upload class="h-6 w-6" />
-        {{ t("tools.uploadData.fileTab.title") }}
-      </CardTitle>
-      <CardDescription>{{ t("tools.uploadData.fileTab.description") }}</CardDescription>
+      <UploadPanelHeader :icon="FileUp" :title="t('tools.uploadData.fileTab.title')" :description="t('tools.uploadData.fileTab.description')" />
     </CardHeader>
     <CardContent>
       <!-- "Sign in first" is a plain next step, not a failure: it stays neutral. -->
@@ -243,7 +240,7 @@ function accountOptionTitle(account: UploadTargetAccount): string | undefined {
             <p class="text-xs text-muted-foreground">{{ t("tools.uploadData.fileTab.fields.fileHint") }}</p>
           </div>
           <div class="flex min-w-0 flex-col space-y-1.5">
-            <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex min-h-7 flex-wrap items-center justify-between gap-2 pointer-coarse:min-h-10">
               <Label for="account-select">{{ t("tools.uploadData.fileTab.fields.account") }}</Label>
               <Button
                 type="button"
@@ -346,7 +343,9 @@ function accountOptionTitle(account: UploadTargetAccount): string | undefined {
             </p>
           </div>
           <div class="flex min-w-0 flex-col space-y-1.5">
-            <Label for="data-type-select">{{ t("tools.uploadData.fileTab.fields.dataType") }}</Label>
+            <div class="flex min-h-7 items-center pointer-coarse:min-h-10">
+              <Label for="data-type-select">{{ t("tools.uploadData.fileTab.fields.dataType") }}</Label>
+            </div>
             <div class="relative min-w-0 w-full items-center">
               <Select :key="locale"
                 id="data-type-select"

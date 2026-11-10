@@ -1,30 +1,25 @@
 <script setup lang="ts">
+/**
+ * The global webhook settings as one grouped list: the delivery switch, the
+ * JWT secret, and a save line. Each row carries the saved state as a chip
+ * next to its label, so the switch and the input read as pending changes.
+ */
 import { Button } from "@/components/ui/button"
 import { InputWithToggle } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/components/ui/alert"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import {
   LucideInfo,
   LucideKeyRound,
   LucideLoader2,
+  LucidePower,
   LucideSave,
 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import FieldError from "@/shared/components/FieldError.vue"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
+import SettingsRow from "@/shared/components/settings/SettingsRow.vue"
 import AdminWebhookStatusBadge from "./AdminWebhookStatusBadge.vue"
 import { WEBHOOK_JWT_SECRET_FIELD_ID } from "@/modules/admin-webhooks/composables/useAdminWebhookManagement"
 import type { ErrorDescription } from "@/lib/error-utils"
@@ -55,18 +50,16 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <Card>
-    <CardHeader>
-      <CardTitle class="text-lg">{{ t("adminWebhooks.settings.title") }}</CardTitle>
-      <CardDescription>{{ t("adminWebhooks.settings.description") }}</CardDescription>
-    </CardHeader>
-    <CardContent class="flex flex-col gap-4">
-      <template v-if="settingsLoading">
-        <div class="grid gap-4 md:grid-cols-2">
-          <Skeleton class="h-24 w-full rounded-lg" />
-          <Skeleton class="h-24 w-full rounded-lg" />
+  <form class="@container min-w-0" novalidate data-testid="admin-webhook-settings" @submit.prevent="emit('save-settings')">
+    <SettingsGroup :title="t('adminWebhooks.settings.title')" surface="card">
+      <template v-if="props.settingsLoading">
+        <div v-for="i in 2" :key="i" class="flex items-start gap-3 px-4 py-3" data-testid="admin-webhook-settings-loading">
+          <Skeleton class="size-8 shrink-0 rounded-lg" />
+          <div class="min-w-0 flex-1 space-y-2">
+            <Skeleton class="h-4 w-40 max-w-full" />
+            <Skeleton class="h-3 w-64 max-w-full" />
+          </div>
         </div>
-        <Skeleton class="h-36 w-full rounded-lg" />
       </template>
       <LoadErrorState
         v-else-if="props.error"
@@ -77,87 +70,82 @@ const { t } = useI18n()
         @retry="emit('retry')"
       />
       <template v-else>
-        <Alert v-if="!props.canMutate" variant="default">
-          <LucideInfo />
-          <AlertTitle>{{ t("adminWebhooks.settings.readOnlyNoticeTitle") }}</AlertTitle>
-          <AlertDescription>{{ t("adminWebhooks.settings.readOnlyNoticeDescription") }}</AlertDescription>
-        </Alert>
+        <p v-if="!props.canMutate" class="flex items-start gap-2 px-4 py-2.5 text-xs text-muted-foreground" role="note">
+          <LucideInfo class="mt-px size-3.5 shrink-0" aria-hidden="true" />
+          <span>
+            <span class="font-medium text-foreground">{{ t("adminWebhooks.settings.readOnlyNoticeTitle") }}</span>
+            {{ t("adminWebhooks.settings.readOnlyNoticeDescription") }}
+          </span>
+        </p>
 
-        <div class="grid gap-4 md:grid-cols-2">
-          <div class="rounded-lg border bg-muted/20 p-4 space-y-2">
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-sm text-muted-foreground">{{ t("adminWebhooks.settings.globalStatus") }}</span>
-              <AdminWebhookStatusBadge
-                class="shrink-0"
-                :active="settings.enabled"
-                :label="settings.enabled ? t('adminWebhooks.status.enabled') : t('adminWebhooks.status.disabled')"
-              />
-            </div>
-            <p class="text-sm text-muted-foreground">{{ t("adminWebhooks.settings.globalStatusHint") }}</p>
-          </div>
-
-          <div class="rounded-lg border bg-muted/20 p-4 space-y-2">
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-sm text-muted-foreground">{{ t("adminWebhooks.settings.jwtSecretStatus") }}</span>
-              <AdminWebhookStatusBadge
-                class="shrink-0"
-                :active="props.settings.jwtSecretConfigured"
-                :label="props.settings.jwtSecretConfigured ? t('adminWebhooks.status.configured') : t('adminWebhooks.status.notConfigured')"
-              />
-            </div>
-            <p class="text-sm text-muted-foreground">{{ t("adminWebhooks.settings.jwtSecretStatusHint") }}</p>
-          </div>
-        </div>
-
-        <Alert v-if="!props.settings.jwtSecretConfigured" variant="default">
-          <LucideKeyRound />
-          <AlertTitle>{{ t("adminWebhooks.settings.secretAlertTitle") }}</AlertTitle>
-          <AlertDescription>{{ t("adminWebhooks.settings.secretAlertDescription") }}</AlertDescription>
-        </Alert>
-
-        <form class="overflow-hidden rounded-lg border divide-y" novalidate @submit.prevent="emit('save-settings')">
-          <div class="flex items-center justify-between gap-4 p-4">
-            <Label for="admin-webhooks-enabled" class="text-sm font-medium cursor-pointer">
-              {{ t("adminWebhooks.settings.enableSwitchLabel") }}
-            </Label>
-            <Switch
-              id="admin-webhooks-enabled"
-              :model-value="props.settingsEnabled"
-              :disabled="!props.canMutate || props.settingsSaving"
-              @update:model-value="emit('update:settingsEnabled', !!$event)"
+        <SettingsRow
+          :icon="LucidePower"
+          :tone="props.settings.enabled ? 'success' : 'default'"
+          :label="t('adminWebhooks.settings.enableSwitchLabel')"
+          :help="t('adminWebhooks.settings.globalStatusHint')"
+          label-for="admin-webhooks-enabled"
+        >
+          <template #label>
+            <AdminWebhookStatusBadge
+              :active="props.settings.enabled"
+              :label="props.settings.enabled ? t('adminWebhooks.status.enabled') : t('adminWebhooks.status.disabled')"
             />
-          </div>
+          </template>
+          <Switch
+            id="admin-webhooks-enabled"
+            :model-value="props.settingsEnabled"
+            :disabled="!props.canMutate || props.settingsSaving"
+            @update:model-value="emit('update:settingsEnabled', !!$event)"
+          />
+        </SettingsRow>
 
-          <div class="space-y-2 p-4">
-            <Label :for="WEBHOOK_JWT_SECRET_FIELD_ID" class="text-sm font-medium">
-              {{ t("adminWebhooks.settings.jwtSecretLabel") }}
-            </Label>
-            <InputWithToggle
-              :id="WEBHOOK_JWT_SECRET_FIELD_ID"
-              :model-value="props.jwtSecretInput"
-              type="password"
-              :placeholder="t('adminWebhooks.settings.jwtSecretPlaceholder')"
-              :disabled="!props.canMutate || props.settingsSaving"
-              :aria-invalid="!!props.jwtSecretError || undefined"
-              :aria-describedby="props.jwtSecretError ? `${WEBHOOK_JWT_SECRET_FIELD_ID}-error` : undefined"
-              @update:model-value="emit('update:jwtSecretInput', String($event ?? ''))"
+        <SettingsRow
+          :icon="LucideKeyRound"
+          :tone="props.settings.jwtSecretConfigured ? 'success' : 'warning'"
+          :label="t('adminWebhooks.settings.jwtSecretLabel')"
+          :label-for="WEBHOOK_JWT_SECRET_FIELD_ID"
+        >
+          <template #label>
+            <AdminWebhookStatusBadge
+              :active="props.settings.jwtSecretConfigured"
+              inactive-tone="warning"
+              :label="props.settings.jwtSecretConfigured ? t('adminWebhooks.status.configured') : t('adminWebhooks.status.notConfigured')"
             />
-            <FieldError :id="`${WEBHOOK_JWT_SECRET_FIELD_ID}-error`" :message="props.jwtSecretError" />
-            <p class="text-xs text-muted-foreground">{{ t("adminWebhooks.settings.jwtSecretHelp") }}</p>
-          </div>
-
-          <div v-if="props.canMutate" class="flex items-center justify-end gap-3 p-4">
-            <span v-if="!props.settingsDirty" class="text-xs text-muted-foreground">
-              {{ t("adminWebhooks.settings.noChanges") }}
-            </span>
-            <Button type="submit" :disabled="props.settingsSaving || !props.settingsDirty">
-              <LucideLoader2 v-if="props.settingsSaving" class="w-4 h-4 mr-2 animate-spin" />
-              <LucideSave v-else class="w-4 h-4 mr-2" />
-              {{ t("common.save") }}
-            </Button>
-          </div>
-        </form>
+          </template>
+          <template #help>
+            <span v-if="props.settings.jwtSecretConfigured">{{ t("adminWebhooks.settings.jwtSecretStatusHint") }}</span>
+            <span v-else class="text-amber-800 dark:text-amber-300">{{ t("adminWebhooks.settings.secretAlertDescription") }}</span>
+          </template>
+          <template #below>
+            <!-- Under the label on every width: a secret needs the room. -->
+            <div class="-ml-11 flex flex-col gap-1.5 @min-[28rem]:ml-0">
+              <InputWithToggle
+                :id="WEBHOOK_JWT_SECRET_FIELD_ID"
+                :model-value="props.jwtSecretInput"
+                type="password"
+                :placeholder="t('adminWebhooks.settings.jwtSecretPlaceholder')"
+                :disabled="!props.canMutate || props.settingsSaving"
+                :aria-invalid="!!props.jwtSecretError || undefined"
+                :aria-describedby="props.jwtSecretError ? `${WEBHOOK_JWT_SECRET_FIELD_ID}-error` : undefined"
+                @update:model-value="emit('update:jwtSecretInput', String($event ?? ''))"
+              />
+              <FieldError :id="`${WEBHOOK_JWT_SECRET_FIELD_ID}-error`" :message="props.jwtSecretError" />
+              <p class="text-xs text-muted-foreground">{{ t("adminWebhooks.settings.jwtSecretHelp") }}</p>
+            </div>
+          </template>
+        </SettingsRow>
       </template>
-    </CardContent>
-  </Card>
+
+      <template v-if="props.canMutate && !props.settingsLoading && !props.error" #footer>
+        <span v-if="!props.settingsDirty" class="self-center text-xs text-muted-foreground">
+          {{ t("adminWebhooks.settings.noChanges") }}
+        </span>
+        <Button type="submit" size="sm" :disabled="props.settingsSaving || !props.settingsDirty">
+          <LucideLoader2 v-if="props.settingsSaving" class="size-4 animate-spin" />
+          <LucideSave v-else class="size-4" />
+          {{ t("common.save") }}
+        </Button>
+      </template>
+    </SettingsGroup>
+  </form>
 </template>

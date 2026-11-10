@@ -8,15 +8,13 @@ const { t } = useI18n()
 
 <template>
   <div class="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-0 py-4">
-    <!-- The one heading of the page; the list card below carries only its toolbar. -->
+    <!-- The one heading of the page; the list below carries only its toolbar. -->
     <PageHeader
       size="compact"
       :title="t('userSettings.oauthAuthorizations.title')"
       :description="t('userSettings.oauthAuthorizations.description')"
     />
 
-    <div class="flex w-full flex-col gap-4">
-      <OAuth2Authorizations />
-    </div>
+    <OAuth2Authorizations />
   </div>
 </template>

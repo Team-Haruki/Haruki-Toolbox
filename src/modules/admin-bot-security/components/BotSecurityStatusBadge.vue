@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { LucideAlertTriangle, LucideCheckCircle2, LucideEyeOff } from "lucide-vue-next"
+import { LucideCheckCircle2, LucideCircleAlert, LucideEyeOff } from "lucide-vue-next"
 
 const props = defineProps<{
   status: string
@@ -10,11 +10,11 @@ const props = defineProps<{
 const tone = computed(() => {
   switch (props.status) {
     case "open":
-      return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+      return "bg-destructive/15 text-destructive-tint-foreground"
     case "resolved":
-      return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+      return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
     default:
-      return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400"
+      return "bg-muted text-muted-foreground"
   }
 })
 </script>
@@ -26,9 +26,9 @@ const tone = computed(() => {
       tone,
     ]"
   >
-    <LucideAlertTriangle v-if="props.status === 'open'" class="h-3 w-3 shrink-0" />
-    <LucideCheckCircle2 v-else-if="props.status === 'resolved'" class="h-3 w-3 shrink-0" />
-    <LucideEyeOff v-else class="h-3 w-3 shrink-0" />
+    <LucideCircleAlert v-if="props.status === 'open'" class="size-3 shrink-0" aria-hidden="true" />
+    <LucideCheckCircle2 v-else-if="props.status === 'resolved'" class="size-3 shrink-0" aria-hidden="true" />
+    <LucideEyeOff v-else class="size-3 shrink-0" aria-hidden="true" />
     {{ props.label }}
   </span>
 </template>

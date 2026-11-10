@@ -12,7 +12,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { LucideLoader2 } from "lucide-vue-next"
+import { LucideFolders, LucideLink, LucideLoader2, LucideMessagesSquare, LucideTags } from "lucide-vue-next"
+import { computed } from "vue"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import AdminStatGrid from "@/modules/admin/components/AdminStatGrid.vue"
+import AdminStatTile from "@/modules/admin/components/AdminStatTile.vue"
+import { formatNumberCN } from "@/lib/number-format"
+import { countGroupItems, countLinkTags, summarizeContent } from "@/modules/admin-content/lib/content-stats"
 import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import FieldError from "@/shared/components/FieldError.vue"
 import {
@@ -75,6 +81,41 @@ const {
   executeDeleteItem,
 } = useContentManagement()
 
+// Counted over both lists as loaded; neither is paged.
+const overview = computed(() => summarizeContent(links.value, groups.value))
+const linksReady = computed(() => !linksLoading.value && !linksLoadError.value)
+const groupsReady = computed(() => !groupsLoading.value && !groupsLoadError.value)
+
+const linkDetail = computed(() => {
+  if (!linksReady.value || overview.value.links === 0) return null
+  return overview.value.untaggedLinks > 0
+    ? t("adminContent.stats.untagged", { count: formatNumberCN(overview.value.untaggedLinks) })
+    : t("adminContent.stats.allTagged")
+})
+
+const tagDetail = computed(() => {
+  const top = linksReady.value ? countLinkTags(links.value)[0] : undefined
+  return top ? t("adminContent.stats.topTag", { tag: top.label, count: formatNumberCN(top.count) }) : null
+})
+
+const groupDetail = computed(() => {
+  if (!groupsReady.value || overview.value.groups === 0) return null
+  return overview.value.emptyGroups > 0
+    ? t("adminContent.stats.emptyGroups", { count: formatNumberCN(overview.value.emptyGroups) })
+    : t("adminContent.stats.noEmptyGroups")
+})
+
+const itemDetail = computed(() => {
+  if (!groupsReady.value) return null
+  const largest = countGroupItems(groups.value).reduce<{ label: string; count: number } | null>(
+    (best, entry) => (best === null || entry.count > best.count ? entry : best),
+    null,
+  )
+  return largest && largest.count > 0
+    ? t("adminContent.stats.largestGroup", { group: largest.label, count: formatNumberCN(largest.count) })
+    : null
+})
+
 const linkErrorIds = {
   name: `${CONTENT_FIELD_IDS.link.name}-error`,
   url: `${CONTENT_FIELD_IDS.link.url}-error`,
@@ -86,11 +127,52 @@ const itemErrorIds = {
 </script>
 
 <template>
-  <div class="w-full flex flex-col gap-4">
-    <Tabs default-value="links">
+  <div class="flex w-full flex-col gap-4">
+    <AdminStatGrid :columns="4" data-testid="content-stats">
+      <AdminStatTile
+        :label="t('adminContent.stats.links')"
+        :value="linksLoadError ? null : overview.links"
+        :icon="LucideLink"
+        tone="primary"
+        :loading="linksLoading"
+        :detail="linkDetail"
+      />
+      <AdminStatTile
+        :label="t('adminContent.stats.tags')"
+        :value="linksLoadError ? null : overview.tags"
+        :icon="LucideTags"
+        tone="info"
+        :loading="linksLoading"
+        :detail="tagDetail"
+      />
+      <AdminStatTile
+        :label="t('adminContent.stats.groups')"
+        :value="groupsLoadError ? null : overview.groups"
+        :icon="LucideFolders"
+        tone="success"
+        :loading="groupsLoading"
+        :detail="groupDetail"
+      />
+      <AdminStatTile
+        :label="t('adminContent.stats.items')"
+        :value="groupsLoadError ? null : overview.items"
+        :icon="LucideMessagesSquare"
+        tone="warning"
+        :loading="groupsLoading"
+        :detail="itemDetail"
+      />
+    </AdminStatGrid>
+
+    <Tabs default-value="links" class="gap-3">
       <TabsList>
-        <TabsTrigger value="links">{{ t("adminContent.tabs.links") }}</TabsTrigger>
-        <TabsTrigger value="groups">{{ t("adminContent.tabs.groups") }}</TabsTrigger>
+        <TabsTrigger value="links">
+          {{ t("adminContent.tabs.links") }}
+          <span v-if="linksReady" class="tabular-nums text-muted-foreground">{{ formatNumberCN(overview.links) }}</span>
+        </TabsTrigger>
+        <TabsTrigger value="groups">
+          {{ t("adminContent.tabs.groups") }}
+          <span v-if="groupsReady" class="tabular-nums text-muted-foreground">{{ formatNumberCN(overview.groups) }}</span>
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="links">
@@ -139,8 +221,8 @@ const itemErrorIds = {
           </DialogTitle>
         </DialogHeader>
         <form novalidate @submit.prevent="saveLink">
-          <div class="-mx-1 flex max-h-[60vh] flex-col gap-4 overflow-y-auto px-1 py-1">
-            <div class="flex flex-col gap-1.5">
+          <div class="-mx-1 grid max-h-[60vh] gap-x-3 gap-y-3 overflow-y-auto px-1 py-1 sm:grid-cols-[minmax(0,1fr)_7rem]">
+            <div class="grid content-start gap-1.5">
               <Label :for="CONTENT_FIELD_IDS.link.name">{{ t("adminContent.linkDialog.fields.name") }}</Label>
               <Input
                 :id="CONTENT_FIELD_IDS.link.name"
@@ -152,15 +234,21 @@ const itemErrorIds = {
               />
               <FieldError :id="linkErrorIds.name" :message="linkFormErrors.name" />
             </div>
-            <div class="flex flex-col gap-1.5">
-              <Label for="content-link-description">{{ t("adminContent.linkDialog.fields.description") }}</Label>
-              <Input id="content-link-description" v-model="linkForm.description" :placeholder="t('adminContent.linkDialog.placeholders.description')" />
+            <div class="grid content-start gap-1.5">
+              <Label for="content-link-sort-order">{{ t("adminContent.linkDialog.fields.sortOrder") }}</Label>
+              <Input
+                id="content-link-sort-order"
+                v-model.number="linkForm.sortOrder"
+                type="number"
+                min="0"
+                inputmode="numeric"
+                class="tabular-nums"
+                :placeholder="t('adminContent.linkDialog.placeholders.sortOrder')"
+                aria-describedby="content-link-sort-order-hint"
+              />
             </div>
-            <div class="flex flex-col gap-1.5">
-              <Label for="content-link-avatar">{{ t("adminContent.linkDialog.fields.avatarUrl") }}</Label>
-              <Input id="content-link-avatar" v-model="linkForm.avatar" :placeholder="t('adminContent.linkDialog.placeholders.avatarUrl')" />
-            </div>
-            <div class="flex flex-col gap-1.5">
+            <p id="content-link-sort-order-hint" class="-mt-1.5 text-xs text-muted-foreground sm:col-span-2">{{ t("adminContent.linkDialog.fields.sortOrderHint") }}</p>
+            <div class="grid content-start gap-1.5 sm:col-span-2">
               <Label :for="CONTENT_FIELD_IDS.link.url">{{ t("adminContent.linkDialog.fields.linkUrl") }}</Label>
               <Input
                 :id="CONTENT_FIELD_IDS.link.url"
@@ -173,20 +261,24 @@ const itemErrorIds = {
               />
               <FieldError :id="linkErrorIds.url" :message="linkFormErrors.url" />
             </div>
-            <div class="flex flex-col gap-1.5">
+            <div class="grid content-start gap-1.5 sm:col-span-2">
+              <Label for="content-link-avatar">{{ t("adminContent.linkDialog.fields.avatarUrl") }}</Label>
+              <!-- The icon as it will show, next to the address that produces it. -->
+              <div class="flex items-center gap-2">
+                <Avatar class="size-9 shrink-0 rounded-lg border">
+                  <AvatarImage :key="linkForm.avatar" :src="linkForm.avatar" alt="" class="rounded-lg" />
+                  <AvatarFallback class="rounded-lg text-muted-foreground"><LucideLink class="size-4" /></AvatarFallback>
+                </Avatar>
+                <Input id="content-link-avatar" v-model="linkForm.avatar" class="min-w-0 flex-1" :placeholder="t('adminContent.linkDialog.placeholders.avatarUrl')" />
+              </div>
+            </div>
+            <div class="grid content-start gap-1.5 sm:col-span-2">
+              <Label for="content-link-description">{{ t("adminContent.linkDialog.fields.description") }}</Label>
+              <Input id="content-link-description" v-model="linkForm.description" :placeholder="t('adminContent.linkDialog.placeholders.description')" />
+            </div>
+            <div class="grid content-start gap-1.5 sm:col-span-2">
               <Label for="content-link-tags">{{ t("adminContent.linkDialog.fields.tags") }}</Label>
               <Input id="content-link-tags" v-model="linkForm.tags" :placeholder="t('adminContent.linkDialog.placeholders.tags')" />
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <Label for="content-link-sort-order">{{ t("adminContent.linkDialog.fields.sortOrder") }}</Label>
-              <Input
-                id="content-link-sort-order"
-                v-model.number="linkForm.sortOrder"
-                type="number"
-                min="0"
-                :placeholder="t('adminContent.linkDialog.placeholders.sortOrder')"
-              />
-              <p class="text-xs text-muted-foreground">{{ t("adminContent.linkDialog.fields.sortOrderHint") }}</p>
             </div>
           </div>
           <DialogFooter class="mt-4">
@@ -194,7 +286,7 @@ const itemErrorIds = {
               <Button type="button" variant="outline" :disabled="linkSaving">{{ t("common.cancel") }}</Button>
             </DialogClose>
             <Button type="submit" :disabled="linkSaving">
-              <LucideLoader2 v-if="linkSaving" class="w-4 h-4 mr-1 animate-spin" />
+              <LucideLoader2 v-if="linkSaving" class="size-4 animate-spin" />
               {{ t("common.save") }}
             </Button>
           </DialogFooter>
@@ -210,8 +302,8 @@ const itemErrorIds = {
           </DialogTitle>
         </DialogHeader>
         <form novalidate @submit.prevent="saveItem">
-          <div class="-mx-1 flex max-h-[60vh] flex-col gap-4 overflow-y-auto px-1 py-1">
-            <div class="flex flex-col gap-1.5">
+          <div class="-mx-1 grid max-h-[60vh] gap-x-3 gap-y-3 overflow-y-auto px-1 py-1 sm:grid-cols-[minmax(0,1fr)_7rem]">
+            <div class="grid content-start gap-1.5">
               <Label :for="CONTENT_FIELD_IDS.item.name">{{ t("adminContent.itemDialog.fields.name") }}</Label>
               <Input
                 :id="CONTENT_FIELD_IDS.item.name"
@@ -223,15 +315,35 @@ const itemErrorIds = {
               />
               <FieldError :id="itemErrorIds.name" :message="itemFormErrors.name" />
             </div>
-            <div class="flex flex-col gap-1.5">
-              <Label for="content-item-avatar">{{ t("adminContent.itemDialog.fields.avatarUrl") }}</Label>
-              <Input id="content-item-avatar" v-model="itemForm.avatar" :placeholder="t('adminContent.itemDialog.placeholders.avatarUrl')" />
+            <div class="grid content-start gap-1.5">
+              <Label for="content-item-sort-order">{{ t("adminContent.linkDialog.fields.sortOrder") }}</Label>
+              <Input
+                id="content-item-sort-order"
+                v-model.number="itemForm.sortOrder"
+                type="number"
+                min="0"
+                inputmode="numeric"
+                class="tabular-nums"
+                :placeholder="t('adminContent.linkDialog.placeholders.sortOrder')"
+                aria-describedby="content-item-sort-order-hint"
+              />
             </div>
-            <div class="flex flex-col gap-1.5">
+            <p id="content-item-sort-order-hint" class="-mt-1.5 text-xs text-muted-foreground sm:col-span-2">{{ t("adminContent.linkDialog.fields.sortOrderHint") }}</p>
+            <div class="grid content-start gap-1.5 sm:col-span-2">
+              <Label for="content-item-avatar">{{ t("adminContent.itemDialog.fields.avatarUrl") }}</Label>
+              <div class="flex items-center gap-2">
+                <Avatar class="size-9 shrink-0 border">
+                  <AvatarImage :key="itemForm.avatar" :src="itemForm.avatar" alt="" />
+                  <AvatarFallback class="text-muted-foreground"><LucideMessagesSquare class="size-4" /></AvatarFallback>
+                </Avatar>
+                <Input id="content-item-avatar" v-model="itemForm.avatar" class="min-w-0 flex-1" :placeholder="t('adminContent.itemDialog.placeholders.avatarUrl')" />
+              </div>
+            </div>
+            <div class="grid content-start gap-1.5 sm:col-span-2">
               <Label for="content-item-bg">{{ t("adminContent.itemDialog.fields.backgroundUrl") }}</Label>
               <Input id="content-item-bg" v-model="itemForm.bg" :placeholder="t('adminContent.itemDialog.placeholders.backgroundUrl')" />
             </div>
-            <div class="flex flex-col gap-1.5">
+            <div class="grid content-start gap-1.5 sm:col-span-2">
               <Label :for="CONTENT_FIELD_IDS.item.url">{{ t("adminContent.linkDialog.fields.linkUrl") }}</Label>
               <Input
                 :id="CONTENT_FIELD_IDS.item.url"
@@ -244,24 +356,13 @@ const itemErrorIds = {
               />
               <FieldError :id="itemErrorIds.url" :message="itemFormErrors.url" />
             </div>
-            <div class="flex flex-col gap-1.5">
+            <div class="grid content-start gap-1.5 sm:col-span-2">
               <Label for="content-item-group-info">{{ t("adminContent.itemDialog.fields.groupInfo") }}</Label>
               <Input id="content-item-group-info" v-model="itemForm.groupInfo" :placeholder="t('adminContent.itemDialog.placeholders.optional')" />
             </div>
-            <div class="flex flex-col gap-1.5">
+            <div class="grid content-start gap-1.5 sm:col-span-2">
               <Label for="content-item-detail">{{ t("adminContent.itemDialog.fields.detail") }}</Label>
               <Input id="content-item-detail" v-model="itemForm.detail" :placeholder="t('adminContent.itemDialog.placeholders.optional')" />
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <Label for="content-item-sort-order">{{ t("adminContent.linkDialog.fields.sortOrder") }}</Label>
-              <Input
-                id="content-item-sort-order"
-                v-model.number="itemForm.sortOrder"
-                type="number"
-                min="0"
-                :placeholder="t('adminContent.linkDialog.placeholders.sortOrder')"
-              />
-              <p class="text-xs text-muted-foreground">{{ t("adminContent.linkDialog.fields.sortOrderHint") }}</p>
             </div>
           </div>
           <DialogFooter class="mt-4">
@@ -269,7 +370,7 @@ const itemErrorIds = {
               <Button type="button" variant="outline" :disabled="itemSaving">{{ t("common.cancel") }}</Button>
             </DialogClose>
             <Button type="submit" :disabled="itemSaving">
-              <LucideLoader2 v-if="itemSaving" class="w-4 h-4 mr-1 animate-spin" />
+              <LucideLoader2 v-if="itemSaving" class="size-4 animate-spin" />
               {{ t("common.save") }}
             </Button>
           </DialogFooter>

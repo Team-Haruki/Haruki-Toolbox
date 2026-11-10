@@ -115,6 +115,12 @@ export default {
       "ga": "遗传算法",
       "rl": "强化学习"
     },
+    "algorithmsShort": {
+      "dfsGa": "DFS-GA",
+      "dfs": "DFS",
+      "ga": "遗传",
+      "rl": "强化学习"
+    },
     "executionModes": {
       "sequential": "顺序进行",
       "parallel": "同时进行"
@@ -508,6 +514,13 @@ export default {
         "unread": "未读"
       },
       "supportSkillLevel": "SLv.{value}",
+      "columns": {
+        "card": "卡牌",
+        "power": "综合力",
+        "skillLevel": "技能",
+        "scoreUp": "分数加成",
+        "eventBonus": "活动加成"
+      },
       "canvasBonus": "画布加成",
       "noCanvasBonus": "无画布"
     },

@@ -1,47 +1,38 @@
 <script setup lang="ts">
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { LucideInfo, LucideExternalLink } from "lucide-vue-next"
+import { LucideBookOpen } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import {
   IMAuthorization,
   IMBindingSettings,
 } from "@/modules/user-settings/components/settings"
 import PageHeader from "@/shared/components/PageHeader.vue"
+import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
+import SettingsLinkRow from "@/shared/components/settings/SettingsLinkRow.vue"
 
 const { t } = useI18n()
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-0 py-4">
+  <div class="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-0 py-4">
     <PageHeader
       size="compact"
       :title="t('userSettings.sections.harukiBotTitle')"
       :description="t('userSettings.sections.harukiBotDescription')"
     />
 
-    <div class="flex w-full flex-col gap-4">
-      <Alert variant="default" class="flex items-start gap-2 bg-muted/20">
-        <LucideInfo class="h-4 w-4 shrink-0 mt-0.5 text-blue-500" />
-        <div class="space-y-2 w-full">
-          <AlertTitle>{{ t("userSettings.officialBotGuide.title") }}</AlertTitle>
-          <AlertDescription class="leading-relaxed text-muted-foreground">
-            {{ t("userSettings.officialBotGuide.description") }}
-          </AlertDescription>
-          <Button as-child variant="outline" size="sm" class="max-w-full whitespace-normal h-auto min-h-8">
-            <a
-              href="https://neo.haruki.seiunx.com/toolbox-tutorial/qqofficial-guide.html"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {{ t("userSettings.officialBotGuide.action") }}
-              <LucideExternalLink class="h-4 w-4 shrink-0" aria-hidden="true" />
-            </a>
-          </Button>
-        </div>
-      </Alert>
-      <IMBindingSettings />
-      <IMAuthorization />
-    </div>
+    <!-- Your own QQ first. The official-bot guide sits right above the list
+         its text points at ("add it below"), then who else may query. -->
+    <IMBindingSettings />
+
+    <SettingsGroup surface="card" data-testid="official-bot-guide">
+      <SettingsLinkRow
+        :icon="LucideBookOpen"
+        :label="t('userSettings.officialBotGuide.action')"
+        :help="t('userSettings.officialBotGuide.description')"
+        href="https://neo.haruki.seiunx.com/toolbox-tutorial/qqofficial-guide.html"
+      />
+    </SettingsGroup>
+
+    <IMAuthorization />
   </div>
 </template>

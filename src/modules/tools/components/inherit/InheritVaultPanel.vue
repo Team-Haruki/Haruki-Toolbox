@@ -16,7 +16,8 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import UploadPanelHeader from "@/modules/tools/components/upload/UploadPanelHeader.vue"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -213,12 +214,14 @@ defineExpose({ openReset })
 
 <template>
   <Card id="inherit-vault" data-testid="inherit-vault" class="scroll-mt-20">
-    <CardHeader class="gap-2">
-      <div class="flex items-center justify-between gap-2">
-        <CardTitle class="flex items-center gap-2">
-          <Vault class="size-5" />
-          {{ t("tools.uploadData.inheritVault.title") }}
-        </CardTitle>
+    <CardHeader>
+      <UploadPanelHeader
+        :icon="Vault"
+        :title="t('tools.uploadData.inheritVault.title')"
+        :description="t('tools.uploadData.inheritVault.description', { secret: vaultSecretName })"
+        as="h3"
+      >
+        <template #action>
         <Button
           type="button"
           variant="ghost"
@@ -229,8 +232,8 @@ defineExpose({ openReset })
         >
           <RefreshCw :class="['size-4', loading ? 'animate-spin' : '']" />
         </Button>
-      </div>
-      <CardDescription class="leading-relaxed">{{ t("tools.uploadData.inheritVault.description", { secret: vaultSecretName }) }}</CardDescription>
+        </template>
+      </UploadPanelHeader>
     </CardHeader>
 
     <CardContent class="space-y-3">

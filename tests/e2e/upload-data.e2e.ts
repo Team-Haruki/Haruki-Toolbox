@@ -101,3 +101,32 @@ test("manual upload accepts a file dropped onto the file field", async ({ page }
   await expect(zone).not.toHaveAttribute("data-drag-over", "true")
   await expect(page.getByTestId("upload-file-name")).toContainText("suite-20261109.bin")
 })
+
+// The method picker is the page's tab list: choosing a method swaps the panel
+// and keeps the choice in the URL, so tutorials can link straight to one.
+test("upload page switches methods from the picker and keeps the choice in the URL", async ({ page }) => {
+  await page.goto("/upload-data")
+
+  const ios = page.getByTestId("upload-method-ios")
+  await expect(ios).toHaveAttribute("data-state", "active")
+  await expect(page.getByRole("heading", { level: 2, name: /^iOS/ })).toBeVisible()
+
+  await page.getByTestId("upload-method-proxy").click()
+  await expect(page).toHaveURL(/[?&]tab=proxy/)
+  await expect(page.getByTestId("harukiproxy-upgrade-warning")).toBeVisible()
+
+  // Every device has its v3.0.0 download and at least one guide from the docs.
+  for (const [device, file] of [["android", "android-arm64.apk"], ["windows", "windows-x64.zip"], ["mac", "macos-arm64.zip"]] as const) {
+    const row = page.getByTestId(`harukiproxy-device-${device}`)
+    await expect(row.locator(`a[href$="HarukiProxy-v3.0.0-${file}"]`)).toHaveCount(1)
+    await expect(row.locator('a[href^="https://neo.haruki.seiunx.com/haruki-proxy/"]').first()).toBeVisible()
+  }
+  await expect(page.getByTestId("harukiproxy-guide-index")).toHaveAttribute("href", "https://neo.haruki.seiunx.com/haruki-proxy/")
+
+  await page.getByTestId("upload-method-file").click()
+  await expect(page).toHaveURL(/[?&]tab=file/)
+  await expect(page.getByTestId("upload-drop-zone")).toBeVisible()
+
+  // Usage questions go to the groups, bugs and account problems to tickets.
+  await expect(page.getByTestId("upload-help").getByRole("link")).toHaveAttribute("href", "/tickets")
+})

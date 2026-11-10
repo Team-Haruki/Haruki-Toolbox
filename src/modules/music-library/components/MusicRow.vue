@@ -8,6 +8,7 @@ import type { MusicDifficultyPill, MusicEventBoxView } from "@/modules/music-lib
 import MusicDifficultyPills from "./MusicDifficultyPills.vue"
 import MusicEventBoxHint from "./MusicEventBoxHint.vue"
 import MusicJacket from "./MusicJacket.vue"
+import MusicPlayButton from "./MusicPlayButton.vue"
 
 /** List row: `size-12` jacket, title over date / box hint, level pills in their own column, id at the edge. */
 defineProps<{
@@ -24,20 +25,29 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <RouterLink
-    :to="`/music/${entry.id}`"
-    class="flex flex-wrap items-center gap-x-3 gap-y-1.5 bg-card px-3 py-2 transition-colors hover:bg-accent/50 sm:flex-nowrap dark:hover:bg-accent/30"
+  <!-- The title link stretches over the whole row; the play button sits above it. -->
+  <div
+    class="group relative flex flex-wrap items-center gap-x-3 gap-y-1.5 bg-card px-3 py-2 transition-colors hover:bg-accent/50 has-[a:focus-visible]:bg-accent/50 sm:flex-nowrap dark:hover:bg-accent/30"
     data-slot="music-row"
   >
-    <MusicJacket
-      :url="jacketUrl"
-      :alt="entry.title"
-      class="size-12 shrink-0 rounded-md"
-      :blur="unreleased && blur"
-    />
+    <div class="relative size-12 shrink-0">
+      <MusicJacket
+        :url="jacketUrl"
+        :alt="entry.title"
+        class="size-full rounded-md"
+        :blur="unreleased && blur"
+      />
+      <MusicPlayButton :entry="entry" size="sm" class="absolute inset-0 z-10 m-auto" />
+    </div>
     <div class="flex min-w-0 flex-1 flex-col gap-0.5">
       <div class="flex min-w-0 items-center gap-2">
-        <p class="truncate text-sm font-medium" :title="entry.title">{{ entry.title }}</p>
+        <RouterLink
+          :to="`/music/${entry.id}`"
+          class="truncate text-sm font-medium outline-none after:absolute after:inset-0 after:content-['']"
+          :title="entry.title"
+        >
+          {{ entry.title }}
+        </RouterLink>
         <Badge v-if="unreleased" size="sm" class="shrink-0 rounded bg-red-600 font-semibold text-white">
           {{ t("sekaiUnreleased.badge") }}
         </Badge>
@@ -59,5 +69,5 @@ const { t } = useI18n()
          indented past the jacket so it reads as part of the same entry. -->
     <MusicDifficultyPills :pills="pills" class="basis-full pl-15 sm:basis-auto sm:shrink-0 sm:pl-0" />
     <span class="hidden shrink-0 font-mono text-[11px] text-muted-foreground sm:inline">#{{ entry.id }}</span>
-  </RouterLink>
+  </div>
 </template>

@@ -16,9 +16,13 @@ import {
   writeQueryValue,
 } from "@/lib/query-codec"
 import { ADMIN_DEFAULT_PAGE_SIZE, readAdminPage, readAdminPageSize } from "@/modules/admin/lib/pagination"
-import { getUploadLogs } from "@/modules/admin-statistics/api/upload-log"
 import {
-  CHART_COLORS,
+  getUploadLogAnalytics,
+  getUploadLogs,
+  type UploadLogAnalyticsResponse,
+} from "@/modules/admin-statistics/api/upload-log"
+import { pickUploadVolumeInterval, successRatePercent } from "@/modules/admin-statistics/lib/logs-stats"
+import {
   DEFAULT_UPLOAD_LOG_SORT,
   UPLOAD_DATA_TYPE_FILTER_VALUES,
   UPLOAD_METHOD_FILTER_VALUES,
@@ -87,6 +91,24 @@ export function hasInvalidUploadLogTimeRange(filters: Pick<UploadLogFilters, "fr
   return !!filters.from && !!filters.to && filters.from.getTime() > filters.to.getTime()
 }
 
+/** How many filters narrow the list; the sort order is not one of them. */
+export function countActiveUploadLogFilters(filters: UploadLogFilters): number {
+  return [
+    !!filters.from,
+    !!filters.to,
+    filters.gameUserId.trim() !== "",
+    filters.method.length > 0,
+    filters.dataType.length > 0,
+    filters.server.length > 0,
+    filters.success !== "all",
+  ].filter(Boolean).length
+}
+
+/** The filter panel starts open, except on a phone where it would push the logs off the first screen. */
+function shouldStartExpanded(): boolean {
+  return typeof window === "undefined" || window.matchMedia?.("(max-width: 639px)").matches !== true
+}
+
 function cloneFilters(filters: UploadLogFilters): UploadLogFilters {
   return {
     ...filters,
@@ -103,8 +125,16 @@ export function useUploadLogs() {
   const summary = ref<UploadLogsSummary | null>(null)
   const responseFrom = ref("")
   const responseTo = ref("")
-  const filtersExpanded = ref(true)
+  const filtersExpanded = ref(shouldStartExpanded())
   const loadError = ref<ErrorDescription | null>(null)
+
+  // Aggregates over every upload matching the filters (not one page): the
+  // volume series, the per-server split, the failure stages and the latency.
+  // They come from their own endpoint, so the list never waits for them.
+  const analytics = ref<UploadLogAnalyticsResponse | null>(null)
+  const analyticsLoading = ref(true)
+  const analyticsError = ref<ErrorDescription | null>(null)
+  let latestAnalyticsRequestId = 0
 
   // `filters` is what the form shows; `applied` is what the list was loaded
   // with (and what the URL mirrors), so paging never picks up half-edited filters.
@@ -187,10 +217,9 @@ export function useUploadLogs() {
     return resolveUploadDataTypeLabel(type, t)
   }
 
-  function buildParams(currentPage: number, currentPageSize: number) {
+  /** The filters as the backend takes them; shared by the list and the analytics request. */
+  function applyFilterParams(params: QueryParams) {
     const current = applied.value
-    const params: QueryParams = createPageQuery(currentPage, currentPageSize)
-    setQueryValue(params, "sort", current.sort)
     setQueryValue(params, "from", current.from?.toISOString())
     setQueryValue(params, "to", current.to?.toISOString())
 
@@ -203,6 +232,35 @@ export function useUploadLogs() {
     return params
   }
 
+  function buildParams(currentPage: number, currentPageSize: number) {
+    const params: QueryParams = createPageQuery(currentPage, currentPageSize)
+    setQueryValue(params, "sort", applied.value.sort)
+    return applyFilterParams(params)
+  }
+
+  async function loadAnalytics() {
+    const requestId = ++latestAnalyticsRequestId
+    analyticsLoading.value = true
+    analyticsError.value = null
+    try {
+      const params = applyFilterParams({
+        group_by: "server",
+        interval: pickUploadVolumeInterval(applied.value.from, applied.value.to),
+      })
+      const data = await getUploadLogAnalytics(params)
+      if (requestId !== latestAnalyticsRequestId) return
+      analytics.value = data
+    } catch (error: unknown) {
+      if (requestId !== latestAnalyticsRequestId) return
+      analytics.value = null
+      analyticsError.value = describeError(error, t("adminStatistics.uploadLogs.toast.loadFailedFallback"))
+    } finally {
+      if (requestId === latestAnalyticsRequestId) {
+        analyticsLoading.value = false
+      }
+    }
+  }
+
   function applyFilters() {
     if (timeRangeInvalid.value) {
       timeRangeAttempted.value = true
@@ -213,6 +271,7 @@ export function useUploadLogs() {
     applied.value = cloneFilters(filters.value)
     resetPage()
     void loadLogs()
+    void loadAnalytics()
   }
 
   function resetFilters() {
@@ -223,6 +282,7 @@ export function useUploadLogs() {
 
   function reload() {
     void loadLogs()
+    void loadAnalytics()
   }
 
   watch(pageSize, () => {
@@ -246,12 +306,9 @@ export function useUploadLogs() {
     }
   })
 
-  const successRateValue = computed(() => {
-    if (!summary.value) return null
-    const count = summary.value.success + summary.value.failed
-    if (count === 0) return null
-    return (summary.value.success / count) * 100
-  })
+  const successRateValue = computed(() =>
+    summary.value ? successRatePercent(summary.value.success, summary.value.failed) : null,
+  )
 
   const successRate = computed(() => {
     if (successRateValue.value === null) return null
@@ -268,47 +325,11 @@ export function useUploadLogs() {
     return `${formatTime(responseFrom.value)} — ${formatTime(responseTo.value)}`
   })
 
-  const donutData = computed(() => {
-    if (!summary.value) return []
-
-    return [
-      { key: t("adminStatistics.common.success"), value: summary.value.success, color: "#22c55e" },
-      { key: t("adminStatistics.common.failure"), value: summary.value.failed, color: "#ef4444" },
-    ].filter((item) => item.value > 0)
-  })
-
-  const methodChartData = computed(() => {
-    if (!summary.value?.byMethod?.length) return []
-
-    return [...summary.value.byMethod]
-      .sort((a, b) => b.count - a.count)
-      .map((item, index) => ({
-        label: methodLabel(item.key),
-        value: item.count,
-        color: CHART_COLORS[index % CHART_COLORS.length] as string,
-      }))
-      .filter((item) => item.value > 0)
-  })
-
-  const methodTotal = computed(() => methodChartData.value.reduce((sum, item) => sum + item.value, 0))
-
-  const dataTypeChartData = computed(() => {
-    if (!summary.value?.byDataType?.length) return []
-
-    return [...summary.value.byDataType]
-      .sort((a, b) => b.count - a.count)
-      .map((item, index) => ({
-        label: dataTypeLabel(item.key),
-        value: item.count,
-        color: CHART_COLORS[index % CHART_COLORS.length] as string,
-      }))
-      .filter((item) => item.value > 0)
-  })
-
-  const dataTypeTotal = computed(() => dataTypeChartData.value.reduce((sum, item) => sum + item.value, 0))
+  const activeFilterCount = computed(() => countActiveUploadLogFilters(applied.value))
 
   onMounted(() => {
     void loadLogs()
+    void loadAnalytics()
   })
 
   return {
@@ -320,6 +341,11 @@ export function useUploadLogs() {
     pageSize,
     totalPages,
     summary,
+    analytics,
+    analyticsLoading,
+    analyticsError,
+    loadAnalytics,
+    activeFilterCount,
     filtersExpanded,
     filters,
     timeRangeError,
@@ -348,12 +374,8 @@ export function useUploadLogs() {
     formatTime,
     dataTypeLabel,
     successRate,
+    successRateValue,
     isSuccessRateHealthy,
     timeRangeLabel,
-    donutData,
-    methodChartData,
-    methodTotal,
-    dataTypeChartData,
-    dataTypeTotal,
   }
 }

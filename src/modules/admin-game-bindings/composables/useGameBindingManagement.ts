@@ -1,4 +1,4 @@
-import { onMounted, ref, watch } from "vue"
+import { computed, onMounted, ref, watch } from "vue"
 import { useRoute } from "vue-router"
 import { useI18n } from "vue-i18n"
 import { usePagedList } from "@/composables/usePagedList"
@@ -7,9 +7,11 @@ import { describeError, type ErrorDescription } from "@/lib/error-utils"
 import { writeQueryValue } from "@/lib/query-codec"
 import { ADMIN_DEFAULT_PAGE_SIZE, readAdminPage, readAdminPageSize } from "@/modules/admin/lib/pagination"
 import {
+  getGameBindingStats,
   getGlobalGameBindings,
   type GlobalGameBinding,
 } from "@/modules/admin-game-bindings/api/binding"
+import { type GameBindingStats, summarizePageSharing } from "@/modules/admin-game-bindings/lib/binding-stats"
 import {
   parseBindingKey,
   resolveServerLabel,
@@ -34,11 +36,13 @@ export function useGameBindingManagement() {
     filterServer,
     filterUserId,
     filterGameUserId,
+    filterVerified,
     filterSort,
     appliedFilters,
     servers,
     editServers,
     sortOptions,
+    verifiedOptions,
     applyFilterValues,
     buildQueryParams,
     resetFilterValues,
@@ -85,7 +89,37 @@ export function useGameBindingManagement() {
     },
   })
 
+  // Site-wide counts from the dashboard statistics. They load beside the
+  // list and never hold it back; null with `statsFailed` when they could not
+  // be read.
+  const stats = ref<GameBindingStats | null>(null)
+  const statsLoading = ref(true)
+  const statsFailed = ref(false)
+  let statsRequestId = 0
+
+  async function loadStats() {
+    const requestId = ++statsRequestId
+    statsLoading.value = true
+    try {
+      const loaded = await getGameBindingStats()
+      if (requestId !== statsRequestId) return
+      stats.value = loaded
+      statsFailed.value = loaded === null
+    } catch {
+      if (requestId !== statsRequestId) return
+      stats.value = null
+      statsFailed.value = true
+    } finally {
+      if (requestId === statsRequestId) statsLoading.value = false
+    }
+  }
+
+  // Sharing switches of the rows on screen only; the page labels them as such.
+  const pageSharing = computed(() => summarizePageSharing(bindings.value))
+
+  /** After a change that adds, moves or removes a binding: the list, then the counts. */
   async function refreshBindingsStrict() {
+    void loadStats()
     await loadBindings({ throwOnError: true, notifyOnError: false })
   }
 
@@ -162,6 +196,7 @@ export function useGameBindingManagement() {
 
   onMounted(() => {
     void loadBindings()
+    void loadStats()
   })
 
   return {
@@ -176,7 +211,13 @@ export function useGameBindingManagement() {
     filterServer,
     filterUserId,
     filterGameUserId,
+    filterVerified,
     filterSort,
+    stats,
+    statsLoading,
+    statsFailed,
+    loadStats,
+    pageSharing,
     selected,
     selectAll,
     reassignDialogOpen,
@@ -194,6 +235,7 @@ export function useGameBindingManagement() {
     isEditMode,
     servers,
     sortOptions,
+    verifiedOptions,
     editServers,
     bindingKey,
     serverLabel,

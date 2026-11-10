@@ -1,15 +1,28 @@
 import { request, unwrapUpdatedData } from "@/core/http/call-api"
+import { asRecord } from "@/lib/record-utils"
+import { readAllowedKeys } from "@/modules/admin-config/lib/allowed-keys"
 import { translate } from "@/shared/i18n"
-import type { PublicApiKeys } from "@/types/admin"
 import type { APIResponse } from "@/types/response"
 
 const BASE = "/api/admin/config"
 
-export async function getPublicApiKeys() {
-  const res = await request<APIResponse<PublicApiKeys>>(`${BASE}/public-api-keys`, { method: "GET" })
-  return unwrapUpdatedData(res, translate("adminConfig.toast.loadApiKeysFailedTitle"))
+/** The allowlist of top-level game-data keys, in the backend's order. */
+export async function getPublicApiKeys(): Promise<string[]> {
+  const res = await request<APIResponse<unknown>>(`${BASE}/public-api-keys`, { method: "GET" })
+  return readAllowedKeys(unwrapUpdatedData(res, translate("adminConfig.allowedKeys.loadFailed")))
 }
 
-export function updatePublicApiKeys(data: PublicApiKeys) {
-  return request(`${BASE}/public-api-keys`, { method: "PUT", data })
+/**
+ * Replaces the allowlist; the backend drops its game-data cache in the same
+ * step. Resolves with the list the backend stored, or with the list sent when
+ * the response carries none.
+ */
+export async function updatePublicApiKeys(keys: readonly string[]): Promise<string[]> {
+  const sent = [...keys]
+  const res = await request<APIResponse<unknown>>(`${BASE}/public-api-keys`, {
+    method: "PUT",
+    data: { publicApiAllowedKeys: sent },
+  })
+  const stored = asRecord(res?.updatedData)
+  return Array.isArray(stored?.publicApiAllowedKeys) ? readAllowedKeys(stored) : sent
 }
