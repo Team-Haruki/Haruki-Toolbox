@@ -10,6 +10,8 @@ import type { AcceptableValue } from "reka-ui"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import TrainingMeter from "@/modules/training/components/TrainingMeter.vue"
+import TrainingTile from "@/modules/training/components/TrainingTile.vue"
 import { useTrainingRefresh } from "@/modules/training/composables/training-context"
 import { useTrainingChallenge } from "@/modules/training/composables/useTrainingChallenge"
 import {
@@ -92,6 +94,12 @@ const summary = computed(() => {
   }
 })
 
+/** Everything still claimable across the roster, for the toolbar. */
+const unclaimedTotal = computed(() => cells.value.reduce(
+  (total, cell) => ({ jewel: total.jewel + cell.unclaimedJewel, shard: total.shard + cell.unclaimedShard }),
+  { jewel: 0, shard: 0 },
+))
+
 function formatNumber(value: number): string {
   return numberFormatter.value.format(value)
 }
@@ -150,100 +158,79 @@ function retry() {
 
     <!-- Loading skeleton -->
     <template v-else-if="isLoading">
-      <Skeleton class="h-16 w-full rounded-lg" />
-      <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        <Skeleton v-for="index in 9" :key="index" class="h-24 w-full rounded-lg" />
+      <Skeleton class="h-8 w-full rounded-lg" />
+      <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <Skeleton v-for="index in 12" :key="index" class="h-24 w-full rounded-lg" />
       </div>
     </template>
 
-    <Card v-else-if="isReady">
-      <CardContent class="flex flex-col gap-3">
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-          <p v-if="summary.top" class="inline-flex items-center gap-1.5">
-            <LucideTrophy class="size-4 shrink-0 text-amber-500" />
-            {{ t("training.challenge.summary", { name: summary.top.name, score: formatNumber(summary.top.highScore) }) }}
-          </p>
-          <p v-else>{{ t("training.challenge.empty") }}</p>
-          <p>{{ t("training.challenge.charactersWithData", { count: summary.withDataCount, total: cells.length }) }}</p>
-          <ToggleGroup type="single" variant="segment" size="sm" class="ml-auto" :model-value="sortMode" :aria-label="t('catalog.sort.label')" @update:model-value="handleSortChange">
-            <ToggleGroupItem value="character">{{ t("training.challenge.sortByCharacter") }}</ToggleGroupItem>
-            <ToggleGroupItem value="score">{{ t("training.challenge.sortByScore") }}</ToggleGroupItem>
-          </ToggleGroup>
-        </div>
+    <template v-else-if="isReady">
+      <!-- Toolbar: the headline figures on the left, the sort on the right. -->
+      <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+        <p v-if="summary.top" class="inline-flex items-center gap-1.5">
+          <LucideTrophy class="size-4 shrink-0 text-amber-500" />
+          {{ t("training.challenge.summary", { name: summary.top.name, score: formatNumber(summary.top.highScore) }) }}
+        </p>
+        <p v-else>{{ t("training.challenge.empty") }}</p>
+        <p>{{ t("training.challenge.charactersWithData", { count: summary.withDataCount, total: cells.length }) }}</p>
+        <p v-if="unclaimedTotal.jewel > 0 || unclaimedTotal.shard > 0" class="inline-flex flex-wrap items-center gap-x-2.5" data-testid="challenge-unclaimed-total">
+          {{ t("training.challenge.unclaimedLabel") }}
+          <span class="inline-flex items-center gap-x-2.5 tabular-nums text-emerald-600 dark:text-emerald-400">
+            <span v-if="unclaimedTotal.jewel > 0" class="inline-flex items-center gap-1">
+              <LucideGem class="size-3.5 shrink-0" />
+              {{ t("training.challenge.jewel", { count: formatNumber(unclaimedTotal.jewel) }) }}
+            </span>
+            <span v-if="unclaimedTotal.shard > 0">{{ t("training.challenge.shard", { count: formatNumber(unclaimedTotal.shard) }) }}</span>
+          </span>
+        </p>
+        <ToggleGroup type="single" variant="segment" size="sm" class="ml-auto" :model-value="sortMode" :aria-label="t('catalog.sort.label')" @update:model-value="handleSortChange">
+          <ToggleGroupItem value="character">{{ t("training.challenge.sortByCharacter") }}</ToggleGroupItem>
+          <ToggleGroupItem value="score">{{ t("training.challenge.sortByScore") }}</ToggleGroupItem>
+        </ToggleGroup>
+      </div>
 
-        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          <div
+      <!-- Four across on a wide page: sorted by character, a row is a unit. -->
+      <div class="@container">
+        <div class="grid grid-cols-1 gap-2 @min-[30rem]:grid-cols-2 @min-[46rem]:grid-cols-3 @min-[64rem]:grid-cols-4" data-testid="challenge-grid">
+          <TrainingTile
             v-for="cell in sortedCells"
             :key="cell.characterId"
-            :class="[
-              'flex flex-col gap-2 rounded-md border border-l-4 p-2.5',
-              cell.hasData ? '' : 'opacity-50',
-            ]"
-            :style="cell.color ? { borderLeftColor: cell.color } : {}"
+            :name="cell.name"
+            :icon-url="cell.iconUrl"
+            :color="cell.color"
+            :value="cell.highScore > 0 ? formatNumber(cell.highScore) : '—'"
+            :dimmed="!cell.hasData"
           >
-            <div class="flex items-center gap-2">
-              <img
-                v-if="cell.iconUrl"
-                :src="cell.iconUrl"
-                alt=""
-                class="size-9 shrink-0 rounded-full"
-                loading="lazy"
-              >
-              <p class="min-w-0 flex-1 truncate text-base font-medium" :title="cell.name">{{ cell.name }}</p>
+            <div class="mt-1.5 grid grid-cols-[auto_1fr_auto] items-center gap-x-2 gap-y-1">
+              <TrainingMeter :label="t('training.challenge.scoreLabel')" :percent="cell.scorePercent" :color="cell.color" />
+              <TrainingMeter
+                :label="t('training.challenge.stageLabel')"
+                :percent="cell.stagePercent"
+                :color="cell.color"
+                :value="cell.stage > 0 ? (cell.stageCap > 0 ? `${cell.stage}/${cell.stageCap}` : String(cell.stage)) : '—'"
+              />
             </div>
-
-            <div class="grid grid-cols-[auto_1fr_auto] items-center gap-x-2 gap-y-1.5">
-              <span class="text-center text-[11px] text-muted-foreground">{{ t("training.challenge.scoreLabel") }}</span>
-              <div
-                class="h-1.5 overflow-hidden rounded-full bg-primary/15"
-                :style="cell.color ? { backgroundColor: `color-mix(in srgb, ${cell.color} 15%, transparent)` } : undefined"
-              >
-                <div
-                  class="h-full rounded-full bg-primary transition-all"
-                  :style="{ width: `${cell.scorePercent}%`, ...(cell.color ? { backgroundColor: cell.color } : {}) }"
-                />
-              </div>
-              <span class="text-center text-xs font-semibold tabular-nums">
-                {{ cell.highScore > 0 ? formatNumber(cell.highScore) : "—" }}
-              </span>
-
-              <span class="text-center text-[11px] text-muted-foreground">{{ t("training.challenge.stageLabel") }}</span>
-              <div
-                class="h-1.5 overflow-hidden rounded-full bg-primary/15"
-                :style="cell.color ? { backgroundColor: `color-mix(in srgb, ${cell.color} 15%, transparent)` } : undefined"
-              >
-                <div
-                  class="h-full rounded-full bg-primary transition-all"
-                  :style="{ width: `${cell.stagePercent}%`, ...(cell.color ? { backgroundColor: cell.color } : {}) }"
-                />
-              </div>
-              <span class="text-center text-xs font-semibold tabular-nums">
-                <template v-if="cell.stage > 0">
-                  {{ cell.stageCap > 0 ? `${cell.stage}/${cell.stageCap}` : cell.stage }}
-                </template>
-                <template v-else>—</template>
-              </span>
-            </div>
-
+            <!-- Green is "still to claim", as on the music progress page. -->
             <p
               v-if="cell.unclaimedJewel > 0 || cell.unclaimedShard > 0"
-              class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] tabular-nums text-muted-foreground"
+              class="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] tabular-nums text-emerald-600 dark:text-emerald-400"
+              :title="t('training.challenge.unclaimedLabel')"
             >
-              <span>{{ t("training.challenge.unclaimedLabel") }}</span>
+              <span class="sr-only">{{ t("training.challenge.unclaimedLabel") }}</span>
               <span v-if="cell.unclaimedJewel > 0" class="inline-flex items-center gap-1">
-                <LucideGem class="size-3 shrink-0 text-sky-500" />
+                <LucideGem class="size-3 shrink-0" />
                 {{ t("training.challenge.jewel", { count: formatNumber(cell.unclaimedJewel) }) }}
               </span>
               <span v-if="cell.unclaimedShard > 0">
                 {{ t("training.challenge.shard", { count: formatNumber(cell.unclaimedShard) }) }}
               </span>
             </p>
-            <p v-else class="text-[11px] text-muted-foreground">
+            <p v-else class="mt-1.5 text-[11px] text-muted-foreground/70">
               {{ t("training.challenge.allClaimed") }}
             </p>
-          </div>
+          </TrainingTile>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </template>
   </div>
 </template>
