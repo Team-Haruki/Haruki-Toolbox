@@ -5,7 +5,6 @@ import { LucideUsers } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import CatalogDetailShell from "@/shared/components/catalog/CatalogDetailShell.vue"
-import CatalogStatusBadge from "@/shared/components/catalog/CatalogStatusBadge.vue"
 import { applyCatalogRegionQuery } from "@/shared/sekai/catalog-region"
 import GachaBehaviorsSection from "@/modules/gachas/components/GachaBehaviorsSection.vue"
 import GachaCeilSection from "@/modules/gachas/components/GachaCeilSection.vue"
@@ -16,7 +15,6 @@ import GachaPoolSection from "@/modules/gachas/components/GachaPoolSection.vue"
 import GachaRatesSection from "@/modules/gachas/components/GachaRatesSection.vue"
 import GachaRelatedEventsSection from "@/modules/gachas/components/GachaRelatedEventsSection.vue"
 import GachaSimulatorSection from "@/modules/gachas/components/GachaSimulatorSection.vue"
-import GachaTypeBadge from "@/modules/gachas/components/GachaTypeBadge.vue"
 import { useGachaDetail } from "@/modules/gachas/composables/useGachaDetail"
 
 const props = defineProps<{
@@ -71,7 +69,6 @@ const {
   ceilExchangeError,
   openCeilExchange,
   relatedEvents,
-  eventsLoading,
   summaryText,
   descriptionText,
 } = useGachaDetail(gachaId)
@@ -100,11 +97,6 @@ const pickupCardsRoute = computed(() => (pickupCharacterIds.value.length > 0
     :unreleased="unreleased"
     @retry="reload"
   >
-    <template #badges>
-      <GachaTypeBadge v-if="summary" :gacha-type="summary.gachaType" />
-      <CatalogStatusBadge v-if="status" :status="status" />
-    </template>
-
     <template #actions>
       <Button v-if="pickupCardsRoute" as-child variant="outline" size="sm">
         <RouterLink :to="pickupCardsRoute">
@@ -115,53 +107,53 @@ const pickupCardsRoute = computed(() => (pickupCharacterIds.value.length > 0
     </template>
 
     <template #skeleton>
-      <div class="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start">
-        <div class="flex flex-col gap-4">
-          <Skeleton class="aspect-[2/1] w-full rounded-lg" />
-          <Skeleton class="h-40 w-full rounded-xl" />
-        </div>
-        <div class="flex flex-col gap-4">
-          <Skeleton class="h-64 w-full rounded-xl" />
-          <Skeleton class="h-48 w-full rounded-xl" />
-        </div>
+      <Skeleton class="h-72 w-full rounded-2xl" />
+      <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
+        <Skeleton class="h-64 w-full rounded-xl" />
+        <Skeleton class="h-64 w-full rounded-xl" />
       </div>
     </template>
 
-    <template v-if="summary">
-      <!-- Sidebar + main, like the event and music pages: no two sections
-           ever have to line up. The sidebar is what the gacha *is* — its
-           banner, dates and PICK UP members — with the on-demand references
-           (behaviors, ceil exchange, information) directly beneath. The main
-           column is what it *does*: rates, the simulator, the full pool and
-           the related events. It spans both grid rows; `auto 1fr` keeps the
-           references hugging the sidebar instead of floating mid-column. -->
-      <div class="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:items-start">
-        <div class="flex min-w-0 flex-col gap-4">
-          <GachaHero
-            :name="summary.name"
-            :hero-sources="heroSources"
-            :banner-sources="bannerSources"
-            :logo-sources="logoSources"
-            :start-at="summary.startAt"
-            :end-at="summary.endAt"
-            :status="status"
-            :region="region"
-            :blur="blurArt"
-            stacked
-          />
-
+    <!-- The header block carries the title, so the shell's own heading is replaced. -->
+    <template v-if="summary" #heading>
+      <GachaHero
+        :name="summary.name"
+        :gacha-id="summary.id"
+        :gacha-type="summary.gachaType"
+        :unreleased="unreleased"
+        :hero-sources="heroSources"
+        :banner-sources="bannerSources"
+        :logo-sources="logoSources"
+        :start-at="summary.startAt"
+        :end-at="summary.endAt"
+        :status="status"
+        :region="region"
+        :blur="blurArt"
+      >
+        <template v-if="pickupCards.length > 0 || relatedEvents.length > 0" #footer>
           <GachaPickupsSection
             :cards="pickupCards"
             :region="region"
             :asset-endpoint="assetEndpoint"
             :blur-unreleased="blurUnreleased"
-            :loading="sectionsLoading"
             :wish-select-count="wishSelectCount"
-            compact
           />
-        </div>
+          <GachaRelatedEventsSection
+            :events="relatedEvents"
+            :region="region"
+            :asset-endpoint="assetEndpoint"
+            :now-ms="nowMs"
+          />
+        </template>
+      </GachaHero>
+    </template>
 
-        <div class="flex min-w-0 flex-col gap-4 lg:row-span-2">
+    <template v-if="summary">
+      <!-- Under the header, two stacks whose heights are the data's: the
+           odds and the fine print that goes with them on the left, pulling
+           (the simulator, the full pool) on the right. -->
+      <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
+        <div class="flex min-w-0 flex-col gap-4">
           <GachaRatesSection
             :table="rateTable"
             :segments="rateSegments"
@@ -170,38 +162,6 @@ const pickupCardsRoute = computed(() => (pickupCharacterIds.value.length > 0
             :loading="sectionsLoading"
           />
 
-          <GachaSimulatorSection
-            :model="simulatorModel"
-            :cards-by-id="cardsById"
-            :character-map="characterMap"
-            :region="region"
-            :asset-endpoint="assetEndpoint"
-            :blur-unreleased="blurUnreleased"
-            :now-ms="nowMs"
-            :loading="sectionsLoading"
-          />
-
-          <GachaPoolSection
-            :cards="poolCards"
-            :characters="poolCharacters"
-            :unit-color-map="unitColorMap"
-            :region="region"
-            :asset-endpoint="assetEndpoint"
-            :blur-unreleased="blurUnreleased"
-            :loading="sectionsLoading"
-            :wish-select-count="wishSelectCount"
-          />
-
-          <GachaRelatedEventsSection
-            :events="relatedEvents"
-            :region="region"
-            :asset-endpoint="assetEndpoint"
-            :loading="eventsLoading"
-            :now-ms="nowMs"
-          />
-        </div>
-
-        <div class="flex min-w-0 flex-col gap-4 lg:col-start-1">
           <GachaBehaviorsSection :behaviors="behaviors" :loading="false" />
 
           <GachaCeilSection
@@ -226,6 +186,30 @@ const pickupCardsRoute = computed(() => (pickupCharacterIds.value.length > 0
             :summary="summaryText"
             :description="descriptionText"
             :loading="sectionsLoading"
+          />
+        </div>
+
+        <div class="flex min-w-0 flex-col gap-4">
+          <GachaSimulatorSection
+            :model="simulatorModel"
+            :cards-by-id="cardsById"
+            :character-map="characterMap"
+            :region="region"
+            :asset-endpoint="assetEndpoint"
+            :blur-unreleased="blurUnreleased"
+            :now-ms="nowMs"
+            :loading="sectionsLoading"
+          />
+
+          <GachaPoolSection
+            :cards="poolCards"
+            :characters="poolCharacters"
+            :unit-color-map="unitColorMap"
+            :region="region"
+            :asset-endpoint="assetEndpoint"
+            :blur-unreleased="blurUnreleased"
+            :loading="sectionsLoading"
+            :wish-select-count="wishSelectCount"
           />
         </div>
       </div>

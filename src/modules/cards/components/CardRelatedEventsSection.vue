@@ -5,21 +5,21 @@ import type { SekaiRegion } from "@/types"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import { Badge } from "@/components/ui/badge"
 import { formatLocalizedDateRange } from "@/lib/date-time"
-import CatalogDetailSection from "@/shared/components/catalog/CatalogDetailSection.vue"
 import SekaiAssetImage from "@/shared/components/SekaiAssetImage.vue"
 import { resolveSekaiEventTypeLabel } from "@/shared/sekai/labels"
 import { resolveEventBannerUrl, resolveEventLogoUrl } from "@/modules/events"
 import type { CardRelatedEvent } from "@/modules/cards/lib/card-detail"
 
 /**
- * Events the card was featured in: banner row, type badge, bonus rates when
- * the dump carries them (`leaderBonusRate` is absent on en) and a story badge.
+ * Events the card was featured in, one slim link each for the card header:
+ * banner, period, type badge, bonus rates when the dump carries them
+ * (`leaderBonusRate` is absent on en) and a story badge. Renders nothing for
+ * a card without events.
  */
 const props = defineProps<{
   events: readonly CardRelatedEvent[]
   region: SekaiRegion
   assetEndpoint: SekaiAssetEndpointPreference
-  loading: boolean
 }>()
 
 const { t, te } = useI18n()
@@ -41,25 +41,25 @@ function period(row: CardRelatedEvent): string {
 </script>
 
 <template>
-  <CatalogDetailSection
-    :title="t('cardCatalog.detail.relatedEvents.title')"
-    :icon="LucideCalendarRange"
-    :loading="loading && events.length === 0"
-    :empty="!loading && events.length === 0"
-    :empty-message="t('cardCatalog.detail.relatedEvents.empty')"
-  >
-    <ul class="flex flex-col gap-2">
+  <div v-if="events.length > 0" class="flex min-w-0 flex-col gap-1.5" data-testid="card-related-events">
+    <p class="flex items-center gap-1.5 text-sm text-muted-foreground">
+      <LucideCalendarRange class="size-4 shrink-0" aria-hidden="true" />
+      {{ t("cardCatalog.detail.relatedEvents.title") }}
+    </p>
+    <ul class="flex flex-col gap-1.5">
       <li v-for="row in events" :key="row.event.id">
         <RouterLink
           :to="{ name: 'events.detail', params: { eventId: row.event.id } }"
-          class="flex items-center gap-3 rounded-md border bg-muted/20 p-2.5 transition-colors hover:bg-accent/50 dark:hover:bg-accent/30"
+          class="flex items-center gap-2.5 rounded-lg border bg-background/70 p-1.5 pr-2 outline-none transition-colors hover:bg-accent/50 focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:bg-input/30 dark:hover:bg-accent/30"
         >
-          <div class="relative aspect-[2/1] w-28 shrink-0 overflow-hidden rounded-md bg-muted sm:w-36">
-            <SekaiAssetImage :sources="bannerSources(row)" :alt="row.event.name" />
+          <!-- The banner's own proportions (488 × 208): nothing is cropped. -->
+          <div class="relative aspect-[488/208] w-24 shrink-0 overflow-hidden rounded-md bg-muted">
+            <SekaiAssetImage :sources="bannerSources(row)" :alt="row.event.name" fit="contain" />
           </div>
-          <div class="flex min-w-0 flex-1 flex-col gap-1">
+          <div class="min-w-0 flex-1">
             <p class="truncate text-sm font-medium">{{ row.event.name }}</p>
-            <div class="flex flex-wrap items-center gap-1">
+            <div class="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
+              <span class="tabular-nums">{{ period(row) }}</span>
               <Badge v-if="typeLabel(row)" variant="muted" size="sm">{{ typeLabel(row) }}</Badge>
               <Badge v-if="row.bonusRate != null" variant="emerald" size="sm" class="tabular-nums">
                 {{ t("cardCatalog.detail.relatedEvents.cardBonus", { value: row.bonusRate }) }}
@@ -71,11 +71,10 @@ function period(row: CardRelatedEvent): string {
                 {{ t("cardCatalog.detail.relatedEvents.story") }}
               </Badge>
             </div>
-            <p class="text-xs text-muted-foreground tabular-nums">{{ period(row) }}</p>
           </div>
           <LucideChevronRight class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </RouterLink>
       </li>
     </ul>
-  </CatalogDetailSection>
+  </div>
 </template>

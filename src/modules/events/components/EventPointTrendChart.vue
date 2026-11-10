@@ -37,11 +37,20 @@ const props = withDefaults(defineProps<{
   compact: false,
 })
 
-const chartHeight = computed(() => props.compact ? 200 : 240)
+/**
+ * PT and rank are different measures on different scales, so each gets its
+ * own panel on a shared x-axis instead of two y-axes over one plot (where the
+ * crossings of the two lines read as if they meant something).
+ */
+const pointPanelHeight = computed(() => props.compact ? 130 : 170)
+const rankPanelHeight = computed(() => props.compact ? 84 : 110)
+const chartHeight = computed(() => pointPanelHeight.value + rankPanelHeight.value)
 
-/** No rank on any point (no honors uploaded) leaves nothing to draw on the right axis. */
+/** No rank on any point (no honors uploaded) leaves nothing to draw in the rank panel. */
 const hasRankData = computed(() => props.trend.some((point) => point.rank != null || point.derivedRank != null))
-const showRankOverlay = computed(() => showRankSeries.value && hasRankData.value)
+const showRankPanel = computed(() => showRankSeries.value && hasRankData.value)
+/** The x-axis sits under the lowest visible panel. */
+const pointPanelHasXAxis = computed(() => !showRankPanel.value)
 
 const { t } = useI18n()
 
@@ -52,8 +61,8 @@ const TREND_POINT_COLOR = "#8b5cf6"
 const TREND_RANK_COLOR = "#f59e0b"
 
 // --- Responsive margins -----------------------------------------------------
-// Both stacked containers disable auto margins and share one computed margin so
-// their plot areas overlap exactly (poor man's dual y-axis for unovis).
+// The panels disable auto margins and share the same left/right margin so
+// their x-scales (and the brush strip's) line up exactly.
 const chartWrapEl = ref<HTMLElement | null>(null)
 const containerWidth = ref(0)
 useResizeObserver(chartWrapEl, (entries) => {
@@ -64,37 +73,31 @@ useResizeObserver(chartWrapEl, (entries) => {
 })
 
 const isNarrow = computed(() => containerWidth.value > 0 && containerWidth.value < 480)
-/** Margin kept for a side whose y-axis (series) is toggled off. */
-const COLLAPSED_SIDE_MARGIN = 12
+const X_AXIS_MARGIN = 28
 
-const chartMargin = computed(() => {
-  // Point labels ("10.0M") sit outside the plot on the left: five characters
-  // plus the tick padding need ~52 px, or the leading digit is cut off at the
-  // card edge on a phone (seen as "0.0M" at 390 px).
-  const side = isNarrow.value ? 52 : 56
-  // Rank labels ("20,000") sit outside the plot on the right: six digits plus
-  // the tick padding need ~56 px or the last digits clip at the card edge.
-  const rightSide = isNarrow.value ? 56 : 64
-  return {
-    left: showPointSeries.value ? side : COLLAPSED_SIDE_MARGIN,
-    right: showRankOverlay.value ? rightSide : COLLAPSED_SIDE_MARGIN,
-    top: 10,
-    bottom: 28,
-  }
-})
+// Tick labels sit outside the plot on the left: "10.0M" needs ~52 px and a
+// six-digit rank ("20,000") ~56 px, or the leading digit is cut off at the
+// card edge on a phone (seen as "0.0M" at 390 px).
+// The right side has no axis, but the last month label is centred on the plot
+// edge and needs half its width there or it is cut off ("2026年3").
+const sideMargin = computed(() => ({ left: isNarrow.value ? 54 : 58, right: 30 }))
+
+const pointMargin = computed(() => ({
+  ...sideMargin.value,
+  top: 8,
+  bottom: pointPanelHasXAxis.value ? X_AXIS_MARGIN : 6,
+}))
+
+const rankMargin = computed(() => ({ ...sideMargin.value, top: 8, bottom: X_AXIS_MARGIN }))
 
 // The brush strip must share left/right margins with the main chart so both
 // x-scales line up visually.
-const brushMargin = computed(() => ({
-  left: chartMargin.value.left,
-  right: chartMargin.value.right,
-  top: 2,
-  bottom: 2,
-}))
+const brushMargin = computed(() => ({ ...sideMargin.value, top: 2, bottom: 2 }))
 
 const xNumTicks = computed(() => {
   const width = containerWidth.value || 640
-  return Math.max(2, Math.min(8, Math.floor(width / 90)))
+  // "2025年11月" is ~70 px wide: under ~110 px per tick neighbours touch.
+  return Math.max(2, Math.min(8, Math.floor(width / 110)))
 })
 
 // --- Zoom window ------------------------------------------------------------
@@ -188,7 +191,7 @@ function yTickFormat(value: number) {
   return String(value)
 }
 
-/** Right-axis ticks carry negated ranks; show their absolute value. */
+/** The rank panel plots negated ranks; show their absolute value. */
 function rankTickFormat(value: number) {
   const rank = Math.abs(value)
   return Number.isInteger(rank) ? formatNumberCN(rank) : ""
@@ -219,7 +222,7 @@ function crosshairTemplate(point: EventPointTrendPoint) {
 </script>
 
 <template>
-  <Card>
+  <Card class="gap-3">
     <CardHeader>
       <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
         <span>{{ title ?? t("eventRecords.trend.title") }}</span>
@@ -263,36 +266,42 @@ function crosshairTemplate(point: EventPointTrendPoint) {
         </span>
       </CardTitle>
     </CardHeader>
-    <CardContent>
+    <CardContent class="flex flex-col gap-4">
+      <slot name="lead" />
       <div ref="chartWrapEl">
         <Skeleton v-if="loading" class="w-full rounded-lg" :style="{ height: `${chartHeight}px` }" />
         <template v-else-if="trend.length >= 2">
-          <div class="relative" :style="{ height: `${chartHeight}px` }">
-            <VisXYContainer :data="visibleTrend" :height="chartHeight" :auto-margin="false" :margin="chartMargin">
-              <template v-if="showPointSeries">
-                <VisArea :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" :opacity="0.15" curve-type="monotoneX" />
-                <VisLine :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" curve-type="monotoneX" />
-                <VisScatter :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" :size="4" />
-              </template>
+          <div v-if="showPointSeries" data-panel="point">
+            <p class="text-[11px] text-muted-foreground" :style="{ paddingLeft: `${sideMargin.left}px` }">
+              {{ t("eventRecords.trend.point") }}
+            </p>
+            <VisXYContainer :data="visibleTrend" :height="pointPanelHeight" :auto-margin="false" :margin="pointMargin">
+              <VisArea :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" :opacity="0.15" curve-type="monotoneX" />
+              <VisLine :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" curve-type="monotoneX" />
+              <VisScatter :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" :size="4" />
               <!-- Unovis derives the crosshair's snapping from its own y accessors, not from the sibling line/scatter. -->
               <VisCrosshair :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" :template="crosshairTemplate" />
               <VisTooltip />
-              <VisAxis type="x" :tick-format="xTickFormat" :tick-values="xTickValues" />
-              <VisAxis v-if="showPointSeries" type="y" :tick-format="yTickFormat" :tick-text-color="TREND_POINT_COLOR" />
+              <VisAxis v-if="pointPanelHasXAxis" type="x" :tick-format="xTickFormat" :tick-values="xTickValues" />
+              <VisAxis type="y" :tick-format="yTickFormat" :num-ticks="4" />
             </VisXYContainer>
-            <div v-if="showRankOverlay" class="pointer-events-none absolute inset-0">
-              <VisXYContainer
-                :data="visibleTrend"
-                :height="chartHeight"
-                :auto-margin="false"
-                :margin="chartMargin"
-              >
-                <VisLine :x="trendX" :y="trendRankY" :color="TREND_RANK_COLOR" curve-type="monotoneX" />
-                <VisScatter :x="trendX" :y="trendRankY" :color="TREND_RANK_COLOR" :size="4" />
-                <VisAxis type="y" position="right" :tick-format="rankTickFormat" :tick-text-color="TREND_RANK_COLOR" :grid-line="false" />
-              </VisXYContainer>
-            </div>
           </div>
+          <div v-if="showRankPanel" data-panel="rank" :class="showPointSeries ? 'mt-1' : ''">
+            <p class="text-[11px] text-muted-foreground" :style="{ paddingLeft: `${sideMargin.left}px` }">
+              {{ t("eventRecords.trend.rankPanel") }}
+            </p>
+            <VisXYContainer :data="visibleTrend" :height="rankPanelHeight" :auto-margin="false" :margin="rankMargin">
+              <VisLine :x="trendX" :y="trendRankY" :color="TREND_RANK_COLOR" curve-type="monotoneX" />
+              <VisScatter :x="trendX" :y="trendRankY" :color="TREND_RANK_COLOR" :size="4" />
+              <VisCrosshair :x="trendX" :y="trendRankY" :color="TREND_RANK_COLOR" :template="crosshairTemplate" />
+              <VisTooltip />
+              <VisAxis type="x" :tick-format="xTickFormat" :tick-values="xTickValues" />
+              <VisAxis type="y" :tick-format="rankTickFormat" :num-ticks="3" />
+            </VisXYContainer>
+          </div>
+          <p v-if="!showPointSeries && !showRankPanel" class="py-8 text-center text-sm text-muted-foreground">
+            {{ t("eventRecords.trend.allHidden") }}
+          </p>
           <div
             v-if="brushEnabled"
             class="mt-2 h-12 touch-none [--vis-brush-handle-fill-color:var(--muted-foreground)] [--vis-brush-handle-stroke-color:var(--background)] [--vis-brush-unselected-fill-color:var(--background)] [--vis-brush-unselected-opacity:0.6]"

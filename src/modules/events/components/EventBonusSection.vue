@@ -36,7 +36,7 @@ const props = withDefaults(defineProps<{
 })
 
 /** Mirrors `TableHead` so the native cells below match the rest of the table. */
-const TABLE_HEAD_CLASS = "text-muted-foreground h-10 px-3 first:pl-6 last:pr-6 text-left align-middle font-medium whitespace-nowrap"
+const TABLE_HEAD_CLASS = "text-muted-foreground h-10 px-2 first:pl-3 last:pr-3 text-left align-middle font-medium whitespace-nowrap"
 
 const { t, te } = useI18n()
 
@@ -109,7 +109,7 @@ function groupLabel(group: EventBonusGroup): string {
            container, and with it the edge fades that show more columns hide
            off-screen on phones. -->
       <div class="overflow-hidden rounded-md border">
-        <Table class="text-xs sm:text-sm">
+        <Table class="text-xs [&_td]:px-2 [&_td:first-child]:pl-3 [&_td:last-child]:pr-3">
           <TableHeader>
             <TableRow>
               <!-- Native `th`, not `TableHead`: same classes, but the markup

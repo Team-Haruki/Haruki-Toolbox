@@ -1,4 +1,6 @@
 export {
+  buildGachaBannerAliasMap,
+  buildGachaImageCandidates,
   buildGachaLogoCandidates,
   normalizeCatalogGachas,
   type CatalogGacha,

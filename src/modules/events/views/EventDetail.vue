@@ -4,10 +4,7 @@ import { useI18n } from "vue-i18n"
 import { LucideBookOpen, LucideChartLine, LucideLayoutGrid } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { formatLocalizedDateRange } from "@/lib/date-time"
 import CatalogDetailShell from "@/shared/components/catalog/CatalogDetailShell.vue"
-import CatalogStatusBadge from "@/shared/components/catalog/CatalogStatusBadge.vue"
-import SekaiUnitLogo from "@/shared/components/SekaiUnitLogo.vue"
 import { applyCatalogRegionQuery, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import { useSettingsStore } from "@/shared/stores/settings"
 import EventBonusSection from "@/modules/events/components/EventBonusSection.vue"
@@ -20,7 +17,6 @@ import EventRewardsSection from "@/modules/events/components/EventRewardsSection
 import EventStorySection from "@/modules/events/components/EventStorySection.vue"
 import EventTeamsSection from "@/modules/events/components/EventTeamsSection.vue"
 import EventTimelineSection from "@/modules/events/components/EventTimelineSection.vue"
-import EventTypeBadge from "@/modules/events/components/EventTypeBadge.vue"
 import { useEventDetail } from "@/modules/events/composables/useEventDetail"
 import { buildEventDeckRecommendLink, buildEventRankBorderLink } from "@/modules/events/lib/event-links"
 import { buildStoryPlayerLink, firstPlayableScenario } from "@/modules/story"
@@ -46,9 +42,6 @@ const { event, status, now } = detail
 
 const listRoute = { name: "events.list" } as const
 
-const subtitle = computed(() => (event.value
-  ? formatLocalizedDateRange(event.value.startAt, event.value.aggregateAt, "date", t("events.common.dateFallback"))
-  : null))
 
 const rankBorderLink = computed(() => (
   event.value && status.value
@@ -75,7 +68,6 @@ const isCheerfulCarnival = computed(() => event.value?.eventType === "cheerful_c
 <template>
   <CatalogDetailShell
     :title="event?.name ?? null"
-    :subtitle="subtitle"
     :entity-id="eventIdNumber"
     :list-title="t('events.list.title')"
     :list-route="listRoute"
@@ -88,14 +80,6 @@ const isCheerfulCarnival = computed(() => event.value?.eventType === "cheerful_c
     :unreleased="detail.unreleased.value"
     @retry="detail.eventsIndex.reload"
   >
-    <template #badges>
-      <template v-if="event">
-        <EventTypeBadge :event-type="event.eventType" />
-        <CatalogStatusBadge v-if="status" :status="status" />
-        <SekaiUnitLogo v-if="event.unit" :unit="event.unit" size="sm" show-label class="text-xs text-muted-foreground" />
-      </template>
-    </template>
-
     <template #actions>
       <Button v-if="rankBorderLink" as-child variant="outline" size="sm">
         <RouterLink :to="rankBorderLink">
@@ -118,43 +102,49 @@ const isCheerfulCarnival = computed(() => event.value?.eventType === "cheerful_c
     </template>
 
     <template #skeleton>
-      <div class="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start">
-        <div class="flex flex-col gap-4">
-          <Skeleton class="h-56 w-full rounded-xl" />
-          <Skeleton class="h-72 w-full rounded-xl" />
-        </div>
-        <div class="flex flex-col gap-4">
-          <Skeleton class="h-64 w-full rounded-xl" />
-          <Skeleton class="h-56 w-full rounded-xl" />
-        </div>
+      <Skeleton class="h-80 w-full rounded-2xl" />
+      <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
+        <Skeleton class="h-72 w-full rounded-xl" />
+        <Skeleton class="h-72 w-full rounded-xl" />
       </div>
     </template>
 
-    <template v-if="event && status">
-      <!-- Sidebar + main, like the music page: no two sections ever have to
-           line up. The sidebar is what the event *is* — its art and its
-           dates — and, under that, the reference sections that open on
-           demand (gachas, rewards, story). The main column is what it
-           *contains*: bonuses, cards, songs, chapters, teams. The main column
-           spans both grid rows, so the references sit directly under the
-           timeline on wide screens and after everything else on narrow ones.
-           `auto 1fr` rows matter: without them the spanning main column
-           spreads its height into row 1 and pushes the references ~130px
-           below the timeline. -->
-      <div class="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:items-start">
-        <div class="flex min-w-0 flex-col gap-4">
-          <EventHero
-            :event="event"
+    <!-- The header block carries the title, so the shell's own heading is replaced. -->
+    <template v-if="event" #heading>
+      <EventHero
+        :event="event"
+        :region="region"
+        :asset-endpoint="assetEndpoint"
+        :status="status"
+        :unreleased="detail.unreleased.value"
+        :blur="detail.unreleased.value && detail.blurUnreleased.value"
+      >
+        <EventTimelineSection v-if="status" :event="event" :status="status" :now-ms="now" :region="region" />
+        <template
+          v-if="detail.gachasSection.error.value || detail.relatedGachas.value.gachas.length > 0"
+          #footer
+        >
+          <EventRelatedGachasSection
+            :result="detail.relatedGachas.value"
             :region="region"
             :asset-endpoint="assetEndpoint"
-            :blur="detail.unreleased.value && detail.blurUnreleased.value"
-            stacked
+            :banner-alias-map="bannerAliasMap"
+            :now-ms="now"
+            :error="detail.gachasSection.error.value"
+            :retrying="detail.gachasSection.retrying.value"
+            @retry="detail.gachasSection.reload"
           />
+        </template>
+      </EventHero>
+    </template>
 
-          <EventTimelineSection :event="event" :status="status" :now-ms="now" :region="region" />
-        </div>
-
-        <div class="flex min-w-0 flex-col gap-4 lg:row-span-2">
+    <template v-if="event && status">
+      <!-- Under the header, two stacks whose heights are the data's: how the
+           event scores (bonuses, its chapters or teams) on the left, what it
+           brought (cards, songs) on the right. The reference sections that
+           open on demand (rewards, story) close the page. -->
+      <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
+        <div class="flex min-w-0 flex-col gap-4">
           <EventBonusSection
             :groups="detail.bonusGroups.value"
             :character-map="detail.characterMap.value"
@@ -162,6 +152,23 @@ const isCheerfulCarnival = computed(() => event.value?.eventType === "cheerful_c
             :table-loading="detail.extras.loading.value"
           />
 
+          <EventChaptersSection
+            v-if="isWorldBloom && detail.chapters.value.length > 0"
+            :chapters="detail.chapters.value"
+            :character-map="detail.characterMap.value"
+            :now-ms="now"
+          />
+
+          <EventTeamsSection
+            v-if="isCheerfulCarnival && detail.teams.value.length > 0"
+            :teams="detail.teams.value"
+            :event-assetbundle-name="event.assetbundleName"
+            :region="region"
+            :asset-endpoint="assetEndpoint"
+          />
+        </div>
+
+        <div class="flex min-w-0 flex-col gap-4">
           <EventCardsSection
             :cards="detail.cards.value"
             :region="region"
@@ -184,44 +191,17 @@ const isCheerfulCarnival = computed(() => event.value?.eventType === "cheerful_c
             :retrying="detail.musicsSection.retrying.value"
             @retry="detail.musicsSection.reload"
           />
-
-          <EventChaptersSection
-            v-if="isWorldBloom && detail.chapters.value.length > 0"
-            :chapters="detail.chapters.value"
-            :character-map="detail.characterMap.value"
-            :now-ms="now"
-          />
-
-          <EventTeamsSection
-            v-if="isCheerfulCarnival && detail.teams.value.length > 0"
-            :teams="detail.teams.value"
-            :event-assetbundle-name="event.assetbundleName"
-            :region="region"
-            :asset-endpoint="assetEndpoint"
-          />
         </div>
+      </div>
 
-        <div class="flex min-w-0 flex-col gap-4 lg:col-start-1">
-          <EventRelatedGachasSection
-            :result="detail.relatedGachas.value"
-            :region="region"
-            :asset-endpoint="assetEndpoint"
-            :banner-alias-map="bannerAliasMap"
-            :now-ms="now"
-            :loading="detail.gachasSection.loading.value"
-            :error="detail.gachasSection.error.value"
-            :retrying="detail.gachasSection.retrying.value"
-            @retry="detail.gachasSection.reload"
-          />
+      <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
+        <EventRewardsSection
+          :ranges="detail.rewardRanges.value"
+          :region="region"
+          :asset-endpoint="assetEndpoint"
+        />
 
-          <EventRewardsSection
-            :ranges="detail.rewardRanges.value"
-            :region="region"
-            :asset-endpoint="assetEndpoint"
-          />
-
-          <EventStorySection v-if="detail.story.value" :story="detail.story.value" :playable="storyPlayable" />
-        </div>
+        <EventStorySection v-if="detail.story.value" :story="detail.story.value" :playable="storyPlayable" />
       </div>
     </template>
   </CatalogDetailShell>
