@@ -326,7 +326,7 @@ const cacheFacts = computed<SettingsFact[]>(() => [
         <template v-if="accountOptions.length === 0" #note>
           <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.userData.noAccount") }}</p>
         </template>
-        <Select id="user-data-account" v-model="selectedAccountKey" aria-labelledby="user-data-account-label" :disabled="accountOptions.length === 0 || refreshing || clearing">
+        <Select id="user-data-account" v-model="selectedAccountKey" :aria-label="t('homeSettings.userData.account')" :disabled="accountOptions.length === 0 || refreshing || clearing">
           <SelectTrigger class="w-full @min-[28rem]:w-56" aria-labelledby="user-data-account-label">
             <GameAccountOption
               v-if="selectedAccount"
@@ -363,7 +363,7 @@ const cacheFacts = computed<SettingsFact[]>(() => [
         label-id="user-data-mode-label"
         stack
       >
-        <Select id="user-data-mode" v-model="selectedDataMode" aria-labelledby="user-data-mode-label" :disabled="refreshing || clearing">
+        <Select id="user-data-mode" v-model="selectedDataMode" :aria-label="t('homeSettings.userData.dataType')" :disabled="refreshing || clearing">
           <SelectTrigger class="w-full @min-[28rem]:w-56" aria-labelledby="user-data-mode-label">
             <SelectValue />
           </SelectTrigger>

@@ -170,7 +170,7 @@ function handleCopyScriptUrl() {
                 label-id="ios-endpoint-label"
                 stack
               >
-                <Select id="ios-endpoint" v-model="selectedEndpoint" aria-labelledby="ios-endpoint-label">
+                <Select id="ios-endpoint" v-model="selectedEndpoint" :aria-label="t('tools.iosModules.sections.endpoint.title')">
                   <SelectTrigger class="w-full @min-[28rem]:w-48" aria-labelledby="ios-endpoint-label">
                     <SelectValue :placeholder="t('tools.iosModules.sections.endpoint.placeholder')" />
                   </SelectTrigger>

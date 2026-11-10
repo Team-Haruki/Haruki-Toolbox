@@ -335,7 +335,7 @@ const updateStatus = computed<{ icon: Component; tone: SettingsRowTone; label: s
                   label-id="dialog-theme-label"
                   stack
                 >
-                  <Select id="dialog-theme" v-model="selectedTheme" aria-labelledby="dialog-theme-label">
+                  <Select id="dialog-theme" v-model="selectedTheme" :aria-label="t('homeSettings.theme.label')">
                     <SelectTrigger aria-labelledby="dialog-theme-label" class="w-full @min-[28rem]:w-56">
                       <SelectValue :placeholder="t('homeSettings.theme.placeholder')">
                         <span class="truncate">{{ selectedThemeLabel }}</span>
@@ -360,7 +360,7 @@ const updateStatus = computed<{ icon: Component; tone: SettingsRowTone; label: s
                   label-id="dialog-locale-label"
                   stack
                 >
-                  <Select id="dialog-locale" v-model="selectedLocale" aria-labelledby="dialog-locale-label">
+                  <Select id="dialog-locale" v-model="selectedLocale" :aria-label="t('homeSettings.locale.label')">
                     <SelectTrigger aria-labelledby="dialog-locale-label" class="w-full @min-[28rem]:w-56">
                       <SelectValue :placeholder="t('homeSettings.locale.placeholder')">
                         <span class="truncate">{{ selectedLocaleLabel }}</span>
@@ -408,7 +408,7 @@ const updateStatus = computed<{ icon: Component; tone: SettingsRowTone; label: s
                   <template v-if="endpointUnavailable" #note>
                     <p class="mt-0.5 text-xs text-destructive">{{ t("homeSettings.endpoint.unavailable") }}</p>
                   </template>
-                  <Select id="dialog-endpoint" v-model="selectedEndpoint" aria-labelledby="dialog-endpoint-label" :disabled="endpointSelectionDisabled || endpointUnavailable">
+                  <Select id="dialog-endpoint" v-model="selectedEndpoint" :aria-label="t('homeSettings.endpoint.label')" :disabled="endpointSelectionDisabled || endpointUnavailable">
                     <SelectTrigger aria-labelledby="dialog-endpoint-label" class="w-full @min-[28rem]:w-56">
                       <SelectValue :placeholder="t('homeSettings.endpoint.placeholder')">
                         <span class="truncate">{{ selectedEndpointLabel }}</span>
@@ -443,7 +443,7 @@ const updateStatus = computed<{ icon: Component; tone: SettingsRowTone; label: s
                   label-id="dialog-asset-endpoint-label"
                   stack
                 >
-                  <Select id="dialog-asset-endpoint" v-model="selectedAssetEndpoint" aria-labelledby="dialog-asset-endpoint-label">
+                  <Select id="dialog-asset-endpoint" v-model="selectedAssetEndpoint" :aria-label="t('homeSettings.assetEndpoint.label')">
                     <SelectTrigger aria-labelledby="dialog-asset-endpoint-label" class="w-full @min-[28rem]:w-56">
                       <SelectValue :placeholder="t('homeSettings.assetEndpoint.placeholder')">
                         <span class="truncate">{{ selectedAssetEndpointLabel }}</span>
@@ -514,7 +514,7 @@ const updateStatus = computed<{ icon: Component; tone: SettingsRowTone; label: s
                   label-id="dialog-preferred-vocal-label"
                   stack
                 >
-                  <Select id="dialog-preferred-vocal" v-model="selectedPreferredVocalType" aria-labelledby="dialog-preferred-vocal-label">
+                  <Select id="dialog-preferred-vocal" v-model="selectedPreferredVocalType" :aria-label="t('homeSettings.music.preferredVocal.label')">
                     <SelectTrigger aria-labelledby="dialog-preferred-vocal-label" class="w-full @min-[28rem]:w-56">
                       <SelectValue />
                     </SelectTrigger>
