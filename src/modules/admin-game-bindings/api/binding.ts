@@ -12,6 +12,7 @@ import {
 } from "@/lib/record-utils"
 import { normalizeSekaiRegion } from "@/lib/sekai-region"
 import { normalizeMysekaiPermissions, normalizeSuitePermissions } from "@/lib/game-binding-permissions"
+import { type GameBindingStats, normalizeGameBindingStats } from "@/modules/admin-game-bindings/lib/binding-stats"
 import type { EntityId } from "@/types/common"
 import type {
     MysekaiDataPrivacySettings,
@@ -28,6 +29,9 @@ export interface GlobalGameBinding {
     gameUserId: string
     userId: string
     userName?: string
+    /** The owner's email and role (`user` / `admin` / `super_admin`), as the list sends them. */
+    ownerEmail?: string
+    ownerRole?: string
     suite?: SuiteDataPrivacySettings | null
     mysekai?: MysekaiDataPrivacySettings | null
     verified?: boolean
@@ -59,6 +63,8 @@ function normalizeGlobalGameBinding(item: UnknownRecord): GlobalGameBinding | nu
         gameUserId,
         userId,
         userName: ownerName ?? fallbackUserName,
+        ownerEmail: owner ? readOptionalString(owner, ["email"]) : undefined,
+        ownerRole: owner ? readOptionalString(owner, ["role"]) : undefined,
         suite: suite ? normalizeSuitePermissions(suite) : null,
         mysekai: mysekai ? normalizeMysekaiPermissions(mysekai) : null,
         verified: readBoolean(item, ["verified"]),
@@ -79,6 +85,16 @@ export async function getGlobalGameBindings(params?: QueryParams) {
         .map((item) => normalizeGlobalGameBinding(item))
         .filter((item): item is GlobalGameBinding => item !== null)
     return { items, total: readUpdatedTotal(data) }
+}
+
+/**
+ * Site-wide binding counts. They are part of the dashboard statistics; there
+ * is no endpoint for them alone, and counting through the list would write
+ * an audit entry per request.
+ */
+export async function getGameBindingStats(): Promise<GameBindingStats | null> {
+    const res = await request<APIResponse<unknown>>("/api/admin/statistics/dashboard", { method: "GET" })
+    return normalizeGameBindingStats(unwrapUpdatedData(res, translate("adminGameBindings.stats.loadFailed")))
 }
 
 // Single-item actions

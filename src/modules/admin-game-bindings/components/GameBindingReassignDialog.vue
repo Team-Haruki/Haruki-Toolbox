@@ -36,7 +36,7 @@ const emit = defineEmits<{
     <DialogContent>
       <DialogHeader>
         <DialogTitle>{{ t("adminGameBindings.reassignDialog.title") }}</DialogTitle>
-        <DialogDescription>
+        <DialogDescription class="[overflow-wrap:anywhere]">
           <i18n-t keypath="adminGameBindings.reassignDialog.description" scope="global">
             <template #server>{{ serverLabel(target?.server ?? "") }}</template>
             <template #gameId><strong>{{ target?.gameUserId }}</strong></template>
@@ -59,7 +59,7 @@ const emit = defineEmits<{
           @click="emit('confirm')"
           :disabled="!targetUserId.trim() || actionLoading"
         >
-          <LucideArrowRightLeft class="w-4 h-4 mr-1" />
+          <LucideArrowRightLeft class="size-4" aria-hidden="true" />
           {{ t("adminGameBindings.reassignDialog.confirm") }}
         </Button>
       </DialogFooter>

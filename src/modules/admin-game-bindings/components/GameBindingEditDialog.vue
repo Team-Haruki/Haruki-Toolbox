@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, type Component } from "vue"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogScrollContent,
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -18,27 +18,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import { LucideArmchair, LucideBot, LucideGlobe, LucideSave, LucideShieldAlert } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import {
   isMysekaiPermissionKey,
-  MYSEKAI_PERMISSION_TITLE_KEYS,
   isSuitePermissionKey,
-  SUITE_PERMISSION_TITLE_KEYS,
   MYSEKAI_PERMISSION_OPTIONS,
+  MYSEKAI_PERMISSION_TITLE_KEYS,
+  PERMISSION_BOT_NAME_KEYS,
   SUITE_PERMISSION_OPTIONS,
+  SUITE_PERMISSION_TITLE_KEYS,
   type MysekaiPermissionKey,
   type SuitePermissionKey,
 } from "@/lib/game-binding-permission-meta"
-import { isSekaiRegion } from "@/lib/sekai-region"
+import { isSekaiRegion, resolveSekaiRegionLabel } from "@/lib/sekai-region"
+import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
+import SettingsRow from "@/shared/components/settings/SettingsRow.vue"
+import GameBindingServerBadge from "@/modules/admin-game-bindings/components/GameBindingServerBadge.vue"
 import type { SekaiRegion } from "@/types/store"
-import GameBindingPermissionSection from "./GameBindingPermissionSection.vue"
 
 type ServerOption = {
   value: SekaiRegion
   label: string
 }
 
-defineProps<{
+/**
+ * Create or edit a binding, laid out like the user-facing dialog: the account
+ * first (fields while creating, a fixed summary afterwards), then one group
+ * per upload with a line for each switch that needs explaining and the bot
+ * switches together on one line.
+ */
+const props = defineProps<{
   open: boolean
   isEditMode: boolean
   actionLoading: boolean
@@ -70,102 +81,212 @@ function handleServerChange(value: unknown) {
   emit("update:editServer", value)
 }
 
-function handleSuitePermissionUpdate(payload: { key: string; value: boolean }) {
-  if (!isSuitePermissionKey(payload.key)) return
-  emit("update:suite", { key: payload.key, value: payload.value })
+type PermissionRowView = { key: string; icon: Component; title: string; help: string; value: boolean; unsafe: boolean }
+type PermissionBotView = { key: string; name: string; title: string; value: boolean }
+type PermissionGroupView = {
+  key: "suite" | "mysekai"
+  title: string
+  rows: PermissionRowView[]
+  bots: PermissionBotView[]
+  update: (key: string, value: boolean) => void
 }
 
-function handleMysekaiPermissionUpdate(payload: { key: string; value: boolean }) {
-  if (!isMysekaiPermissionKey(payload.key)) return
-  emit("update:mysekai", { key: payload.key, value: payload.value })
+const ROW_ICONS: Record<string, Component> = {
+  allowPublicApi: LucideGlobe,
+  allowFixtureApi: LucideArmchair,
 }
 
-const suitePermissionOptions = computed(() =>
-  SUITE_PERMISSION_OPTIONS.map((option) => ({
-    key: option.key,
-    label: t(SUITE_PERMISSION_TITLE_KEYS[option.key]),
-  }))
-)
+/** Switches that expose the upload to anyone who knows the UID. */
+const UNSAFE_ROW_KEYS: ReadonlySet<string> = new Set(["allowPublicApi"])
 
-const mysekaiPermissionOptions = computed(() =>
-  MYSEKAI_PERMISSION_OPTIONS.map((option) => ({
-    key: option.key,
-    label: t(MYSEKAI_PERMISSION_TITLE_KEYS[option.key]),
-  }))
-)
+function buildGroup(
+  key: PermissionGroupView["key"],
+  title: string,
+  options: ReadonlyArray<{ key: string }>,
+  titleKeys: Readonly<Record<string, string>>,
+  values: Record<string, boolean>,
+  update: PermissionGroupView["update"],
+): PermissionGroupView {
+  const rows: PermissionRowView[] = []
+  const bots: PermissionBotView[] = []
+  for (const option of options) {
+    const value = values[option.key] === true
+    const title = t(titleKeys[option.key] ?? option.key)
+    const botNameKey = PERMISSION_BOT_NAME_KEYS[option.key]
+    if (botNameKey) {
+      bots.push({ key: option.key, name: t(botNameKey), title, value })
+    } else {
+      rows.push({
+        key: option.key,
+        icon: ROW_ICONS[option.key] ?? LucideGlobe,
+        title,
+        help: t(`adminGameBindings.editDialog.permissionHelp.${key}.${option.key}`),
+        value,
+        unsafe: UNSAFE_ROW_KEYS.has(option.key),
+      })
+    }
+  }
+  return { key, title, rows, bots, update }
+}
+
+const permissionGroups = computed<PermissionGroupView[]>(() => [
+  buildGroup(
+    "suite",
+    t("adminGameBindings.editDialog.suiteSettingsTitle"),
+    SUITE_PERMISSION_OPTIONS,
+    SUITE_PERMISSION_TITLE_KEYS,
+    props.editSuite,
+    (key, value) => {
+      if (isSuitePermissionKey(key)) emit("update:suite", { key, value })
+    },
+  ),
+  buildGroup(
+    "mysekai",
+    t("adminGameBindings.editDialog.mysekaiSettingsTitle"),
+    MYSEKAI_PERMISSION_OPTIONS,
+    MYSEKAI_PERMISSION_TITLE_KEYS,
+    props.editMysekai,
+    (key, value) => {
+      if (isMysekaiPermissionKey(key)) emit("update:mysekai", { key, value })
+    },
+  ),
+])
 </script>
 
 <template>
-  <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent class="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+  <Dialog :open="props.open" @update:open="emit('update:open', $event)">
+    <DialogScrollContent class="sm:max-w-[560px]">
       <DialogHeader>
         <DialogTitle>
-          {{ isEditMode ? t("adminGameBindings.editDialog.editTitle") : t("adminGameBindings.editDialog.createTitle") }}
+          {{ props.isEditMode ? t("adminGameBindings.editDialog.editTitle") : t("adminGameBindings.editDialog.createTitle") }}
         </DialogTitle>
         <DialogDescription>
-          {{ isEditMode ? t("adminGameBindings.editDialog.editDescription") : t("adminGameBindings.editDialog.createDescription") }}
+          {{ props.isEditMode ? t("adminGameBindings.editDialog.editDescription") : t("adminGameBindings.editDialog.createDescription") }}
         </DialogDescription>
       </DialogHeader>
-      <div class="flex flex-col gap-4 py-2">
-        <div class="flex flex-col gap-1.5">
-          <Label :for="FIELD_IDS.toolboxUser">{{ t("adminGameBindings.editDialog.toolboxUserId") }}</Label>
-          <Input
-            :id="FIELD_IDS.toolboxUser"
-            :model-value="editTargetUserId"
-            :placeholder="t('adminGameBindings.editDialog.toolboxUserIdPlaceholder')"
-            :disabled="isEditMode"
-            @update:model-value="emit('update:editTargetUserId', String($event ?? ''))"
-          />
-        </div>
-        <div class="flex flex-col gap-1.5">
-          <Label id="game-binding-edit-server-label" for="game-binding-edit-server">{{ t("adminGameBindings.editDialog.server") }}</Label>
-          <Select id="game-binding-edit-server" :key="locale" :model-value="editServer" @update:model-value="handleServerChange">
-            <SelectTrigger aria-labelledby="game-binding-edit-server-label" class="w-full" :disabled="isEditMode">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem
-                v-for="opt in editServers"
-                :key="opt.value"
-                :value="opt.value"
-              >
-                {{ opt.label }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div class="flex flex-col gap-1.5">
-          <Label :for="FIELD_IDS.gameUser">{{ t("adminGameBindings.editDialog.gameUserId") }}</Label>
-          <Input
-            :id="FIELD_IDS.gameUser"
-            :model-value="editGameUserId"
-            :placeholder="t('adminGameBindings.editDialog.gameUserIdPlaceholder')"
-            :disabled="isEditMode"
-            @update:model-value="emit('update:editGameUserId', String($event ?? ''))"
-          />
-        </div>
-        <GameBindingPermissionSection
-          :title="t('adminGameBindings.editDialog.suiteSettingsTitle')"
-          :options="suitePermissionOptions"
-          :values="editSuite"
-          @update="handleSuitePermissionUpdate"
-        />
-        <GameBindingPermissionSection
-          :title="t('adminGameBindings.editDialog.mysekaiSettingsTitle')"
-          :options="mysekaiPermissionOptions"
-          :values="editMysekai"
-          @update="handleMysekaiPermissionUpdate"
-        />
+
+      <div class="flex min-w-0 flex-col gap-5 py-1">
+        <SettingsGroup :title="t('adminGameBindings.editDialog.accountTitle')">
+          <!-- An existing binding keeps its identity: shown as it is, with
+               where to change it, instead of three greyed-out fields. -->
+          <div v-if="props.isEditMode" class="px-4 py-3" data-testid="admin-binding-identity">
+            <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
+              <GameBindingServerBadge :server="props.editServer" :label="resolveSekaiRegionLabel(props.editServer, t)" />
+              <span class="min-w-0 font-mono text-sm font-medium tabular-nums [overflow-wrap:anywhere]">{{ props.editGameUserId }}</span>
+            </div>
+            <p class="mt-1.5 text-xs text-muted-foreground [overflow-wrap:anywhere]">
+              {{ t("adminGameBindings.editDialog.owner", { userId: props.editTargetUserId }) }}
+            </p>
+            <p class="mt-1 text-xs text-muted-foreground">{{ t("adminGameBindings.editDialog.identityLockedHint") }}</p>
+          </div>
+          <div v-else class="grid gap-3 px-4 py-3 sm:grid-cols-[9rem_minmax(0,1fr)]">
+            <div class="grid content-start gap-1.5 sm:col-span-2">
+              <Label :for="FIELD_IDS.toolboxUser">{{ t("adminGameBindings.editDialog.toolboxUserId") }}</Label>
+              <Input
+                :id="FIELD_IDS.toolboxUser"
+                class="bg-background"
+                :model-value="props.editTargetUserId"
+                :placeholder="t('adminGameBindings.editDialog.toolboxUserIdPlaceholder')"
+                @update:model-value="emit('update:editTargetUserId', String($event ?? ''))"
+              />
+            </div>
+            <div class="grid content-start gap-1.5">
+              <Label id="game-binding-edit-server-label" for="game-binding-edit-server">{{ t("adminGameBindings.editDialog.server") }}</Label>
+              <Select id="game-binding-edit-server" :key="locale" :model-value="props.editServer" @update:model-value="handleServerChange">
+                <SelectTrigger aria-labelledby="game-binding-edit-server-label" class="w-full bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="opt in props.editServers" :key="opt.value" :value="opt.value">
+                    {{ opt.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="grid content-start gap-1.5">
+              <Label :for="FIELD_IDS.gameUser">{{ t("adminGameBindings.editDialog.gameUserId") }}</Label>
+              <Input
+                :id="FIELD_IDS.gameUser"
+                class="bg-background"
+                inputmode="numeric"
+                :model-value="props.editGameUserId"
+                :placeholder="t('adminGameBindings.editDialog.gameUserIdPlaceholder')"
+                @update:model-value="emit('update:editGameUserId', String($event ?? ''))"
+              />
+            </div>
+          </div>
+        </SettingsGroup>
+
+        <SettingsGroup
+          v-for="group in permissionGroups"
+          :key="group.key"
+          :title="group.title"
+          :data-testid="`admin-binding-permissions-${group.key}`"
+        >
+          <SettingsRow
+            v-for="row in group.rows"
+            :key="row.key"
+            :icon="row.icon"
+            :tone="row.unsafe ? 'danger' : 'default'"
+            :label="row.title"
+            :help="row.help"
+            :label-for="`admin-binding-${group.key}-${row.key}`"
+            :data-unsafe="row.unsafe || undefined"
+          >
+            <template v-if="row.unsafe" #label>
+              <span class="inline-flex shrink-0 items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive-tint-foreground">
+                <LucideShieldAlert class="size-3" aria-hidden="true" />
+                {{ t("userSettings.gameBinding.permissions.unsafeBadge") }}
+              </span>
+            </template>
+            <Switch
+              :id="`admin-binding-${group.key}-${row.key}`"
+              :model-value="row.value"
+              @update:model-value="group.update(row.key, $event)"
+            />
+          </SettingsRow>
+
+          <SettingsRow
+            v-if="group.bots.length > 0"
+            :icon="LucideBot"
+            :label="t('userSettings.gameBinding.permissions.botsTitle')"
+            :help="t('adminGameBindings.editDialog.botsHint')"
+          >
+            <template #below>
+              <!-- On a phone the tiles take the row's full width (the slot is
+                   indented under the label), or the bot names get cut off. -->
+              <div class="-ml-11 grid grid-cols-2 gap-2 sm:ml-0">
+                <label
+                  v-for="bot in group.bots"
+                  :key="bot.key"
+                  :for="`admin-binding-${group.key}-${bot.key}`"
+                  class="flex min-w-0 cursor-pointer items-center justify-between gap-2 rounded-lg border bg-background px-3 py-2 text-sm"
+                  :title="bot.title"
+                >
+                  <span class="min-w-0 truncate">{{ bot.name }}</span>
+                  <Switch
+                    :id="`admin-binding-${group.key}-${bot.key}`"
+                    :model-value="bot.value"
+                    :aria-label="bot.title"
+                    @update:model-value="group.update(bot.key, $event)"
+                  />
+                </label>
+              </div>
+            </template>
+          </SettingsRow>
+        </SettingsGroup>
       </div>
+
       <DialogFooter>
         <Button variant="outline" @click="emit('update:open', false)">{{ t("adminGameBindings.common.cancel") }}</Button>
         <Button
+          :disabled="!props.editTargetUserId.trim() || !props.editGameUserId.trim() || props.actionLoading"
           @click="emit('save')"
-          :disabled="!editTargetUserId.trim() || !editGameUserId.trim() || actionLoading"
         >
-          {{ isEditMode ? t("common.save") : t("adminGameBindings.common.create") }}
+          <LucideSave v-if="props.isEditMode" class="size-4" aria-hidden="true" />
+          {{ props.isEditMode ? t("common.save") : t("adminGameBindings.common.create") }}
         </Button>
       </DialogFooter>
-    </DialogContent>
+    </DialogScrollContent>
   </Dialog>
 </template>

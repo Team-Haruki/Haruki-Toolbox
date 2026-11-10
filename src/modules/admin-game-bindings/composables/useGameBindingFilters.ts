@@ -11,10 +11,13 @@ import { readQueryEnum, readQueryString, writeQueryValue, type QueryWriteRecord 
 import {
   DEFAULT_SORT,
   FILTER_SERVER_ALL,
+  FILTER_VERIFIED_ALL,
   GAME_BINDING_SERVER_FILTER_VALUES,
+  GAME_BINDING_VERIFIED_FILTER_VALUES,
   GAME_BINDING_SORT_VALUES,
   getServerOptions,
   getSortOptions,
+  getVerifiedOptions,
   isServerOption,
 } from "@/modules/admin-game-bindings/lib/management-meta"
 
@@ -23,13 +26,15 @@ export interface GameBindingFilterValues {
   server: string
   userId: string
   gameUserId: string
+  /** "all", "true" or "false". */
+  verified: string
   sort: string
 }
 
-export const GAME_BINDING_FILTER_QUERY_KEYS = ["q", "server", "uid", "user", "sort"] as const
+export const GAME_BINDING_FILTER_QUERY_KEYS = ["q", "server", "uid", "user", "verified", "sort"] as const
 
 export function createDefaultGameBindingFilters(): GameBindingFilterValues {
-  return { q: "", server: FILTER_SERVER_ALL, userId: "", gameUserId: "", sort: DEFAULT_SORT }
+  return { q: "", server: FILTER_SERVER_ALL, userId: "", gameUserId: "", verified: FILTER_VERIFIED_ALL, sort: DEFAULT_SORT }
 }
 
 /** Filters from a shared or restored URL; unknown values fall back to the defaults. */
@@ -39,6 +44,7 @@ export function parseGameBindingFiltersQuery(query: LocationQuery): GameBindingF
     server: readQueryEnum(query.server, GAME_BINDING_SERVER_FILTER_VALUES) ?? FILTER_SERVER_ALL,
     userId: readQueryString(query.user) ?? "",
     gameUserId: readQueryString(query.uid) ?? "",
+    verified: readQueryEnum(query.verified, GAME_BINDING_VERIFIED_FILTER_VALUES) ?? FILTER_VERIFIED_ALL,
     sort: readQueryEnum(query.sort, GAME_BINDING_SORT_VALUES) ?? DEFAULT_SORT,
   }
 }
@@ -50,6 +56,7 @@ export function writeGameBindingFiltersQuery(filters: GameBindingFilterValues): 
     server: writeQueryValue(filters.server, FILTER_SERVER_ALL),
     uid: writeQueryValue(filters.gameUserId.trim()),
     user: writeQueryValue(filters.userId.trim()),
+    verified: writeQueryValue(filters.verified, FILTER_VERIFIED_ALL),
     sort: writeQueryValue(filters.sort, DEFAULT_SORT),
   }
 }
@@ -63,6 +70,7 @@ export function useGameBindingFilters() {
   const filterServer = ref<string>(initial.server)
   const filterUserId = ref(initial.userId)
   const filterGameUserId = ref(initial.gameUserId)
+  const filterVerified = ref<string>(initial.verified)
   const filterSort = ref(initial.sort)
   // What the list was last loaded with (and what the URL mirrors): the form
   // can be edited freely until 查询 applies it.
@@ -71,6 +79,7 @@ export function useGameBindingFilters() {
   const servers = computed(() => getServerOptions(t))
   const editServers = computed(() => servers.value.filter(isServerOption))
   const sortOptions = computed(() => getSortOptions(t))
+  const verifiedOptions = computed(() => getVerifiedOptions(t))
 
   function snapshotFilters(): GameBindingFilterValues {
     return {
@@ -78,6 +87,7 @@ export function useGameBindingFilters() {
       server: filterServer.value,
       userId: filterUserId.value,
       gameUserId: filterGameUserId.value,
+      verified: filterVerified.value,
       sort: filterSort.value,
     }
   }
@@ -94,6 +104,7 @@ export function useGameBindingFilters() {
     if (applied.server !== FILTER_SERVER_ALL) setQueryValue(params, "server", applied.server)
     setTrimmedQueryValue(params, "user_id", applied.userId)
     setTrimmedQueryValue(params, "game_user_id", applied.gameUserId)
+    if (applied.verified !== FILTER_VERIFIED_ALL) setQueryValue(params, "verified", applied.verified)
     return params
   }
 
@@ -103,6 +114,7 @@ export function useGameBindingFilters() {
     filterServer.value = defaults.server
     filterUserId.value = defaults.userId
     filterGameUserId.value = defaults.gameUserId
+    filterVerified.value = defaults.verified
     filterSort.value = defaults.sort
   }
 
@@ -111,11 +123,13 @@ export function useGameBindingFilters() {
     filterServer,
     filterUserId,
     filterGameUserId,
+    filterVerified,
     filterSort,
     appliedFilters,
     servers,
     editServers,
     sortOptions,
+    verifiedOptions,
     applyFilterValues,
     buildQueryParams,
     resetFilterValues,

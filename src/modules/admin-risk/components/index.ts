@@ -1,2 +1,5 @@
+export { default as RiskEventCreateDialog } from "./RiskEventCreateDialog.vue"
+export { default as RiskEventDetailDialog } from "./RiskEventDetailDialog.vue"
+export { default as RiskEventStats } from "./RiskEventStats.vue"
 export { default as RiskEventsPanel } from "./RiskEventsPanel.vue"
 export { default as RiskRulesPanel } from "./RiskRulesPanel.vue"

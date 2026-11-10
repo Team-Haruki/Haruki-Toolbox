@@ -12,7 +12,6 @@ import {
   LucideShieldCheck,
 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardTitle } from "@/components/ui/card"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,18 +20,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import type { ErrorDescription } from "@/lib/error-utils"
 import { formatNumberCN } from "@/lib/number-format"
+import EmptyState from "@/shared/components/EmptyState.vue"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import AdminPagination from "@/modules/admin/components/AdminPagination.vue"
+import AdminPanel from "@/modules/admin/components/AdminPanel.vue"
+import BotSecurityKindChip from "@/modules/admin-bot-security/components/BotSecurityKindChip.vue"
 import BotSecurityEnforcementBadge from "@/modules/admin-bot-security/components/BotSecurityEnforcementBadge.vue"
 import BotSecurityStatusBadge from "@/modules/admin-bot-security/components/BotSecurityStatusBadge.vue"
 import {
@@ -78,9 +72,12 @@ const ACTION_ICONS = {
   reopen: LucideRotateCcw,
 } as const
 
-// The actions column stays pinned at the right edge, so it remains reachable
-// when a narrow content area makes the table scroll sideways.
-const STICKY_ACTIONS = "sticky right-0 bg-card shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.12)]"
+// The columns follow the panel's own width (it sits beside the admin nav):
+// below 36rem only the kind and the menu remain, and the kind cell carries
+// the time, the bot and the status; wider panels move them into columns.
+// The table is fixed-layout and its text wraps, so it never scrolls sideways.
+const HEAD = "px-3 py-2 text-left text-xs font-medium text-muted-foreground"
+const CELL = "px-3 py-2 align-top"
 
 function fallback(value: string | null | undefined) {
   return value && value.trim() ? value : t("adminBotSecurity.common.fallback")
@@ -92,169 +89,193 @@ function hasClientInfo(alert: BotSecurityAlert) {
 </script>
 
 <template>
-  <Card class="gap-0 py-0 overflow-hidden">
-    <div class="flex items-center justify-between gap-3 border-b px-4 py-3 sm:px-6">
-      <CardTitle class="text-base">{{ t("adminBotSecurity.table.title") }}</CardTitle>
+  <AdminPanel :title="t('adminBotSecurity.table.title')" flush>
+    <template #actions>
       <Button
         variant="outline"
         size="sm"
+        class="h-8"
         :disabled="props.loading"
         :title="t('adminBotSecurity.actions.refresh')"
         :aria-label="t('adminBotSecurity.actions.refresh')"
         @click="emit('refresh')"
       >
-        <LucideLoader2 v-if="props.loading" class="w-4 h-4 animate-spin" />
-        <LucideRefreshCw v-else class="w-4 h-4" />
+        <LucideLoader2 v-if="props.loading" class="size-4 animate-spin" aria-hidden="true" />
+        <LucideRefreshCw v-else class="size-4" aria-hidden="true" />
         <span class="hidden sm:inline">{{ t("adminBotSecurity.actions.refresh") }}</span>
       </Button>
-    </div>
-    <CardContent class="p-0">
-      <template v-if="props.loading">
-        <div class="flex flex-col gap-3 p-6">
-          <Skeleton v-for="i in 5" :key="i" class="h-12 w-full" />
+    </template>
+
+    <div class="@container">
+      <div v-if="props.loading" class="flex flex-col divide-y divide-border/60" aria-busy="true">
+        <div v-for="i in 6" :key="i" class="flex items-center gap-3 px-4 py-2.5">
+          <Skeleton class="h-5 w-24 rounded-full" />
+          <Skeleton class="h-4 flex-1" />
+          <Skeleton class="h-5 w-16 rounded-full" />
         </div>
-      </template>
-      <template v-else-if="props.error">
-        <LoadErrorState
-          :title="t('adminBotSecurity.table.loadError')"
-          :description="props.error.message"
-          :detail="props.error.detail"
-          :retry-label="t('adminBotSecurity.actions.retry')"
-          :retrying="props.loading"
-          @retry="emit('retry')"
-        />
-      </template>
-      <template v-else-if="props.alerts.length === 0">
-        <div class="flex flex-col items-center justify-center gap-3 py-12 text-center">
-          <LucideShieldCheck class="h-8 w-8 text-muted-foreground/60" />
-          <p class="text-sm text-muted-foreground">{{ t("adminBotSecurity.table.empty") }}</p>
-        </div>
-      </template>
-      <template v-else>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead class="hidden pl-6 sm:table-cell">{{ t("adminBotSecurity.table.alertTime") }}</TableHead>
-              <TableHead class="pl-4 sm:pl-2">{{ t("adminBotSecurity.table.kind") }}</TableHead>
-              <TableHead class="hidden md:table-cell">{{ t("adminBotSecurity.table.bot") }}</TableHead>
-              <TableHead class="hidden 2xl:table-cell">{{ t("adminBotSecurity.table.client") }}</TableHead>
-              <TableHead class="hidden lg:table-cell">{{ t("adminBotSecurity.table.count") }}</TableHead>
-              <TableHead class="hidden sm:table-cell">{{ t("adminBotSecurity.table.status") }}</TableHead>
-              <TableHead class="hidden xl:table-cell">{{ t("adminBotSecurity.table.handler") }}</TableHead>
-              <TableHead :class="['w-12 pr-4 text-right sm:pr-6', STICKY_ACTIONS]">
-                <span class="sr-only">{{ t("adminBotSecurity.table.actions") }}</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow v-for="alert in props.alerts" :key="alert.id" :data-alert-id="alert.id">
-              <TableCell
-                class="hidden pl-6 align-top text-sm text-muted-foreground whitespace-nowrap sm:table-cell"
-                :title="props.formatTime(alert.alertTime)"
-              >
-                {{ props.formatShortTime(alert.alertTime) }}
-              </TableCell>
-              <TableCell class="pl-4 align-top sm:pl-2">
-                <div class="flex min-w-0 max-w-[200px] flex-col items-start gap-1">
-                  <span class="text-sm font-medium break-words whitespace-normal">{{ props.kindLabel(alert.kind) }}</span>
+      </div>
+      <LoadErrorState
+        v-else-if="props.error"
+        :title="t('adminBotSecurity.table.loadError')"
+        :description="props.error.message"
+        :detail="props.error.detail"
+        :retry-label="t('adminBotSecurity.actions.retry')"
+        :retrying="props.loading"
+        @retry="emit('retry')"
+      />
+      <EmptyState v-else-if="props.alerts.length === 0" :icon="LucideShieldCheck" :title="t('adminBotSecurity.table.empty')" />
+      <table v-else class="w-full table-fixed border-collapse text-sm">
+        <!-- Column widths live here, not on the cells: a hidden column drops out together with its cells. -->
+        <colgroup>
+          <col class="hidden w-36 @min-[36rem]:table-column">
+          <col>
+          <col class="hidden w-44 @min-[46rem]:table-column">
+          <col class="hidden w-40 @min-[62rem]:table-column">
+          <col class="hidden w-28 @min-[54rem]:table-column">
+          <col class="hidden w-36 @min-[36rem]:table-column">
+          <col class="w-12">
+        </colgroup>
+        <!-- One column is left on a phone: its caption says nothing, so it is for screen readers only. -->
+        <thead class="sr-only @min-[36rem]:not-sr-only">
+          <tr class="border-b border-border/60">
+            <th scope="col" :class="[HEAD, 'hidden pl-4 @min-[36rem]:table-cell']">{{ t("adminBotSecurity.table.alertTime") }}</th>
+            <th scope="col" :class="[HEAD, 'pl-4 @min-[36rem]:pl-3']">{{ t("adminBotSecurity.table.kind") }}</th>
+            <th scope="col" :class="[HEAD, 'hidden @min-[46rem]:table-cell']">{{ t("adminBotSecurity.table.bot") }}</th>
+            <th scope="col" :class="[HEAD, 'hidden @min-[62rem]:table-cell']">{{ t("adminBotSecurity.table.client") }}</th>
+            <th scope="col" :class="[HEAD, 'hidden @min-[54rem]:table-cell']">{{ t("adminBotSecurity.table.count") }}</th>
+            <th scope="col" :class="[HEAD, 'hidden @min-[36rem]:table-cell']">{{ t("adminBotSecurity.table.status") }}</th>
+            <th scope="col" :class="[HEAD, 'pr-3']">
+              <span class="sr-only">{{ t("adminBotSecurity.table.actions") }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border/60">
+          <tr
+            v-for="alert in props.alerts"
+            :key="alert.id"
+            :data-alert-id="alert.id"
+            class="transition-colors hover:bg-muted/40"
+          >
+            <td
+              :class="[CELL, 'hidden pl-4 text-xs tabular-nums text-muted-foreground @min-[36rem]:table-cell']"
+              :title="props.formatTime(alert.alertTime)"
+            >
+              <span class="block pt-0.5">{{ props.formatShortTime(alert.alertTime) }}</span>
+              <span class="block text-muted-foreground/70">#{{ alert.id }}</span>
+            </td>
+            <td :class="[CELL, 'pl-4 @min-[36rem]:pl-3']">
+              <div class="flex min-w-0 flex-col items-start gap-1">
+                <div class="flex min-w-0 max-w-full flex-wrap items-center gap-1">
+                  <BotSecurityKindChip :kind="alert.kind" :label="props.kindLabel(alert.kind)" />
                   <BotSecurityEnforcementBadge :enforced="alert.enforced" />
-                  <!-- Phones hide the time, bot and status columns; keep them here. -->
-                  <span class="text-xs text-muted-foreground sm:hidden">{{ props.formatShortTime(alert.alertTime) }}</span>
-                  <span v-if="alert.botId" class="font-mono text-xs text-muted-foreground break-all whitespace-normal md:hidden">
+                  <BotSecurityStatusBadge class="@min-[36rem]:hidden" :status="alert.status" :label="props.statusLabel(alert.status)" />
+                </div>
+                <p
+                  v-if="alert.reason.trim()"
+                  class="line-clamp-1 max-w-full text-xs text-muted-foreground [overflow-wrap:anywhere]"
+                  :title="alert.reason"
+                >
+                  {{ alert.reason }}
+                </p>
+                <!-- What the hidden columns would say, while the panel is narrow. -->
+                <p class="flex max-w-full flex-wrap gap-x-2 text-xs tabular-nums text-muted-foreground @min-[46rem]:hidden">
+                  <span class="@min-[36rem]:hidden">#{{ alert.id }} · {{ props.formatShortTime(alert.alertTime) }}</span>
+                  <span v-if="alert.botId" class="font-mono [overflow-wrap:anywhere]">
                     {{ t("adminBotSecurity.table.botShort", { botId: alert.botId }) }}
                   </span>
-                  <BotSecurityStatusBadge class="sm:hidden" :status="alert.status" :label="props.statusLabel(alert.status)" />
-                </div>
-              </TableCell>
-              <TableCell class="hidden align-top md:table-cell">
-                <div class="flex min-w-0 max-w-[180px] flex-col whitespace-normal">
-                  <span class="font-mono text-sm break-all">{{ fallback(alert.botId) }}</span>
-                  <span v-if="alert.botId" class="text-xs text-muted-foreground break-all">
-                    {{ t("adminBotSecurity.table.ownerQq", { qq: fallback(alert.ownerQq) }) }}
-                  </span>
-                  <span v-if="alert.sourceIp" class="font-mono text-xs text-muted-foreground break-all">
+                  <span v-else-if="alert.sourceIp" class="font-mono [overflow-wrap:anywhere]">
                     {{ t("adminBotSecurity.table.sourceIpShort", { ip: alert.sourceIp }) }}
                   </span>
-                </div>
-              </TableCell>
-              <TableCell class="hidden align-top 2xl:table-cell">
-                <div v-if="hasClientInfo(alert)" class="flex min-w-0 max-w-[200px] flex-col whitespace-normal">
-                  <span class="text-sm break-all line-clamp-2" :title="alert.clientVersion">{{ fallback(alert.clientVersion) }}</span>
-                  <span
-                    v-if="alert.buildId"
-                    class="font-mono text-xs text-muted-foreground break-all line-clamp-2"
-                    :title="alert.buildId"
-                  >
-                    {{ alert.buildId }}
-                  </span>
-                </div>
-                <span v-else class="text-sm text-muted-foreground">{{ t("adminBotSecurity.common.fallback") }}</span>
-              </TableCell>
-              <TableCell class="hidden align-top lg:table-cell">
-                <div class="flex flex-col whitespace-nowrap">
-                  <span class="text-sm tabular-nums">{{ formatNumberCN(alert.count, "0") }} / {{ formatNumberCN(alert.threshold, "0") }}</span>
-                  <span class="text-xs text-muted-foreground">
-                    {{ t("adminBotSecurity.table.within", { window: formatBotSecurityWindow(alert.windowSeconds, t) }) }}
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell class="hidden align-top sm:table-cell">
-                <div class="flex flex-col items-start gap-1">
-                  <BotSecurityStatusBadge :status="alert.status" :label="props.statusLabel(alert.status)" />
-                  <!-- Below xl the handler column is hidden. -->
-                  <span v-if="alert.handledBy" class="max-w-[140px] truncate text-xs text-muted-foreground xl:hidden">
-                    {{ t("adminBotSecurity.table.handledByShort", { name: resolveBotSecurityHandlerLabel(alert.handledBy) }) }}
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell class="hidden align-top xl:table-cell">
-                <div v-if="alert.handledBy" class="flex min-w-0 max-w-[160px] flex-col whitespace-normal">
+                </p>
+              </div>
+            </td>
+            <td :class="[CELL, 'hidden @min-[46rem]:table-cell']">
+              <div class="flex min-w-0 flex-col text-xs text-muted-foreground [overflow-wrap:anywhere]">
+                <span class="font-mono text-sm text-foreground">{{ fallback(alert.botId) }}</span>
+                <span v-if="alert.botId">
+                  {{ t("adminBotSecurity.table.ownerQq", { qq: fallback(alert.ownerQq) }) }}
+                </span>
+                <span v-if="alert.sourceIp" class="font-mono">
+                  {{ t("adminBotSecurity.table.sourceIpShort", { ip: alert.sourceIp }) }}
+                </span>
+              </div>
+            </td>
+            <td :class="[CELL, 'hidden @min-[62rem]:table-cell']">
+              <div v-if="hasClientInfo(alert)" class="flex min-w-0 flex-col [overflow-wrap:anywhere]">
+                <span class="line-clamp-1 text-sm" :title="alert.clientVersion">{{ fallback(alert.clientVersion) }}</span>
+                <span
+                  v-if="alert.buildId"
+                  class="line-clamp-1 font-mono text-xs text-muted-foreground"
+                  :title="alert.buildId"
+                >
+                  {{ alert.buildId }}
+                </span>
+              </div>
+              <span v-else class="text-sm text-muted-foreground">{{ t("adminBotSecurity.common.fallback") }}</span>
+            </td>
+            <td :class="[CELL, 'hidden @min-[54rem]:table-cell']">
+              <div class="flex flex-col whitespace-nowrap">
+                <span class="text-sm tabular-nums">
+                  <span class="font-medium">{{ formatNumberCN(alert.count, "0") }}</span>
+                  <span class="text-muted-foreground"> / {{ formatNumberCN(alert.threshold, "0") }}</span>
+                </span>
+                <span class="text-xs text-muted-foreground">
+                  {{ t("adminBotSecurity.table.within", { window: formatBotSecurityWindow(alert.windowSeconds, t) }) }}
+                </span>
+              </div>
+            </td>
+            <td :class="[CELL, 'hidden @min-[36rem]:table-cell']">
+              <div class="flex min-w-0 flex-col items-start gap-1">
+                <BotSecurityStatusBadge :status="alert.status" :label="props.statusLabel(alert.status)" />
+                <p v-if="alert.handledBy" class="max-w-full text-xs text-muted-foreground [overflow-wrap:anywhere]">
                   <RouterLink
                     :to="{ name: 'admin.userDetail', params: { userId: alert.handledBy.userId } }"
-                    class="text-sm text-primary hover:underline break-all"
+                    class="text-foreground underline-offset-4 hover:underline"
+                    :title="t('adminBotSecurity.table.handledByShort', { name: resolveBotSecurityHandlerLabel(alert.handledBy) })"
                   >
                     {{ resolveBotSecurityHandlerLabel(alert.handledBy) }}
                   </RouterLink>
-                  <span class="text-xs text-muted-foreground whitespace-nowrap">{{ props.formatShortTime(alert.handledAt) }}</span>
-                </div>
-                <span v-else class="text-sm text-muted-foreground">{{ t("adminBotSecurity.common.fallback") }}</span>
-              </TableCell>
-              <TableCell :class="['pr-4 align-top text-right sm:pr-6', STICKY_ACTIONS]">
-                <DropdownMenu>
-                  <DropdownMenuTrigger as-child>
-                    <Button
-                      variant="ghost"
-                      class="h-8 w-8 p-0"
-                      :title="t('adminBotSecurity.table.openMenu', { id: alert.id })"
-                      :aria-label="t('adminBotSecurity.table.openMenu', { id: alert.id })"
-                    >
-                      <LucideMoreHorizontal class="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem @click="emit('detail', alert)">
-                      <LucideInfo class="w-4 h-4 mr-2" />
-                      {{ t("adminBotSecurity.actions.details") }}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      v-for="action in botSecurityActionsFor(alert.status)"
-                      :key="action"
-                      :disabled="props.actionSaving"
-                      @click="emit('action', alert, action)"
-                    >
-                      <component :is="ACTION_ICONS[action]" class="w-4 h-4 mr-2" />
-                      {{ t(`adminBotSecurity.actions.${action}`) }}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </template>
-    </CardContent>
-    <div v-if="!props.error" class="border-t px-4 py-3 sm:px-6">
+                  <span class="block tabular-nums">{{ props.formatShortTime(alert.handledAt) }}</span>
+                </p>
+              </div>
+            </td>
+            <td :class="[CELL, 'pr-3 text-right']">
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="size-8 text-muted-foreground pointer-coarse:size-10"
+                    :title="t('adminBotSecurity.table.openMenu', { id: alert.id })"
+                    :aria-label="t('adminBotSecurity.table.openMenu', { id: alert.id })"
+                  >
+                    <LucideMoreHorizontal class="size-4" aria-hidden="true" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem @click="emit('detail', alert)">
+                    <LucideInfo class="mr-2 size-4" aria-hidden="true" />
+                    {{ t("adminBotSecurity.actions.details") }}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    v-for="action in botSecurityActionsFor(alert.status)"
+                    :key="action"
+                    :disabled="props.actionSaving"
+                    @click="emit('action', alert, action)"
+                  >
+                    <component :is="ACTION_ICONS[action]" class="mr-2 size-4" aria-hidden="true" />
+                    {{ t(`adminBotSecurity.actions.${action}`) }}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <template v-if="!props.error" #footer>
       <AdminPagination
         :total="props.total"
         :page="props.page"
@@ -267,6 +288,6 @@ function hasClientInfo(alert: BotSecurityAlert) {
         @next-page="emit('next-page')"
         @go-to-page="emit('go-to-page', $event)"
       />
-    </div>
-  </Card>
+    </template>
+  </AdminPanel>
 </template>
