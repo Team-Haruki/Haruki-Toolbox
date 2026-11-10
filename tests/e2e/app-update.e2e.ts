@@ -76,7 +76,7 @@ test("a forced update gives a reader with unsaved input a grace period", async (
   const counter = countDocumentLoads(page)
 
   await page.goto("/")
-  await expect(page.getByRole("heading", { name: /欢迎使用 Haruki 工具箱|Welcome to Haruki Toolbox/ })).toBeVisible()
+  await expect(page.getByRole("heading", { name: /^(Haruki 工具箱|Haruki Toolbox)$/ })).toBeVisible()
 
   // Any text field the reader typed into counts; this one stands in for a form.
   await page.evaluate(() => {

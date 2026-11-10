@@ -9,6 +9,8 @@ import {
   type EndpointLatencyStatus,
   type EndpointType,
   type ThemeType,
+  DEFAULT_PREFERRED_VOCAL_TYPE,
+  type PreferredVocalType,
 } from "@/shared/stores/settings"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import { DEFAULT_LOCALE, setI18nLocale, SUPPORTED_LOCALES, translate, type AppLocale } from "@/shared/i18n"
@@ -83,6 +85,11 @@ export function useHomeSettings() {
   const selectedHideGameUserId = computed<boolean>({
     get: () => settingsStore.hideGameUserId,
     set: (value) => settingsStore.setHideGameUserId(value),
+  })
+
+  const selectedPreferredVocalType = computed<PreferredVocalType>({
+    get: () => settingsStore.preferredVocalType,
+    set: (value) => settingsStore.setPreferredVocalType(value),
   })
 
   const selectedShowUnreleasedContent = computed<boolean>({
@@ -166,6 +173,7 @@ export function useHomeSettings() {
     settingsStore.setLocale(DEFAULT_LOCALE)
     settingsStore.setReducedVisualEffects(DEFAULT_REDUCED_VISUAL_EFFECTS)
     settingsStore.setHideGameUserId(DEFAULT_HIDE_GAME_USER_ID)
+    settingsStore.setPreferredVocalType(DEFAULT_PREFERRED_VOCAL_TYPE)
     settingsStore.setShowUnreleasedContent(false)
     settingsStore.setBlurUnreleasedContent(true)
     await setI18nLocale(DEFAULT_LOCALE)
@@ -265,6 +273,7 @@ export function useHomeSettings() {
     selectedLocale,
     selectedReducedVisualEffects,
     selectedHideGameUserId,
+    selectedPreferredVocalType,
     selectedShowUnreleasedContent,
     selectedBlurUnreleasedContent,
     endpointOptions,

@@ -1,103 +1,92 @@
 <script setup lang="ts">
+import { computed, ref, type Component } from "vue"
 import { useI18n } from "vue-i18n"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge, type BadgeVariants } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  Code2,
+  ArrowDown,
+  BookOpenText,
+  CodeXml,
   Crown,
   ExternalLink,
   Github,
+  Handshake,
   Heart,
+  Sparkles,
   Users,
 } from "lucide-vue-next"
+import {
+  CONTRIBUTOR_IDENTITIES,
+  CONTRIBUTORS,
+  PROJECT_GROUPS,
+  countContributorsByIdentity,
+  filterContributors,
+  orderedIdentities,
+  projectLanguage,
+  resolveContributorAvatarUrl,
+  sortContributors,
+  type AboutProject,
+  type Contributor,
+  type ContributorIdentity,
+  type ProjectTeam,
+} from "../lib/about-data"
 
 const HARUKI_LOGO = `${import.meta.env.BASE_URL}assets/haruki.ico`
 const GITHUB_ORG_URL = "https://github.com/Team-Haruki"
 const AFDIAN_URL = "https://afdian.com/a/seiunx"
+const TEAM_NAMES: Record<ProjectTeam, string> = { haruki: "Haruki Dev Team", seiunx: "Seiunx Dev Team" }
 
 const { t, te } = useI18n()
 const settingsStore = useSettingsStore()
 
-// Quotes exist only for some members; vue-i18n's fallback chain covers the
-// locale side, so presence is all we need to check.
-function memberQuote(memberKey: string): string {
-  const quoteKey = `navigationPages.about.team.members.${memberKey}.quote`
+// Each identity is a tag: an icon and a tone, so it never reads by color alone.
+const IDENTITY_STYLE: Record<ContributorIdentity, { icon: Component; variant: BadgeVariants["variant"] }> = {
+  founder: { icon: Sparkles, variant: "amber" },
+  core: { icon: CodeXml, variant: "default" },
+  docs: { icon: BookOpenText, variant: "violet" },
+  collab: { icon: Handshake, variant: "sky" },
+  sponsor: { icon: Crown, variant: "rose" },
+}
+
+const contributors = sortContributors(CONTRIBUTORS)
+const identityCounts = countContributorsByIdentity(contributors)
+const identityFilters = CONTRIBUTOR_IDENTITIES.filter((identity) => identityCounts[identity] > 0)
+
+const activeIdentity = ref<ContributorIdentity | null>(null)
+const visibleContributors = computed(() => filterContributors(contributors, activeIdentity.value))
+const contributorsHint = computed(() =>
+  activeIdentity.value
+    ? t(`navigationPages.about.contributors.identities.${activeIdentity.value}.desc`)
+    : t("navigationPages.about.contributors.subtitle")
+)
+
+function toggleIdentity(identity: ContributorIdentity) {
+  activeIdentity.value = activeIdentity.value === identity ? null : identity
+}
+
+function contributorName(contributor: Contributor): string {
+  return t(`navigationPages.about.contributors.members.${contributor.key}.name`)
+}
+
+// Only some contributors left a line; the locale fallback chain covers the rest.
+function contributorQuote(contributor: Contributor): string {
+  const quoteKey = `navigationPages.about.contributors.members.${contributor.key}.quote`
   return te(quoteKey) ? t(quoteKey) : ""
 }
 
-function memberAvatarUrl(member: TeamMember): string {
-  if (member.avatar) {
-    if (member.avatar.startsWith("http://") || member.avatar.startsWith("https://")) {
-      return member.avatar
-    }
-    return `${settingsStore.currentEndpoint}${member.avatar.startsWith("/") ? "" : "/"}${member.avatar}`
-  }
-  return member.github ? `https://github.com/${member.github}.png` : ""
+// The GitHub handle, unless it only repeats the display name.
+function contributorHandle(contributor: Contributor): string {
+  const handle = contributor.github ?? ""
+  return handle.toLowerCase() === contributorName(contributor).toLowerCase() ? "" : handle
 }
 
-interface TeamMember {
-  key: string
-  github?: string
-  avatar?: string
-  roleKey: "core" | "doc" | "contrib" | "sponsor"
-  linkUrl: string
+function contributorAvatar(contributor: Contributor): string {
+  return resolveContributorAvatarUrl(contributor, settingsStore.currentEndpoint)
 }
 
-const teamMembers: TeamMember[] = [
-  { key: "seiun", github: "MejiroRina", roleKey: "core", linkUrl: "https://seiun.io" },
-  { key: "lingqian", github: "xuanmingLQ", roleKey: "core", linkUrl: "https://github.com/xuanmingLQ" },
-  { key: "deseer", github: "Deseer", roleKey: "core", linkUrl: "https://github.com/Deseer" },
-  { key: "storyxy", github: "storyxy3", roleKey: "core", linkUrl: "https://github.com/storyxy3" },
-  { key: "aposetles", github: "Aposetles", roleKey: "doc", linkUrl: "https://space.bilibili.com/178748972" },
-  { key: "tianshinling", github: "YoisakiKnd", roleKey: "doc", linkUrl: "https://ty0.icu/about/" },
-  { key: "yangzi", github: "IwasakiYouko", roleKey: "doc", linkUrl: "https://dick.plus" },
-  { key: "watagashi", github: "watagashi-uni", roleKey: "contrib", linkUrl: "https://github.com/watagashi-uni" },
-  { key: "middlered", github: "MiddleRed", roleKey: "contrib", linkUrl: "https://mid.red" },
-  { key: "dnaroma", github: "DNARoma", roleKey: "contrib", linkUrl: "https://blog.dna.moe/about/" },
-  { key: "yamamoto", github: "Yamamoto-2", roleKey: "sponsor", linkUrl: "https://github.com/Yamamoto-2" },
-]
-
-const groupedMembers = {
-  core: teamMembers.filter((member) => member.roleKey === "core"),
-  doc: teamMembers.filter((member) => member.roleKey === "doc"),
-  contrib: teamMembers.filter((member) => member.roleKey === "contrib"),
-  sponsor: teamMembers.filter((member) => member.roleKey === "sponsor"),
-}
-
-interface Project {
-  key: string
-  tags: string[]
-  githubUrl: string
-}
-
-const projectGroups: { key: "haruki" | "seiunx"; projects: Project[] }[] = [
-  {
-    key: "haruki",
-    projects: [
-      { key: "toolbox", tags: ["TypeScript", "Vue 3", "Vite", "Shadcn-Vue", "Tailwind"], githubUrl: "https://github.com/Team-Haruki/Haruki-Toolbox" },
-      { key: "toolboxBackend", tags: ["Go", "Fiber", "EntGo", "PostgreSQL", "MongoDB"], githubUrl: "https://github.com/Team-Haruki/Haruki-Toolbox-Backend" },
-      { key: "botBackend", tags: ["Go", "Fiber", "EntGo", "PostgreSQL"], githubUrl: "https://github.com/Team-Haruki/Haruki-Cloud" },
-      { key: "sekaiApi", tags: ["Rust", "Axum", "Tokio", "SeaORM"], githubUrl: "https://github.com/Team-Haruki/Haruki-Sekai-API" },
-      { key: "eventTracker", tags: ["Rust", "Axum", "Tokio", "SeaORM"], githubUrl: "https://github.com/Team-Haruki/Haruki-Event-Tracker" },
-      { key: "assetUpdater", tags: ["Rust", "Axum", "Tokio", "Cridecoder"], githubUrl: "https://github.com/Team-Haruki/Haruki-Sekai-Asset-Updater" },
-      { key: "deckService", tags: ["Rust", "Axum", "Tokio"], githubUrl: "https://github.com/Team-Haruki/deck-service" },
-      { key: "deckCpp", tags: ["C++", "yyjson"], githubUrl: "https://github.com/Team-Haruki/sekai-deck-recommend-cpp" },
-      { key: "scoresRs", tags: ["Rust", "Skia"], githubUrl: "https://github.com/Team-Haruki/pjsekai-scores-rs" },
-      { key: "drawingEngine", tags: ["Python", "FastAPI", "Pillow"], githubUrl: "https://github.com/Team-Haruki/Haruki-Drawing-API" },
-    ],
-  },
-  {
-    key: "seiunx",
-    projects: [
-      { key: "cridecoder", tags: ["Rust"], githubUrl: "https://github.com/seiunx-dev/cridecoder" },
-      { key: "unityRs", tags: ["Rust"], githubUrl: "https://github.com/seiunx-dev/unity-rs" },
-    ],
-  },
-]
-
-// One dot color per primary language keeps the tag row quiet; the first tag
-// of every project is its language.
+// One dot color per main language keeps the project rows quiet.
 const LANGUAGE_DOT: Record<string, string> = {
   "typescript": "bg-emerald-500",
   "go": "bg-sky-500",
@@ -106,143 +95,214 @@ const LANGUAGE_DOT: Record<string, string> = {
   "python": "bg-yellow-500",
 }
 
-function languageDotClass(project: Project): string {
-  return LANGUAGE_DOT[project.tags[0]?.toLowerCase() ?? ""] ?? "bg-muted-foreground"
+function languageDotClass(project: AboutProject): string {
+  return LANGUAGE_DOT[projectLanguage(project)] ?? "bg-muted-foreground"
+}
+
+function showTeamProjects(team: ProjectTeam) {
+  const reduceMotion = globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
+  document.getElementById(`about-projects-${team}`)?.scrollIntoView({
+    behavior: reduceMotion ? "auto" : "smooth",
+    block: "start",
+  })
 }
 </script>
 
 <template>
-  <div class="w-full flex-1 px-4 py-6 max-w-5xl mx-auto flex flex-col gap-10">
-    <!-- Hero -->
-    <section class="flex flex-col gap-4 border-b pb-8 pt-2 md:pt-4">
-      <p class="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-        <span class="h-px w-8 bg-current opacity-60" aria-hidden="true" />
-        {{ t("navigationPages.about.subtitle") }}
-      </p>
-
-      <div class="flex items-center gap-3.5">
-        <Avatar class="h-12 w-12 shrink-0">
-          <AvatarImage :src="HARUKI_LOGO" alt="Project Haruki" />
-          <AvatarFallback class="text-base font-bold text-primary">PH</AvatarFallback>
-        </Avatar>
-        <h1 class="text-3xl font-extrabold tracking-tight md:text-4xl">
-          {{ t("navigationPages.about.title") }}
-        </h1>
-      </div>
-
-      <div class="max-w-3xl space-y-2.5 text-sm leading-relaxed text-muted-foreground md:text-base">
-        <p>{{ t("navigationPages.about.projectIntro.p1Before") }}<span class="font-semibold text-foreground">{{ t("navigationPages.about.projectIntro.p1Name") }}</span>{{ t("navigationPages.about.projectIntro.p1After") }}</p>
-        <p>{{ t("navigationPages.about.projectIntro.p2") }}</p>
-        <p>{{ t("navigationPages.about.projectIntro.p3") }}</p>
-        <p>{{ t("navigationPages.about.projectIntro.p4") }}</p>
-      </div>
-
-      <div class="mt-1 flex flex-wrap gap-3">
-        <Button as-child class="h-10 px-5 font-semibold">
-          <a :href="GITHUB_ORG_URL" target="_blank" rel="noopener noreferrer">
-            <Github class="h-4 w-4" />
-            Team-Haruki
-            <ExternalLink class="h-3.5 w-3.5" />
-          </a>
-        </Button>
-        <Button
-          as-child
-          variant="brand"
-          class="h-10 px-5 font-semibold"
-        >
-          <a :href="AFDIAN_URL" target="_blank" rel="noopener noreferrer">
-            <Heart class="h-4 w-4 fill-current" />
-            {{ t("navigationPages.about.support.afdianBtn") }}
-          </a>
-        </Button>
-      </div>
-    </section>
-
-    <!-- Team -->
-    <section class="space-y-5">
-      <header class="space-y-1">
-        <h2 class="flex items-center gap-2 text-2xl font-bold tracking-tight">
-          <Users class="h-6 w-6 text-primary" />
-          {{ t("navigationPages.about.team.title") }}
-        </h2>
-        <p class="text-sm text-muted-foreground">
-          {{ t("navigationPages.about.team.subtitle") }}
-        </p>
-      </header>
-
-      <div class="space-y-7">
-        <div v-for="(group, key) in groupedMembers" :key="key" class="space-y-3">
-          <div class="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-            <h3 class="text-base font-semibold">
-              {{ t(`navigationPages.about.team.roles.${key}`) }}
-            </h3>
-            <p class="text-xs text-muted-foreground">
-              {{ t(`navigationPages.about.team.roleDescs.${key}`) }}
+  <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-10 px-4 py-6" data-testid="about-page">
+    <!-- Who we are -->
+    <section class="flex flex-col gap-6">
+      <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex min-w-0 items-center gap-4">
+          <img
+            :src="HARUKI_LOGO"
+            alt=""
+            class="size-14 shrink-0 rounded-2xl border bg-card object-cover"
+            decoding="async"
+          >
+          <div class="min-w-0">
+            <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">
+              {{ t("navigationPages.about.title") }}
+            </h1>
+            <p class="mt-0.5 text-sm text-muted-foreground">
+              {{ t("navigationPages.about.subtitle") }}
             </p>
           </div>
-
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <a
-              v-for="member in group"
-              :key="member.key"
-              :href="member.linkUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="group flex h-full flex-col gap-2.5 rounded-xl border bg-card p-4 outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <div class="flex items-center gap-3">
-                <Avatar class="h-10 w-10 border transition-colors duration-200 group-hover:border-primary/60">
-                  <AvatarImage
-                    :src="memberAvatarUrl(member)"
-                    :alt="t(`navigationPages.about.team.members.${member.key}.name`)"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  <AvatarFallback class="bg-primary/5 text-sm font-semibold text-primary">
-                    {{ t(`navigationPages.about.team.members.${member.key}.name`).charAt(0) }}
-                  </AvatarFallback>
-                </Avatar>
-                <div class="min-w-0 flex-1">
-                  <p class="flex items-center gap-1 text-sm font-semibold transition-colors group-hover:text-primary">
-                    <span class="truncate">{{ t(`navigationPages.about.team.members.${member.key}.name`) }}</span>
-                    <Crown
-                      v-if="member.roleKey === 'sponsor'"
-                      class="h-3.5 w-3.5 shrink-0 text-amber-500 dark:text-amber-400"
-                    />
-                    <ExternalLink class="h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
-                  </p>
-                  <p class="truncate text-xs font-medium text-muted-foreground/80">
-                    {{ t(`navigationPages.about.team.members.${member.key}.role`) }}
-                  </p>
-                </div>
-              </div>
-              <p
-                v-if="memberQuote(member.key)"
-                class="line-clamp-2 rounded-r border-l-2 border-primary/30 bg-primary/[0.03] py-0.5 pl-2 text-xs font-medium italic text-primary/80"
-              >
-                {{ memberQuote(member.key) }}
-              </p>
-            </a>
-          </div>
         </div>
+
+        <div class="flex shrink-0 flex-wrap gap-2">
+          <Button as-child variant="outline">
+            <a :href="GITHUB_ORG_URL" target="_blank" rel="noopener noreferrer">
+              <Github class="size-4" />
+              Team-Haruki
+              <ExternalLink class="size-3.5 text-muted-foreground" />
+            </a>
+          </Button>
+          <Button as-child variant="brand">
+            <a :href="AFDIAN_URL" target="_blank" rel="noopener noreferrer">
+              <Heart class="size-4 fill-current" />
+              {{ t("navigationPages.about.support.afdianBtn") }}
+            </a>
+          </Button>
+        </div>
+      </header>
+
+      <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-10">
+        <div class="max-w-2xl space-y-3 text-sm leading-relaxed text-muted-foreground">
+          <p class="text-base leading-relaxed text-foreground">
+            {{ t("navigationPages.about.projectIntro.p1Before") }}<span class="font-semibold">{{ t("navigationPages.about.projectIntro.p1Name") }}</span>{{ t("navigationPages.about.projectIntro.p1After") }}
+          </p>
+          <p>{{ t("navigationPages.about.projectIntro.p2") }}</p>
+          <p>{{ t("navigationPages.about.projectIntro.p3") }}</p>
+        </div>
+
+        <!-- The network and its two teams, as a tree -->
+        <aside class="self-start rounded-2xl border bg-card p-5" aria-labelledby="about-structure-title">
+          <h2 id="about-structure-title" class="text-xs font-semibold text-muted-foreground">
+            {{ t("navigationPages.about.structure.title") }}
+          </h2>
+          <p class="mt-3 text-sm font-semibold">
+            {{ t("navigationPages.about.projectIntro.p1Name") }}
+          </p>
+          <ul class="ml-1.5 mt-1 border-l border-border pl-0">
+            <li
+              v-for="group in PROJECT_GROUPS"
+              :key="group.key"
+              class="relative pl-5 pt-3 before:absolute before:left-0 before:top-[1.45rem] before:w-3.5 before:border-t before:border-border last:border-l last:border-card last:-ml-px"
+            >
+              <button
+                type="button"
+                class="group -m-1.5 block w-[calc(100%+0.75rem)] rounded-lg p-1.5 text-left outline-none transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring"
+                :data-testid="`about-structure-${group.key}`"
+                @click="showTeamProjects(group.key)"
+              >
+                <span class="flex items-center gap-1.5 text-sm font-semibold">
+                  {{ TEAM_NAMES[group.key] }}
+                  <ArrowDown class="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+                </span>
+                <span class="mt-0.5 block text-xs leading-relaxed text-muted-foreground">
+                  {{ t(`navigationPages.about.structure.${group.key}`) }}
+                </span>
+                <span class="mt-1 block text-xs font-medium text-primary">
+                  {{ t("navigationPages.about.structure.projectCount", { count: group.projects.length }) }}
+                </span>
+              </button>
+            </li>
+          </ul>
+        </aside>
       </div>
     </section>
 
-    <!-- Open source projects -->
-    <section class="space-y-5">
-      <header class="space-y-1">
-        <h2 class="flex items-center gap-2 text-2xl font-bold tracking-tight">
-          <Code2 class="h-6 w-6 text-primary" />
+    <!-- Contributors: one wall, each person tagged with their identities -->
+    <section class="flex flex-col gap-4" aria-labelledby="about-contributors-title" data-testid="about-contributors">
+      <header class="flex flex-col gap-3">
+        <div class="flex flex-wrap items-baseline gap-x-2.5">
+          <h2 id="about-contributors-title" class="text-xl font-bold tracking-tight">
+            {{ t("navigationPages.about.contributors.title") }}
+          </h2>
+          <span class="text-sm tabular-nums text-muted-foreground">
+            {{ t("navigationPages.about.contributors.count", { count: contributors.length }) }}
+          </span>
+        </div>
+
+        <div
+          class="flex flex-wrap gap-2"
+          role="group"
+          :aria-label="t('navigationPages.about.contributors.filterLabel')"
+        >
+          <button
+            type="button"
+            :aria-pressed="activeIdentity === null"
+            :class="[
+              'inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:h-10',
+              activeIdentity === null ? 'border-foreground bg-foreground text-background' : 'bg-card hover:bg-muted',
+            ]"
+            data-testid="about-identity-all"
+            @click="activeIdentity = null"
+          >
+            {{ t("navigationPages.about.contributors.all") }}
+            <span class="text-xs tabular-nums opacity-70">{{ contributors.length }}</span>
+          </button>
+          <button
+            v-for="identity in identityFilters"
+            :key="identity"
+            type="button"
+            :aria-pressed="activeIdentity === identity"
+            :class="[
+              'inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:h-10',
+              activeIdentity === identity ? 'border-foreground bg-foreground text-background' : 'bg-card hover:bg-muted',
+            ]"
+            :data-testid="`about-identity-${identity}`"
+            @click="toggleIdentity(identity)"
+          >
+            <component :is="IDENTITY_STYLE[identity].icon" class="size-3.5" aria-hidden="true" />
+            {{ t(`navigationPages.about.contributors.identities.${identity}.label`) }}
+            <span class="text-xs tabular-nums opacity-70">{{ identityCounts[identity] }}</span>
+          </button>
+        </div>
+
+        <p class="text-sm text-muted-foreground" aria-live="polite">{{ contributorsHint }}</p>
+      </header>
+
+      <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <li v-for="contributor in visibleContributors" :key="contributor.key" class="min-w-0">
+          <a
+            :href="contributor.linkUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="group flex h-full gap-3.5 rounded-2xl border bg-card p-4 outline-none transition-colors hover:border-primary/50 focus-visible:ring-2 focus-visible:ring-ring"
+            :data-testid="`about-contributor-${contributor.key}`"
+          >
+            <Avatar class="size-12 shrink-0 border">
+              <AvatarImage :src="contributorAvatar(contributor)" alt="" loading="lazy" decoding="async" />
+              <AvatarFallback class="bg-primary/5 text-sm font-semibold text-primary">
+                {{ contributorName(contributor).charAt(0) }}
+              </AvatarFallback>
+            </Avatar>
+            <div class="min-w-0 flex-1">
+              <p class="flex items-center gap-1.5 text-sm font-semibold">
+                <span class="truncate">{{ contributorName(contributor) }}</span>
+                <ExternalLink class="size-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+              </p>
+              <p v-if="contributorHandle(contributor)" class="truncate text-xs text-muted-foreground">
+                {{ contributorHandle(contributor) }}
+              </p>
+              <ul class="mt-2 flex flex-wrap gap-1">
+                <li v-for="identity in orderedIdentities(contributor)" :key="identity">
+                  <Badge :variant="IDENTITY_STYLE[identity].variant" size="sm">
+                    <component :is="IDENTITY_STYLE[identity].icon" aria-hidden="true" />
+                    {{ t(`navigationPages.about.contributors.identities.${identity}.label`) }}
+                  </Badge>
+                </li>
+              </ul>
+              <p v-if="contributorQuote(contributor)" class="mt-2.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                {{ contributorQuote(contributor) }}
+              </p>
+            </div>
+          </a>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Open source projects, by team -->
+    <section class="flex flex-col gap-5" aria-labelledby="about-projects-title">
+      <header>
+        <h2 id="about-projects-title" class="text-xl font-bold tracking-tight">
           {{ t("navigationPages.about.projects.title") }}
         </h2>
-        <p class="text-sm text-muted-foreground">
+        <p class="mt-1 text-sm text-muted-foreground">
           {{ t("navigationPages.about.projects.subtitle") }}
         </p>
       </header>
 
-      <div v-for="group in projectGroups" :key="group.key" class="space-y-3">
+      <div
+        v-for="group in PROJECT_GROUPS"
+        :id="`about-projects-${group.key}`"
+        :key="group.key"
+        class="scroll-mt-20 space-y-2.5"
+      >
         <div class="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-          <h3 class="text-base font-semibold">
+          <h3 class="text-sm font-semibold">
             {{ t(`navigationPages.about.projects.groups.${group.key}.title`) }}
           </h3>
           <p class="text-xs text-muted-foreground">
@@ -250,66 +310,57 @@ function languageDotClass(project: Project): string {
           </p>
         </div>
 
-        <div class="overflow-hidden rounded-xl border bg-card">
-          <a
-            v-for="project in group.projects"
-            :key="project.key"
-            :href="project.githubUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="group flex items-start gap-3 border-b px-4 py-3.5 outline-none transition-colors last:border-b-0 hover:bg-muted/40 focus-visible:bg-muted/40 sm:px-5"
-          >
-            <span :class="['mt-1.5 h-2 w-2 shrink-0 rounded-full', languageDotClass(project)]" aria-hidden="true" />
-            <span class="min-w-0 flex-1">
-              <span class="flex flex-wrap items-baseline gap-x-2">
-                <span class="text-sm font-semibold transition-colors group-hover:text-primary">
-                  {{ t(`navigationPages.about.projects.list.${project.key}.name`) }}
+        <div class="overflow-hidden rounded-2xl border bg-card">
+          <ul class="-mb-px -mr-px grid grid-cols-1 lg:grid-cols-2">
+            <li v-for="project in group.projects" :key="project.key" class="border-b border-r">
+              <a
+                :href="project.githubUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="group flex h-full items-start gap-3 px-4 py-3.5 outline-none transition-colors hover:bg-muted/40 focus-visible:bg-muted/60 sm:px-5"
+              >
+                <span :class="['mt-1.5 size-2 shrink-0 rounded-full', languageDotClass(project)]" aria-hidden="true" />
+                <span class="min-w-0 flex-1">
+                  <span class="flex items-center gap-1.5 text-sm font-semibold transition-colors group-hover:text-primary">
+                    {{ t(`navigationPages.about.projects.list.${project.key}.name`) }}
+                    <ExternalLink class="size-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+                  </span>
+                  <span class="mt-0.5 block text-xs leading-relaxed text-muted-foreground">
+                    {{ t(`navigationPages.about.projects.list.${project.key}.desc`) }}
+                  </span>
+                  <span class="mt-1.5 flex flex-wrap gap-x-2.5 gap-y-0.5 text-[11px] font-medium text-muted-foreground/80">
+                    <span v-for="tag in project.tags" :key="tag">{{ tag }}</span>
+                  </span>
                 </span>
-                <span class="text-[11px] font-medium text-muted-foreground/70">
-                  {{ project.tags.join(" · ") }}
-                </span>
-              </span>
-              <span class="mt-0.5 block text-xs leading-relaxed text-muted-foreground line-clamp-2 sm:line-clamp-1">
-                {{ t(`navigationPages.about.projects.list.${project.key}.desc`) }}
-              </span>
-            </span>
-            <ExternalLink class="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground/50 opacity-0 transition-opacity group-hover:opacity-100" />
-          </a>
+              </a>
+            </li>
+          </ul>
         </div>
       </div>
     </section>
 
-    <!-- Support band -->
-    <section class="relative overflow-hidden rounded-2xl border border-pink-500/20 bg-pink-500/[0.04] px-6 py-7 md:px-8">
+    <!-- Support -->
+    <section class="rounded-2xl border border-pink-500/20 bg-pink-500/[0.04] px-5 py-6 md:px-8">
       <div class="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-        <div class="flex items-start gap-3">
-          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-pink-500/10 text-pink-600 dark:text-pink-300">
-            <Heart class="h-5 w-5 fill-current" />
-          </span>
-          <div class="space-y-1">
-            <h2 class="text-lg font-bold tracking-tight">
-              {{ t("navigationPages.about.support.title") }}
-            </h2>
-            <p class="max-w-xl text-sm leading-relaxed text-muted-foreground">
-              {{ t("navigationPages.about.support.desc") }}
-            </p>
-          </div>
+        <div class="space-y-1">
+          <h2 class="text-lg font-bold tracking-tight">
+            {{ t("navigationPages.about.support.title") }}
+          </h2>
+          <p class="max-w-xl text-sm leading-relaxed text-muted-foreground">
+            {{ t("navigationPages.about.support.desc") }}
+          </p>
         </div>
 
-        <div class="flex shrink-0 flex-col gap-3 sm:flex-row">
-          <Button
-            as-child
-            variant="brand"
-            class="h-10 px-5 font-semibold"
-          >
+        <div class="flex shrink-0 flex-col gap-2 sm:flex-row">
+          <Button as-child variant="brand">
             <a :href="AFDIAN_URL" target="_blank" rel="noopener noreferrer">
-              <Heart class="h-4 w-4 fill-current" />
+              <Heart class="size-4 fill-current" />
               {{ t("navigationPages.about.support.afdianBtn") }}
             </a>
           </Button>
-          <Button variant="outline" as-child class="h-10 px-5 font-semibold">
+          <Button variant="outline" as-child>
             <router-link to="/sponsors">
-              <Users class="h-4 w-4" />
+              <Users class="size-4" />
               {{ t("navigationPages.about.support.sponsorsBtn") }}
             </router-link>
           </Button>

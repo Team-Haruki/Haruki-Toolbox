@@ -1,0 +1,89 @@
+/*
+ * One accent per tool tray. It tints the tray marker, the icon wells and the
+ * hover wash; names and descriptions stay in the text tokens. The light and
+ * dark steps were checked with the dataviz palette validator.
+ */
+[data-home-tray="event"] { --tray: #b45309; }
+[data-home-tray="player"] { --tray: #0d9488; }
+[data-home-tray="catalog"] { --tray: #4f46e5; }
+[data-home-tray="community"] { --tray: #be185d; }
+
+.dark [data-home-tray="event"] { --tray: #c9772f; }
+.dark [data-home-tray="player"] { --tray: #22a898; }
+.dark [data-home-tray="catalog"] { --tray: #7c83f0; }
+.dark [data-home-tray="community"] { --tray: #d95f9c; }
+
+.home-tray-well {
+  background-color: color-mix(in oklch, var(--tray) 13%, transparent);
+  color: var(--tray);
+}
+
+.home-tray-cell {
+  transition: background-color 150ms ease;
+}
+
+.home-tray-cell:hover,
+.home-tray-cell:focus-visible {
+  background-color: color-mix(in oklch, var(--tray) 7%, var(--card));
+}
+
+.home-tray-cell:hover .home-tray-well,
+.home-tray-cell:focus-visible .home-tray-well {
+  background-color: color-mix(in oklch, var(--tray) 22%, transparent);
+}
+
+.home-tray-marker {
+  background-color: var(--tray);
+}
+
+.home-live-invite {
+  background:
+    radial-gradient(60% 120% at 100% 0%, color-mix(in oklch, #4f46e5 16%, transparent), transparent 70%),
+    radial-gradient(50% 110% at 78% 100%, color-mix(in oklch, #be185d 13%, transparent), transparent 70%),
+    radial-gradient(70% 130% at 0% 100%, color-mix(in oklch, var(--primary) 16%, transparent), transparent 70%),
+    var(--card);
+}
+
+/* Feature tray cards. */
+.home-tray-feature {
+  background: linear-gradient(140deg, color-mix(in srgb, var(--tray) 14%, var(--card)) 0%, var(--card) 62%);
+  border-color: color-mix(in oklch, var(--tray) 26%, var(--border));
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.home-tray-feature:hover,
+.home-tray-feature:focus-visible {
+  border-color: color-mix(in oklch, var(--tray) 55%, var(--border));
+  box-shadow: 0 8px 22px -12px color-mix(in oklch, var(--tray) 55%, transparent);
+  transform: translateY(-2px);
+}
+
+.home-tray-well-solid {
+  background-color: var(--tray);
+  color: #fff;
+}
+
+.home-tray-watermark {
+  color: var(--tray);
+  opacity: 0.1;
+  transform: rotate(-14deg);
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+
+.home-tray-feature:hover .home-tray-watermark,
+.home-tray-feature:focus-visible .home-tray-watermark {
+  opacity: 0.16;
+  transform: rotate(-6deg) scale(1.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-tray-feature,
+  .home-tray-watermark {
+    transition: none;
+  }
+
+  .home-tray-feature:hover,
+  .home-tray-feature:focus-visible {
+    transform: none;
+  }
+}
