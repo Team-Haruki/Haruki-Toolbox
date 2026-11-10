@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
-import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import CatalogDetailShell from "@/shared/components/catalog/CatalogDetailShell.vue"
 import ImageLightbox from "@/shared/components/ImageLightbox.vue"
@@ -11,20 +10,20 @@ import { resolveSekaiMusicCategoryLabel, resolveSekaiMusicTagLabel } from "@/sha
 import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import { useSettingsStore } from "@/shared/stores/settings"
 import MusicChartSection from "@/modules/music-library/components/MusicChartSection.vue"
-import MusicDifficultiesSection from "@/modules/music-library/components/MusicDifficultiesSection.vue"
-import MusicEventsSection from "@/modules/music-library/components/MusicEventsSection.vue"
-import MusicInfoSection from "@/modules/music-library/components/MusicInfoSection.vue"
-import MusicJacket from "@/modules/music-library/components/MusicJacket.vue"
-import MusicOriginalSection from "@/modules/music-library/components/MusicOriginalSection.vue"
-import MusicUnlockSection from "@/modules/music-library/components/MusicUnlockSection.vue"
+import MusicAliasList from "@/modules/music-library/components/MusicAliasList.vue"
+import MusicDetailHero from "@/modules/music-library/components/MusicDetailHero.vue"
+import MusicEventLinks from "@/modules/music-library/components/MusicEventLinks.vue"
 import MusicVocalPlayer from "@/modules/music-library/components/MusicVocalPlayer.vue"
 import { useMusicAliases } from "@/modules/music-library/composables/useMusicAliases"
 import { useMusicBpm } from "@/modules/music-library/composables/useMusicBpm"
 import { useMusicCatalogDetail } from "@/modules/music-library/composables/useMusicCatalogDetail"
 import { useMusicDateFormatter } from "@/modules/music-library/composables/useMusicDateFormatter"
+import { useGlobalMusicPlayer } from "@/modules/music-library/composables/useGlobalMusicPlayer"
+import { useMusicPlayerTrack } from "@/modules/music-library/composables/useMusicPlayerTrack"
 import { resolveMusicJacketUrl } from "@/modules/music-library/lib/music-assets"
 import { isMusicEntryUnreleased } from "@/modules/music-library/lib/music-filter"
 import { formatMusicDate } from "@/modules/music-library/lib/music-view"
+import { pickPreferredVocal } from "@/modules/music-library/player/player-track"
 
 const props = defineProps<{
   musicId: string
@@ -57,7 +56,6 @@ const {
   error,
   notFound,
   vocalsLoading,
-  eventsLoading,
   reload,
 } = useMusicCatalogDetail(region, musicId)
 const { bpmLabel } = useMusicBpm(entry, region, preference)
@@ -80,6 +78,33 @@ const categoryBadges = computed(() => (entry.value?.categories ?? []).map((categ
   label: resolveSekaiMusicCategoryLabel({ t, te }, category),
 })))
 
+// The song as the site-wide player takes it; the jacket's play button and the
+// vocal list both start (or switch within) this one track.
+const player = useGlobalMusicPlayer()
+const playerTrack = useMusicPlayerTrack(() => (entry.value
+  ? {
+      region: region.value,
+      preference: preference.value,
+      entry: entry.value,
+      vocals: vocals.value,
+      characterMap: characterMap.value,
+      outsideCharacterNames: outsideCharacterNames.value,
+    }
+  : null))
+const songPlaying = computed(() => player.isCurrent(playerTrack.value) && player.playing.value)
+
+function toggleSong() {
+  const track = playerTrack.value
+  if (!track) {
+    return
+  }
+  if (player.isCurrent(track)) {
+    player.toggle()
+    return
+  }
+  player.play(track, pickPreferredVocal(track, settingsStore.preferredVocalType).id)
+}
+
 const lightboxOpen = ref(false)
 const lightboxItems = computed<ImageLightboxItem[]>(() => [
   { label: t("musicCatalog.detail.jacket"), sources: [jacketUrl.value], alt: entry.value?.title ?? "" },
@@ -101,78 +126,49 @@ const lightboxItems = computed<ImageLightboxItem[]>(() => [
     class="py-4"
     @retry="reload"
   >
-    <template #badges>
-      <Badge v-for="badge in tagBadges" :key="badge.key" variant="muted">{{ badge.label }}</Badge>
-      <Badge v-for="badge in categoryBadges" :key="badge.key" variant="default">{{ badge.label }}</Badge>
+    <template #skeleton>
+      <Skeleton class="h-64 w-full rounded-2xl" />
+      <Skeleton class="h-56 w-full rounded-xl" />
     </template>
 
-    <template #skeleton>
-      <div class="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start">
-        <div class="flex flex-col gap-4">
-          <Skeleton class="mx-auto aspect-square w-full max-w-80 rounded-lg" />
-          <Skeleton class="h-72 w-full rounded-xl" />
-        </div>
-        <div class="flex flex-col gap-4">
-          <Skeleton class="h-36 w-full rounded-xl" />
-          <Skeleton class="h-56 w-full rounded-xl" />
-        </div>
-      </div>
+    <!-- The header block carries the title, so the shell's own heading is replaced. -->
+    <template v-if="entry" #heading>
+      <MusicDetailHero
+        :entry="entry"
+        :jacket-url="jacketUrl"
+        :blurred="blurred"
+        :unreleased="unreleased"
+        :tags="tagBadges"
+        :categories="categoryBadges"
+        :date-label="dateLabel"
+        :duration-seconds="durationSeconds"
+        :bpm-label="bpmLabel"
+        :unlock-sentence="releaseCondition?.sentence || null"
+        :original-link="originalLink"
+        :playable="playerTrack != null"
+        :playing="songPlaying"
+        @zoom="lightboxOpen = true"
+        @toggle-play="toggleSong"
+      >
+        <MusicEventLinks
+          :events="relatedEvents"
+          :region="region"
+          :preference="preference"
+          :character-map="characterMap"
+        />
+        <MusicAliasList :music-id="entry.id" :aliases="aliases" />
+      </MusicDetailHero>
     </template>
 
     <template v-if="entry">
-      <!-- Sidebar + main, not paired cards: every section here has a height
-           the data decides (six or five difficulties, one or ten vocals, any
-           number of events, seventy aliases), so two columns of matched pairs
-           always left one side short. The sidebar holds what the song *is*,
-           the main column stacks what it *has*, and neither has to line up. -->
-      <div class="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start">
-        <div class="flex min-w-0 flex-col gap-4">
-          <button
-            type="button"
-            class="relative mx-auto aspect-square w-full max-w-80 overflow-hidden rounded-lg shadow-sm transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-default disabled:hover:opacity-100"
-            :title="t('catalog.detail.zoom')"
-            :aria-label="t('catalog.detail.zoom')"
-            :disabled="blurred || jacketUrl == null"
-            @click="lightboxOpen = true"
-          >
-            <MusicJacket :url="jacketUrl" :alt="entry.title" class="size-full" :blur="blurred" eager />
-          </button>
-          <MusicInfoSection
-            :entry="entry"
-            :date-label="dateLabel"
-            :duration-seconds="durationSeconds"
-            :bpm-label="bpmLabel"
-            :aliases="aliases"
-          />
-        </div>
-
-        <div class="flex min-w-0 flex-col gap-4">
-          <MusicDifficultiesSection :entry="entry" />
-
-          <MusicVocalPlayer
-            :music-id="musicId"
-            :region="region"
-            :preference="preference"
-            :filler-sec="entry.fillerSec"
-            :vocals="vocals"
-            :character-map="characterMap"
-            :outside-character-names="outsideCharacterNames"
-            :loading="vocalsLoading"
-          />
-
-          <MusicEventsSection
-            :events="relatedEvents"
-            :region="region"
-            :preference="preference"
-            :character-map="characterMap"
-            :loading="eventsLoading"
-          />
-
-          <MusicUnlockSection v-if="releaseCondition" :condition="releaseCondition" />
-
-          <MusicOriginalSection v-if="originalLink" :link="originalLink" />
-        </div>
-      </div>
+      <!-- Under the header: who sings it. -->
+      <MusicVocalPlayer
+        :track="playerTrack"
+        :vocals="vocals"
+        :character-map="characterMap"
+        :outside-character-names="outsideCharacterNames"
+        :loading="vocalsLoading"
+      />
 
       <!-- Last and full width: the score and its transport want the whole
            row, and it is the one section a reader scrolls to on purpose. It is

@@ -47,7 +47,7 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <Card>
+  <Card class="gap-3" data-testid="music-progress-overview">
     <CardHeader class="pb-2">
       <CardTitle class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-base">
         <span>{{ t("musicProgress.overallTitle") }}</span>
@@ -55,24 +55,31 @@ const { t } = useI18n()
       </CardTitle>
       <CardDescription v-if="hint" class="text-xs">{{ hint }}</CardDescription>
     </CardHeader>
-    <CardContent class="flex flex-col gap-1" role="radiogroup" :aria-label="t('musicProgress.overallTitle')">
+    <CardContent class="flex flex-col gap-0.5" role="radiogroup" :aria-label="t('musicProgress.overallTitle')">
+      <!-- Chip and counts on one line, the bar under them: reads the same in
+           the side column and on a phone. -->
       <button
         v-for="row in rows"
         :key="row.difficulty"
         type="button"
         role="radio"
         :aria-checked="row.difficulty === active"
-        class="flex w-full flex-wrap items-center gap-x-3 gap-y-1.5 rounded-md px-2 py-2 text-left transition-colors hover:bg-muted/50"
+        class="flex w-full flex-col gap-1.5 rounded-lg px-2 py-2 text-left outline-none transition-colors hover:bg-muted/50 focus-visible:ring-[3px] focus-visible:ring-ring/50"
         :class="row.difficulty === active ? 'bg-muted/60 ring-1 ring-border' : ''"
+        :data-difficulty="row.difficulty"
         @click="emit('select', row.difficulty)"
       >
-        <span :class="[resolveMusicDifficultyChipClass(row.difficulty), 'w-16 px-1 py-1']">
-          {{ row.label }}
+        <span class="flex items-center gap-2">
+          <span :class="[resolveMusicDifficultyChipClass(row.difficulty), 'w-16 px-1 py-1']">
+            {{ row.label }}
+          </span>
+          <span class="ml-auto flex shrink-0 items-baseline gap-2.5 text-xs tabular-nums">
+            <span><span class="text-muted-foreground">AP</span> <span class="font-medium">{{ row.allPerfect }}</span></span>
+            <span><span class="text-muted-foreground">FC</span> <span class="font-medium">{{ row.fullCombo }}</span></span>
+            <span><span class="text-muted-foreground">CL</span> <span class="font-medium">{{ row.cleared }}</span><span class="text-muted-foreground">/{{ row.total }}</span></span>
+          </span>
         </span>
-        <span class="ml-auto shrink-0 text-xs tabular-nums text-muted-foreground sm:order-3 sm:ml-0 sm:w-44 sm:text-right">
-          AP {{ row.allPerfect }} · FC {{ row.fullCombo }} · CL {{ row.cleared }}/{{ row.total }}
-        </span>
-        <span class="flex h-2.5 basis-full gap-px overflow-hidden rounded-full bg-muted sm:order-2 sm:min-w-32 sm:flex-1 sm:basis-auto">
+        <span class="flex h-2 gap-px overflow-hidden rounded-full bg-muted" aria-hidden="true">
           <span
             v-for="segment in row.segments"
             :key="segment.key"
@@ -84,7 +91,7 @@ const { t } = useI18n()
         <span
           v-if="row.rewardsText"
           :class="[
-            'basis-full text-xs tabular-nums sm:order-4 sm:w-44 sm:basis-auto sm:text-right',
+            'text-[11px] tabular-nums',
             row.hasRemaining ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground/70',
           ]"
         >

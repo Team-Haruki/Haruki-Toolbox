@@ -158,7 +158,7 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
 <template>
   <!-- Chart: difficulty scopes the level and note-count filters below it. -->
   <div class="grid gap-3" role="group" :aria-labelledby="`${id}-chart-group`">
-    <p :id="`${id}-chart-group`" class="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+    <p :id="`${id}-chart-group`" class="text-xs font-semibold text-foreground">
       {{ t("musicCatalog.filters.chartGroup") }}
     </p>
 
@@ -189,12 +189,10 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
       </ToggleGroup>
     </div>
 
-    <!-- The narrow controls share wrapping lines. One row each left most of a
-         ~1100px panel empty, which read as ragged beside the full-width
-         character picker; a wrapping flow rather than a grid, so hiding a
-         control never leaves a hole. -->
-    <div class="flex flex-wrap items-center gap-x-10 gap-y-3">
-      <div class="flex w-full min-w-0 flex-wrap items-center gap-x-3 gap-y-2 sm:w-auto sm:min-w-64">
+    <!-- One field per line, every label in the same column: the controls
+         start on one edge all the way down the panel. -->
+    <div class="contents">
+      <div class="flex w-full min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
         <p :id="`${id}-level-label`" class="mr-1 min-w-14 text-xs font-medium text-muted-foreground">
           {{ t("musicLibrary.list.filters.level") }}
         </p>
@@ -215,6 +213,7 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
         </div>
       </div>
 
+      <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
         <p :id="`${id}-notes-label`" class="mr-1 min-w-14 text-xs font-medium text-muted-foreground">
           {{ t("musicLibrary.list.filters.noteCount") }}
@@ -278,12 +277,13 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
           {{ t("musicCatalog.filters.appendOnly") }}
         </Label>
       </div>
+      </div>
     </div>
   </div>
 
   <!-- Song: what the track is, rather than how it plays. -->
   <div class="grid gap-3 border-t pt-4" role="group" :aria-labelledby="`${id}-song-group`">
-    <p :id="`${id}-song-group`" class="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+    <p :id="`${id}-song-group`" class="text-xs font-semibold text-foreground">
       {{ t("musicCatalog.filters.songGroup") }}
     </p>
 
@@ -295,7 +295,7 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
       @update:model-value="emit('patch', { tags: $event })"
     />
 
-    <div class="flex flex-wrap items-center gap-x-10 gap-y-3">
+    <div class="contents">
       <!-- Chips, not a select: the years come from the dump like every other
            option here, and a lone select left the row stubby. -->
       <div class="flex flex-wrap items-center gap-1.5">

@@ -160,11 +160,21 @@ const staticZoom = ref<StaticZoom>("fit")
 const zoomPercent = ref(50)
 const STATIC_FIT_HEIGHT = 520
 
+// The chart lives in a shadow root: its stylesheet uses plain class names
+// (`.title`, `.background`, `.lane`…) that would otherwise apply to the whole
+// page, and the page's own CSS would reach into the chart.
+function chartRoot(host: HTMLElement): ShadowRoot {
+  return host.shadowRoot ?? host.attachShadow({ mode: "open" })
+}
+
 function applyStaticZoom() {
-  const svg = svgHost.value?.querySelector("svg")
+  const host = svgHost.value
+  const svg = host ? chartRoot(host).querySelector("svg") : null
   if (svg == null) {
     return
   }
+  svg.style.display = "block"
+  svg.style.maxWidth = "none"
 
   const width = Number(svg.getAttribute("width"))
   const height = Number(svg.getAttribute("height"))
@@ -193,7 +203,7 @@ function handleZoomInput(event: Event) {
 // DOM (an <img> would refuse to load the nested images).
 watch([svgMarkup, svgHost], ([markup, host]) => {
   if (host != null) {
-    host.innerHTML = markup ?? ""
+    chartRoot(host).innerHTML = markup ?? ""
     applyStaticZoom()
   }
 })
@@ -214,7 +224,7 @@ watch([staticZoom, zoomPercent], () => {
           type="button"
           :class="[
             resolveMusicDifficultyChipClass(difficulty),
-            'min-h-7 px-2.5 transition-opacity pointer-coarse:min-h-10 pointer-coarse:px-3',
+            'min-h-7 min-w-22 justify-center px-2.5 text-center transition-opacity pointer-coarse:min-h-10 pointer-coarse:px-3',
             selectedDifficulty === difficulty ? 'ring-2 ring-current' : 'opacity-50 hover:opacity-80',
           ]"
           :aria-pressed="selectedDifficulty === difficulty"
@@ -286,8 +296,8 @@ watch([staticZoom, zoomPercent], () => {
             {{ zoomPercent }}%
           </span>
         </div>
-        <div class="overflow-x-auto rounded-md border bg-white dark:bg-zinc-950">
-          <div ref="svgHost" class="mx-auto w-fit bg-white [&_svg]:block [&_svg]:max-w-none" />
+        <div class="overflow-x-auto rounded-md border bg-black" data-testid="chart-static">
+          <div ref="svgHost" class="mx-auto w-fit" />
         </div>
       </div>
     </template>

@@ -32,6 +32,7 @@ import MusicFilterFields from "@/modules/music-library/components/MusicFilterFie
 import MusicResults from "@/modules/music-library/components/MusicResults.vue"
 import { useMusicCatalogList } from "@/modules/music-library/composables/useMusicCatalogList"
 import { useMusicDateFormatter } from "@/modules/music-library/composables/useMusicDateFormatter"
+import { provideMusicListPlayer } from "@/modules/music-library/composables/useMusicListPlayer"
 import { resolveMusicJacketUrl } from "@/modules/music-library/lib/music-assets"
 import { MUSIC_DIFFICULTIES, MUSIC_DIFFICULTY_COLORS } from "@/modules/music-library/lib/music-difficulties"
 import {
@@ -73,6 +74,7 @@ const {
   unitColorMap,
   musicEventBoxes,
   musicVocalCharacters,
+  vocalsByMusic,
   tagOptions: tagValues,
   categoryOptions: categoryValues,
   yearOptions: yearValues,
@@ -86,6 +88,14 @@ const {
   ready: listReady,
   reload,
 } = useMusicCatalogList(region)
+
+// The jackets' play buttons start songs in the site-wide player.
+provideMusicListPlayer({
+  region,
+  preference: computed(() => settingsStore.currentAssetEndpoint),
+  vocalsByMusic,
+  characterMap,
+})
 
 // The URL is the state; layout preferences stay on the device.
 const { state, patch, reset, activeFilterCount } = useRouteQueryState(musicQueryCodec, {
