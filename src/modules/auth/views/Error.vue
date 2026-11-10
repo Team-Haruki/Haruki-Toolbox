@@ -155,21 +155,24 @@ watch(
               : 'rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive'"
             :role="alreadySignedIn ? 'status' : 'alert'"
           >
-            <p data-testid="kratos-error-explanation">{{ explanation }}</p>
+            <p class="[overflow-wrap:anywhere]" data-testid="kratos-error-explanation">{{ explanation }}</p>
           </div>
 
           <details class="group rounded-md border px-4 py-3 text-sm text-muted-foreground">
             <summary class="cursor-pointer select-none font-medium text-foreground/80">
               {{ t("auth.kratos.errorPage.technicalDetails") }}
             </summary>
-            <div class="mt-3 grid gap-2">
+            <!-- Grid items do not shrink below their content by default: a long
+                 reason or a wide details dump would push the block past the
+                 card on a phone, so every item may shrink (`min-w-0`). -->
+            <div class="mt-3 grid gap-2 [&>*]:min-w-0">
               <div class="break-all">
                 {{ t("auth.error.errorIdLabel") }}: {{ flowError?.id || errorId }}
               </div>
               <div v-if="flowError?.code !== undefined">
                 {{ t("auth.error.statusCodeLabel") }}: {{ flowError.code }}
               </div>
-              <div v-if="rawReason" class="break-words">
+              <div v-if="rawReason" class="[overflow-wrap:anywhere]">
                 {{ t("auth.kratos.errorPage.reasonLabel") }}: {{ rawReason }}
               </div>
               <div v-if="detailsText" class="space-y-2">

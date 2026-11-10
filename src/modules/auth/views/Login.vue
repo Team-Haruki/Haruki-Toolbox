@@ -315,14 +315,14 @@ const loginReasonText = computed(() => {
           role="status"
         >
           <Info class="mt-0.5 h-4 w-4 shrink-0" />
-          <span>{{ loginReasonText }}</span>
+          <span class="min-w-0 [overflow-wrap:anywhere]">{{ loginReasonText }}</span>
         </div>
         <div v-if="loading" class="flex items-center justify-center py-12 text-muted-foreground">
           <Loader2 class="mr-2 h-4 w-4 animate-spin" />
           {{ t("auth.common.loadingFlow") }}
         </div>
         <div v-else-if="loadError" class="space-y-4">
-          <p class="text-sm text-destructive">{{ loadError }}</p>
+          <p class="text-sm text-destructive [overflow-wrap:anywhere]">{{ loadError }}</p>
           <Button class="w-full" @click="restartFlow">
             <LogIn class="mr-2 h-4 w-4" />
             {{ t("auth.common.restartFlow") }}

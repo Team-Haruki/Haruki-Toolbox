@@ -43,14 +43,20 @@ function iconForTone(tone: KratosFlowMessageTone) {
 </script>
 
 <template>
-  <div v-if="messages.length > 0" class="space-y-2">
+  <!-- A message can carry one long unbreakable token (a spec URL in a
+       WebAuthn error, a request id). `break-words` alone does not shrink a
+       flex item's minimum width, so such a message pushed the whole form
+       wider than the card and off the side of a phone. `anywhere` lets the
+       token break and count as breakable for sizing; `min-w-0` keeps the
+       block from growing with its content inside the form's grid. -->
+  <div v-if="messages.length > 0" class="min-w-0 space-y-2">
     <p
       v-for="message in messages"
       :key="message.key"
-      :class="messageClass(message.tone)"
+      :class="[messageClass(message.tone), 'min-w-0']"
     >
       <component :is="iconForTone(message.tone)" class="mt-0.5 h-4 w-4 shrink-0" />
-      <span class="break-words">{{ message.text }}</span>
+      <span class="min-w-0 [overflow-wrap:anywhere]">{{ message.text }}</span>
     </p>
   </div>
 </template>

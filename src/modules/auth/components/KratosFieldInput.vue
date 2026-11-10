@@ -51,7 +51,7 @@ watch(
 </script>
 
 <template>
-  <div class="grid gap-1.5">
+  <div class="grid min-w-0 gap-1.5">
     <div class="relative w-full items-center">
       <Input
         :id="id"
@@ -83,6 +83,6 @@ watch(
         <Eye v-else class="size-4" />
       </button>
     </div>
-    <p v-if="error" :id="errorId" class="text-xs text-destructive" role="alert">{{ error }}</p>
+    <p v-if="error" :id="errorId" class="min-w-0 text-xs text-destructive [overflow-wrap:anywhere]" role="alert">{{ error }}</p>
   </div>
 </template>
