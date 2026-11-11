@@ -7,6 +7,10 @@ export default {
       "description": "一些與pjsk相關的群聊推薦",
       "loading": "載入中...",
       "empty": "暫無推薦群聊",
+      "count": "{count} 個群",
+      "copyNumber": "複製群號 {number}",
+      "copied": "已複製群號 {number}",
+      "copyFailed": "複製失敗，請手動複製群號。",
       "toast": {
         "loadFailedTitle": "載入推薦群聊失敗"
       }

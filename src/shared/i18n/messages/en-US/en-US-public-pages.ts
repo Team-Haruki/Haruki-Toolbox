@@ -7,6 +7,10 @@ export default {
       "description": "Recommended chat groups related to pjsk",
       "loading": "Loading...",
       "empty": "No recommended groups",
+      "count": "{count} groups",
+      "copyNumber": "Copy group number {number}",
+      "copied": "Copied group number {number}",
+      "copyFailed": "Could not copy. Copy the group number by hand.",
       "toast": {
         "loadFailedTitle": "Failed to load recommended groups"
       }
