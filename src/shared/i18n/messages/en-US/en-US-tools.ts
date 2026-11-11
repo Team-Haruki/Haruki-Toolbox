@@ -360,7 +360,7 @@ export default {
       },
       "modeHints": {
         "proxy": "More stable, but only one Toolbox module can be installed at a time. Pick this if unsure.",
-        "script": "Can run alongside other bots' modules, but is occasionally unstable."
+        "script": "Can run alongside other bots' modules, but is occasionally unstable. For Shadowrocket, do not use Script upload; choose Proxy upload instead."
       },
       "advanced": {
         "title": "Advanced options",

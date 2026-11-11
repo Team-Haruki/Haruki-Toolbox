@@ -360,7 +360,7 @@ export default {
       },
       "modeHints": {
         "proxy": "更稳定，但同一时间只能装一个工具箱模块。不确定就选这个。",
-        "script": "可与其他 Bot 的模块同时使用，但偶尔不稳定。"
+        "script": "可与其他 Bot 的模块同时使用，但偶尔不稳定。 小火箭（Shadowrocket）请勿使用脚本上传，推荐选择代理上传。"
       },
       "advanced": {
         "title": "高级选项",
