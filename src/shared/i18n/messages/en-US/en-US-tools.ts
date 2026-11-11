@@ -302,7 +302,7 @@ export default {
         },
         "mode": {
           "title": "Select upload mode",
-          "description": "“Script upload” can run alongside other bots' modules but is occasionally unstable; “Proxy upload” is more stable but only one Toolbox module can be installed at a time. If unsure, pick “Proxy upload”.\nFor Shadowrocket, do not use “Script upload”; use “Proxy upload” instead.",
+          "description": "“Script upload” can run alongside other bots' modules but is occasionally unstable; “Proxy upload” is more stable but only one Toolbox module can be installed at a time. If unsure, pick “Proxy upload”.",
           "placeholder": "Select upload mode"
         },
         "chunk": {
@@ -360,7 +360,7 @@ export default {
       },
       "modeHints": {
         "proxy": "More stable, but only one Toolbox module can be installed at a time. Pick this if unsure.",
-        "script": "Can run alongside other bots' modules, but is occasionally unstable."
+        "script": "Can run alongside other bots' modules, but is occasionally unstable. For Shadowrocket, do not use Script upload; choose Proxy upload instead."
       },
       "advanced": {
         "title": "Advanced options",
