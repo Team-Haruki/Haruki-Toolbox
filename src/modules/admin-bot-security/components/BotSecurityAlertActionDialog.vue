@@ -5,11 +5,12 @@ import { LucideCheckCircle2, LucideEyeOff, LucideLoader2, LucideRotateCcw } from
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogClose,
+  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogScrollContent,
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -54,13 +55,13 @@ const clearsNote = computed(() => !!props.alert?.note.trim() && !note.value.trim
 
 <template>
   <Dialog v-model:open="open">
-    <DialogScrollContent class="sm:max-w-[480px]">
+    <DialogContent size="sm">
       <DialogHeader>
         <DialogTitle>{{ t(`adminBotSecurity.actionDialog.title.${props.action}`) }}</DialogTitle>
-        <DialogDescription class="[overflow-wrap:anywhere]">{{ subject }}</DialogDescription>
+        <DialogDescription>{{ subject }}</DialogDescription>
       </DialogHeader>
 
-      <div class="space-y-2">
+      <DialogBody class="gap-2">
         <Label for="bot-security-action-note">{{ t("adminBotSecurity.actionDialog.noteLabel") }}</Label>
         <textarea
           id="bot-security-action-note"
@@ -77,7 +78,7 @@ const clearsNote = computed(() => !!props.alert?.note.trim() && !note.value.trim
           </span>
           <span class="shrink-0 tabular-nums">{{ note.length }} / {{ BOT_SECURITY_NOTE_MAX_LENGTH }}</span>
         </div>
-      </div>
+      </DialogBody>
 
       <DialogFooter>
         <DialogClose as-child>
@@ -89,6 +90,6 @@ const clearsNote = computed(() => !!props.alert?.note.trim() && !note.value.trim
           {{ t(`adminBotSecurity.actions.${props.action}`) }}
         </Button>
       </DialogFooter>
-    </DialogScrollContent>
+    </DialogContent>
   </Dialog>
 </template>

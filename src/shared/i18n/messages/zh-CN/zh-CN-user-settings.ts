@@ -500,12 +500,6 @@ export default {
         "kr": "韩服",
         "cn": "国服"
       },
-      "table": {
-        "server": "区服",
-        "userId": "游戏UID",
-        "verificationStatus": "验证状态",
-        "actions": "操作"
-      },
       "status": {
         "verified": "已验证",
         "unverified": "未验证",
@@ -674,12 +668,7 @@ export default {
           "writeOnlyNotice": "未勾选读取：对方只能上传，不能查看该账号已有的数据。"
         },
         "table": {
-          "owner": "授权来源",
-          "grantee": "被授权用户",
-          "dataType": "数据类型",
-          "permissions": "权限",
-          "expiresAt": "过期时间",
-          "actions": "操作"
+          "expiresAt": "过期时间"
         },
         "revokeDialog": {
           "title": "撤销数据授权",

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { LucideLoader2 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import type { OAuthClient, OAuthClientDevicePolicy } from "@/types/admin"
@@ -64,7 +64,7 @@ const emit = defineEmits<{
 
 <template>
   <Dialog :open="props.open" @update:open="value => emit('update:open', value)">
-    <DialogContent class="max-h-[85vh] overflow-y-auto sm:max-w-xl">
+    <DialogContent>
       <DialogHeader>
         <DialogTitle>{{ t("adminOAuthClients.editDialog.title") }}</DialogTitle>
         <DialogDescription>
@@ -73,8 +73,9 @@ const emit = defineEmits<{
           {{ t("adminOAuthClients.editDialog.descriptionSuffix") }}
         </DialogDescription>
       </DialogHeader>
-      <form novalidate @submit.prevent="emit('submit')">
-        <div class="flex flex-col gap-5 py-4">
+      <!-- The form spans the body and the footer, so it carries the dialog's column on. -->
+      <form class="flex min-h-0 flex-1 flex-col" novalidate @submit.prevent="emit('submit')">
+        <DialogBody class="gap-5">
           <OAuthClientFormFields
             :name="props.name"
             :client-type="props.clientType"
@@ -98,7 +99,7 @@ const emit = defineEmits<{
             @remove-post-logout-redirect-uri="index => emit('remove-post-logout-redirect-uri', index)"
             @update-post-logout-redirect-uri="payload => emit('update-post-logout-redirect-uri', payload)"
           />
-        </div>
+        </DialogBody>
         <DialogFooter>
           <Button type="button" variant="outline" @click="emit('update:open', false)">
             {{ t("adminOAuthClients.editDialog.cancel") }}

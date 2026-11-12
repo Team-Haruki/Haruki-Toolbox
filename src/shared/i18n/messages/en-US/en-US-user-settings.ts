@@ -500,12 +500,6 @@ export default {
         "kr": "KR",
         "cn": "CN"
       },
-      "table": {
-        "server": "Server",
-        "userId": "Game UID",
-        "verificationStatus": "Verification",
-        "actions": "Actions"
-      },
       "status": {
         "verified": "Verified",
         "unverified": "Unverified",
@@ -674,12 +668,7 @@ export default {
           "writeOnlyNotice": "Read is unchecked: the grantee can upload but cannot view this account's existing data."
         },
         "table": {
-          "owner": "Owner",
-          "grantee": "Grantee",
-          "dataType": "Data type",
-          "permissions": "Permissions",
-          "expiresAt": "Expires at",
-          "actions": "Actions"
+          "expiresAt": "Expires at"
         },
         "revokeDialog": {
           "title": "Revoke data grant",

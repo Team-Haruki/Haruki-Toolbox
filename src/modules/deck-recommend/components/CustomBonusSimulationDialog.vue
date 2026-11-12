@@ -3,10 +3,11 @@ import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
+  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogScrollContent,
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
@@ -30,14 +31,14 @@ const { t } = useI18n()
 
 <template>
   <Dialog v-model:open="open">
-    <DialogScrollContent class="max-h-[88vh] overflow-y-auto sm:max-w-[760px]">
+    <DialogContent size="lg">
       <DialogHeader>
         <DialogTitle>{{ t("deckRecommend.options.eventSimulation.customBonusTitle") }}</DialogTitle>
         <DialogDescription>
           {{ t("deckRecommend.options.eventSimulation.customBonusDescription") }}
         </DialogDescription>
       </DialogHeader>
-      <div class="grid gap-4">
+      <DialogBody>
         <CustomBonusCharacterPicker
           v-model="characterIds"
           v-model:support-units="supportUnits"
@@ -53,7 +54,7 @@ const { t } = useI18n()
             :disabled="running"
           />
         </label>
-      </div>
+      </DialogBody>
       <DialogFooter>
         <Button
           type="button"
@@ -62,6 +63,6 @@ const { t } = useI18n()
           {{ t("deckRecommend.options.eventSimulation.customBonusDone") }}
         </Button>
       </DialogFooter>
-    </DialogScrollContent>
+    </DialogContent>
   </Dialog>
 </template>

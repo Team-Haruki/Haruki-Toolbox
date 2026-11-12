@@ -6,11 +6,12 @@ import { LucideCheckCircle2, LucideEyeOff, LucideRotateCcw } from "lucide-vue-ne
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogClose,
+  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogScrollContent,
   DialogTitle,
 } from "@/components/ui/dialog"
 import { formatNumberCN } from "@/lib/number-format"
@@ -91,13 +92,13 @@ const actions = computed(() => props.alert ? botSecurityActionsFor(props.alert.s
 
 <template>
   <Dialog v-model:open="open">
-    <DialogScrollContent class="sm:max-w-[640px]">
+    <DialogContent size="lg">
       <DialogHeader>
         <DialogTitle>{{ t("adminBotSecurity.detail.title", { id: props.alert?.id ?? "" }) }}</DialogTitle>
         <DialogDescription>{{ t("adminBotSecurity.detail.description") }}</DialogDescription>
       </DialogHeader>
 
-      <div v-if="props.alert" class="flex min-w-0 flex-col gap-4">
+      <DialogBody v-if="props.alert">
         <div class="flex min-w-0 flex-wrap items-center gap-1.5">
           <BotSecurityKindChip :kind="props.alert.kind" :label="props.kindLabel(props.alert.kind)" />
           <BotSecurityEnforcementBadge :enforced="props.alert.enforced" />
@@ -159,9 +160,9 @@ const actions = computed(() => props.alert ? botSecurityActionsFor(props.alert.s
             </div>
           </dl>
         </SettingsGroup>
-      </div>
+      </DialogBody>
 
-      <DialogFooter class="gap-2">
+      <DialogFooter>
         <DialogClose as-child>
           <Button variant="outline">{{ t("common.close") }}</Button>
         </DialogClose>
@@ -176,6 +177,6 @@ const actions = computed(() => props.alert ? botSecurityActionsFor(props.alert.s
           {{ t(`adminBotSecurity.actions.${action}`) }}
         </Button>
       </DialogFooter>
-    </DialogScrollContent>
+    </DialogContent>
   </Dialog>
 </template>

@@ -2,6 +2,7 @@
 import { useI18n } from "vue-i18n"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -76,18 +77,15 @@ const {
 
 <template>
             <Dialog v-model:open="open">
+              <!-- Phones: the whole screen, since this is a page's worth of settings. -->
               <DialogContent
-                class="flex h-[100dvh] w-full max-w-none flex-col gap-0 overflow-hidden rounded-none border-0 p-0 top-0 left-0 translate-x-0 translate-y-0 sm:h-auto sm:max-h-[85vh] sm:max-w-2xl sm:rounded-lg sm:border sm:p-0 sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] lg:max-w-4xl xl:max-w-5xl"
+                class="top-0 left-0 h-dvh max-h-none max-w-none translate-x-0 translate-y-0 rounded-none border-0 sm:top-[50%] sm:left-[50%] sm:h-auto sm:max-h-[85dvh] sm:max-w-2xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-xl sm:border lg:max-w-4xl xl:max-w-5xl"
               >
-                <DialogHeader class="border-b border-border/60 px-4 py-3 pr-12 text-left">
-                  <DialogTitle class="text-base">
-                    {{ t("deckRecommend.layers.expert.title") }}
-                  </DialogTitle>
-                  <DialogDescription class="text-xs">
-                    {{ t("deckRecommend.layers.expert.description") }}
-                  </DialogDescription>
+                <DialogHeader>
+                  <DialogTitle>{{ t("deckRecommend.layers.expert.title") }}</DialogTitle>
+                  <DialogDescription>{{ t("deckRecommend.layers.expert.description") }}</DialogDescription>
                 </DialogHeader>
-                <div class="@container min-h-0 min-w-0 flex-1 divide-y divide-border/60 overflow-y-auto px-4">
+                <DialogBody class="@container min-w-0 gap-0 divide-y divide-border/60 py-0">
                     <section class="grid min-w-0 grid-cols-1 gap-3 py-4">
                       <div class="space-y-1">
                         <h3 class="text-sm font-medium">{{ t("deckRecommend.options.random.title") }}</h3>
@@ -311,7 +309,7 @@ const {
                         :disabled="running || !dataReady"
                       />
                     </section>
-                </div>
+                </DialogBody>
               </DialogContent>
             </Dialog>
 </template>

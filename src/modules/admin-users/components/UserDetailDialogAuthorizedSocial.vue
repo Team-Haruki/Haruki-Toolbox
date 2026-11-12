@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogDescription,
     DialogFooter,
@@ -64,7 +65,7 @@ const socialPlatformOptions = computed(() => getSocialPlatformOptions(t))
           {{ t("adminUsers.detail.dialog.authSocial.description", { name: userName }) }}
         </DialogDescription>
       </DialogHeader>
-      <div class="flex flex-col gap-4 py-1">
+      <DialogBody>
         <div class="grid gap-3 sm:grid-cols-[10rem_minmax(0,1fr)]">
           <div class="grid content-start gap-1.5">
             <Label id="auth-social-platform-label" for="auth-social-platform">{{ t("adminUsers.detail.dialog.authSocial.platform") }}</Label>
@@ -102,7 +103,7 @@ const socialPlatformOptions = computed(() => getSocialPlatformOptions(t))
             @update:model-value="emit('update:comment', String($event ?? ''))"
           />
         </div>
-      </div>
+      </DialogBody>
       <DialogFooter>
         <Button variant="outline" @click="emit('update:open', false)">{{ t("adminUsers.common.cancel") }}</Button>
         <Button :disabled="!userId.trim() || actionLoading" @click="emit('save')">

@@ -8,7 +8,13 @@ import { useI18n } from "vue-i18n"
 import { LucideList } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import CatalogCharacterPicker from "@/shared/components/catalog/CatalogCharacterPicker.vue"
 import CatalogChipsField from "@/shared/components/catalog/CatalogChipsField.vue"
@@ -521,7 +527,7 @@ function retry() {
                 </span>
                 <span
                   v-if="row.canUpgrade"
-                  class="ml-auto rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400"
+                  class="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
                 >
                   {{ t("training.area.canUpgrade") }}
                 </span>
@@ -559,10 +565,9 @@ function retry() {
 
       <!-- All upgrade levels dialog -->
       <Dialog :open="dialogView != null" @update:open="handleDialogOpenChange">
-        <DialogContent class="max-h-[85vh] gap-3 overflow-y-auto sm:max-w-xl" :description="t('training.area.description')">
-          <!-- `pr-8` keeps the level out from under the close button. -->
+        <DialogContent :description="t('training.area.description')">
           <DialogHeader v-if="dialogView">
-            <DialogTitle class="flex items-center gap-2 pr-8 text-base">
+            <DialogTitle class="flex items-center gap-2">
               <img
                 v-if="itemIconUrl(dialogView)"
                 :src="itemIconUrl(dialogView)!"
@@ -576,12 +581,12 @@ function retry() {
               </span>
             </DialogTitle>
           </DialogHeader>
-          <div v-if="dialogView" class="flex flex-col gap-1.5">
-            <p class="text-[11px] text-muted-foreground">{{ t("training.area.materialsLegend") }}</p>
+          <DialogBody v-if="dialogView" class="gap-0">
+            <p class="pb-2 text-xs text-muted-foreground">{{ t("training.area.materialsLegend") }}</p>
             <div
               v-for="row in upgradeRows(dialogView)"
               :key="row.level"
-              class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border px-2.5 py-1.5"
+              class="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border/60 py-2"
             >
               <span class="w-11 shrink-0 text-xs font-semibold tabular-nums">
                 {{ t("training.area.level", { level: row.level }) }}
@@ -618,13 +623,13 @@ function retry() {
                 </span>
                 <span
                   v-if="row.canUpgrade"
-                  class="ml-auto rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400"
+                  class="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
                 >
                   {{ t("training.area.canUpgrade") }}
                 </span>
               </template>
             </div>
-          </div>
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </template>

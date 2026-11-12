@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
-import { Search } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import CatalogChipsField from "@/shared/components/catalog/CatalogChipsField.vue"
+import CatalogFilterPanel from "@/shared/components/catalog/CatalogFilterPanel.vue"
+import CatalogSearchField from "@/shared/components/catalog/CatalogSearchField.vue"
 import CatalogSelectField from "@/shared/components/catalog/CatalogSelectField.vue"
 import type { CatalogFieldOption } from "@/shared/components/catalog/types"
 import type { DeckRecommendMasterCardOption } from "../lib/card-options"
@@ -142,6 +142,13 @@ function handleSelect(option: DeckRecommendMasterCardOption) {
   }
 }
 
+const activeFilterCount = computed(() => [
+  browseCharacterId.value != null,
+  browseUnits.value.length > 0,
+  browseAttrs.value.length > 0,
+  browseRarities.value.length > 0,
+].filter(Boolean).length)
+
 function resetBrowseFilters() {
   browseSearch.value = ""
   browseCharacterId.value = null
@@ -165,29 +172,31 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
       every touchmove that has no scrollable ancestor. `dvh` keeps the dialog
       inside the visible viewport while Safari's toolbars are shown.
     -->
-    <DialogContent class="flex h-[85dvh] flex-col gap-3 overflow-hidden sm:max-w-4xl">
-      <DialogHeader class="shrink-0">
+    <DialogContent size="xl" tall :description="t('deckRecommend.options.constraints.cardSearchPlaceholder')">
+      <DialogHeader>
         <DialogTitle>{{ t("deckRecommend.picker.cardDialogTitle") }}</DialogTitle>
       </DialogHeader>
 
-      <div class="grid shrink-0 gap-2">
-        <Label for="deck-card-browse-search">{{ t("deckRecommend.picker.cardSearchLabel") }}</Label>
-        <div class="relative w-full items-center">
-          <Input
-            id="deck-card-browse-search"
-            v-model="browseSearch"
-            class="pl-10"
-            type="text"
-            :placeholder="t('deckRecommend.options.constraints.cardSearchPlaceholder')"
-          />
-          <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-            <Search class="size-4 text-muted-foreground" />
-          </span>
-        </div>
+      <!-- The search stays put while the list scrolls under it. -->
+      <div class="flex shrink-0 border-b border-border/60 px-4 py-3 sm:px-5">
+        <CatalogSearchField
+          v-model="browseSearch"
+          compact
+          :label="t('deckRecommend.picker.cardSearchLabel')"
+          :placeholder="t('deckRecommend.options.constraints.cardSearchPlaceholder')"
+        />
       </div>
 
-      <div data-slot="card-browse-scroll" class="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain">
-        <div class="grid gap-3 rounded-lg bg-muted/40 p-3">
+      <DialogBody data-slot="card-browse-scroll" class="gap-3">
+        <CatalogFilterPanel
+          default-collapsed
+          :active-count="activeFilterCount"
+          :title="t('musicLibrary.list.filters.title')"
+          :count-label="t('deckRecommend.picker.browseCount', { count: browseResults.length })"
+          :reset-label="t('musicLibrary.list.filters.reset')"
+          content-class="grid min-w-0 grid-cols-1 gap-3"
+          @reset="resetBrowseFilters"
+        >
           <CatalogSelectField
             v-model="browseCharacterId"
             :label="t('deckRecommend.form.character')"
@@ -209,15 +218,7 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
             :label="t('deckRecommend.picker.rarityLabel')"
             :options="rarityFieldOptions"
           />
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <p class="text-xs text-muted-foreground">
-              {{ t("deckRecommend.picker.browseCount", { count: browseResults.length }) }}
-            </p>
-            <Button type="button" variant="ghost" size="sm" @click="resetBrowseFilters">
-              {{ t("musicLibrary.list.filters.reset") }}
-            </Button>
-          </div>
-        </div>
+        </CatalogFilterPanel>
 
         <div
           v-if="browseResults.length > 0"
@@ -271,10 +272,10 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
         >
           {{ t("deckRecommend.options.constraints.cardEmpty") }}
         </div>
-      </div>
+      </DialogBody>
 
-      <DialogFooter class="shrink-0 flex-row items-center justify-between gap-2 sm:justify-between">
-        <p class="text-xs text-muted-foreground">{{ footerText }}</p>
+      <DialogFooter class="justify-between [&>button]:flex-none">
+        <p class="min-w-0 flex-1 text-xs text-muted-foreground">{{ footerText }}</p>
         <Button type="button" @click="emit('update:open', false)">
           {{ t("deckRecommend.picker.done") }}
         </Button>

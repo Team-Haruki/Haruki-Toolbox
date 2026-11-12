@@ -7,17 +7,7 @@ import { useI18n } from "vue-i18n"
 import { CloudUpload, Eraser, Gamepad2, HardDrive, History, Info, Layers, RefreshCw } from "lucide-vue-next"
 import { toast } from "vue-sonner"
 import { Button } from "@/components/ui/button"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import SettingsFacts, { type SettingsFact } from "@/shared/components/settings/SettingsFacts.vue"
 import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
 import SettingsRow from "@/shared/components/settings/SettingsRow.vue"
@@ -220,6 +210,8 @@ async function refreshUserData() {
   }
 }
 
+const clearDialogOpen = ref(false)
+
 async function clearUserDataCache() {
   clearing.value = true
   try {
@@ -392,26 +384,25 @@ const cacheFacts = computed<SettingsFact[]>(() => [
           {{ refreshing ? t("homeSettings.userData.refreshing") : t("homeSettings.userData.refresh") }}
         </Button>
 
-        <AlertDialog>
-          <AlertDialogTrigger as-child>
-            <Button type="button" size="sm" variant="outline" class="text-destructive hover:text-destructive" :disabled="!canClear">
-              <Eraser class="size-3.5" />
-              {{ t("homeSettings.userData.clear") }}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{{ t("homeSettings.userData.clearDialog.title") }}</AlertDialogTitle>
-              <AlertDialogDescription>{{ t("homeSettings.userData.clearDialog.description") }}</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{{ t("common.cancel") }}</AlertDialogCancel>
-              <AlertDialogAction class="bg-destructive text-white hover:bg-destructive/90" @click="clearUserDataCache">
-                {{ t("homeSettings.userData.clearDialog.confirm") }}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          class="text-destructive hover:text-destructive"
+          :disabled="!canClear"
+          @click="clearDialogOpen = true"
+        >
+          <Eraser class="size-3.5" />
+          {{ t("homeSettings.userData.clear") }}
+        </Button>
+        <ConfirmDialog
+          v-model:open="clearDialogOpen"
+          :title="t('homeSettings.userData.clearDialog.title')"
+          :description="t('homeSettings.userData.clearDialog.description')"
+          :confirm-label="t('homeSettings.userData.clearDialog.confirm')"
+          destructive
+          :on-confirm="clearUserDataCache"
+        />
       </template>
     </SettingsGroup>
 

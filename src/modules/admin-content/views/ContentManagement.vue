@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useI18n } from "vue-i18n"
 import {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogFooter,
@@ -116,6 +117,11 @@ const itemDetail = computed(() => {
     : null
 })
 
+const linkDialogTitle = computed(() =>
+  editingLink.value ? t("adminContent.linkDialog.editTitle") : t("adminContent.linkDialog.createTitle"))
+const itemDialogTitle = computed(() =>
+  editingItem.value ? t("adminContent.itemDialog.editTitle") : t("adminContent.itemDialog.createTitle"))
+
 const linkErrorIds = {
   name: `${CONTENT_FIELD_IDS.link.name}-error`,
   url: `${CONTENT_FIELD_IDS.link.url}-error`,
@@ -214,14 +220,13 @@ const itemErrorIds = {
     </Tabs>
 
     <Dialog v-model:open="linkDialogOpen">
-      <DialogContent>
+      <DialogContent :description="linkDialogTitle">
         <DialogHeader>
-          <DialogTitle>
-            {{ editingLink ? t("adminContent.linkDialog.editTitle") : t("adminContent.linkDialog.createTitle") }}
-          </DialogTitle>
+          <DialogTitle>{{ linkDialogTitle }}</DialogTitle>
         </DialogHeader>
-        <form novalidate @submit.prevent="saveLink">
-          <div class="-mx-1 grid max-h-[60vh] gap-x-3 gap-y-3 overflow-y-auto px-1 py-1 sm:grid-cols-[minmax(0,1fr)_7rem]">
+        <!-- The form spans the body and the footer, so it carries the dialog's column on. -->
+        <form class="flex min-h-0 flex-1 flex-col" novalidate @submit.prevent="saveLink">
+          <DialogBody class="gap-3 sm:grid-cols-[minmax(0,1fr)_7rem]">
             <div class="grid content-start gap-1.5">
               <Label :for="CONTENT_FIELD_IDS.link.name">{{ t("adminContent.linkDialog.fields.name") }}</Label>
               <Input
@@ -280,8 +285,8 @@ const itemErrorIds = {
               <Label for="content-link-tags">{{ t("adminContent.linkDialog.fields.tags") }}</Label>
               <Input id="content-link-tags" v-model="linkForm.tags" :placeholder="t('adminContent.linkDialog.placeholders.tags')" />
             </div>
-          </div>
-          <DialogFooter class="mt-4">
+          </DialogBody>
+          <DialogFooter>
             <DialogClose as-child>
               <Button type="button" variant="outline" :disabled="linkSaving">{{ t("common.cancel") }}</Button>
             </DialogClose>
@@ -295,14 +300,12 @@ const itemErrorIds = {
     </Dialog>
 
     <Dialog v-model:open="itemDialogOpen">
-      <DialogContent>
+      <DialogContent :description="itemDialogTitle">
         <DialogHeader>
-          <DialogTitle>
-            {{ editingItem ? t("adminContent.itemDialog.editTitle") : t("adminContent.itemDialog.createTitle") }}
-          </DialogTitle>
+          <DialogTitle>{{ itemDialogTitle }}</DialogTitle>
         </DialogHeader>
-        <form novalidate @submit.prevent="saveItem">
-          <div class="-mx-1 grid max-h-[60vh] gap-x-3 gap-y-3 overflow-y-auto px-1 py-1 sm:grid-cols-[minmax(0,1fr)_7rem]">
+        <form class="flex min-h-0 flex-1 flex-col" novalidate @submit.prevent="saveItem">
+          <DialogBody class="gap-3 sm:grid-cols-[minmax(0,1fr)_7rem]">
             <div class="grid content-start gap-1.5">
               <Label :for="CONTENT_FIELD_IDS.item.name">{{ t("adminContent.itemDialog.fields.name") }}</Label>
               <Input
@@ -364,8 +367,8 @@ const itemErrorIds = {
               <Label for="content-item-detail">{{ t("adminContent.itemDialog.fields.detail") }}</Label>
               <Input id="content-item-detail" v-model="itemForm.detail" :placeholder="t('adminContent.itemDialog.placeholders.optional')" />
             </div>
-          </div>
-          <DialogFooter class="mt-4">
+          </DialogBody>
+          <DialogFooter>
             <DialogClose as-child>
               <Button type="button" variant="outline" :disabled="itemSaving">{{ t("common.cancel") }}</Button>
             </DialogClose>

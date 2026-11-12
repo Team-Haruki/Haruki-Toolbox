@@ -6,6 +6,7 @@ import type { SekaiRegion } from "@/types"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -141,6 +142,10 @@ function selectEvent(event: SekaiEventItem) {
   open.value = false
 }
 
+const activeFilterCount = computed(() =>
+  [typeFilter.value, attrFilter.value, yearFilter.value].filter((value) => value != null).length,
+)
+
 function resetFilters() {
   search.value = ""
   typeFilter.value = null
@@ -187,18 +192,25 @@ function formatEventDate(value: number | null) {
     </Button>
 
     <Dialog v-model:open="open">
-      <DialogContent class="flex max-h-[85vh] flex-col gap-3 overflow-hidden sm:max-w-3xl">
+      <DialogContent size="xl" tall :description="t('events.list.searchPlaceholder')">
         <DialogHeader>
           <DialogTitle>{{ t("deckRecommend.picker.eventDialogTitle") }}</DialogTitle>
         </DialogHeader>
 
-        <CatalogSearchField
-          v-model="search"
-          :label="t('events.list.searchLabel')"
-          :placeholder="t('events.list.searchPlaceholder')"
-        />
+        <!-- The search stays put while the list scrolls under it. -->
+        <div class="flex shrink-0 border-b border-border/60 px-4 py-3 sm:px-5">
+          <CatalogSearchField
+            v-model="search"
+            compact
+            :label="t('events.list.searchLabel')"
+            :placeholder="t('events.list.searchPlaceholder')"
+          />
+        </div>
 
+        <DialogBody class="gap-3">
         <CatalogFilterPanel
+          default-collapsed
+          :active-count="activeFilterCount"
           :title="t('events.list.filtersTitle')"
           :count-label="t('events.list.resultsCount', { count: filteredEvents.length })"
           :reset-label="t('events.list.resetFilters')"
@@ -224,8 +236,8 @@ function formatEventDate(value: number | null) {
           />
         </CatalogFilterPanel>
 
-        <div class="min-h-0 min-w-0 flex-1 overflow-y-auto">
-          <div v-if="displayEvents.length > 0" class="grid min-w-0 grid-cols-1 gap-2">
+        <div class="@container min-w-0">
+          <div v-if="displayEvents.length > 0" class="grid min-w-0 grid-cols-1 gap-2 @min-[44rem]:grid-cols-2">
             <button
               v-for="event in displayEvents"
               :key="event.id"
@@ -273,6 +285,7 @@ function formatEventDate(value: number | null) {
             {{ loading ? t("deckRecommend.select.loading") : t("events.list.empty") }}
           </div>
         </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   </div>

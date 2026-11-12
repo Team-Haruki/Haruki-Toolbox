@@ -6,11 +6,12 @@ import { LucideCheckCircle2 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogClose,
+  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogScrollContent,
   DialogTitle,
 } from "@/components/ui/dialog"
 import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
@@ -65,13 +66,13 @@ const DD = "min-w-0 flex-1 text-sm [overflow-wrap:anywhere]"
 
 <template>
   <Dialog v-model:open="open">
-    <DialogScrollContent class="sm:max-w-[600px]">
+    <DialogContent size="lg">
       <DialogHeader>
         <DialogTitle>{{ t("adminRisk.detail.title", { id: props.event?.id ?? "" }) }}</DialogTitle>
-        <DialogDescription class="[overflow-wrap:anywhere]">{{ props.event?.action || t("adminRisk.detail.noAction") }}</DialogDescription>
+        <DialogDescription>{{ props.event?.action || t("adminRisk.detail.noAction") }}</DialogDescription>
       </DialogHeader>
 
-      <div v-if="props.event" class="flex min-w-0 flex-col gap-4">
+      <DialogBody v-if="props.event">
         <div class="flex flex-wrap items-center gap-1.5">
           <RiskSeverityBadge :severity="props.event.severity" />
           <RiskStatusBadge :status="props.event.status" />
@@ -149,9 +150,9 @@ const DD = "min-w-0 flex-1 text-sm [overflow-wrap:anywhere]"
         <SettingsGroup v-if="metadataText" :title="t('adminRisk.detail.groups.metadata')">
           <pre class="max-h-64 overflow-y-auto whitespace-pre-wrap px-4 py-3 font-mono text-xs leading-relaxed [overflow-wrap:anywhere]">{{ metadataText }}</pre>
         </SettingsGroup>
-      </div>
+      </DialogBody>
 
-      <DialogFooter class="gap-2">
+      <DialogFooter>
         <DialogClose as-child>
           <Button variant="outline">{{ t("common.close") }}</Button>
         </DialogClose>
@@ -164,6 +165,6 @@ const DD = "min-w-0 flex-1 text-sm [overflow-wrap:anywhere]"
           {{ t("adminRisk.events.resolveAction") }}
         </Button>
       </DialogFooter>
-    </DialogScrollContent>
+    </DialogContent>
   </Dialog>
 </template>

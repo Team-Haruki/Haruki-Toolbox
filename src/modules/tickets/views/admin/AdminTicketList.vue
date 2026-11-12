@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -312,7 +313,7 @@ const {
     </div>
 
     <Dialog v-model:open="ticketNotificationRecipientsDialogOpen">
-      <DialogContent class="sm:max-w-[min(72rem,90vw)]">
+      <DialogContent size="2xl">
         <DialogHeader>
           <DialogTitle>{{ t("tickets.adminList.notifications.manageDialogTitle") }}</DialogTitle>
           <DialogDescription>
@@ -320,81 +321,83 @@ const {
           </DialogDescription>
         </DialogHeader>
 
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <span class="text-sm text-muted-foreground tabular-nums">
-            {{ t("tickets.adminList.notifications.manageDialogSummary", { total: ticketNotificationRecipients.length }) }}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            :disabled="ticketNotificationRecipientsLoading"
-            @click="refreshTicketNotificationRecipients"
-          >
-            <LucideLoader2 v-if="ticketNotificationRecipientsLoading" class="w-4 h-4 animate-spin" />
-            <LucideRefreshCw v-else class="w-4 h-4" />
-            {{ t("tickets.adminList.notifications.manageRefresh") }}
-          </Button>
-        </div>
+        <DialogBody>
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <span class="text-sm text-muted-foreground tabular-nums">
+              {{ t("tickets.adminList.notifications.manageDialogSummary", { total: ticketNotificationRecipients.length }) }}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              :disabled="ticketNotificationRecipientsLoading"
+              @click="refreshTicketNotificationRecipients"
+            >
+              <LucideLoader2 v-if="ticketNotificationRecipientsLoading" class="size-4 animate-spin" />
+              <LucideRefreshCw v-else class="size-4" />
+              {{ t("tickets.adminList.notifications.manageRefresh") }}
+            </Button>
+          </div>
 
-        <div v-if="ticketNotificationRecipientsLoading" class="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
-          <LucideLoader2 class="w-4 h-4 animate-spin" />
-          {{ t("tickets.adminList.notifications.manageLoading") }}
-        </div>
-        <EmptyState
-          v-else-if="ticketNotificationRecipients.length === 0"
-          size="sm"
-          :icon="LucideUsers"
-          :title="t('tickets.adminList.notifications.manageEmpty')"
-        />
-        <div v-else class="max-h-[60vh] overflow-y-auto rounded-xl border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{{ t("tickets.adminList.notifications.manageTable.name") }}</TableHead>
-                <TableHead>{{ t("tickets.adminList.notifications.manageTable.role") }}</TableHead>
-                <TableHead class="hidden sm:table-cell">{{ t("tickets.adminList.notifications.manageTable.email") }}</TableHead>
-                <TableHead class="text-right">{{ t("tickets.adminList.notifications.manageTable.enabled") }}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow v-for="recipient in ticketNotificationRecipients" :key="recipient.userId">
-                <TableCell>
-                  <div class="font-medium">{{ recipient.name || recipient.userId }}</div>
-                  <div class="text-xs text-muted-foreground tabular-nums">{{ recipient.userId }}</div>
-                  <div v-if="recipient.banned" class="mt-1 text-xs text-destructive-tint-foreground">
-                    {{ t("tickets.adminList.notifications.manageBannedHint") }}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <AdminTicketChip
-                    :tone="recipient.role === 'super_admin' ? 'danger' : 'info'"
-                    :icon="recipient.role === 'super_admin' ? LucideShieldAlert : LucideShield"
-                  >
-                    {{ roleLabel(recipient.role, t) }}
-                  </AdminTicketChip>
-                </TableCell>
-                <TableCell class="hidden sm:table-cell text-muted-foreground">
-                  {{ recipient.email || "—" }}
-                </TableCell>
-                <TableCell class="text-right">
-                  <div class="flex items-center justify-end gap-2">
-                    <LucideLoader2
-                      v-if="ticketNotificationRecipientsSavingUserId === recipient.userId"
-                      class="w-4 h-4 animate-spin text-muted-foreground"
-                    />
-                    <Switch
-                      :id="`ticket-notification-recipient-${recipient.userId}`"
-                      :aria-label="`${t('tickets.adminList.notifications.manageTable.enabled')} · ${recipient.name || recipient.userId}`"
-                      :model-value="recipient.ticketEmailNotificationsEnabled"
-                      :disabled="ticketNotificationRecipientsSavingUserId === recipient.userId"
-                      @update:model-value="setTicketNotificationRecipientEnabled(recipient.userId, Boolean($event))"
-                    />
-                  </div>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </div>
+          <div v-if="ticketNotificationRecipientsLoading" class="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+            <LucideLoader2 class="size-4 animate-spin" />
+            {{ t("tickets.adminList.notifications.manageLoading") }}
+          </div>
+          <EmptyState
+            v-else-if="ticketNotificationRecipients.length === 0"
+            size="sm"
+            :icon="LucideUsers"
+            :title="t('tickets.adminList.notifications.manageEmpty')"
+          />
+          <div v-else class="overflow-hidden rounded-xl border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{{ t("tickets.adminList.notifications.manageTable.name") }}</TableHead>
+                  <TableHead>{{ t("tickets.adminList.notifications.manageTable.role") }}</TableHead>
+                  <TableHead class="hidden sm:table-cell">{{ t("tickets.adminList.notifications.manageTable.email") }}</TableHead>
+                  <TableHead class="text-right">{{ t("tickets.adminList.notifications.manageTable.enabled") }}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow v-for="recipient in ticketNotificationRecipients" :key="recipient.userId">
+                  <TableCell>
+                    <div class="font-medium">{{ recipient.name || recipient.userId }}</div>
+                    <div class="text-xs text-muted-foreground tabular-nums [overflow-wrap:anywhere]">{{ recipient.userId }}</div>
+                    <div v-if="recipient.banned" class="mt-1 text-xs text-destructive-tint-foreground">
+                      {{ t("tickets.adminList.notifications.manageBannedHint") }}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <AdminTicketChip
+                      :tone="recipient.role === 'super_admin' ? 'danger' : 'info'"
+                      :icon="recipient.role === 'super_admin' ? LucideShieldAlert : LucideShield"
+                    >
+                      {{ roleLabel(recipient.role, t) }}
+                    </AdminTicketChip>
+                  </TableCell>
+                  <TableCell class="hidden sm:table-cell text-muted-foreground">
+                    {{ recipient.email || "—" }}
+                  </TableCell>
+                  <TableCell class="text-right">
+                    <div class="flex items-center justify-end gap-2">
+                      <LucideLoader2
+                        v-if="ticketNotificationRecipientsSavingUserId === recipient.userId"
+                        class="size-4 animate-spin text-muted-foreground"
+                      />
+                      <Switch
+                        :id="`ticket-notification-recipient-${recipient.userId}`"
+                        :aria-label="`${t('tickets.adminList.notifications.manageTable.enabled')} · ${recipient.name || recipient.userId}`"
+                        :model-value="recipient.ticketEmailNotificationsEnabled"
+                        :disabled="ticketNotificationRecipientsSavingUserId === recipient.userId"
+                        @update:model-value="setTicketNotificationRecipientEnabled(recipient.userId, Boolean($event))"
+                      />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   </div>

@@ -6,11 +6,12 @@ import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogClose,
+  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogScrollContent,
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -294,7 +295,7 @@ const detailRows = computed(() => {
     </div>
 
     <Dialog :open="showDetailDialog" @update:open="showDetailDialog = $event">
-      <DialogScrollContent class="sm:max-w-[640px]">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>
             {{ selectedLog?.success === false ? t("adminStatistics.uploadLogs.errorDialog.title") : t("adminStatistics.uploadLogs.detail.title") }}
@@ -304,7 +305,7 @@ const detailRows = computed(() => {
           </DialogDescription>
         </DialogHeader>
 
-        <div class="flex min-w-0 flex-col gap-3">
+        <DialogBody>
           <div v-if="selectedLog" class="flex items-center gap-2">
             <LogsResultChip :success="!!selectedLog.success" />
             <span class="text-xs tabular-nums text-muted-foreground">#{{ selectedLog.id }}</span>
@@ -329,20 +330,18 @@ const detailRows = computed(() => {
             </div>
           </dl>
 
-          <div v-if="selectedLog?.success === false" class="flex flex-col gap-1">
+          <div v-if="selectedLog?.success === false" class="flex min-w-0 flex-col gap-1 border-t border-border/60 pt-4">
             <div class="text-xs text-muted-foreground">{{ t("adminStatistics.uploadLogs.table.error") }}</div>
-            <div class="rounded-md bg-muted px-3 py-2.5 text-sm break-words whitespace-pre-wrap">
-              {{ selectedLog?.errorMessage || fallback }}
-            </div>
+            <p class="text-sm whitespace-pre-wrap text-destructive-tint-foreground [overflow-wrap:anywhere]">{{ selectedLog?.errorMessage || fallback }}</p>
           </div>
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           <DialogClose as-child>
-            <Button>{{ t("adminStatistics.uploadLogs.errorDialog.close") }}</Button>
+            <Button variant="outline">{{ t("adminStatistics.uploadLogs.errorDialog.close") }}</Button>
           </DialogClose>
         </DialogFooter>
-      </DialogScrollContent>
+      </DialogContent>
     </Dialog>
   </div>
 </template>

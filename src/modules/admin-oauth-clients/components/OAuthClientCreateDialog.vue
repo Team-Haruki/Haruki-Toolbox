@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LucideLoader2, LucidePlus } from "lucide-vue-next"
@@ -76,13 +76,14 @@ const clientIdErrorId = `${OAUTH_CLIENT_FIELD_IDS.clientId}-error`
         {{ t("adminOAuthClients.createDialog.trigger") }}
       </Button>
     </DialogTrigger>
-    <DialogContent class="max-h-[85vh] overflow-y-auto sm:max-w-xl">
+    <DialogContent>
       <DialogHeader>
         <DialogTitle>{{ t("adminOAuthClients.createDialog.title") }}</DialogTitle>
         <DialogDescription>{{ t("adminOAuthClients.createDialog.description") }}</DialogDescription>
       </DialogHeader>
-      <form novalidate @submit.prevent="emit('submit')">
-        <div class="flex flex-col gap-5 py-4">
+      <!-- The form spans the body and the footer, so it carries the dialog's column on. -->
+      <form class="flex min-h-0 flex-1 flex-col" novalidate @submit.prevent="emit('submit')">
+        <DialogBody class="gap-5">
           <OAuthClientFormFields
             :name="props.name"
             :client-type="props.clientType"
@@ -122,7 +123,7 @@ const clientIdErrorId = `${OAUTH_CLIENT_FIELD_IDS.clientId}-error`
               </div>
             </template>
           </OAuthClientFormFields>
-        </div>
+        </DialogBody>
         <DialogFooter>
           <Button type="submit" :disabled="props.creating">
             <LucideLoader2 v-if="props.creating" class="size-4 animate-spin" />

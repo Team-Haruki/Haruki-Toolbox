@@ -5,10 +5,11 @@ import type { MysekaiDataPrivacySettings, SekaiRegion, SuiteDataPrivacySettings 
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
+  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogScrollContent,
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -68,7 +69,7 @@ function permissionId(group: "suite" | "mysekai", key: string): string {
 
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogScrollContent class="sm:max-w-[520px]">
+    <DialogContent>
       <DialogHeader>
         <DialogTitle>
           {{ isEditMode ? t("adminUsers.detail.game.edit") : t("adminUsers.detail.dialog.gameBinding.title") }}
@@ -77,7 +78,7 @@ function permissionId(group: "suite" | "mysekai", key: string): string {
           {{ t("adminUsers.detail.dialog.gameBinding.description", { name: userName }) }}
         </DialogDescription>
       </DialogHeader>
-      <div class="flex flex-col gap-4 py-1">
+      <DialogBody>
         <!-- Which account: both fields are fixed once the binding exists. -->
         <div class="grid gap-3 sm:grid-cols-[9rem_minmax(0,1fr)]">
           <div class="grid content-start gap-1.5">
@@ -144,13 +145,13 @@ function permissionId(group: "suite" | "mysekai", key: string): string {
             />
           </div>
         </SettingsGroup>
-      </div>
+      </DialogBody>
       <DialogFooter>
         <Button variant="outline" @click="emit('update:open', false)">{{ t("adminUsers.common.cancel") }}</Button>
         <Button :disabled="!gameUserId.trim() || actionLoading" @click="emit('save')">
           {{ t("adminUsers.common.save") }}
         </Button>
       </DialogFooter>
-    </DialogScrollContent>
+    </DialogContent>
   </Dialog>
 </template>

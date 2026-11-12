@@ -314,6 +314,9 @@ test.describe("iPhone", () => {
     expect(box!.y).toBeGreaterThanOrEqual(0)
     expect(box!.y + box!.height).toBeLessThanOrEqual(664 + 1)
 
+    // The filters start folded so the cards show first; open them.
+    await picker.getByRole("button", { name: /^(筛选|Filters?)/ }).click()
+
     // On iOS the modal scroll lock cancels any touchmove without a scrollable
     // ancestor. A swipe over the filters or the results must not be cancelled.
     for (const target of [picker.getByRole("group", { name: /^(稀有度|Rarity)$/ }), picker.getByRole("button", { name: /Card 1 \(#1\)/ })]) {
@@ -394,12 +397,12 @@ test.describe("iPhone", () => {
   }
 })
 
-// The opaque surface is for touch devices only: a mouse-driven desktop keeps
-// the translucent glass dialog.
+// A mouse-driven desktop gets a near-opaque surface too: at 78% the page's
+// text stayed legible through a dialog's form and competed with its labels.
 test.describe("desktop", () => {
   test.use({ hasTouch: false, isMobile: false })
 
-  test("dialogs keep the glass surface on desktop", async ({ page }) => {
+  test("dialogs do not let the page show through on desktop", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 })
     await keepFullVisualEffects(page)
     await mockMobileData(page, false, true)
@@ -408,6 +411,6 @@ test.describe("desktop", () => {
     await page.getByRole("button", { name: /^(专家配置|Expert Settings)$/ }).click()
     const surface = page.locator("[data-slot=dialog-content]")
     await expect(surface).toHaveCount(1)
-    expect(await backgroundAlpha(surface)).toBeLessThan(0.9)
+    expect(await backgroundAlpha(surface)).toBeGreaterThanOrEqual(0.94)
   })
 })

@@ -265,11 +265,13 @@ html.dark [data-sidebar="sidebar"][data-mobile="true"] {
     background-image: linear-gradient(180deg, rgb(15 23 42 / 0.18), rgb(2 6 23 / 0.08) 52%, rgb(2 6 23 / 0.02));
 }
 
+/* Modal surfaces are near-opaque: at 78% the page's text stayed legible
+ * through a form, competing with its labels. The backdrop still dims the page. */
 [data-glass-surface="dialog"],
 [data-glass-surface="alert-dialog"],
 [data-glass-surface="sheet-content"] {
     --glass-blur: 28px;
-    --glass-bg: color-mix(in oklab, var(--background) 78%, transparent);
+    --glass-bg: color-mix(in oklab, var(--background) 96%, transparent);
     --glass-shadow:
         0 26px 86px -50px rgb(15 23 42 / 0.96),
         inset 0 1px 0 rgb(255 255 255 / 0.50);
@@ -278,7 +280,7 @@ html.dark [data-sidebar="sidebar"][data-mobile="true"] {
 html.dark [data-glass-surface="dialog"],
 html.dark [data-glass-surface="alert-dialog"],
 html.dark [data-glass-surface="sheet-content"] {
-    --glass-bg: rgb(2 6 23 / 0.42);
+    --glass-bg: color-mix(in oklab, var(--background) 94%, transparent);
     --glass-shadow:
         0 26px 86px -52px rgb(0 0 0 / 0.96),
         inset 0 1px 0 rgb(255 255 255 / 0.09);
@@ -312,8 +314,7 @@ html.dark [data-glass-surface="compose-bar"] {
 /* Touch devices (iOS Safari above all) and engines without backdrop-filter:
  * modal surfaces become near-opaque. There the blur does not reliably hide what
  * is behind (a full-screen expert dialog with the card picker on top of it let
- * the deck page show through), and phones show one modal at a time anyway.
- * Desktop keeps the translucent glass. */
+ * the deck page show through), and phones show one modal at a time anyway. */
 @media (pointer: coarse) {
     [data-glass-surface="dialog"],
     [data-glass-surface="alert-dialog"],
