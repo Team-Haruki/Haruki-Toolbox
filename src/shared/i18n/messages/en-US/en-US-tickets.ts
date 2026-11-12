@@ -17,11 +17,23 @@ export default {
       "resolved": "Resolved",
       "closed": "Closed"
     },
+    "userStatus": {
+      "all": "All",
+      "open": "Submitted",
+      "pendingAdmin": "In progress",
+      "pendingUser": "Awaiting your reply",
+      "resolved": "Resolved",
+      "closed": "Closed"
+    },
     "userStatusHint": {
       "waitingAdmin": "We have received your ticket and it is waiting for an admin response.",
+      "waitingAdminAssigned": "An admin has picked up your ticket. Their reply will appear in the conversation below.",
       "waitingUser": "An admin has replied. Please add more details or confirm the next step.",
-      "resolved": "This ticket has been marked resolved. Close it if the issue is handled.",
+      "resolved": "This ticket has been marked resolved. Reply if the issue is still there, or close the ticket once it is handled.",
       "closed": "This ticket is closed. Create a new ticket if you have another issue."
+    },
+    "time": {
+      "justNow": "Just now"
     },
     "priority": {
       "low": "Low",
@@ -45,12 +57,27 @@ export default {
       "title": "My tickets",
       "description": "Check progress and add details when needed.",
       "createButton": "Create ticket",
-      "empty": "No tickets yet. Click the button above to create one.",
-      "emptyFiltered": "No tickets with this status. Try another filter.",
-      "total": "{total} tickets in total",
-      "updatedAt": "Updated",
+      "filterLabel": "Filter by status",
+      "waitingCount": "{count} ticket awaiting your reply | {count} tickets awaiting your reply",
+      "refresh": "Refresh",
+      "loading": "Loading tickets…",
+      "empty": "No tickets yet",
+      "emptyDescription": "Create a ticket to reach an admin about a bug, an account issue or an idea.",
+      "emptyFiltered": "No tickets with the status “{status}”",
+      "showAll": "Show all tickets",
+      "total": "{total} ticket in total | {total} tickets in total",
+      "columns": {
+        "ticket": "Ticket",
+        "status": "Status"
+      },
+      "updatedAt": "Last updated",
+      "priorityTag": "{priority} priority",
+      "assigned": "Picked up by an admin",
+      "createdOn": "Opened {date}",
+      "closedOn": "Closed {date}",
       "pagination": {
         "label": "Ticket pages",
+        "page": "Page {page} of {total}",
         "prevPage": "Previous page",
         "nextPage": "Next page"
       },
@@ -65,22 +92,40 @@ export default {
       "description": "Tickets are for reporting bugs, sorting out Toolbox account issues and suggesting ideas, not for how-to guidance. Clear details help admins decide the next step faster.",
       "submit": "Submit ticket",
       "submitting": "Submitting...",
+      "typeTitle": "Type of issue",
+      "contentTitle": "Your issue",
+      "count": "{count} / {max}",
       "fields": {
         "subject": "Subject",
-        "subjectPlaceholder": "Briefly describe your issue",
+        "subjectPlaceholder": "The issue in one sentence",
         "subjectHint": "For example: upload failed, cannot bind account, cannot authorize a third-party app.",
         "category": "Category",
         "categoryHint": "Pick the closest category. Use Other when unsure.",
         "priority": "Priority",
         "priorityHint": "Use urgent for sign-in, data, or core feature issues.",
         "message": "Description",
-        "messagePlaceholder": "Describe your issue in detail…",
-        "messageHint": "Include account ID, server, time, steps, error messages, or related links when possible."
+        "messagePlaceholder": "Describe the issue in detail…"
+      },
+      "guide": {
+        "upload": "Include the server, how you uploaded (module, packet capture or transfer code), when it happened and the error shown on the page.",
+        "account": "Include the affected account ID, the server, when it happened and the error shown on the page.",
+        "bug": "Include the steps to reproduce, what you expected, what happened instead, and your device and browser.",
+        "feature": "Describe what you are trying to do, how you do it today and what gets in the way.",
+        "other": "Include when it happened, the steps, error messages or related links."
+      },
+      "tips": {
+        "title": "Before you submit",
+        "usage": "For how-to and usage questions, ask in the {link} instead.",
+        "usageLink": "recommended groups",
+        "secrets": "Never put passwords, transfer codes or other secrets in a ticket. Admins will not ask for them.",
+        "oneIssue": "Keep one issue per ticket so it is easy to follow up.",
+        "followUp": "You can add details in the ticket after submitting. When an admin replies, “My tickets” in the sidebar shows a reminder."
       },
       "toast": {
         "subjectRequired": "Please enter ticket subject",
         "messageRequired": "Please enter ticket description",
         "subjectTooLong": "Subject must be at most {max} characters",
+        "messageTooLong": "Description must be at most {max} characters",
         "loginRequired": "Please sign in first",
         "createSuccess": "Ticket created",
         "createFailedTitle": "Failed to create ticket",
@@ -91,20 +136,34 @@ export default {
       "backButton": "Back to ticket list",
       "prioritySuffix": "priority",
       "createdAt": "Created at {date}",
+      "infoTitle": "Ticket details",
       "summary": {
         "category": "Category",
         "priority": "Priority",
         "createdAt": "Created",
-        "updatedAt": "Updated"
+        "updatedAt": "Last updated",
+        "closedAt": "Closed",
+        "ticketId": "Ticket ID"
       },
+      "copyId": "Copy ticket ID",
+      "idCopied": "Ticket ID copied",
+      "copyFailed": "Copy failed",
+      "threadTitle": "Conversation",
+      "messageCount": "{count} message | {count} messages",
+      "showEarlier": "Show {count} earlier message | Show {count} earlier messages",
+      "refresh": "Refresh",
+      "selfSender": "You",
       "adminSender": "Admin",
-      "systemSender": "System",
       "noMessages": "No messages",
-      "inputPlaceholder": "Add details or reply to the admin…",
+      "replyLabel": "Reply",
+      "inputPlaceholder": "Reply to the admin…",
       "composeHint": "Enter to send, Shift+Enter for a new line",
+      "reopenHint": "Replying reopens the ticket for an admin to pick up again.",
+      "replyTooLong": "A reply can be at most {max} characters",
       "sentState": "Sent",
       "sendButton": "Send",
-      "closedHint": "This ticket is closed and can no longer receive messages",
+      "closedHint": "This ticket is closed and can no longer receive replies.",
+      "newTicket": "Create a new ticket",
       "closeButton": "Close ticket",
       "closeDialog": {
         "title": "Confirm close ticket",

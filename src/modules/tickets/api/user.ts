@@ -2,7 +2,7 @@ import type { AxiosRequestConfig } from "axios"
 import { request, unwrapUpdatedData } from "@/core/http/call-api"
 import { buildUserApiPath } from "@/core/http/path"
 import type { QueryParams } from "@/core/http/query"
-import { asRecord, type UnknownRecord } from "@/lib/record-utils"
+import { asRecord, readOptionalString, type UnknownRecord } from "@/lib/record-utils"
 import { translate, translateIfExists } from "@/shared/i18n"
 import type { PaginatedResponse } from "@/types/admin"
 import type { APIResponse } from "@/types/response"
@@ -32,8 +32,11 @@ export async function getUserTickets(userId: string, params?: QueryParams, optio
   return unwrapUpdatedData(res, lazyTicketContext("tickets.list.toast.loadFailedTitle"))
 }
 
-export function createTicket(userId: string, data: CreateTicketRequest) {
-  return request(buildUserApiPath(userId, "tickets"), { method: "POST", data })
+/** Creates a ticket and returns its public id (`TK-…`), or `null` if the response did not carry one. */
+export async function createTicket(userId: string, data: CreateTicketRequest): Promise<string | null> {
+  const res = await request<APIResponse<UnknownRecord>>(buildUserApiPath(userId, "tickets"), { method: "POST", data })
+  const created = asRecord(res?.updatedData)
+  return (created && readOptionalString(created, ["ticketId", "ticket_id"])) || null
 }
 
 export async function getUserTicketDetail(userId: string, ticketId: string): Promise<TicketDetail> {

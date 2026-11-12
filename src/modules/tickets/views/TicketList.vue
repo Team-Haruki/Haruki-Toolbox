@@ -1,47 +1,30 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import { useI18n } from "vue-i18n"
-import { formatLocalizedDate } from "@/lib/date-time"
+import { RouterLink } from "vue-router"
 import {
-  Card,
-  CardContent,
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  LucidePlus,
   LucideChevronLeft,
   LucideChevronRight,
+  LucidePlus,
+  LucideRefreshCw,
+  LucideTicket,
 } from "lucide-vue-next"
+import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { useNowTick } from "@/composables/useNowTick"
+import EmptyState from "@/shared/components/EmptyState.vue"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import PageHeader from "@/shared/components/PageHeader.vue"
+import TicketListRow from "@/modules/tickets/components/TicketListRow.vue"
 import {
-  ticketPriorityBadgeClass,
-  ticketPriorityIcon,
-  ticketPriorityLabel,
-  ticketStatusIcon,
-  ticketStatusLabel,
-  ticketStatusTextClass,
-  ticketUserStatusHint,
-} from "@/modules/tickets/lib/display"
-import { isTicketCategory, ticketCategoryLabel } from "@/modules/tickets/lib/meta"
+  USER_TICKET_ROW_GRID,
+  USER_TICKET_STATUS_FILTERS,
+  userTicketStatusLabelKey,
+} from "@/modules/tickets/lib/user-ticket"
 import { useTicketList } from "@/modules/tickets/composables/useTicketList"
 
-const { t, locale } = useI18n()
-
-function formatTicketDate(iso?: string) {
-  return formatLocalizedDate(iso, "date", t("tickets.common.dateFallback"))
-}
-
-function formatCategory(category: string) {
-  return isTicketCategory(category) ? ticketCategoryLabel(category, t) : t("tickets.common.unknownValue")
-}
+const { t } = useI18n()
 
 const {
   loading,
@@ -52,55 +35,80 @@ const {
   pageSize,
   totalPages,
   statusFilter,
-  statusOptions,
+  waitingCount,
   prevPage,
   nextPage,
   reload,
-  openCreateTicket,
-  openTicketDetail,
+  setStatusFilter,
 } = useTicketList()
 
-function handleTicketCardKeydown(event: KeyboardEvent, ticketId: string) {
-  if (event.key === "Enter" || event.key === " ") {
-    event.preventDefault()
-    openTicketDetail(ticketId)
-  }
-}
+// Ages ("42 minutes ago") move on while the page stays open.
+const now = useNowTick(60_000)
+
+/** The first load has nothing to show yet; later loads keep the rows on screen. */
+const firstLoad = computed(() => loading.value && tickets.value.length === 0 && !loadError.value)
 </script>
 
 <template>
-  <div class="w-full max-w-3xl mx-auto flex flex-col gap-4">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold">{{ t("tickets.list.title") }}</h1>
-        <p class="text-sm text-muted-foreground">{{ t("tickets.list.description") }}</p>
+  <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 py-1 sm:py-2" data-testid="ticket-list">
+    <PageHeader :title="t('tickets.list.title')" :description="t('tickets.list.description')">
+      <template #actions>
+        <Button as-child>
+          <RouterLink :to="{ name: 'tickets.create' }">
+            <LucidePlus aria-hidden="true" />
+            {{ t("tickets.list.createButton") }}
+          </RouterLink>
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          :disabled="loading"
+          :aria-label="t('tickets.list.refresh')"
+          :title="t('tickets.list.refresh')"
+          data-testid="ticket-refresh"
+          @click="reload"
+        >
+          <LucideRefreshCw :class="loading && !firstLoad ? 'animate-spin motion-reduce:animate-none' : ''" aria-hidden="true" />
+        </Button>
+      </template>
+    </PageHeader>
+
+    <!-- Filter: one chip per status, in the user's own words; the chip that waits for them carries its count. -->
+    <ToggleGroup
+      type="single"
+      :model-value="statusFilter"
+      :aria-label="t('tickets.list.filterLabel')"
+      data-testid="ticket-status-filter"
+      @update:model-value="setStatusFilter"
+    >
+      <ToggleGroupItem v-for="status in USER_TICKET_STATUS_FILTERS" :key="status" :value="status" :data-status="status">
+        {{ t(userTicketStatusLabelKey(status)) }}
+        <span
+          v-if="status === 'pending_user' && waitingCount"
+          :class="[
+            '-mr-1 inline-flex min-w-4.5 items-center justify-center rounded-full px-1 text-[11px] leading-4.5 font-semibold tabular-nums',
+            statusFilter === status ? 'bg-primary-foreground/20' : 'bg-amber-500/15 text-amber-800 dark:text-amber-300',
+          ]"
+          :title="t('tickets.list.waitingCount', { count: waitingCount }, waitingCount)"
+          data-testid="ticket-waiting-count"
+        >
+          <span aria-hidden="true">{{ waitingCount }}</span>
+          <span class="sr-only">{{ t("tickets.list.waitingCount", { count: waitingCount }, waitingCount) }}</span>
+        </span>
+      </ToggleGroupItem>
+    </ToggleGroup>
+
+    <!-- One surface for every state: rows, skeleton, empty, failure. -->
+    <section class="@container overflow-hidden rounded-xl border bg-card" :aria-busy="loading">
+      <div v-if="firstLoad" class="divide-y divide-border/60" role="status" :aria-label="t('tickets.list.loading')">
+        <div v-for="index in 4" :key="index" class="flex flex-col gap-2 px-4 py-3">
+          <Skeleton class="h-4 w-3/5" />
+          <Skeleton class="h-3 w-2/5" />
+        </div>
       </div>
-      <Button @click="openCreateTicket">
-        <LucidePlus class="w-4 h-4 mr-1" /> {{ t("tickets.list.createButton") }}
-      </Button>
-    </div>
 
-    <!-- Filters -->
-    <div class="flex items-center gap-3">
-      <Label id="ticket-status-label" for="ticket-status" class="sr-only">{{ t("tickets.filters.allStatus") }}</Label>
-      <Select id="ticket-status" :key="locale" v-model="statusFilter">
-        <SelectTrigger class="w-36" aria-labelledby="ticket-status-label">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem v-for="opt in statusOptions" :key="opt.value" :value="opt.value">
-            {{ opt.label }}
-          </SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-
-    <!-- Ticket list -->
-    <template v-if="loading">
-      <Skeleton v-for="i in 3" :key="i" class="h-24 w-full" />
-    </template>
-    <Card v-else-if="loadError">
-      <CardContent>
+      <!-- A failed load never looks like "no tickets". -->
+      <div v-else-if="loadError" class="px-4">
         <LoadErrorState
           :title="t('tickets.list.toast.loadFailedTitle')"
           :description="loadError.message"
@@ -108,82 +116,69 @@ function handleTicketCardKeydown(event: KeyboardEvent, ticketId: string) {
           :retrying="loading"
           @retry="reload"
         />
-      </CardContent>
-    </Card>
-    <template v-else-if="tickets.length > 0">
-      <Card
-        v-for="ticket in tickets"
-        :key="ticket.ticketId"
-        class="cursor-pointer hover:shadow-md transition-shadow"
-        role="button"
-        tabindex="0"
-        @click="openTicketDetail(ticket.ticketId)"
-        @keydown="handleTicketCardKeydown($event, ticket.ticketId)"
-      >
-        <CardContent class="py-0 flex flex-col gap-3">
-          <div class="flex items-start justify-between gap-2">
-            <div class="flex-1 min-w-0">
-              <h3 class="font-semibold text-base truncate">{{ ticket.subject }}</h3>
-              <div class="mt-1 text-xs text-muted-foreground truncate">{{ ticket.ticketId }}</div>
-              <div class="flex items-center gap-2 mt-2 flex-wrap">
-                <span :class="['inline-flex items-center gap-1 text-xs font-medium', ticketStatusTextClass(ticket.status)]">
-                  <component :is="ticketStatusIcon(ticket.status)" class="w-3.5 h-3.5" />
-                  {{ ticketStatusLabel(ticket.status) }}
-                </span>
-                <span :class="['inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium', ticketPriorityBadgeClass(ticket.priority)]">
-                  <component :is="ticketPriorityIcon(ticket.priority)" class="w-3.5 h-3.5" v-if="ticketPriorityIcon(ticket.priority)" />
-                  {{ ticketPriorityLabel(ticket.priority) }}
-                </span>
-                <span class="text-xs text-muted-foreground">
-                  {{ formatCategory(ticket.category) }}
-                </span>
-              </div>
-            </div>
-            <div class="text-right text-xs text-muted-foreground whitespace-nowrap">
-              <div>{{ t("tickets.list.updatedAt") }}</div>
-              <div>{{ formatTicketDate(ticket.updatedAt) }}</div>
-            </div>
-          </div>
-          <div class="rounded-md bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-            {{ ticketUserStatusHint(ticket.status) }}
-          </div>
-        </CardContent>
-      </Card>
-    </template>
-    <template v-else>
-      <Card>
-        <CardContent class="py-12 text-center text-muted-foreground">
-          {{ statusFilter === "all" ? t("tickets.list.empty") : t("tickets.list.emptyFiltered") }}
-        </CardContent>
-      </Card>
-    </template>
-
-    <!-- Pagination -->
-    <nav v-if="total > pageSize" class="flex items-center justify-between px-2" :aria-label="t('tickets.list.pagination.label')">
-      <span class="text-sm text-muted-foreground">{{ t("tickets.list.total", { total }) }}</span>
-      <div class="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          :disabled="page <= 1"
-          :aria-label="t('tickets.list.pagination.prevPage')"
-          :title="t('tickets.list.pagination.prevPage')"
-          @click="prevPage"
-        >
-          <LucideChevronLeft class="w-4 h-4" aria-hidden="true" />
-        </Button>
-        <span class="text-sm tabular-nums" aria-live="polite">{{ page }} / {{ totalPages }}</span>
-        <Button
-          variant="outline"
-          size="sm"
-          :disabled="page >= totalPages"
-          :aria-label="t('tickets.list.pagination.nextPage')"
-          :title="t('tickets.list.pagination.nextPage')"
-          @click="nextPage"
-        >
-          <LucideChevronRight class="w-4 h-4" aria-hidden="true" />
-        </Button>
       </div>
-    </nav>
+
+      <template v-else-if="tickets.length > 0">
+        <div
+          :class="['hidden items-center gap-x-3 border-b border-border/60 px-4 py-1.5 text-[11px] text-muted-foreground @min-[40rem]:grid', USER_TICKET_ROW_GRID]"
+          aria-hidden="true"
+        >
+          <span>{{ t("tickets.list.columns.ticket") }}</span>
+          <span>{{ t("tickets.list.columns.status") }}</span>
+          <span class="text-right">{{ t("tickets.list.updatedAt") }}</span>
+        </div>
+        <ul role="list" :class="['divide-y divide-border/60 transition-opacity motion-reduce:transition-none', loading ? 'opacity-60' : '']">
+          <li v-for="ticket in tickets" :key="ticket.ticketId">
+            <TicketListRow :ticket="ticket" :now="now" />
+          </li>
+        </ul>
+        <!-- The whole set's size, and the pager once it spans pages. -->
+        <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-border/60 py-2 pr-2 pl-4">
+          <p class="text-xs tabular-nums text-muted-foreground" aria-live="polite" data-testid="ticket-total">
+            {{ t("tickets.list.total", { total }, total) }}
+            <template v-if="total > pageSize"> · {{ t("tickets.list.pagination.page", { page, total: totalPages }) }}</template>
+          </p>
+          <nav v-if="total > pageSize" class="flex items-center gap-1" :aria-label="t('tickets.list.pagination.label')">
+            <Button variant="ghost" size="sm" :disabled="page <= 1 || loading" data-testid="ticket-prev-page" @click="prevPage">
+              <LucideChevronLeft aria-hidden="true" />
+              {{ t("tickets.list.pagination.prevPage") }}
+            </Button>
+            <Button variant="ghost" size="sm" :disabled="page >= totalPages || loading" data-testid="ticket-next-page" @click="nextPage">
+              {{ t("tickets.list.pagination.nextPage") }}
+              <LucideChevronRight aria-hidden="true" />
+            </Button>
+          </nav>
+        </div>
+      </template>
+
+      <div v-else class="px-4">
+        <EmptyState
+          v-if="statusFilter === 'all'"
+          :icon="LucideTicket"
+          :title="t('tickets.list.empty')"
+          :description="t('tickets.list.emptyDescription')"
+        >
+          <template #action>
+            <Button as-child variant="outline" size="sm">
+              <RouterLink :to="{ name: 'tickets.create' }">
+                <LucidePlus aria-hidden="true" />
+                {{ t("tickets.list.createButton") }}
+              </RouterLink>
+            </Button>
+          </template>
+        </EmptyState>
+        <EmptyState
+          v-else
+          :icon="LucideTicket"
+          :title="t('tickets.list.emptyFiltered', { status: t(userTicketStatusLabelKey(statusFilter)) })"
+        >
+          <template #action>
+            <Button variant="outline" size="sm" @click="setStatusFilter('all')">
+              {{ t("tickets.list.showAll") }}
+            </Button>
+          </template>
+        </EmptyState>
+      </div>
+    </section>
   </div>
 </template>

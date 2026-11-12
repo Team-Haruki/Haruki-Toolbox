@@ -1,5 +1,4 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue"
-import { useRouter } from "vue-router"
 import { isAxiosError } from "axios"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
@@ -8,6 +7,9 @@ import { addUserTicketMessage, closeTicket, getUserTicketDetail } from "@/module
 import type { TicketDetail, TicketMessage } from "@/types/ticket"
 import { describeError, extractErrorMessage, type ErrorDescription } from "@/lib/error-utils"
 import { visibleUserMessages } from "@/modules/tickets/lib/messages"
+import { countCharacters, TICKET_MESSAGE_MAX_LENGTH } from "@/modules/tickets/lib/ticket-draft"
+import { canCloseTicket, canReplyToTicket } from "@/modules/tickets/lib/user-ticket"
+import { isOwnMessage } from "@/modules/tickets/lib/user-ticket-thread"
 
 type ValueOrGetter<T> = T | (() => T)
 
@@ -17,12 +19,21 @@ function resolveValue<T>(value: ValueOrGetter<T>): T {
 
 const SENT_STATE_MS = 2500
 
+type LoadTicketOptions = {
+  /**
+   * Refresh the ticket already on screen: no skeleton, and a failure leaves
+   * what is shown in place (only a 404 replaces it).
+   */
+  silent?: boolean
+}
+
 export function useTicketDetail(ticketId: ValueOrGetter<string>) {
   const { t } = useI18n()
-  const router = useRouter()
   const userStore = useUserStore()
 
   const loading = ref(true)
+  /** A refresh of the ticket on screen is in flight. */
+  const refreshing = ref(false)
   const ticket = ref<TicketDetail | null>(null)
   /** A 404: the ticket does not exist (or is not the user's). Distinct from a load failure. */
   const notFound = ref(false)
@@ -34,14 +45,17 @@ export function useTicketDetail(ticketId: ValueOrGetter<string>) {
   /** Briefly true after a reply lands, for the "sent" state next to the composer. */
   const justSent = ref(false)
   let sentTimer: ReturnType<typeof setTimeout> | null = null
-  // Bound to the view's `ref="messageContainer"` element.
-  const messageContainer = useTemplateRef<HTMLElement>("messageContainer")
+  // Bound to the view's `ref="threadEnd"` element, the end of the conversation.
+  const threadEnd = useTemplateRef<HTMLElement>("threadEnd")
   let latestLoadRequestId = 0
   let actionGeneration = 0
 
   const resolveTicketId = () => resolveValue(ticketId).trim()
 
   const messages = computed(() => (ticket.value ? visibleUserMessages(ticket.value.messages) : []))
+  const replyLength = computed(() => countCharacters(newMessage.value.trim()))
+  const replyTooLong = computed(() => replyLength.value > TICKET_MESSAGE_MAX_LENGTH)
+  const canSend = computed(() => replyLength.value > 0 && !replyTooLong.value && !sending.value)
 
   function isCurrentActionContext(expectedUserId: string | null, expectedTicketId: string) {
     return userStore.userId === expectedUserId && resolveTicketId() === expectedTicketId
@@ -57,54 +71,73 @@ export function useTicketDetail(ticketId: ValueOrGetter<string>) {
     closing.value = false
   }
 
-  function scrollToBottom() {
-    const container = messageContainer.value
-    if (!container) return
-    container.scrollTop = container.scrollHeight
-  }
-
-  async function scrollToBottomWhenRendered() {
-    // The container only exists once `loading` is false and the ticket is
-    // rendered; wait for that paint before touching scrollTop.
+  /** Brings the end of the conversation into view after the user's own reply landed. */
+  async function revealThreadEnd() {
     await nextTick()
-    scrollToBottom()
-    if (typeof requestAnimationFrame === "function") {
-      requestAnimationFrame(scrollToBottom)
-    }
+    const reducedMotion = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    threadEnd.value?.scrollIntoView({ block: "nearest", behavior: reducedMotion ? "auto" : "smooth" })
   }
 
-  async function loadTicket(): Promise<boolean> {
+  async function loadTicket(options: LoadTicketOptions = {}): Promise<boolean> {
     const requestId = ++latestLoadRequestId
     const userId = userStore.userId
     const ticketIdValue = resolveTicketId()
+    const silent = options.silent === true && ticket.value !== null
     if (!userId || !ticketIdValue) {
       if (requestId !== latestLoadRequestId) return false
       ticket.value = null
       loading.value = false
+      refreshing.value = false
       return false
     }
 
-    loading.value = true
-    loadError.value = null
-    notFound.value = false
+    if (silent) {
+      refreshing.value = true
+    } else {
+      loading.value = true
+      loadError.value = null
+      notFound.value = false
+    }
     try {
       const detail = await getUserTicketDetail(userId, ticketIdValue)
       if (requestId !== latestLoadRequestId) return false
       ticket.value = detail
-      loading.value = false
-      await scrollToBottomWhenRendered()
+      loadError.value = null
+      notFound.value = false
       return true
     } catch (error: unknown) {
       if (requestId !== latestLoadRequestId) return false
-      ticket.value = null
-      loading.value = false
-      if (isAxiosError(error) && error.response?.status === 404) {
+      const missing = isAxiosError(error) && error.response?.status === 404
+      if (missing) {
+        ticket.value = null
         notFound.value = true
-      } else {
+      } else if (!silent) {
+        ticket.value = null
         loadError.value = describeError(error, t("tickets.detail.toast.loadFailedFallback"))
       }
       return false
+    } finally {
+      if (requestId === latestLoadRequestId) {
+        loading.value = false
+        refreshing.value = false
+      }
     }
+  }
+
+  /** The refresh button, and the tab coming back into view: has anyone replied? */
+  function refresh() {
+    if (!ticket.value || refreshing.value || sending.value || closing.value) return
+    void loadTicket({ silent: true })
+  }
+
+  function refreshWhenVisible() {
+    if (document.visibilityState === "visible") refresh()
+  }
+
+  function warnRefreshFailed() {
+    toast.warning(t("common.postSuccessWarningTitle"), {
+      description: t("common.postSuccessWarningDescription"),
+    })
   }
 
   function markSent() {
@@ -120,7 +153,7 @@ export function useTicketDetail(ticketId: ValueOrGetter<string>) {
     const message = newMessage.value.trim()
     const userId = userStore.userId
     const ticketIdValue = resolveTicketId()
-    if (!message || !userId || !ticketIdValue || sending.value) return
+    if (!message || !userId || !ticketIdValue || !canSend.value) return
 
     const generation = actionGeneration
     sending.value = true
@@ -129,15 +162,23 @@ export function useTicketDetail(ticketId: ValueOrGetter<string>) {
       if (!isActiveActionGeneration(generation) || !isCurrentActionContext(userId, ticketIdValue)) return
       newMessage.value = ""
       markSent()
-      await loadTicket()
+      // The thread stays on screen while it is read again with the new reply.
+      const reloaded = await loadTicket({ silent: true })
+      if (!isActiveActionGeneration(generation) || !isCurrentActionContext(userId, ticketIdValue)) return
+      if (reloaded) {
+        await revealThreadEnd()
+      } else if (ticket.value) {
+        warnRefreshFailed()
+      }
     } catch (error: unknown) {
       if (!isActiveActionGeneration(generation) || !isCurrentActionContext(userId, ticketIdValue)) return
       toast.error(t("tickets.detail.toast.sendFailedTitle"), {
         description: extractErrorMessage(error, t("tickets.detail.toast.sendFailedFallback")),
       })
     } finally {
-      if (!isActiveActionGeneration(generation)) return
-      sending.value = false
+      if (isActiveActionGeneration(generation)) {
+        sending.value = false
+      }
     }
   }
 
@@ -155,14 +196,12 @@ export function useTicketDetail(ticketId: ValueOrGetter<string>) {
     try {
       await closeTicket(userId, ticketIdValue)
       if (!isActiveActionGeneration(generation) || !isCurrentActionContext(userId, ticketIdValue)) return
-      const reloaded = await loadTicket()
+      const reloaded = await loadTicket({ silent: true })
       if (!isActiveActionGeneration(generation) || !isCurrentActionContext(userId, ticketIdValue)) return
       if (reloaded) {
         toast.success(t("tickets.detail.toast.closeSuccess"))
-      } else {
-        toast.warning(t("common.postSuccessWarningTitle"), {
-          description: loadError.value?.message ?? t("common.postSuccessWarningDescription"),
-        })
+      } else if (ticket.value) {
+        warnRefreshFailed()
       }
     } finally {
       if (isActiveActionGeneration(generation)) {
@@ -171,21 +210,12 @@ export function useTicketDetail(ticketId: ValueOrGetter<string>) {
     }
   }
 
-  function goBackToTicketList() {
-    void router.push({ name: "tickets.list" })
-  }
-
   function isMe(message: TicketMessage) {
-    if (message.senderRole === "system") return false
-    // The user-facing detail API omits senderId, so fall back to the sender
-    // role: on a user's own ticket, "user" messages are always theirs.
-    if (message.senderId) {
-      return message.senderId === userStore.userId
-    }
-    return message.senderRole === "user"
+    return isOwnMessage(message, userStore.userId)
   }
 
-  const isOpen = computed(() => ticket.value && ticket.value.status !== "closed")
+  const canReply = computed(() => ticket.value !== null && canReplyToTicket(ticket.value.status))
+  const canClose = computed(() => ticket.value !== null && canCloseTicket(ticket.value.status))
 
   watch(
     () => resolveTicketId(),
@@ -200,29 +230,36 @@ export function useTicketDetail(ticketId: ValueOrGetter<string>) {
 
   onMounted(() => {
     void loadTicket()
+    document.addEventListener("visibilitychange", refreshWhenVisible)
   })
 
   onBeforeUnmount(() => {
     latestLoadRequestId += 1
     invalidateActions()
     if (sentTimer) clearTimeout(sentTimer)
+    document.removeEventListener("visibilitychange", refreshWhenVisible)
   })
 
   return {
     loading,
+    refreshing,
     loadError,
     notFound,
     ticket,
     messages,
     newMessage,
+    replyLength,
+    replyTooLong,
+    canSend,
     sending,
     closing,
     justSent,
-    isOpen,
+    canReply,
+    canClose,
     loadTicket,
+    refresh,
     sendMessage,
     handleClose,
     isMe,
-    goBackToTicketList,
   }
 }
