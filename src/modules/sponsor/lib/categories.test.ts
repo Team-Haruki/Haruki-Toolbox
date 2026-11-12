@@ -1,13 +1,13 @@
 import { describe, expect, it } from "bun:test"
-import { groupSponsorsByCategory, readSponsorCategory, sponsorStatus } from "./categories"
+import { groupSponsorsByCategory, groupSponsorsByPlan, readSponsorCategory, sponsorStatus } from "./categories"
 import type { SponsorCategory, SponsorSupporter } from "@/modules/sponsor/types"
 
-function supporter(id: string, category: SponsorCategory, planExpiresAt = ""): SponsorSupporter {
+function supporter(id: string, category: SponsorCategory, planExpiresAt = "", planName = ""): SponsorSupporter {
   return {
     id,
     name: id,
     avatar: "",
-    planName: "",
+    planName,
     planPrice: null,
     planRank: null,
     planPayMonths: null,
@@ -17,6 +17,7 @@ function supporter(id: string, category: SponsorCategory, planExpiresAt = ""): S
     isActive: category === "current",
     totalAmount: null,
     month: null,
+    supportCount: null,
     paidAt: "",
     message: "",
   }
@@ -44,6 +45,22 @@ describe("sponsor categories", () => {
     expect(groups.current.map((s) => s.id)).toEqual(["a", "c"])
     expect(groups.former.map((s) => s.id)).toEqual(["b"])
     expect(Object.keys(groups)).toEqual(["current", "former"])
+  })
+
+  it("groups supporters into runs of the same plan without reordering them", () => {
+    const groups = groupSponsorsByPlan([
+      supporter("a", "current", "", "Gold"),
+      supporter("b", "current", "", "Gold"),
+      supporter("c", "current", "", "Custom"),
+      supporter("d", "current", "", "Silver"),
+      supporter("e", "current", "", "Custom"),
+    ])
+    expect(groups.map((group) => [group.planName, group.supporters.map((s) => s.id)])).toEqual([
+      ["Gold", ["a", "b"]],
+      ["Custom", ["c"]],
+      ["Silver", ["d"]],
+      ["Custom", ["e"]],
+    ])
   })
 
   it("derives the status line from category and effective expiry", () => {

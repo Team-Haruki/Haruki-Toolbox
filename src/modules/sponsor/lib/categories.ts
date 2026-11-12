@@ -41,3 +41,28 @@ export function sponsorStatus(sponsor: SponsorSupporter): SponsorStatus {
   }
   return sponsor.planExpiresAt ? { key: "expiredAt", date: sponsor.planExpiresAt } : { key: "pastPlan" }
 }
+
+export type SponsorPlanGroup = {
+  /** The plan's name; empty for supporters whose plan the backend did not name. */
+  planName: string
+  supporters: SponsorSupporter[]
+}
+
+/**
+ * Supporters gathered into runs of the same plan. The backend's order (tier,
+ * then expiry) is kept exactly: a plan whose supporters are not adjacent, as
+ * with custom amounts that rank between two fixed tiers, shows up as more
+ * than one group rather than being pulled together and reordered.
+ */
+export function groupSponsorsByPlan(supporters: readonly SponsorSupporter[]): SponsorPlanGroup[] {
+  const groups: SponsorPlanGroup[] = []
+  for (const supporter of supporters) {
+    const last = groups[groups.length - 1]
+    if (last && last.planName === supporter.planName) {
+      last.supporters.push(supporter)
+    } else {
+      groups.push({ planName: supporter.planName, supporters: [supporter] })
+    }
+  }
+  return groups
+}

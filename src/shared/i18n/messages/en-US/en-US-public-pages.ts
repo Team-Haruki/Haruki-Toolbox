@@ -191,9 +191,12 @@ export default {
     },
     "summary": {
       "supporters": "Supporters",
-      "current": "Current"
+      "current": "Current",
+      "former": "Past",
+      "updatedAt": "Updated {time}"
     },
     "sections": {
+      "planCount": "{count}",
       "current": {
         "title": "Current sponsors",
         "empty": "No one is sponsoring right now."
@@ -203,19 +206,15 @@ export default {
         "empty": "No sponsors whose time has run out yet."
       }
     },
-    "list": {
-      "title": "Sponsor list"
-    },
     "supporter": {
       "anonymous": "Anonymous supporter",
       "defaultPlan": "Afdian support",
       "pastPlan": "Past support",
       "active": "Currently supporting",
       "activeUntil": "Active until {date}",
-      "expired": "Support duration expired",
       "expiredAt": "Expired on {date}",
       "recent": "Recent support",
-      "months": "{month} mo"
+      "supportCount": "sponsored {count} times"
     },
     "empty": {
       "title": "No sponsor data yet",

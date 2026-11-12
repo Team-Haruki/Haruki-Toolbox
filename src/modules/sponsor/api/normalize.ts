@@ -117,6 +117,7 @@ function normalizeSponsorItem(value: unknown, index: number): SponsorSupporter |
     isActive: category === "current",
     totalAmount: readNumber(record, ["totalAmount", "total_amount", "allSumAmount", "all_sum_amount", "showAmount", "show_amount", "amount"]),
     month: readNumber(record, ["month", "months"]),
+    supportCount: readNumber(record, ["supportCount", "support_count"]),
     paidAt: readDateString(record, [
       "paidAt",
       "paid_at",

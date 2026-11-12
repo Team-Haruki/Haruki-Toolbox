@@ -191,9 +191,12 @@ export default {
     },
     "summary": {
       "supporters": "贊助者",
-      "current": "當前贊助"
+      "current": "當前贊助",
+      "former": "曾經贊助",
+      "updatedAt": "資料更新於 {time}"
     },
     "sections": {
+      "planCount": "{count} 人",
       "current": {
         "title": "當前贊助",
         "empty": "暫無正在贊助的贊助者。"
@@ -203,19 +206,15 @@ export default {
         "empty": "暫無贊助時長已到期的贊助者。"
       }
     },
-    "list": {
-      "title": "贊助者名單"
-    },
     "supporter": {
       "anonymous": "匿名贊助者",
       "defaultPlan": "愛發電贊助",
       "pastPlan": "曾經贊助",
       "active": "正在贊助",
       "activeUntil": "贊助至 {date}",
-      "expired": "贊助時長到期",
       "expiredAt": "已於 {date} 到期",
       "recent": "近期贊助",
-      "months": "{month} 個月"
+      "supportCount": "已贊助 {count} 次"
     },
     "empty": {
       "title": "暫無贊助資料",
