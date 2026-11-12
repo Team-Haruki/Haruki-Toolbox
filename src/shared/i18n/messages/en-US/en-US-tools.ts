@@ -971,61 +971,101 @@ export default {
       }
     },
     "pointCalculator": {
-      "title": "Event Pt Score Control Calculator",
-      "description": "Calculate the event bonus and score ranges needed for a target event Pt value.",
-      "tips": {
-        "title": "Tip",
-        "beta": "Beta",
-        "boostConfig": "Before score control, make sure your Live Boost setting is correct to avoid missing the target.",
-        "testingPrefix": "This feature is still being tested.",
-        "testingSuffix": " If you run into any issue, please contact Haruki Dev Team.",
-        "deckRecommend": "Score-control results include a Bonus deck button for quick deck recommendation."
+      "title": "Score control",
+      "description": "Enter the event pt you need and get the deck bonus, Live Boost and score for each game. A number too large for one game is split across several.",
+      "entry": {
+        "label": "How much pt",
+        "gapTab": "Gap",
+        "rangeTab": "Current and target",
+        "gap": "Event pt still needed",
+        "gapPlaceholder": "e.g. 23154",
+        "current": "Current event pt",
+        "currentPlaceholder": "e.g. 1234567",
+        "target": "Target event pt",
+        "targetPlaceholder": "e.g. 1257721",
+        "parsed": "Using {value}",
+        "invalid": "Enter a non-negative whole number; the suffixes 万 / w / k are accepted."
       },
-      "fields": {
-        "region": "Data server",
-        "music": "Music",
-        "loadingMusic": "Preparing music...",
-        "musicPlaceholder": "Select a music",
-        "musicSearchPlaceholder": "Search music name, #ID, kana, pinyin, or romaji...",
-        "musicEmpty": "No music found.",
-        "targetPt": "Target event Pt",
-        "targetPtPlaceholder": "Enter target event Pt",
-        "targetPtInvalid": "Target event Pt must be a whole number greater than 0.",
-        "maxResults": "Max results",
-        "maxResultsPlaceholder": "Default 10",
-        "bonusRange": "Custom bonus range",
-        "bonusRangeHelp": "Only searches event bonuses within this range. Defaults to 100%-435%, accepts 0%-1000%.",
-        "customBonusFloor": "Custom bonus floor",
-        "customBonusFloorPlaceholder": "Default 100",
-        "customBonusCap": "Custom bonus cap",
-        "customBonusCapPlaceholder": "Default 435",
-        "bonusRangeInvalid": "Bonus range must use integers from 0 to 1000, and the floor cannot be greater than the cap.",
-        "boostIndex": "Live Boost",
-        "boostIndexAll": "All Live Boost levels",
-        "boostIndexOption": "{index} Live Boost ({rate}x)",
-        "advanced": "Advanced options"
+      "song": {
+        "label": "Song",
+        "region": "Region",
+        "basicPoint": "Basic pt {value}. The lower it is, the finer the totals you can hit.",
+        "missingBasicPoint": "This song has no basic pt data yet. Pick another song."
+      },
+      "conditions": {
+        "title": "Conditions",
+        "summary": "Bonus {min}–{max}% · {boosts} · up to {games} games",
+        "bonusRange": "Deck bonus range",
+        "bonusRangeHelp": "Only event bonuses in this range are used. Set it to what your decks can reach.",
+        "bonusMin": "Lowest bonus",
+        "bonusMax": "Highest bonus",
+        "bonusRangeInvalid": "The range must be whole numbers from 0 to {max}, lowest first.",
+        "worldLink": "World Link event",
+        "worldLinkHelp": "Raises the highest bonus to {max}%.",
+        "boosts": "Live Boost to use",
+        "boostsHelp": "Only the selected boost levels are used; 0 spends no boost.",
+        "boostsNone": "Select at least one boost level.",
+        "boostsAll": "any boost",
+        "boostsSome": "boost {list}",
+        "boostOption": "Boost {index}",
+        "selectAllBoosts": "Select all",
+        "maxGames": "Most games to split into",
+        "maxGamesOption": "{count} games"
       },
       "actions": {
-        "calculate": "Calculate",
-        "buildDeck": "Bonus deck"
-      },
-      "meta": {
-        "title": "Calculation data",
-        "music": "Music: {value}",
-        "basicPoint": "Basic Pt: {value}",
-        "bonusRange": "Bonus range: {min}%-{max}%",
-        "missingBasicPoint": "This song has no base Pt data yet. Pick another song or difficulty."
+        "buildDeck": "Build deck",
+        "retry": "Retry"
       },
       "result": {
-        "title": "Calculation result",
-        "placeholder": "Results will appear here after entering a target event Pt.",
-        "summary": "{count} plan(s) found.",
-        "empty": "No calculation result yet.",
-        "deckBonus": "Required bonus {value}%",
-        "boost": "{index} Live Boost / {rate}x",
-        "scoreRangeLabel": "Playable score range",
-        "noMatchTitle": "No matching plan found",
-        "noMatchDescription": "Try adjusting target Pt, Live Boost, or the custom bonus cap."
+        "empty": "Enter the pt you need and the plans appear here.",
+        "emptyHint": "Enter the gap directly, or your current and target pt. A number too large for one game is fine: it is split across several.",
+        "gapLabel": "To earn",
+        "fromTo": "From {current} to {target}, to earn",
+        "singleNote": "One game with no playing can do it; there are {count} single-game options.",
+        "singleScoreNote": "One game can do it, but all {count} single-game options need a precise score. Plans that need no playing come first.",
+        "splitNote": "No single game earns {gap} pt (one game earns {min}–{max} under these conditions), so it is split across several.",
+        "plansTitle": "Suggested plans",
+        "planTitle": "Plan {index}",
+        "planTotals": "{games} games · {energy} boost · {decks} decks",
+        "needsScore": "Needs a precise score",
+        "tags": {
+          "fewestGames": "Fewest games",
+          "leastEnergy": "Least boost",
+          "singleDeck": "One deck"
+        },
+        "step": {
+          "times": "×{count}",
+          "deck": "Bonus {value}%",
+          "boost": "Boost {index} (×{rate})",
+          "idle": "No playing needed",
+          "idleDetail": "score under {score}",
+          "scoreDetail": "Stop once the score is in this window",
+          "each": "+{value} each",
+          "after": "{value} after"
+        },
+        "allSingle": "Every single-game option",
+        "allSingleHint": "{count} in all, easiest first.",
+        "showAll": "Show all {count}",
+        "columns": {
+          "bonus": "Bonus needed",
+          "boost": "Boost",
+          "score": "Score"
+        },
+        "status": {
+          "reached": "Already on the target. Nothing left to play.",
+          "overshot": "Already {gap} pt past the target. Event pt never goes down, so this target is out of reach.",
+          "tooClose": "Only {gap} pt to go, but one game earns at least {min} pt under these conditions, so another game overshoots.",
+          "tooCloseAction": "Lower the bonus floor to 0%",
+          "tooFar": "{gap} pt to go is more than {games} idle games can cover (at most {reach} pt). Play normally until you are within {reach} pt, then come back.",
+          "tooFarTarget": " That is, play up to about {value} pt first.",
+          "tooFarAction": "Allow up to {count} games",
+          "none": "Nothing adds up to {gap} pt under these conditions. Widen the bonus range, allow more boost levels or more games."
+        }
+      },
+      "tips": {
+        "boost": "Before each game, check that the Live Boost matches the plan. One level off and the pt is wrong.",
+        "idle": "\"No playing needed\" means a final score under 20,000: start the song, hit nothing, and let it finish.",
+        "beta": "This tool is still in testing and its results are not guaranteed. Check the event bonus and the in-game numbers before relying on them."
       }
     }
   },
