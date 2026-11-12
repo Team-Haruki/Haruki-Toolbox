@@ -223,6 +223,13 @@ export function useRankBorderDetailPage(
     { immediate: true },
   )
 
+  // The growth part follows the interval; the target itself does not.
+  watch(() => params.value?.intervalSeconds, (value, previousValue) => {
+    if (value != null && previousValue != null && value !== previousValue) {
+      void loadOverview()
+    }
+  })
+
   if (typeof document !== "undefined") {
     document.addEventListener("visibilitychange", handleVisibilityChange)
   }
@@ -623,6 +630,8 @@ export function useRankBorderDetailPage(
       activeScope.eventId,
       activeScope.mode,
       activeScope.worldBloomCharacterId ?? "",
+      // The growth part is per interval, so each interval caches on its own.
+      params.value?.intervalSeconds ?? "",
     ].join("|")
   }
 
@@ -653,8 +662,10 @@ export function useRankBorderDetailPage(
         signal: controller.signal,
         intervalSeconds: value.intervalSeconds,
         version,
-        // Neighbour lines and the comparison picker only read these parts.
-        parts: ["top100", "borders"],
+        // Neighbour lines, key lines and the comparison picker read the
+        // rankings; the growth part gives each of them a pace, which is what
+        // turns a gap into a catch-up estimate.
+        parts: ["top100", "borders", "growths"],
       })
       if (overviewCacheKey() !== key || controller.signal.aborted) {
         return

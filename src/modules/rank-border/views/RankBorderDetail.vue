@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
-import { useRoute, useRouter } from "vue-router"
+import { useRoute, useRouter, type RouteLocationRaw } from "vue-router"
 import { toast } from "vue-sonner"
 import { ArrowLeft, Link2, RefreshCcw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -34,9 +33,10 @@ import { getI18nLocale } from "@/shared/i18n"
 import { useUserStore } from "@/shared/stores/user"
 import type { ComboboxOption } from "@/components/ui/combobox"
 import ComparisonCenter, { type ComparisonTableRow } from "../components/ComparisonCenter.vue"
+import DetailHero, { type DetailHeroLine, type DetailHeroNeighbour } from "../components/DetailHero.vue"
 import DetailHistoryPanel from "../components/DetailHistoryPanel.vue"
-import HonorBadge from "../components/HonorBadge.vue"
-import LeaderCard from "../components/LeaderCard.vue"
+import DetailInsights, { type DetailInsightGroup, type DetailInsightRow } from "../components/DetailInsights.vue"
+import DetailTable, { type DetailTableColumn, type DetailTableRow } from "../components/DetailTable.vue"
 import TrendChartCard from "../components/TrendChartCard.vue"
 import { useRankBorderHonors } from "../composables/useRankBorderHonors"
 import { useRankBorderMasterData } from "../composables/useRankBorderMasterData"
@@ -45,7 +45,13 @@ import {
   useRankBorderDetailPage,
 } from "../composables/useRankBorderDetailPage"
 import { buildDetailCharts } from "../lib/detail-charts"
-import { parseRankBorderDetailQuery } from "../lib/detail-link"
+import {
+  buildRankBorderDetailQuery,
+  parseRankBorderDetailQuery,
+  resolveQuickFactsDetailTarget,
+  type RankBorderDetailTargetInput,
+} from "../lib/detail-link"
+import { formatDurationLabel } from "../lib/duration-label"
 import {
   buildProfileHonorViews,
   isLatestResult,
@@ -54,10 +60,18 @@ import {
 } from "../lib/honor-visuals"
 import { buildMasterRecordMap } from "../lib/master-data-types"
 import {
+  OVERVIEW_KEY_SEATS,
+  projectFinalScore,
+  resolveCatchUpSeconds,
+  resolveHourlySpeed,
+} from "../lib/overview-stats"
+import {
   normalizeTrackerEndpoint,
+  type RankBorderLatest,
+  type RankBorderLine,
   type RankBorderTracePoint,
 } from "../lib/rank-border"
-import { isSameLocalDay, traceRecordsForWindow } from "../lib/rank-border-chart"
+import { isSameLocalDay, startOfLocalDay, traceRecordsForWindow } from "../lib/rank-border-chart"
 import {
   DEFAULT_TRACKER_ENDPOINT,
   LEGACY_DIRECT_TRACKER_ENDPOINTS,
@@ -71,9 +85,20 @@ import type {
   RankBorderHeatmapWindow,
   RankBorderTooltipState,
 } from "../lib/rank-border-types"
+import {
+  listHolderRuns,
+  resolveCushion,
+  resolveMilestones,
+  SESSION_GAP_SECONDS,
+  summarizeActivity,
+  summarizeDays,
+  summarizeGames,
+  summarizeHolders,
+  summarizeRankHistory,
+} from "../lib/trace-insights"
 import { resolveTraceMetricStats } from "../lib/trace-stats"
 import { resolveWorldBloomModeSelection } from "../lib/world-bloom-mode"
-import { parseRichNameSegments, plainNameText as stripNameTags, richNameSegmentStyle } from "../lib/rich-name"
+import { parseRichNameSegments, plainNameText as stripNameTags } from "../lib/rich-name"
 
 const COMPARISON_COLORS = [
   "rgb(168 85 247 / 0.9)",
@@ -225,6 +250,23 @@ const eventStartAt = computed(() => {
   return masterData.selectedEvent.value?.startAt ?? null
 })
 
+/** When the ranking settles: the chapter's or the event's aggregate time. */
+const eventEndAt = computed(() => {
+  const value = params.value
+  if (!value) {
+    return null
+  }
+  if (value.mode === "world_bloom" && value.worldBloomCharacterId) {
+    const chapter = masterData.worldBloomCharacterOptions.value
+      .find((option) => option.id === value.worldBloomCharacterId)
+    if (chapter?.aggregateAt != null) {
+      return chapter.aggregateAt
+    }
+  }
+  const event = masterData.selectedEvent.value
+  return event?.aggregateAt ?? event?.closedAt ?? null
+})
+
 const leaderVisual = computed(() =>
   current.value && isLatestResult(current.value)
     ? resolveLeaderVisual(current.value, honors.honorContext.value)
@@ -292,35 +334,380 @@ const primaryStats = computed(() =>
   ),
 )
 
-const previousGap = computed(() =>
-  previous.value && current.value ? previous.value.score - current.value.score : null,
-)
-const nextGap = computed(() =>
-  next.value && current.value ? current.value.score - next.value.score : null,
+const subjectScore = computed(() => current.value?.score ?? primaryStats.value.latest?.score ?? null)
+
+/**
+ * The moment the page's data describes: the newest sample it holds, never
+ * past the event's end. Idle times and holds are measured against this, so a
+ * stalled tracker does not read as a player gone quiet.
+ */
+const dataNow = computed(() => {
+  const trace = activeTrace.value
+  const latest = Math.max(
+    overview.value?.asOf ?? Math.floor(Date.now() / 1000),
+    current.value?.timestamp ?? 0,
+    trace[trace.length - 1]?.timestamp ?? 0,
+  )
+  return eventEndAt.value != null ? Math.min(latest, eventEndAt.value) : latest
+})
+const eventEnded = computed(() => eventEndAt.value != null && dataNow.value >= eventEndAt.value)
+
+/** The subject's own pace right now; a selected heatmap hour is history, not a pace to project from. */
+const liveSpeed = computed(() => (selectedWindow.value ? null : primaryStats.value.hourlySpeed))
+
+/** A seat's or border line's pace over the page's interval, from the overview's growth part. */
+function seatSpeed(rank: number) {
+  const data = overview.value
+  if (!data) {
+    return null
+  }
+  return resolveHourlySpeed(
+    data.topRankGrowths.find((entry) => entry.rank === rank)
+    ?? data.borderGrowths.find((entry) => entry.rank === rank),
+  )
+}
+
+/** A player's own pace when the overview tracks them, else their seat's. */
+function playerSpeed(userId: string | null, rank: number) {
+  const growth = userId ? overview.value?.topPlayerGrowths.find((entry) => entry.userId === userId) : null
+  return growth ? resolveHourlySpeed(growth) : seatSpeed(rank)
+}
+
+function detailRoute(target: RankBorderDetailTargetInput): RouteLocationRaw | null {
+  const value = params.value
+  return value ? { path: "/rank-border/detail", query: buildRankBorderDetailQuery(value, target) } : null
+}
+
+function catchUpNote(side: "above" | "below", gap: number, otherSpeed: number | null) {
+  const seconds = side === "above"
+    ? resolveCatchUpSeconds(gap, liveSpeed.value, otherSpeed)
+    : resolveCatchUpSeconds(gap, otherSpeed, liveSpeed.value)
+  if (seconds == null) {
+    return null
+  }
+  return t(side === "above" ? "rankBorder.overview.facts.catchUp" : "rankBorder.overview.facts.caughtBy", {
+    duration: formatDurationLabel(t, seconds),
+  })
+}
+
+// --- Hero: neighbours and key lines ------------------------------------------
+
+const neighbourRows = computed<DetailHeroNeighbour[]>(() => {
+  const subject = current.value
+  const score = subjectScore.value
+  if (!subject || score == null) {
+    return []
+  }
+
+  const build = (entry: RankBorderLatest | RankBorderLine, side: "above" | "below"): DetailHeroNeighbour => {
+    const player = isLatestResult(entry) ? entry : null
+    const gap = side === "above" ? entry.score - score : score - entry.score
+    return {
+      key: side,
+      rankLabel: player ? formatRank(entry.rank) : formatTargetRank(entry.rank),
+      name: player ? plainNameText(player.name) ?? t("rankBorder.result.unknownPlayer") : null,
+      scoreLabel: formatNumberCN(entry.score),
+      gapLabel: `${side === "above" ? "+" : "−"}${formatNumberCN(Math.abs(gap))}`,
+      note: catchUpNote(side, gap, player ? playerSpeed(player.userId, entry.rank) : seatSpeed(entry.rank)),
+      current: false,
+      to: detailRoute(player
+        ? resolveQuickFactsDetailTarget({ kind: "rank", rank: entry.rank, userId: player.userId })
+        : { kind: "line", rank: entry.rank }),
+    }
+  }
+
+  const rows: DetailHeroNeighbour[] = []
+  if (previous.value) {
+    rows.push(build(previous.value, "above"))
+  }
+  rows.push({
+    key: "current",
+    rankLabel: isLineTarget.value ? formatTargetRank(subject.rank) : formatRank(subject.rank),
+    name: isLineTarget.value ? null : plainNameText(subject.name) ?? t("rankBorder.result.unknownPlayer"),
+    scoreLabel: formatNumberCN(score),
+    gapLabel: null,
+    note: null,
+    current: true,
+    to: null,
+  })
+  if (next.value) {
+    rows.push(build(next.value, "below"))
+  }
+  return rows
+})
+
+/** The next lines up (how far to T10, T50, T100…) and the nearest one down. */
+const keyLineRows = computed<DetailHeroLine[]>(() => {
+  const data = overview.value
+  const score = subjectScore.value
+  if (!data || score == null) {
+    return []
+  }
+
+  // The seats beside the subject are already in the neighbour list.
+  const shown = new Set([current.value?.rank, previous.value?.rank, next.value?.rank])
+  const keySeats: readonly number[] = OVERVIEW_KEY_SEATS
+  const candidates = [
+    ...data.topRankings.filter((entry) => keySeats.includes(entry.rank)),
+    ...data.borderLines.filter((line) => line.rank > PERSONAL_COLLECTION_LIMIT),
+  ].filter((line) => !shown.has(line.rank))
+
+  const build = (line: { rank: number; gap: number }, side: "above" | "below"): DetailHeroLine => ({
+    key: `${side}:${line.rank}`,
+    label: formatTargetRank(line.rank),
+    gapLabel: t(side === "above" ? "rankBorder.detail.behind" : "rankBorder.detail.ahead", { gap: formatNumberCN(line.gap) }),
+    note: catchUpNote(side, line.gap, seatSpeed(line.rank)),
+    to: detailRoute(line.rank <= PERSONAL_COLLECTION_LIMIT ? { kind: "rank", rank: line.rank } : { kind: "line", rank: line.rank }),
+  })
+
+  const rows = resolveMilestones(score, candidates, 3).reverse().map((line) => build(line, "above"))
+  const cushion = resolveCushion(score, candidates)
+  if (cushion) {
+    rows.push(build(cushion, "below"))
+  }
+  return rows
+})
+
+/** A border line has no identity of its own; name the player sitting on it instead. */
+const lineHolderName = computed(() =>
+  isLineTarget.value && current.value && isLatestResult(current.value) ? plainNameText(current.value.name) : null,
 )
 
-type StatTile = { key: string; label: string; value: string }
+const profileWord = computed(() => {
+  if (isLineTarget.value) {
+    return null
+  }
+  const word = (current.value && isLatestResult(current.value) ? current.value.profileWord : null) ?? profile.value?.profileWord
+  return word?.trim() || null
+})
 
-const statTiles = computed<StatTile[]>(() => {
+// --- Insights ----------------------------------------------------------------
+
+/** A seat or a border line: its trace is the line's history, not one player's games. */
+const seatView = computed(() => isLineTarget.value || traceSource.value === "border")
+
+const gameSummary = computed(() => summarizeGames(scopedTrace.value))
+const rankHistory = computed(() => summarizeRankHistory(scopedTrace.value))
+const activitySummary = computed(() =>
+  summarizeActivity(scopedTrace.value, selectedWindow.value?.end ?? dataNow.value),
+)
+const holderSummary = computed(() => (seatView.value ? summarizeHolders(activeTrace.value, dataNow.value) : null))
+
+const insightsCaption = computed(() =>
+  selectedWindow.value
+    ? t("rankBorder.detail.insights.captionWindow", { window: selectedWindow.value.label })
+    : t("rankBorder.detail.insights.caption", { interval: traceScopeLabel.value }),
+)
+
+const insightGroups = computed<DetailInsightGroup[]>(() => {
   const stats = primaryStats.value
-  return [
-    { key: "hourlySpeed", label: t("rankBorder.result.hourlySpeed"), value: formatPerHour(stats.hourlySpeed) },
-    { key: "recentAveragePt", label: t("rankBorder.result.recentAveragePt"), value: formatPt(stats.recentAveragePt) },
-    { key: "latestPointGrowth", label: t("rankBorder.result.latestPointGrowth"), value: formatGrowth(stats.latestPointGrowth) },
+  const groups: DetailInsightGroup[] = []
+  const row = (key: string, value: string, extra: Partial<DetailInsightRow> = {}): DetailInsightRow => ({
+    key,
+    label: t(`rankBorder.detail.insights.${key}`),
+    value,
+    ...extra,
+  })
+  const count = (key: string, value: number) => t(`rankBorder.detail.insights.${key}`, { count: formatNumberCN(value) })
+
+  // Pace
+  const paceRows: DetailInsightRow[] = [
     { key: "threeWindowSpeed", label: t("rankBorder.result.twentyMinTripleSpeed"), value: formatPerHour(stats.threeWindowSpeed) },
-    { key: "loopCount", label: t("rankBorder.result.loopCount"), value: formatLoopCount(stats.loopCount) },
-    { key: "rankShift", label: t("rankBorder.result.rankShift"), value: formatGrowth(stats.rankShift) },
-    {
-      key: "previousGap",
-      label: isLineTarget.value ? t("rankBorder.result.previousLine") : t("rankBorder.result.previousRank"),
-      value: formatGrowth(previousGap.value),
-    },
-    {
-      key: "nextGap",
-      label: isLineTarget.value ? t("rankBorder.result.nextLine") : t("rankBorder.result.nextRank"),
-      value: formatGrowth(nextGap.value),
-    },
   ]
+  if (!seatView.value) {
+    paceRows.push({ key: "loopCount", label: t("rankBorder.result.loopCount"), value: formatLoopCount(stats.loopCount) })
+  }
+  const remainingSeconds = eventEndAt.value != null && !eventEnded.value ? eventEndAt.value - dataNow.value : null
+  const projected = projectFinalScore(subjectScore.value, liveSpeed.value, remainingSeconds)
+  if (projected != null) {
+    paceRows.push(row("projected", formatPt(projected), { hint: t("rankBorder.overview.lines.projectedHint") }))
+  }
+  if (remainingSeconds != null && remainingSeconds > 0) {
+    paceRows.push(row("remaining", formatDurationLabel(t, remainingSeconds)))
+  }
+  groups.push({
+    key: "pace",
+    title: t("rankBorder.detail.insights.pace"),
+    headline: { key: "hourlySpeed", label: t("rankBorder.result.hourlySpeed"), value: formatPerHour(stats.hourlySpeed), note: traceScopeLabel.value },
+    rows: paceRows,
+  })
+
+  const games = gameSummary.value
+  if (seatView.value) {
+    // A line's steps are samples of the line, not single games.
+    groups.push({
+      key: "line",
+      title: t("rankBorder.detail.insights.line"),
+      headline: { key: "latestPointGrowth", label: t("rankBorder.detail.insights.latestStep"), value: formatGrowth(stats.latestPointGrowth) },
+      rows: [
+        row("recentStep", formatPt(stats.recentAveragePt)),
+        row("totalGrowth", games.games > 0 ? formatGrowth(games.totalPt) : "-"),
+        row("updates", count("times", games.games)),
+      ],
+    })
+
+    const holders = holderSummary.value
+    if (holders) {
+      groups.push({
+        key: "holders",
+        title: t("rankBorder.detail.insights.holders"),
+        headline: {
+          key: "heldFor",
+          label: t("rankBorder.detail.insights.heldFor"),
+          value: holders.heldSince != null ? formatDurationLabel(t, Math.max(0, dataNow.value - holders.heldSince)) : "-",
+        },
+        rows: [
+          row("turnovers", count("times", holders.turnovers)),
+          row("holdersCount", count("people", holders.holders)),
+          row("longestHold", formatDurationLabel(t, holders.longestHoldSeconds)),
+        ],
+      })
+    }
+    return groups
+  }
+
+  // Per game
+  groups.push({
+    key: "games",
+    title: t("rankBorder.detail.insights.games"),
+    headline: { key: "recentAveragePt", label: t("rankBorder.result.recentAveragePt"), value: formatPt(stats.recentAveragePt) },
+    rows: [
+      { key: "latestPointGrowth", label: t("rankBorder.result.latestPointGrowth"), value: formatGrowth(stats.latestPointGrowth) },
+      row("medianPt", formatPt(games.medianPt)),
+      row("maxPt", formatPt(games.maxPt)),
+      row("gamesCount", count("gamesValue", games.games)),
+    ],
+  })
+
+  // Rank
+  const history = rankHistory.value
+  groups.push({
+    key: "rank",
+    title: t("rankBorder.detail.insights.rank"),
+    headline: { key: "rankShift", label: t("rankBorder.result.rankShift"), value: formatRankShift(stats.rankShift), note: traceScopeLabel.value },
+    rows: [
+      row("bestRank", formatRank(history.best), { note: history.bestAt != null ? formatMoment(history.bestAt) : null }),
+      row("worstRank", formatRank(history.worst)),
+      row("rankChanges", count("times", history.changes)),
+    ],
+  })
+
+  // Activity
+  const activity = activitySummary.value
+  const restHint = t("rankBorder.detail.insights.restHint", { minutes: SESSION_GAP_SECONDS / 60 })
+  const live = !selectedWindow.value && !eventEnded.value && activity.idleSeconds != null
+  const elapsed = !selectedWindow.value && eventStartAt.value != null ? dataNow.value - eventStartAt.value : null
+  const activeTotal = row("activeTotal", activity.sessions > 0 ? formatDurationLabel(t, activity.activeSeconds) : "-", {
+    note: elapsed != null && elapsed > 0 && activity.activeSeconds > 0
+      ? t("rankBorder.detail.insights.activeShare", { percent: Math.min(100, Math.round((activity.activeSeconds / elapsed) * 100)) })
+      : null,
+    hint: restHint,
+  })
+  let headline = activeTotal
+  if (live && activity.active && activity.currentSessionStart != null) {
+    headline = row("streak", formatDurationLabel(t, Math.max(0, dataNow.value - activity.currentSessionStart)), { hint: restHint })
+  } else if (live) {
+    headline = row("idle", formatDurationLabel(t, activity.idleSeconds ?? 0), { hint: restHint })
+  }
+  groups.push({
+    key: "activity",
+    title: t("rankBorder.detail.insights.activity"),
+    headline,
+    rows: [
+      ...(headline === activeTotal ? [] : [activeTotal]),
+      row("longestSession", activity.sessions > 0 ? formatDurationLabel(t, activity.longestSessionSeconds) : "-", { hint: restHint }),
+      row("longestRest", activity.longestRestSeconds > 0 ? formatDurationLabel(t, activity.longestRestSeconds) : "-", { hint: restHint }),
+      row("sessions", count("sessionsValue", activity.sessions), { hint: restHint }),
+    ],
+  })
+  return groups
+})
+
+// --- Daily totals and seat holders -------------------------------------------
+
+const dailyColumns = computed<DetailTableColumn[]>(() => {
+  const column = (key: string, extra: Partial<DetailTableColumn> = {}): DetailTableColumn => ({
+    key,
+    label: t(`rankBorder.detail.daily.${key}`),
+    align: "right",
+    ...extra,
+  })
+  return seatView.value
+    ? [column("date", { align: "left" }), column("growth"), column("updates", { wideOnly: true }), column("endScore")]
+    : [
+        column("date", { align: "left" }),
+        column("gained"),
+        column("games"),
+        column("active", { wideOnly: true }),
+        column("best", { wideOnly: true }),
+        column("endRank"),
+        column("endScore", { wideOnly: true }),
+      ]
+})
+
+const dailyRows = computed<DetailTableRow[]>(() => {
+  const days = summarizeDays(activeTrace.value, startOfLocalDay)
+  const top = Math.max(0, ...days.map((day) => day.gained))
+  return days.reverse().map((day) => {
+    const date = { text: formatDay(day.dayStart) }
+    const gained = { text: formatGrowth(day.gained), meter: top > 0 ? day.gained / top : 0 }
+    const games = { text: formatNumberCN(day.games) }
+    const endScore = { text: formatNumberCN(day.endScore) }
+    return {
+      key: day.dayStart,
+      cells: seatView.value
+        ? [date, gained, games, endScore]
+        : [
+            date,
+            gained,
+            games,
+            { text: day.activeSeconds > 0 ? formatDurationLabel(t, day.activeSeconds) : "-" },
+            { text: day.bestPt > 0 ? formatNumberCN(day.bestPt) : "-" },
+            { text: formatRank(day.endRank) },
+            endScore,
+          ],
+    }
+  })
+})
+
+const HOLDER_LOG_LIMIT = 30
+
+const holderColumns = computed<DetailTableColumn[]>(() => [
+  { key: "player", label: t("rankBorder.detail.holderLog.player"), align: "left" },
+  { key: "from", label: t("rankBorder.detail.holderLog.from"), align: "right" },
+  { key: "held", label: t("rankBorder.detail.holderLog.held"), align: "right" },
+  { key: "score", label: t("rankBorder.detail.holderLog.score"), align: "right", wideOnly: true },
+])
+
+const holderRows = computed<DetailTableRow[]>(() => {
+  if (!seatView.value) {
+    return []
+  }
+  // The trace only carries ids; players still on the board lend their names.
+  const names = new Map<string, string>()
+  for (const entry of overview.value?.topRankings ?? []) {
+    const name = plainNameText(entry.name)
+    if (entry.userId && name) {
+      names.set(entry.userId, name)
+    }
+  }
+  return listHolderRuns(activeTrace.value, HOLDER_LOG_LIMIT).map((run) => ({
+    key: `${run.userId}:${run.from}`,
+    cells: [
+      {
+        // Ids are long opaque tokens: a short prefix is enough to tell two holders apart.
+        text: names.get(run.userId) ?? t("rankBorder.detail.holderLog.unnamed", { id: run.userId.slice(0, 6) }),
+        to: detailRoute({ kind: "user", userId: run.userId }),
+      },
+      { text: formatMoment(run.from) },
+      {
+        text: run.to != null
+          ? formatDurationLabel(t, run.to - run.from)
+          : t("rankBorder.detail.holderLog.ongoing", { duration: formatDurationLabel(t, Math.max(0, dataNow.value - run.from)) }),
+      },
+      { text: formatNumberCN(run.score) },
+    ],
+  }))
 })
 
 // --- Comparisons -------------------------------------------------------------
@@ -662,6 +1049,35 @@ function formatPerHour(value: number | null | undefined) {
   return `${sign}${formatNumberCN(value)} pt/h`
 }
 
+/** Places climbed (↑) or lost (↓) over the interval. */
+function formatRankShift(value: number | null | undefined) {
+  if (typeof value !== "number") {
+    return "-"
+  }
+  if (value === 0) {
+    return t("rankBorder.detail.insights.rankSteady")
+  }
+  return `${value > 0 ? "↑" : "↓"} ${formatNumberCN(Math.abs(value))}`
+}
+
+function formatMoment(timestamp: number) {
+  return new Date(timestamp * 1000).toLocaleString(getI18nLocale(), {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  })
+}
+
+function formatDay(timestamp: number) {
+  return new Date(timestamp * 1000).toLocaleDateString(getI18nLocale(), {
+    month: "numeric",
+    day: "numeric",
+    weekday: "short",
+  })
+}
+
 function formatLoopCount(value: number | null | undefined) {
   if (typeof value !== "number") {
     return "-"
@@ -722,7 +1138,7 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
 
 <template>
   <div class="flex w-full flex-1 flex-col items-center px-1 py-2 sm:px-0 sm:py-4">
-    <div class="mx-auto grid w-full max-w-6xl gap-2 sm:gap-3">
+    <div class="mx-auto grid w-full max-w-7xl gap-2 sm:gap-3">
       <!-- Page header -->
       <div class="flex flex-wrap items-center gap-2">
         <Button type="button" variant="ghost" size="sm" class="h-8 px-2" @click="goBack">
@@ -760,17 +1176,15 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
       </div>
 
       <!-- Invalid / legacy link: nothing was requested, so say so instead of "not collected yet" -->
-      <Card v-if="!params">
-        <CardContent class="grid justify-items-start gap-3 p-6 text-sm text-muted-foreground">
-          <p>{{ t("rankBorder.result.invalidLink") }}</p>
-          <Button as-child variant="outline" size="sm">
-            <RouterLink to="/rank-border">
-              <ArrowLeft class="size-4" />
-              {{ t("rankBorder.result.goToRankBorder") }}
-            </RouterLink>
-          </Button>
-        </CardContent>
-      </Card>
+      <div v-if="!params" class="grid justify-items-start gap-3 rounded-xl border bg-card p-6 text-sm text-muted-foreground">
+        <p>{{ t("rankBorder.result.invalidLink") }}</p>
+        <Button as-child variant="outline" size="sm">
+          <RouterLink to="/rank-border">
+            <ArrowLeft class="size-4" />
+            {{ t("rankBorder.result.goToRankBorder") }}
+          </RouterLink>
+        </Button>
+      </div>
 
       <template v-else>
         <div
@@ -787,90 +1201,57 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
             {{ t("rankBorder.detailIssues.retry") }}
           </Button>
         </div>
-        <div class="rank-border-detail-top">
-        <!-- Hero -->
-        <Card size="compact" class="gap-0 py-0">
-          <CardContent class="grid gap-3 p-3 sm:p-4">
-            <div v-if="error && !current && !notRanked" class="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
-              <p>{{ error === "not_found" ? t(params.target.kind === "user" ? "rankBorder.result.userNotFound" : "rankBorder.result.rankNotFound") : error }}</p>
-              <p v-if="error !== 'not_found' && errorDetail" class="mt-1 text-xs text-destructive/70">
-                {{ t("core.errors.detail", { detail: errorDetail }) }}
-              </p>
-            </div>
-            <div v-else class="rank-border-detail-hero">
-              <LeaderCard v-if="!isLineTarget" :leader="leaderVisual" variant="detail" />
-              <div class="min-w-0 grid content-start gap-0.5">
-                <div class="flex min-w-0 flex-wrap items-center gap-2">
-                  <h1 class="min-w-0 truncate text-base font-semibold sm:text-lg">
-                    <span
-                      v-for="segment in titleSegments"
-                      :key="segment.key"
-                      :style="richNameSegmentStyle(segment)"
-                    >
-                      {{ segment.text }}
-                    </span>
-                  </h1>
-                  <span
-                    v-if="statusBadge"
-                    :class="[
-                      'inline-flex shrink-0 rounded-md border px-2 py-0.5 text-xs font-medium',
-                      statusBadge.tone === 'line'
-                        ? 'border-cyan-200 bg-cyan-50 text-cyan-800 dark:border-cyan-500/30 dark:bg-cyan-500/10 dark:text-cyan-100'
-                        : statusBadge.tone === 'in'
-                          ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
-                          : 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100',
-                    ]"
-                  >
-                    {{ statusBadge.label }}
-                  </span>
-                </div>
-                <div class="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <p class="rank-border-detail-hero__rank">
-                    {{ isLineTarget ? formatTargetRank(current?.rank ?? (params.target.kind === "line" ? params.target.rank : null)) : formatRank(current?.rank ?? null) }}
-                  </p>
-                  <p class="rank-border-detail-hero__score">{{ formatPt(current?.score ?? primaryStats.latest?.score ?? null) }}</p>
-                </div>
-                <p class="truncate text-xs text-muted-foreground">
-                  {{ t("rankBorder.result.latest", { value: formatTimestamp(current?.timestamp ?? primaryStats.latest?.timestamp ?? null) }) }}
-                </p>
-                <p v-if="notRanked" class="text-xs text-amber-700 dark:text-amber-200">
-                  {{ t("rankBorder.result.notRankedHint") }}
-                </p>
-              </div>
-              <div v-if="honorViews.length > 0" class="rank-border-detail-hero__honors">
-                <HonorBadge
-                  v-for="honor in honorViews"
-                  :key="honor.key"
-                  :honor="honor"
-                  variant="detail"
-                />
-              </div>
-            </div>
 
-            <div class="flex flex-wrap items-center gap-2">
-              <Tabs
-                v-if="canSwitchTraceSource"
-                :model-value="traceSource"
-                @update:model-value="(value) => (value === 'player' || value === 'border') && setTraceSource(value)"
-              >
-                <!-- Triggers fill the list: 32 px with a mouse, 40 px on touch (the primitive's coarse-pointer minimum). -->
-                <TabsList class="h-8">
-                  <TabsTrigger value="player" class="px-2.5 text-xs">{{ t("rankBorder.sections.playerTracking") }}</TabsTrigger>
-                  <TabsTrigger value="border" class="px-2.5 text-xs">{{ t("rankBorder.sections.borderTracking") }}</TabsTrigger>
-                </TabsList>
-              </Tabs>
-              <RefreshCcw v-if="borderTraceLoading" class="size-3.5 animate-spin text-muted-foreground" />
-              <span class="text-xs text-muted-foreground">{{ traceScopeLabel }}</span>
-            </div>
+        <!-- Who the page is about and where they stand -->
+        <div
+          v-if="error && !current && !notRanked"
+          class="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive"
+        >
+          <p>{{ error === "not_found" ? t(params.target.kind === "user" ? "rankBorder.result.userNotFound" : "rankBorder.result.rankNotFound") : error }}</p>
+          <p v-if="error !== 'not_found' && errorDetail" class="mt-1 text-xs text-destructive/70">
+            {{ t("core.errors.detail", { detail: errorDetail }) }}
+          </p>
+        </div>
+        <DetailHero
+          v-else
+          :is-line="isLineTarget"
+          :leader="leaderVisual"
+          :honors="honorViews"
+          :title-segments="titleSegments"
+          :status="statusBadge"
+          :rank-label="isLineTarget ? formatTargetRank(current?.rank ?? (params.target.kind === 'line' ? params.target.rank : null)) : formatRank(current?.rank ?? null)"
+          :score-label="formatPt(subjectScore)"
+          :latest-label="t('rankBorder.result.latest', { value: formatTimestamp(current?.timestamp ?? primaryStats.latest?.timestamp ?? null) })"
+          :not-ranked-hint="notRanked ? t('rankBorder.result.notRankedHint') : null"
+          :profile-word="profileWord"
+          :holder-name="lineHolderName"
+          :neighbours="neighbourRows"
+          :neighbours-title="t(isLineTarget ? 'rankBorder.detail.nearbyLines' : 'rankBorder.detail.nearby')"
+          :lines="keyLineRows"
+        >
+          <Tabs
+            v-if="canSwitchTraceSource"
+            :model-value="traceSource"
+            @update:model-value="(value) => (value === 'player' || value === 'border') && setTraceSource(value)"
+          >
+            <!-- Triggers fill the list: 32 px with a mouse, 40 px on touch (the primitive's coarse-pointer minimum). -->
+            <TabsList class="h-8">
+              <TabsTrigger value="player" class="px-2.5 text-xs">{{ t("rankBorder.sections.playerTracking") }}</TabsTrigger>
+              <TabsTrigger value="border" class="px-2.5 text-xs">{{ t("rankBorder.sections.borderTracking") }}</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <RefreshCcw v-if="borderTraceLoading" class="size-3.5 animate-spin text-muted-foreground" />
+          <span class="text-xs text-muted-foreground">
+            {{ t(seatView ? "rankBorder.detail.sourceSeat" : "rankBorder.detail.sourcePlayer") }}
+          </span>
+        </DetailHero>
 
-            <div class="rank-border-detail-stats">
-              <div v-for="tile in statTiles" :key="tile.key" class="rank-border-stat">
-                <p>{{ tile.label }}</p>
-                <strong>{{ tile.value }}</strong>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <DetailInsights
+          v-if="primaryStats.hasChart"
+          :title="t('rankBorder.detail.insights.title')"
+          :caption="insightsCaption"
+          :groups="insightGroups"
+        />
 
         <!-- Comparison center -->
         <ComparisonCenter
@@ -882,7 +1263,6 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
           @add-player="handleAddPlayer"
           @remove="removeComparison"
         />
-        </div>
 
         <!-- Trend charts -->
         <div v-if="primaryStats.hasChart" class="rank-border-detail-charts">
@@ -1001,6 +1381,28 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
           :hide-tooltip="hideTooltip"
           @update:window="selectedWindow = $event"
         />
+
+        <!-- Day by day, and who held the seat -->
+        <div
+          v-if="primaryStats.hasChart && dailyRows.length > 0"
+          :class="['grid min-w-0 items-start gap-2 sm:gap-3', holderRows.length > 0 ? 'xl:grid-cols-2' : '']"
+        >
+          <DetailTable
+            :title="t('rankBorder.detail.daily.title')"
+            :caption="t('rankBorder.detail.daily.caption')"
+            :columns="dailyColumns"
+            :rows="dailyRows"
+            data-testid="rank-detail-daily"
+          />
+          <DetailTable
+            v-if="holderRows.length > 0"
+            :title="t('rankBorder.detail.holderLog.title')"
+            :caption="t('rankBorder.detail.holderLog.caption', { count: HOLDER_LOG_LIMIT })"
+            :columns="holderColumns"
+            :rows="holderRows"
+            data-testid="rank-detail-holders"
+          />
+        </div>
       </template>
     </div>
 
@@ -1015,106 +1417,6 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
 </template>
 
 <style scoped>
-/* Hero + comparison center share one row on wide screens. */
-.rank-border-detail-top {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.75rem;
-}
-
-@media (min-width: 1280px) {
-  .rank-border-detail-top {
-    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-    align-items: stretch;
-  }
-}
-
-.rank-border-detail-hero {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: 0.875rem;
-}
-
-.rank-border-detail-hero__rank {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  font-size: clamp(1.5rem, 4vw, 2.25rem);
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  line-height: 1.05;
-}
-
-.rank-border-detail-hero__score {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  font-size: clamp(1rem, 2.2vw, 1.375rem);
-  font-variant-numeric: tabular-nums;
-  font-weight: 650;
-  line-height: 1.1;
-}
-
-.rank-border-detail-hero__honors {
-  display: flex;
-  min-width: 0;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 0.375rem;
-  grid-column: 1 / -1;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin;
-}
-
-@media (min-width: 900px) {
-  .rank-border-detail-hero {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-  }
-
-  .rank-border-detail-hero__honors {
-    grid-column: auto;
-    align-self: center;
-  }
-}
-
-.rank-border-detail-stats {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
-  gap: 0.5rem;
-}
-
-.rank-border-stat {
-  min-width: 0;
-  border: 1px solid var(--border);
-  border-radius: 0.375rem;
-  background: color-mix(in oklab, var(--background) 74%, transparent);
-  padding: 0.5rem;
-}
-
-.rank-border-stat p {
-  overflow: hidden;
-  color: var(--muted-foreground);
-  font-size: 0.75rem;
-  line-height: 1rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rank-border-stat strong {
-  display: block;
-  overflow: hidden;
-  margin-top: 0.25rem;
-  font-size: 0.9375rem;
-  font-variant-numeric: tabular-nums;
-  font-weight: 650;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .rank-border-detail-charts {
   display: grid;
   min-width: 0;

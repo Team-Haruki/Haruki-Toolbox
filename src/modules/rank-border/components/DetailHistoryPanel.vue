@@ -293,9 +293,9 @@ const { edgeClass: updateLogEdgeClass } = useScrollEdges(updateLogScroller)
 <template>
   <div class="rank-border-detail-history">
     <div class="rank-border-detail-history__grid">
-    <section class="rank-border-heatmap-section grid min-w-0 content-start gap-2 rounded-md border bg-muted/15 p-3">
+    <section class="rank-border-heatmap-section grid min-w-0 content-start gap-2 rounded-xl border bg-card px-4 py-3">
       <div class="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 class="text-sm font-semibold">{{ t("rankBorder.result.heatmapTitle") }}</h3>
+        <h2 class="text-sm font-semibold">{{ t("rankBorder.result.heatmapTitle") }}</h2>
         <span class="text-right text-xs text-muted-foreground">
           {{ t("rankBorder.result.dailyHours") }} · {{ t("rankBorder.result.heatmapHint") }}
         </span>
@@ -345,9 +345,9 @@ const { edgeClass: updateLogEdgeClass } = useScrollEdges(updateLogScroller)
       </div>
     </section>
 
-    <section v-if="updateRecords.length > 0" class="rank-border-update-section grid min-w-0 content-start gap-2 rounded-md border bg-muted/15 p-3">
+    <section v-if="updateRecords.length > 0" class="rank-border-update-section grid min-w-0 content-start gap-2 rounded-xl border bg-card px-4 py-3">
       <div class="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 class="text-sm font-semibold">{{ t("rankBorder.result.updateLog") }}</h3>
+        <h2 class="text-sm font-semibold">{{ t("rankBorder.result.updateLog") }}</h2>
         <span class="text-xs text-muted-foreground">{{ scopeLabel }}</span>
       </div>
       <!-- Wider than a phone: the whole table (header included) scrolls sideways, with an edge fade. -->
@@ -483,7 +483,7 @@ const { edgeClass: updateLogEdgeClass } = useScrollEdges(updateLogScroller)
   min-width: 0;
   overflow: visible;
   padding-right: 0.125rem;
-  background: linear-gradient(90deg, var(--background) 72%, color-mix(in oklab, var(--background) 0%, transparent));
+  background: linear-gradient(90deg, var(--card) 72%, color-mix(in oklab, var(--card) 0%, transparent));
   color: var(--muted-foreground);
   font-size: 0.625rem;
   font-variant-numeric: tabular-nums;
@@ -507,7 +507,7 @@ const { edgeClass: updateLogEdgeClass } = useScrollEdges(updateLogScroller)
   position: sticky;
   left: 0;
   z-index: 3;
-  background: linear-gradient(90deg, var(--background) 72%, color-mix(in oklab, var(--background) 0%, transparent));
+  background: linear-gradient(90deg, var(--card) 72%, color-mix(in oklab, var(--card) 0%, transparent));
 }
 
 .rank-border-heatmap-hours {
@@ -587,9 +587,7 @@ const { edgeClass: updateLogEdgeClass } = useScrollEdges(updateLogScroller)
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
-  border: 1px solid var(--border);
-  border-radius: 0.375rem;
-  background: color-mix(in oklab, var(--background) 74%, transparent);
+  margin-inline: -1rem;
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
 }
@@ -612,14 +610,14 @@ const { edgeClass: updateLogEdgeClass } = useScrollEdges(updateLogScroller)
   gap: 0.5rem;
   align-items: center;
   min-width: 0;
-  padding: 0.26rem 0.5rem;
+  padding: 0.3rem 1rem;
   line-height: 1.2;
 }
 
 .rank-border-update-log__header {
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
   color: var(--muted-foreground);
-  font-weight: 600;
+  font-size: 0.6875rem;
 }
 
 .rank-border-update-log__rows {
@@ -646,8 +644,8 @@ const { edgeClass: updateLogEdgeClass } = useScrollEdges(updateLogScroller)
   text-align: right;
 }
 
-.rank-border-update-log__row:nth-child(odd) {
-  background: color-mix(in oklab, var(--muted) 42%, transparent);
+.rank-border-update-log__row + .rank-border-update-log__row {
+  border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
 }
 
 /* Wide layout: hour cells fill the card's width, but their size also scales
