@@ -130,6 +130,53 @@ export default {
       "trackerCadence": "跟随数据更新",
       "staleWarning": "榜线采集服务已有 {age} 没有新数据，下方显示的是最近一次采集结果，请以游戏内信息为准。"
     },
+    "overview": {
+      "progressLabel": "活动进度",
+      "progress": "已进行 {elapsed} · 剩余 {remaining}",
+      "upcoming": "距开始还有 {duration}",
+      "ended": "排名已结算",
+      "settlesAt": "结算 {time}",
+      "upstreamError": "榜线采集服务的上游接口正在报错，数据可能暂停更新，请以游戏内信息为准。",
+      "duration": {
+        "daysHours": "{days} 天 {hours} 小时",
+        "hoursMinutes": "{hours} 小时 {minutes} 分",
+        "minutes": "{minutes} 分钟",
+        "underMinute": "不到 1 分钟"
+      },
+      "stats": {
+        "top": "第 1 名",
+        "topLead": "领先第 2 名 {gap}",
+        "t100": "T100 档线",
+        "pace": "时速 {speed}",
+        "active": "T100 活跃玩家",
+        "activeDetail": "{minutes} 分钟内有得分",
+        "fastest": "{interval}内最快",
+        "viewers": "正在看这个榜",
+        "viewersDetail": "全站在线 {total}"
+      },
+      "lines": {
+        "title": "档线",
+        "description": "T100 内的关键名次和 T100 以外的档线点，增长与时速按 {interval} 区间计算。点一行查看趋势。",
+        "projected": "匀速推算",
+        "gapShort": "差",
+        "growthShort": "增",
+        "projectedShort": "推算",
+        "projectedHint": "匀速推算：按当前时速一直打到结算时的分数，没有考虑最后冲刺，仅供参考。",
+        "gapTo": "比 {line} 少 {gap}"
+      },
+      "board": {
+        "title": "T100 排行榜",
+        "description": "玩家增长和时速按 {interval} 区间计算，点一行展开牌子、简介和相邻分差。",
+        "holderGrowth": "玩家增长"
+      },
+      "facts": {
+        "holderGrowth": "玩家区间增长",
+        "seatGrowth": "位线区间增长",
+        "catchUp": "按当前时速约 {duration} 追上",
+        "caughtBy": "按当前时速约 {duration} 被追上",
+        "profileWord": "个人简介"
+      }
+    },
     "detailIssues": {
       "title": "部分数据暂时无法更新，页面显示的是最近一次成功的数据。",
       "titleNoData": "榜线数据加载失败，请稍后重试。",

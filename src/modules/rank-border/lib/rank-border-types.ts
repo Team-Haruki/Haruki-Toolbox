@@ -63,11 +63,20 @@ export type RankBorderQuickFacts = {
   playerGrowthPositive: boolean
   rankGrowthLabel: string | null
   rankGrowthPositive: boolean
+  /** The holder's own pace over the window. */
   hourlySpeedLabel: string | null
+  /** The seat's pace over the window (seats only). */
+  seatSpeedLabel?: string | null
   prevGapLabel: string | null
   prevLabel: string
+  /** "about 2 h to catch up at the current paces", when the holder is gaining on the seat above. */
+  prevNote?: string | null
   nextGapLabel: string | null
   nextLabel: string
+  /** The same for the seat below gaining on this one. */
+  nextNote?: string | null
+  /** The player's profile comment. */
+  profileWord?: string | null
 }
 
 export type RankBorderChartMetric = "score" | "rank" | "speed"

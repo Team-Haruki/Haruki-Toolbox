@@ -73,7 +73,7 @@ import type {
 } from "../lib/rank-border-types"
 import { resolveTraceMetricStats } from "../lib/trace-stats"
 import { resolveWorldBloomModeSelection } from "../lib/world-bloom-mode"
-import { parseRichNameSegments, richNameSegmentStyle } from "../lib/rich-name"
+import { parseRichNameSegments, plainNameText as stripNameTags, richNameSegmentStyle } from "../lib/rich-name"
 
 const COMPARISON_COLORS = [
   "rgb(168 85 247 / 0.9)",
@@ -399,10 +399,7 @@ const comparisonRows = computed<ComparisonTableRow[]>(() => {
 
 /** Strip in-game color tags so picker labels and search stay plain text. */
 function plainNameText(name: string | null | undefined) {
-  if (!name) {
-    return null
-  }
-  return parseRichNameSegments(name).map((segment) => segment.text).join("")
+  return name ? stripNameTags(name) : null
 }
 
 const comparisonTargetOptions = computed<ComboboxOption[]>(() => {

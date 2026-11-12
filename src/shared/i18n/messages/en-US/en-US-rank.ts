@@ -130,6 +130,53 @@ export default {
       "trackerCadence": "Follow data updates",
       "staleWarning": "The rank border collection service has sent no new data for {age}; the list below is the last collected result. Check in-game information."
     },
+    "overview": {
+      "progressLabel": "Event progress",
+      "progress": "{elapsed} in · {remaining} left",
+      "upcoming": "Starts in {duration}",
+      "ended": "Ranking has settled",
+      "settlesAt": "Settles {time}",
+      "upstreamError": "The tracker's upstream API is returning errors, so data may have stopped updating. Trust the in-game figures.",
+      "duration": {
+        "daysHours": "{days} d {hours} h",
+        "hoursMinutes": "{hours} h {minutes} min",
+        "minutes": "{minutes} min",
+        "underMinute": "under a minute"
+      },
+      "stats": {
+        "top": "Rank 1",
+        "topLead": "{gap} ahead of rank 2",
+        "t100": "T100 line",
+        "pace": "{speed}",
+        "active": "Active in the top 100",
+        "activeDetail": "scored in the last {minutes} min",
+        "fastest": "Fastest over {interval}",
+        "viewers": "Watching this board",
+        "viewersDetail": "{total} online site-wide"
+      },
+      "lines": {
+        "title": "Lines",
+        "description": "Key seats in the top 100 and the border lines below it. Growth and pace are over {interval}. Open a row for its trend.",
+        "projected": "Straight-line",
+        "gapShort": "gap",
+        "growthShort": "growth",
+        "projectedShort": "proj.",
+        "projectedHint": "Straight-line projection: the score at settlement if the current pace held until then. It ignores the final rush; for reference only.",
+        "gapTo": "{gap} below {line}"
+      },
+      "board": {
+        "title": "Top 100",
+        "description": "Player growth and pace are over {interval}. Open a row for honors, the profile comment and the gaps to the seats around it.",
+        "holderGrowth": "Player growth"
+      },
+      "facts": {
+        "holderGrowth": "Player growth in window",
+        "seatGrowth": "Seat growth in window",
+        "catchUp": "about {duration} to catch up at current pace",
+        "caughtBy": "about {duration} until caught at current pace",
+        "profileWord": "Profile comment"
+      }
+    },
     "detailIssues": {
       "title": "Some data could not be updated; showing the last successful data.",
       "titleNoData": "Couldn't load the leaderboard data. Please try again later.",

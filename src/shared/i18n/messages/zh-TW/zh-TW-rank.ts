@@ -130,6 +130,53 @@ export default {
       "trackerCadence": "跟隨資料更新",
       "staleWarning": "榜線採集服務已有 {age} 沒有新資料，下方顯示的是最近一次採集結果，請以遊戲內資訊為準。"
     },
+    "overview": {
+      "progressLabel": "活動進度",
+      "progress": "已進行 {elapsed} · 剩餘 {remaining}",
+      "upcoming": "距開始還有 {duration}",
+      "ended": "排名已結算",
+      "settlesAt": "結算 {time}",
+      "upstreamError": "榜線採集服務的上游介面正在報錯，資料可能暫停更新，請以遊戲內資訊為準。",
+      "duration": {
+        "daysHours": "{days} 天 {hours} 小時",
+        "hoursMinutes": "{hours} 小時 {minutes} 分",
+        "minutes": "{minutes} 分鐘",
+        "underMinute": "不到 1 分鐘"
+      },
+      "stats": {
+        "top": "第 1 名",
+        "topLead": "領先第 2 名 {gap}",
+        "t100": "T100 檔線",
+        "pace": "時速 {speed}",
+        "active": "T100 活躍玩家",
+        "activeDetail": "{minutes} 分鐘內有得分",
+        "fastest": "{interval}內最快",
+        "viewers": "正在看這個榜",
+        "viewersDetail": "全站線上 {total}"
+      },
+      "lines": {
+        "title": "檔線",
+        "description": "T100 內的關鍵名次和 T100 以外的檔線點，增長與時速按 {interval} 區間計算。點一行檢視趨勢。",
+        "projected": "勻速推算",
+        "gapShort": "差",
+        "growthShort": "增",
+        "projectedShort": "推算",
+        "projectedHint": "勻速推算：按當前時速一直打到結算時的分數，沒有考慮最後衝刺，僅供參考。",
+        "gapTo": "比 {line} 少 {gap}"
+      },
+      "board": {
+        "title": "T100 排行榜",
+        "description": "玩家增長和時速按 {interval} 區間計算，點一行展開牌子、簡介和相鄰分差。",
+        "holderGrowth": "玩家增長"
+      },
+      "facts": {
+        "holderGrowth": "玩家區間增長",
+        "seatGrowth": "位線區間增長",
+        "catchUp": "按當前時速約 {duration} 追上",
+        "caughtBy": "按當前時速約 {duration} 被追上",
+        "profileWord": "個人簡介"
+      }
+    },
     "detailIssues": {
       "title": "部分資料暫時無法更新，頁面顯示的是最近一次成功的資料。",
       "titleNoData": "榜線資料載入失敗，請稍後重試。",
