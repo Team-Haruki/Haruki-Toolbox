@@ -292,3 +292,125 @@ export function buildPlannerSongRanking(
 export function buildPlannerPlanKey(accountKey: string, region: string, eventId: string): string {
   return `${accountKey}|${region}|${eventId}`
 }
+
+/**
+ * The hour from which painted cells still count toward the target. Once the
+ * event is running and the player has entered their current pt, the hours
+ * already gone are part of that number; counting them again would promise pt
+ * that has been earned. null means the whole plan counts (before the event,
+ * after it, or with no current pt to anchor on).
+ */
+export function resolvePlannerCountFromMs(input: {
+  now: number
+  startAt: number | null
+  aggregateAt: number | null
+  currentPointKnown: boolean
+}): number | null {
+  if (!input.currentPointKnown || input.startAt == null || input.aggregateAt == null) {
+    return null
+  }
+  if (!(input.startAt < input.now && input.now < input.aggregateAt)) {
+    return null
+  }
+  const hour = new Date(input.now)
+  hour.setMinutes(0, 0, 0)
+  return hour.getTime()
+}
+
+/** The painted cells at or after `fromMs`; all of them when it is null. */
+export function selectPlannerCellsFrom(cells: PlannerCells, fromMs: number | null): PlannerCells {
+  if (fromMs == null) {
+    return cells
+  }
+  return Object.fromEntries(Object.entries(cells).filter(([hourKey]) => Number(hourKey) >= fromMs))
+}
+
+export type PlannerDayStat = {
+  dayStartMs: number
+  /** pt the day's counted hours add. */
+  points: number
+  /** Counted hours painted with a scoring brush. */
+  hours: number
+  /** The total expected at the end of the day; null for a day that is entirely in the past. */
+  cumulative: number | null
+  /** The first day whose running total reaches the target. */
+  reachesTarget: boolean
+}
+
+/**
+ * Day-by-day reading of the plan: what each day adds and where the total
+ * stands when it ends, starting from `basePoint`. Hours before `countFromMs`
+ * are skipped, and a day wholly before it has no running total.
+ */
+export function summarizePlannerDays(
+  days: readonly PlannerCalendarDay[],
+  cells: PlannerCells,
+  brushes: readonly PlannerBrush[],
+  options: { basePoint: number; targetPoint: number | null; countFromMs: number | null },
+): PlannerDayStat[] {
+  const brushById = new Map(brushes.map((brush) => [brush.id, brush]))
+  let running = options.basePoint
+  let reached = false
+  return days.map((day) => {
+    let points = 0
+    let hours = 0
+    let counted = false
+    for (const hour of day.hours) {
+      if (options.countFromMs != null && hour.hourStartMs < options.countFromMs) {
+        continue
+      }
+      counted = true
+      const brush = brushById.get(cells[String(hour.hourStartMs)] ?? "")
+      if (brush && brush.id !== PLANNER_REST_BRUSH_ID) {
+        points += brush.pointsPerHour
+        hours += 1
+      }
+    }
+    running += points
+    const reachesTarget = counted && !reached && options.targetPoint != null && options.targetPoint > 0 && running >= options.targetPoint
+    if (reachesTarget) {
+      reached = true
+    }
+    return {
+      dayStartMs: day.dayStartMs,
+      points: Math.round(points),
+      hours,
+      cumulative: counted ? Math.round(running) : null,
+      reachesTarget,
+    }
+  })
+}
+
+export type PlannerProgress = {
+  /** Current pt plus everything still planned. */
+  projected: number
+  /** pt still unplanned; 0 once the plan covers the target. */
+  remaining: number
+  /** pt the plan lands above the target. */
+  surplus: number
+  /** Shares of the bar (0–1) for the current pt, the planned pt and the target mark. */
+  currentRatio: number
+  plannedRatio: number
+  targetRatio: number
+}
+
+/** Where the plan lands against the target, scaled so the bar always fits both. null without a target. */
+export function resolvePlannerProgress(input: {
+  targetPoint: number | null
+  currentPoint: number
+  plannedPoints: number
+}): PlannerProgress | null {
+  if (input.targetPoint == null || input.targetPoint <= 0) {
+    return null
+  }
+  const projected = input.currentPoint + input.plannedPoints
+  const scale = Math.max(input.targetPoint, projected)
+  return {
+    projected,
+    remaining: Math.max(0, input.targetPoint - projected),
+    surplus: Math.max(0, projected - input.targetPoint),
+    currentRatio: Math.min(1, input.currentPoint / scale),
+    plannedRatio: Math.min(1, input.plannedPoints / scale),
+    targetRatio: input.targetPoint / scale,
+  }
+}
