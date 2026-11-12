@@ -564,7 +564,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
                   />
                   <span
                     v-if="isMusicEntryUnreleased(entry)"
-                    class="absolute right-1 top-1 rounded bg-red-600 px-1 py-0.5 text-[10px] font-semibold leading-none text-white shadow-sm"
+                    class="absolute right-1 top-1 rounded bg-red-600 px-1 py-0.5 text-[10px] font-semibold leading-none text-white"
                   >
                     {{ t("sekaiUnreleased.badge") }}
                   </span>
@@ -585,7 +585,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
             </div>
             <div
               v-else
-              class="rounded-md border border-dashed p-10 text-center text-sm text-muted-foreground"
+              class="p-10 text-center text-sm text-muted-foreground"
             >
               {{
                 loading

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { LucideSettings2 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import {
   Dialog,
@@ -80,23 +79,22 @@ const {
               <DialogContent
                 class="flex h-[100dvh] w-full max-w-none flex-col gap-0 overflow-hidden rounded-none border-0 p-0 top-0 left-0 translate-x-0 translate-y-0 sm:h-auto sm:max-h-[85vh] sm:max-w-2xl sm:rounded-lg sm:border sm:p-0 sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] lg:max-w-4xl xl:max-w-5xl"
               >
-                <DialogHeader class="border-b px-4 py-3 pr-12 text-left">
-                  <DialogTitle class="flex items-center gap-2 text-base">
-                    <LucideSettings2 class="size-4" />
+                <DialogHeader class="border-b border-border/60 px-4 py-3 pr-12 text-left">
+                  <DialogTitle class="text-base">
                     {{ t("deckRecommend.layers.expert.title") }}
                   </DialogTitle>
                   <DialogDescription class="text-xs">
                     {{ t("deckRecommend.layers.expert.description") }}
                   </DialogDescription>
                 </DialogHeader>
-                <div class="@container grid min-h-0 min-w-0 grid-cols-1 flex-1 content-start gap-3 overflow-y-auto p-3 sm:gap-4 sm:p-4">
-                    <section class="grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+                <div class="@container min-h-0 min-w-0 flex-1 divide-y divide-border/60 overflow-y-auto px-4">
+                    <section class="grid min-w-0 grid-cols-1 gap-3 py-4">
                       <div class="space-y-1">
                         <h3 class="text-sm font-medium">{{ t("deckRecommend.options.random.title") }}</h3>
                         <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.random.description") }}</p>
                       </div>
                       <div class="grid min-w-0 grid-cols-1 gap-3 @3xl:grid-cols-[minmax(0,1fr)_minmax(280px,0.75fr)]">
-                        <div class="@container grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-background/50 p-2.5 sm:p-3">
+                        <div class="@container grid min-w-0 grid-cols-1 content-start gap-3">
                           <div class="space-y-1">
                             <h4 class="text-sm font-medium">{{ t("deckRecommend.options.random.skillGroup") }}</h4>
                             <p class="text-xs leading-5 text-muted-foreground">
@@ -152,7 +150,7 @@ const {
                               </p>
                             </div>
                           </div>
-                          <label for="deck-keep-training-state" class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-2.5 text-sm sm:p-3">
+                          <label for="deck-keep-training-state" class="flex items-center justify-between gap-3 text-sm">
                             <span class="min-w-0 space-y-1">
                               <span class="block font-medium">{{ t("deckRecommend.options.random.keepAfterTrainingState") }}</span>
                               <span class="block text-xs leading-5 text-muted-foreground">
@@ -163,14 +161,14 @@ const {
                           </label>
                         </div>
 
-                        <div class="grid min-w-0 grid-cols-1 content-start gap-3 rounded-md border bg-background/50 p-2.5 sm:p-3">
+                        <div class="grid min-w-0 grid-cols-1 content-start gap-3">
                           <div class="space-y-1">
                             <h4 class="text-sm font-medium">{{ t("deckRecommend.options.random.supportGroup") }}</h4>
                             <p class="text-xs leading-5 text-muted-foreground">
                               {{ t("deckRecommend.options.random.supportGroupDescription") }}
                             </p>
                           </div>
-                          <label for="deck-support-master-max" class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-2.5 text-sm sm:p-3">
+                          <label for="deck-support-master-max" class="flex items-center justify-between gap-3 text-sm">
                             <span class="min-w-0 space-y-1">
                               <span class="block font-medium">{{ t("deckRecommend.options.random.supportMasterMax") }}</span>
                               <span class="block text-xs leading-5 text-muted-foreground">
@@ -179,7 +177,7 @@ const {
                             </span>
                             <Switch id="deck-support-master-max" v-model="supportMasterMax" :disabled="running" />
                           </label>
-                          <label for="deck-support-skill-max" class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-2.5 text-sm sm:p-3">
+                          <label for="deck-support-skill-max" class="flex items-center justify-between gap-3 text-sm">
                             <span class="min-w-0 space-y-1">
                               <span class="block font-medium">{{ t("deckRecommend.options.random.supportSkillMax") }}</span>
                               <span class="block text-xs leading-5 text-muted-foreground">
@@ -219,7 +217,6 @@ const {
                       :priority-hint="t('deckRecommend.options.characterRankOverride.priorityHint')"
                       :clear-label="t('deckRecommend.options.characterRankOverride.clear')"
                       :clear-disabled="running"
-                      badge-class="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"
                       @clear="clearCharacterRankOverrides"
                     >
                       <CharacterRankOverrideList
@@ -238,7 +235,6 @@ const {
                       :priority-hint="t('deckRecommend.options.mysekaiGateOverride.priorityHint')"
                       :clear-label="t('deckRecommend.options.mysekaiGateOverride.clear')"
                       :clear-disabled="running"
-                      badge-class="border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700 dark:border-fuchsia-500/30 dark:bg-fuchsia-500/10 dark:text-fuchsia-200"
                       @clear="clearMysekaiGateLevelOverrides"
                     >
                       <MysekaiGateOverrideList
@@ -257,7 +253,6 @@ const {
                       :priority-hint="t('deckRecommend.options.mysekaiFixtureBonusOverride.priorityHint')"
                       :clear-label="t('deckRecommend.options.mysekaiFixtureBonusOverride.clear')"
                       :clear-disabled="running"
-                      badge-class="border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
                       @clear="clearMysekaiFixtureBonusRateOverrides"
                     >
                       <MysekaiFixtureBonusOverrideList
@@ -269,7 +264,7 @@ const {
                       />
                     </TemporaryOverridePanel>
 
-                    <section class="grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+                    <section class="grid min-w-0 grid-cols-1 gap-3 py-4">
                       <div class="space-y-1">
                         <h3 class="text-sm font-medium">{{ t("deckRecommend.options.engine.title") }}</h3>
                         <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.engine.description") }}</p>
@@ -305,7 +300,7 @@ const {
                       </p>
                     </section>
 
-                    <section class="grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+                    <section class="grid min-w-0 grid-cols-1 gap-3 py-4">
                       <div class="space-y-1">
                         <h3 class="text-sm font-medium">{{ t("deckRecommend.singleCard.title") }}</h3>
                         <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.singleCard.description") }}</p>

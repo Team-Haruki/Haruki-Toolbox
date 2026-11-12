@@ -105,7 +105,7 @@ function detailLabel(item: DeckRecommendAreaItemOption) {
 </script>
 
 <template>
-  <div v-if="props.sections.length === 0" class="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+  <div v-if="props.sections.length === 0" class="text-sm text-muted-foreground">
     {{ t("deckRecommend.options.areaItemOverride.empty") }}
   </div>
 
@@ -113,7 +113,7 @@ function detailLabel(item: DeckRecommendAreaItemOption) {
     <section
       v-for="section in props.sections"
       :key="section.kind"
-      class="grid min-w-0 gap-2 rounded-md border bg-background/50 p-2.5"
+      class="grid min-w-0 gap-2"
     >
       <h4 class="text-sm font-medium">{{ section.label }}</h4>
       <div
@@ -130,7 +130,7 @@ function detailLabel(item: DeckRecommendAreaItemOption) {
           <div
             v-for="item in areaGroup.items"
             :key="item.id"
-            class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_100px] items-center gap-2 rounded-md border bg-background/70 p-2 text-sm"
+            class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_100px] items-center gap-2 rounded-md bg-muted/40 p-2 text-sm"
           >
             <img
               v-if="item.iconUrl"

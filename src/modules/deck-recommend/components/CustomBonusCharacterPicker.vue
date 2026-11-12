@@ -104,12 +104,12 @@ function isSupportUnit(value: string): value is DeckRecommendSupportUnitType {
 
 <template>
   <div class="grid gap-3">
-    <div class="grid max-h-72 gap-2 overflow-y-auto rounded-md border bg-background/60 p-2 sm:grid-cols-2 xl:grid-cols-3">
+    <div class="grid max-h-72 gap-2 overflow-y-auto sm:grid-cols-2 xl:grid-cols-3">
       <label
         v-for="option in options"
         :key="option.id"
         :for="`custom-bonus-character-${option.id}`"
-        class="flex min-w-0 items-center gap-2 rounded-md border bg-muted/20 px-2 py-1.5 text-sm transition-colors hover:bg-muted/40"
+        class="flex min-w-0 items-center gap-2 rounded-md bg-muted/40 px-2 py-1.5 text-sm transition-colors hover:bg-muted/70"
       >
         <Checkbox
           :id="`custom-bonus-character-${option.id}`"
@@ -136,7 +136,7 @@ function isSupportUnit(value: string): value is DeckRecommendSupportUnitType {
         <div
           v-for="option in supportCharacterOptions"
           :key="option.id"
-          class="grid gap-2 rounded-md border bg-background/60 p-2"
+          class="grid gap-2 rounded-md bg-muted/40 p-2"
         >
           <div class="flex min-w-0 items-center gap-2 text-sm">
             <img :src="option.iconUrl" alt="" aria-hidden="true" class="size-6 rounded-sm object-cover" loading="lazy" @error="handleSekaiImageError($event, option.iconUrl)">

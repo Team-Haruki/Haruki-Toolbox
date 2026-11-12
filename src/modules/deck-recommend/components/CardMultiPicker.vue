@@ -132,14 +132,14 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
       <span class="shrink-0 text-xs text-muted-foreground">{{ selectionCountText }}</span>
     </Button>
 
-    <div v-if="selectedCards.length === 0" class="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+    <div v-if="selectedCards.length === 0" class="text-sm text-muted-foreground">
       {{ t("deckRecommend.options.constraints.noSelectedCards") }}
     </div>
     <div v-else class="grid min-w-0 grid-cols-1 gap-2 @lg:grid-cols-2">
       <div
         v-for="card in selectedCards"
         :key="card.id"
-        class="flex min-w-0 items-center gap-2 rounded-md border bg-background/70 p-2"
+        class="flex min-w-0 items-center gap-2 rounded-md bg-muted/40 p-2"
       >
         <img
           v-if="card.thumbnailUrl"

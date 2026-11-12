@@ -223,7 +223,7 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
       </div>
     </div>
 
-    <div class="grid min-w-0 grid-cols-1 gap-3 border-t pt-4">
+    <div class="grid min-w-0 grid-cols-1 gap-3 border-t border-border/60 pt-4">
       <h2 class="text-sm font-semibold">
         {{ t("deckRecommend.groups.musicAlgorithm") }}
       </h2>
@@ -305,7 +305,7 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
       </div>
     </div>
 
-    <div v-if="showEventConditionSection" class="grid min-w-0 grid-cols-1 gap-3 border-t pt-4">
+    <div v-if="showEventConditionSection" class="grid min-w-0 grid-cols-1 gap-3 border-t border-border/60 pt-4">
       <div class="flex flex-col gap-2 @lg:flex-row @lg:items-start @lg:justify-between">
         <div class="space-y-1">
           <h2 class="text-sm font-semibold">
@@ -418,7 +418,7 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
           </div>
           <div
             v-if="isCustomBonusSimulation"
-            class="col-span-full grid min-w-0 grid-cols-1 gap-2 rounded-md border bg-background/60 p-2.5 sm:p-3"
+            class="col-span-full grid min-w-0 grid-cols-1 gap-2 rounded-lg bg-muted/40 p-3"
           >
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div class="space-y-1">
@@ -481,7 +481,7 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
       </p>
     </div>
 
-    <div v-if="showBonusTargetsInput" class="grid min-w-0 grid-cols-1 gap-3 border-t pt-4">
+    <div v-if="showBonusTargetsInput" class="grid min-w-0 grid-cols-1 gap-3 border-t border-border/60 pt-4">
       <div class="space-y-1">
         <h2 class="text-sm font-semibold">
           {{ t("deckRecommend.options.bonus.title") }}
