@@ -10,7 +10,7 @@ import { useI18n } from "vue-i18n"
 import { Loader2, RefreshCw, Search, UserCog, UserPlus } from "lucide-vue-next"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogDescription, DialogHeader, DialogScrollContent, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
@@ -152,33 +152,35 @@ function statusLabel(item: ToolboxSponsorUser) {
   </AdminPanel>
 
   <Dialog v-model:open="adding">
-    <DialogScrollContent class="sm:max-w-xl">
+    <DialogContent>
       <DialogHeader><DialogTitle>{{ t("adminSponsors.toolbox.add") }}</DialogTitle><DialogDescription>{{ t("adminSponsors.toolbox.addDescription") }}</DialogDescription></DialogHeader>
-      <form class="flex gap-2" @submit.prevent="search()">
-        <Input v-model="candidateQuery" class="min-w-0 flex-1" :maxlength="128" :aria-label="t('adminSponsors.toolbox.findUser')" :placeholder="t('adminSponsors.toolbox.searchHint')" />
-        <Button type="submit" class="shrink-0" :disabled="searching || !candidateQuery.trim()">{{ t("adminSponsors.toolbox.search") }}</Button>
-      </form>
-      <p v-if="candidateError" role="alert" class="text-sm text-destructive">{{ candidateError }}</p>
-      <p v-if="searching" role="status" class="flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 class="size-4 animate-spin" />{{ t("adminSponsors.toolbox.loading") }}
-      </p>
-      <p v-else-if="searched && !candidates.length" class="text-sm text-muted-foreground">{{ t("adminSponsors.toolbox.noUser") }}</p>
-      <ul v-if="candidates.length" class="divide-y divide-border/60 overflow-hidden rounded-xl border bg-muted/20" role="list">
-        <li v-for="user in candidates" :key="user.userId" class="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5">
-          <div class="min-w-0 flex-1 basis-48">
-            <p class="text-sm font-medium [overflow-wrap:anywhere]">{{ user.name }}</p>
-            <p class="text-xs text-muted-foreground [overflow-wrap:anywhere]">{{ user.userId }} · {{ user.email }}</p>
-          </div>
-          <Button size="sm" class="ml-auto shrink-0" :variant="user.banned ? 'outline' : 'default'" :disabled="user.banned || searching" @click="edit(user, true)">
-            {{ t(user.banned ? 'adminSponsors.toolbox.banned' : 'adminSponsors.toolbox.select') }}
-          </Button>
-        </li>
-      </ul>
-      <div v-if="candidateTotal > 20" class="flex justify-end gap-2">
-        <Button variant="outline" size="sm" :disabled="searching || candidatePage <= 1" @click="search(candidatePage - 1)">{{ t("admin.pagination.prevPage") }}</Button>
-        <Button variant="outline" size="sm" :disabled="searching || candidatePage * 20 >= candidateTotal" @click="search(candidatePage + 1)">{{ t("admin.pagination.nextPage") }}</Button>
-      </div>
-    </DialogScrollContent>
+      <DialogBody>
+        <form class="flex gap-2" @submit.prevent="search()">
+          <Input v-model="candidateQuery" class="min-w-0 flex-1" :maxlength="128" :aria-label="t('adminSponsors.toolbox.findUser')" :placeholder="t('adminSponsors.toolbox.searchHint')" />
+          <Button type="submit" class="shrink-0" :disabled="searching || !candidateQuery.trim()">{{ t("adminSponsors.toolbox.search") }}</Button>
+        </form>
+        <p v-if="candidateError" role="alert" class="text-sm text-destructive">{{ candidateError }}</p>
+        <p v-if="searching" role="status" class="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 class="size-4 animate-spin" />{{ t("adminSponsors.toolbox.loading") }}
+        </p>
+        <p v-else-if="searched && !candidates.length" class="text-sm text-muted-foreground">{{ t("adminSponsors.toolbox.noUser") }}</p>
+        <ul v-if="candidates.length" class="divide-y divide-border/60 overflow-hidden rounded-xl border bg-muted/20" role="list">
+          <li v-for="user in candidates" :key="user.userId" class="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5">
+            <div class="min-w-0 flex-1 basis-48">
+              <p class="text-sm font-medium [overflow-wrap:anywhere]">{{ user.name }}</p>
+              <p class="text-xs text-muted-foreground [overflow-wrap:anywhere]">{{ user.userId }} · {{ user.email }}</p>
+            </div>
+            <Button size="sm" class="ml-auto shrink-0" :variant="user.banned ? 'outline' : 'default'" :disabled="user.banned || searching" @click="edit(user, true)">
+              {{ t(user.banned ? 'adminSponsors.toolbox.banned' : 'adminSponsors.toolbox.select') }}
+            </Button>
+          </li>
+        </ul>
+        <div v-if="candidateTotal > 20" class="flex justify-end gap-2">
+          <Button variant="outline" size="sm" :disabled="searching || candidatePage <= 1" @click="search(candidatePage - 1)">{{ t("admin.pagination.prevPage") }}</Button>
+          <Button variant="outline" size="sm" :disabled="searching || candidatePage * 20 >= candidateTotal" @click="search(candidatePage + 1)">{{ t("admin.pagination.nextPage") }}</Button>
+        </div>
+      </DialogBody>
+    </DialogContent>
   </Dialog>
 
   <ConfirmDialog v-model:open="editing" :title="t('adminSponsors.toolbox.manage')" :description="t('adminSponsors.toolbox.target', { name: target?.name, id: target?.userId })" :confirm-label="t('adminSponsors.toolbox.save')" :destructive="access === 'blocked'" :on-confirm="save">

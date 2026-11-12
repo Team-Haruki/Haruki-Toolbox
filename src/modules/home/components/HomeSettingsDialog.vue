@@ -29,17 +29,7 @@ import {
   UserRoundCog,
 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import {
   Dialog,
   DialogContent,
@@ -107,6 +97,7 @@ const {
   resetSettings,
 } = useHomeSettings()
 const { t, locale } = useI18n()
+const resetDialogOpen = ref(false)
 const internalSettingsDialogOpen = ref(false)
 const internalSettingsTab = ref("preferences")
 const settingsDialogOpen = computed({
@@ -241,7 +232,7 @@ const updateStatus = computed<{ icon: Component; tone: SettingsRowTone; label: s
       </Button>
     </DialogTrigger>
     <DialogContent
-      class="flex h-[calc(100dvh-1.5rem)] w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:h-[min(85svh,44rem)] sm:w-full sm:max-w-4xl sm:p-0"
+      class="h-[calc(100dvh-1.5rem)] w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] sm:h-[min(85dvh,44rem)] sm:w-full sm:max-w-4xl"
     >
       <DialogTitle class="sr-only">{{ t("homeSettings.title") }}</DialogTitle>
       <DialogDescription class="sr-only">{{ t("homeSettings.description") }}</DialogDescription>
@@ -533,26 +524,24 @@ const updateStatus = computed<{ icon: Component; tone: SettingsRowTone; label: s
                   :label="t('homeSettings.reset.label')"
                   :help="t('homeSettings.resetDialog.description')"
                 >
-                  <AlertDialog>
-                    <AlertDialogTrigger as-child>
-                      <Button type="button" variant="outline" size="sm" class="text-destructive hover:text-destructive">
-                        <RotateCcw class="size-3.5" />
-                        {{ t("common.reset") }}
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>{{ t("homeSettings.resetDialog.title") }}</AlertDialogTitle>
-                        <AlertDialogDescription>{{ t("homeSettings.resetDialog.description") }}</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>{{ t("common.cancel") }}</AlertDialogCancel>
-                        <AlertDialogAction class="bg-destructive text-white hover:bg-destructive/90" @click="resetSettings">
-                          {{ t("homeSettings.resetDialog.confirm") }}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    class="text-destructive hover:text-destructive"
+                    @click="resetDialogOpen = true"
+                  >
+                    <RotateCcw class="size-3.5" />
+                    {{ t("common.reset") }}
+                  </Button>
+                  <ConfirmDialog
+                    v-model:open="resetDialogOpen"
+                    :title="t('homeSettings.resetDialog.title')"
+                    :description="t('homeSettings.resetDialog.description')"
+                    :confirm-label="t('homeSettings.resetDialog.confirm')"
+                    destructive
+                    :on-confirm="resetSettings"
+                  />
                 </SettingsRow>
               </SettingsGroup>
             </div>

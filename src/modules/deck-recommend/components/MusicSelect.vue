@@ -7,6 +7,7 @@ import type { SekaiRegion } from "@/types"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -231,6 +232,14 @@ function handleDifficultyUpdate(value: AcceptableValue) {
   emit("update:difficultyValue", typeof value === "string" && value ? value : null)
 }
 
+const activeFilterCount = computed(() => [
+  filterDifficulty.value != null,
+  typeof levelMin.value === "number" || typeof levelMax.value === "number",
+  filterCharacterId.value != null,
+  selectedTags.value.length > 0,
+  selectedYear.value != null,
+].filter(Boolean).length)
+
 function resetFilters() {
   search.value = ""
   filterDifficulty.value = null
@@ -377,20 +386,25 @@ function toNullableNumber(value: number | string | undefined | null): number | n
     </div>
 
     <Dialog v-model:open="open">
-      <DialogContent class="flex h-[85dvh] flex-col gap-3 overflow-hidden sm:max-w-4xl">
-        <DialogHeader class="shrink-0">
+      <DialogContent size="xl" tall :description="t('musicLibrary.list.filters.searchPlaceholder')">
+        <DialogHeader>
           <DialogTitle>{{ t("deckRecommend.picker.musicDialogTitle") }}</DialogTitle>
         </DialogHeader>
 
-        <CatalogSearchField
-          v-model="search"
-          class="shrink-0"
-          :label="t('musicLibrary.list.filters.search')"
-          :placeholder="t('musicLibrary.list.filters.searchPlaceholder')"
-        />
+        <!-- The search stays put while the list scrolls under it. -->
+        <div class="flex shrink-0 border-b border-border/60 px-4 py-3 sm:px-5">
+          <CatalogSearchField
+            v-model="search"
+            compact
+            :label="t('musicLibrary.list.filters.search')"
+            :placeholder="t('musicLibrary.list.filters.searchPlaceholder')"
+          />
+        </div>
 
-        <div class="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain" @scroll="handleListScroll">
+        <DialogBody class="gap-3" @scroll="handleListScroll">
           <CatalogFilterPanel
+            default-collapsed
+            :active-count="activeFilterCount"
             :title="t('musicLibrary.list.filters.title')"
             :count-label="t('musicLibrary.list.results.count', { count: visibleEntries.length })"
             :reset-label="t('musicLibrary.list.filters.reset')"
@@ -596,7 +610,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
               }}
             </div>
           </div>
-        </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   </div>

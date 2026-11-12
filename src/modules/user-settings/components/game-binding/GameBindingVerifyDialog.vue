@@ -3,14 +3,15 @@ import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogClose,
+  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogScrollContent,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Check, Copy } from "lucide-vue-next"
+import { Copy } from "lucide-vue-next"
 
 const { t } = useI18n()
 
@@ -29,40 +30,40 @@ const STEP_KEYS = ["copy", "paste", "returnHome", "save"] as const
 
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogScrollContent class="sm:max-w-[440px]">
+    <DialogContent size="sm">
       <DialogHeader>
         <DialogTitle>{{ t("userSettings.gameBinding.verifyDialog.title") }}</DialogTitle>
         <DialogDescription>{{ t("userSettings.gameBinding.verifyDialog.description") }}</DialogDescription>
       </DialogHeader>
 
-      <div class="rounded-lg border bg-muted/30 px-3 py-4">
-        <p class="text-center text-xs text-muted-foreground">{{ t("userSettings.gameBinding.verifyDialog.codeLabel") }}</p>
-        <p class="mt-1 select-all break-all text-center font-mono text-2xl font-bold" data-testid="binding-verify-code">
-          {{ generatedCode }}
-        </p>
-        <div class="mt-3 flex justify-center">
-          <Button variant="outline" size="sm" @click="emit('copy')">
-            <Copy class="h-4 w-4 mr-2" aria-hidden="true" />
-            {{ t("userSettings.gameBinding.verifyDialog.copyButton") }}
-          </Button>
+      <DialogBody>
+        <!-- The code is the one thing to read here: large, selectable, with its copy button beside it. -->
+        <div class="flex flex-col gap-1">
+          <p class="text-xs text-muted-foreground">{{ t("userSettings.gameBinding.verifyDialog.codeLabel") }}</p>
+          <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+            <p class="min-w-0 select-all font-mono text-2xl font-semibold tabular-nums [overflow-wrap:anywhere]" data-testid="binding-verify-code">
+              {{ generatedCode }}
+            </p>
+            <Button variant="outline" size="sm" class="shrink-0" @click="emit('copy')">
+              <Copy class="size-4" aria-hidden="true" />
+              {{ t("userSettings.gameBinding.verifyDialog.copyButton") }}
+            </Button>
+          </div>
         </div>
-      </div>
 
-      <ol class="list-decimal space-y-1.5 pl-5 text-sm text-muted-foreground">
-        <li v-for="step in STEP_KEYS" :key="step">
-          {{ t(`userSettings.gameBinding.verifyDialog.steps.${step}`) }}
-        </li>
-      </ol>
-      <p class="text-xs text-muted-foreground">{{ t("userSettings.gameBinding.verifyDialog.afterwards") }}</p>
+        <ol class="list-decimal space-y-1.5 border-t border-border/60 pt-4 pl-5 text-sm text-muted-foreground">
+          <li v-for="step in STEP_KEYS" :key="step">
+            {{ t(`userSettings.gameBinding.verifyDialog.steps.${step}`) }}
+          </li>
+        </ol>
+        <p class="text-xs text-muted-foreground">{{ t("userSettings.gameBinding.verifyDialog.afterwards") }}</p>
+      </DialogBody>
 
       <DialogFooter>
         <DialogClose as-child>
-          <Button>
-            <Check class="h-4 w-4 mr-2" aria-hidden="true" />
-            {{ t("userSettings.gameBinding.verifyDialog.confirmButton") }}
-          </Button>
+          <Button>{{ t("userSettings.gameBinding.verifyDialog.confirmButton") }}</Button>
         </DialogClose>
       </DialogFooter>
-    </DialogScrollContent>
+    </DialogContent>
   </Dialog>
 </template>

@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n"
 import type { RecommendDeck } from "haruki-sekai-deck-recommend-cpp"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -135,16 +136,17 @@ function formatInteger(value: number): string {
 
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent class="flex max-h-[85vh] flex-col gap-3 overflow-hidden sm:max-w-3xl">
+    <DialogContent size="lg" tall>
       <DialogHeader>
         <DialogTitle>{{ t("eventPlanner.dialog.rankingTitle") }}</DialogTitle>
         <DialogDescription>{{ t("eventPlanner.dialog.rankingHint") }}</DialogDescription>
       </DialogHeader>
 
-      <div class="flex flex-wrap items-center gap-2">
+      <!-- The filters stay put while the table scrolls under them. -->
+      <div class="flex shrink-0 flex-wrap items-center gap-2 border-b border-border/60 px-4 py-3 sm:px-5">
         <Input
           v-model="searchQuery"
-          class="h-8 w-48 text-xs"
+          class="h-8 min-w-0 flex-1 basis-40 text-xs"
           :placeholder="t('eventPlanner.dialog.searchPlaceholder')"
           :aria-label="t('eventPlanner.dialog.searchPlaceholder')"
         />
@@ -164,17 +166,19 @@ function formatInteger(value: number): string {
         </Select>
       </div>
 
-      <p v-if="errorMessage" class="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
+      <!-- The table runs edge to edge: the dialog is its frame. -->
+      <DialogBody class="gap-0 px-0 py-0 sm:px-0">
+      <p v-if="errorMessage" role="alert" class="px-4 py-3 text-xs text-destructive sm:px-5">
         {{ errorMessage }}
       </p>
 
       <p v-if="rankingLoading" class="py-8 text-center text-xs text-muted-foreground">
         {{ t("eventPlanner.dialog.rankingLoading") }}
       </p>
-      <div v-else class="min-h-0 flex-1 overflow-y-auto rounded-md border">
-        <table class="w-full text-xs">
-          <thead class="sticky top-0 bg-background">
-            <tr class="border-b text-muted-foreground">
+      <div v-else class="min-w-0">
+        <table class="w-full text-xs [&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4 sm:[&_td:first-child]:pl-5 sm:[&_td:last-child]:pr-5 sm:[&_th:first-child]:pl-5 sm:[&_th:last-child]:pr-5">
+          <thead class="sticky top-0 z-10 bg-background">
+            <tr class="border-b border-border/60 text-muted-foreground">
               <th class="px-2 py-1.5 text-left font-medium">{{ t("eventPlanner.dialog.columns.song") }}</th>
               <th class="px-2 py-1.5 text-left font-medium">{{ t("eventPlanner.dialog.columns.difficulty") }}</th>
               <th class="px-2 py-1.5 text-right font-medium">{{ t("eventPlanner.dialog.columns.eventPoint") }}</th>
@@ -207,6 +211,7 @@ function formatInteger(value: number): string {
           </tbody>
         </table>
       </div>
+      </DialogBody>
     </DialogContent>
   </Dialog>
 </template>

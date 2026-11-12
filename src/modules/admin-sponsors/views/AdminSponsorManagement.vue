@@ -1,22 +1,18 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
-import {
-  LucideLoader2,
-  LucideSave,
-  LucideShieldCheck,
-  LucideUserPlus,
-} from "lucide-vue-next"
+import { LucideLoader2, LucideShieldCheck } from "lucide-vue-next"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import DateTimePicker24h from "@/components/ui/datetime-picker/DateTimePicker24h.vue"
 import {
   Dialog,
+  DialogBody,
+  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogScrollContent,
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -162,12 +158,12 @@ function handleManualDialogOpen(open: boolean) {
     <ToolboxSponsorPanel />
 
     <Dialog v-model:open="editOpen">
-      <DialogScrollContent class="sm:max-w-[min(46rem,92vw)]">
+      <DialogContent size="lg" :description="t('adminSponsors.edit.title')">
         <DialogHeader>
           <DialogTitle>{{ t("adminSponsors.edit.title") }}</DialogTitle>
         </DialogHeader>
 
-        <div class="@container flex flex-col gap-5 py-1">
+        <DialogBody class="@container gap-5">
           <!-- Who is being edited; the id never changes. -->
           <div class="flex items-center gap-3">
             <Avatar class="size-11 shrink-0 border">
@@ -269,7 +265,7 @@ function handleManualDialogOpen(open: boolean) {
             @edit="startEditManualEntry"
             @retry="retryDetail"
           />
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button type="button" variant="outline" :disabled="saving" @click="editOpen = false">
@@ -277,11 +273,10 @@ function handleManualDialogOpen(open: boolean) {
           </Button>
           <Button type="submit" form="admin-sponsor-edit-form" :disabled="saving">
             <LucideLoader2 v-if="saving" class="size-4 animate-spin" />
-            <LucideSave v-else class="size-4" />
             {{ t("adminSponsors.edit.saveProfile") }}
           </Button>
         </DialogFooter>
-      </DialogScrollContent>
+      </DialogContent>
     </Dialog>
 
     <SponsorManualDurationDialog
@@ -296,47 +291,48 @@ function handleManualDialogOpen(open: boolean) {
     />
 
     <Dialog v-model:open="createOpen">
-      <DialogScrollContent class="sm:max-w-[min(32rem,92vw)]">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{{ t("adminSponsors.create.title") }}</DialogTitle>
           <DialogDescription>{{ t("adminSponsors.create.description") }}</DialogDescription>
         </DialogHeader>
-        <form id="admin-sponsor-create-form" class="grid gap-3 py-1" novalidate @submit.prevent="createSponsor">
-          <div class="grid gap-1.5">
-            <Label :for="SPONSOR_FIELD_IDS.createName">{{ t("adminSponsors.edit.name") }}</Label>
-            <Input
-              :id="SPONSOR_FIELD_IDS.createName"
-              :model-value="createForm.name"
-              :aria-invalid="!!createNameError || undefined"
-              :aria-describedby="createNameError ? `${SPONSOR_FIELD_IDS.createName}-error` : undefined"
-              @update:model-value="updateCreateName(String($event ?? ''))"
-            />
-            <FieldError :id="`${SPONSOR_FIELD_IDS.createName}-error`" :message="createNameError" />
-          </div>
-          <div class="grid gap-1.5">
-            <Label for="admin-sponsor-create-plan">{{ t("adminSponsors.edit.planName") }}</Label>
-            <Input id="admin-sponsor-create-plan" v-model="createForm.planName" />
-          </div>
-          <div class="grid gap-1.5">
-            <Label for="admin-sponsor-create-avatar">{{ t("adminSponsors.edit.avatar") }}</Label>
-            <Input id="admin-sponsor-create-avatar" v-model="createForm.avatar" inputmode="url" :placeholder="t('adminSponsors.edit.avatarPlaceholder')" />
-          </div>
-          <div class="grid gap-1.5">
-            <Label for="admin-sponsor-create-message">{{ t("adminSponsors.edit.message") }}</Label>
-            <Input id="admin-sponsor-create-message" v-model="createForm.message" />
-          </div>
-        </form>
+        <DialogBody>
+          <form id="admin-sponsor-create-form" class="grid gap-3" novalidate @submit.prevent="createSponsor">
+            <div class="grid gap-1.5">
+              <Label :for="SPONSOR_FIELD_IDS.createName">{{ t("adminSponsors.edit.name") }}</Label>
+              <Input
+                :id="SPONSOR_FIELD_IDS.createName"
+                :model-value="createForm.name"
+                :aria-invalid="!!createNameError || undefined"
+                :aria-describedby="createNameError ? `${SPONSOR_FIELD_IDS.createName}-error` : undefined"
+                @update:model-value="updateCreateName(String($event ?? ''))"
+              />
+              <FieldError :id="`${SPONSOR_FIELD_IDS.createName}-error`" :message="createNameError" />
+            </div>
+            <div class="grid gap-1.5">
+              <Label for="admin-sponsor-create-plan">{{ t("adminSponsors.edit.planName") }}</Label>
+              <Input id="admin-sponsor-create-plan" v-model="createForm.planName" />
+            </div>
+            <div class="grid gap-1.5">
+              <Label for="admin-sponsor-create-avatar">{{ t("adminSponsors.edit.avatar") }}</Label>
+              <Input id="admin-sponsor-create-avatar" v-model="createForm.avatar" inputmode="url" :placeholder="t('adminSponsors.edit.avatarPlaceholder')" />
+            </div>
+            <div class="grid gap-1.5">
+              <Label for="admin-sponsor-create-message">{{ t("adminSponsors.edit.message") }}</Label>
+              <Input id="admin-sponsor-create-message" v-model="createForm.message" />
+            </div>
+          </form>
+        </DialogBody>
         <DialogFooter>
           <Button variant="outline" :disabled="creating" @click="createOpen = false">
             {{ t("common.cancel") }}
           </Button>
           <Button type="submit" form="admin-sponsor-create-form" :disabled="creating">
             <LucideLoader2 v-if="creating" class="size-4 animate-spin" />
-            <LucideUserPlus v-else class="size-4" />
             {{ t("adminSponsors.create.submit") }}
           </Button>
         </DialogFooter>
-      </DialogScrollContent>
+      </DialogContent>
     </Dialog>
 
     <ConfirmDialog

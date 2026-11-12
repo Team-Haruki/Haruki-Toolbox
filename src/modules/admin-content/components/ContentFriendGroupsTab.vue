@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogFooter,
@@ -71,6 +72,11 @@ const emit = defineEmits<{
 }>()
 
 const groupNameErrorId = `${CONTENT_FIELD_IDS.group.name}-error`
+
+const groupDialogTitle = computed(() =>
+  props.editingGroup
+    ? t("adminContent.groupsTab.createGroupDialog.editTitle")
+    : t("adminContent.groupsTab.createGroupDialog.title"))
 
 const sizeItems = computed<AdminMeterItem[]>(() =>
   countGroupItems(props.groups).map((entry) => ({
@@ -242,14 +248,13 @@ function itemSummary(item: AdminFriendGroupItem): string {
   </div>
 
   <Dialog :open="groupDialogOpen" @update:open="emit('update:groupDialogOpen', $event)">
-    <DialogContent>
+    <DialogContent :description="groupDialogTitle">
       <DialogHeader>
-        <DialogTitle>
-          {{ editingGroup ? t("adminContent.groupsTab.createGroupDialog.editTitle") : t("adminContent.groupsTab.createGroupDialog.title") }}
-        </DialogTitle>
+        <DialogTitle>{{ groupDialogTitle }}</DialogTitle>
       </DialogHeader>
-      <form novalidate @submit.prevent="emit('saveGroup')">
-        <div class="-mx-1 grid max-h-[60vh] gap-x-3 gap-y-3 overflow-y-auto px-1 py-1 sm:grid-cols-[minmax(0,1fr)_7rem]">
+      <!-- The form spans the body and the footer, so it carries the dialog's column on. -->
+      <form class="flex min-h-0 flex-1 flex-col" novalidate @submit.prevent="emit('saveGroup')">
+        <DialogBody class="gap-3 sm:grid-cols-[minmax(0,1fr)_7rem]">
           <div class="grid content-start gap-1.5">
             <Label :for="CONTENT_FIELD_IDS.group.name">{{ t("adminContent.groupsTab.createGroupDialog.groupNameLabel") }}</Label>
             <Input
@@ -277,8 +282,8 @@ function itemSummary(item: AdminFriendGroupItem): string {
             />
           </div>
           <p id="content-group-sort-order-hint" class="text-xs text-muted-foreground sm:col-span-2">{{ t("adminContent.linkDialog.fields.sortOrderHint") }}</p>
-        </div>
-        <DialogFooter class="mt-4">
+        </DialogBody>
+        <DialogFooter>
           <DialogClose as-child>
             <Button type="button" variant="outline" :disabled="groupSaving">{{ t("common.cancel") }}</Button>
           </DialogClose>

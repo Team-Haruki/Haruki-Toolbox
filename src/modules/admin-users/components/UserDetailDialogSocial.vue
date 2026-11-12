@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogDescription,
     DialogFooter,
@@ -64,7 +65,7 @@ const socialPlatformOptions = computed(() => getSocialPlatformOptions(t))
           {{ t("adminUsers.detail.dialog.social.description", { name: userName }) }}
         </DialogDescription>
       </DialogHeader>
-      <div class="flex flex-col gap-4 py-1">
+      <DialogBody>
         <div class="grid gap-3 sm:grid-cols-[10rem_minmax(0,1fr)]">
           <div class="grid content-start gap-1.5">
             <Label id="user-social-platform-label" for="user-social-platform">{{ t("adminUsers.detail.dialog.social.platform") }}</Label>
@@ -93,15 +94,16 @@ const socialPlatformOptions = computed(() => getSocialPlatformOptions(t))
             />
           </div>
         </div>
-        <div class="flex items-center justify-between gap-3 rounded-xl border bg-muted/20 px-4 py-2.5">
-          <Label for="socialVerified" class="min-w-0 flex-1 text-sm font-normal">{{ t("adminUsers.common.verified") }}</Label>
+        <div class="flex items-center justify-between gap-4 border-t border-border/60 pt-4">
+          <Label for="socialVerified" class="min-w-0 flex-1">{{ t("adminUsers.common.verified") }}</Label>
           <Switch
             id="socialVerified"
+            class="shrink-0"
             :model-value="verified"
             @update:model-value="emit('update:verified', !!$event)"
           />
         </div>
-      </div>
+      </DialogBody>
       <DialogFooter>
         <Button variant="outline" @click="emit('update:open', false)">{{ t("adminUsers.common.cancel") }}</Button>
         <Button :disabled="!platform.trim() || !userId.trim() || actionLoading" @click="emit('save')">

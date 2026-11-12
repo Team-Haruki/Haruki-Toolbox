@@ -7,6 +7,7 @@ import { ArrowLeft, Link2, RefreshCcw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -1250,11 +1251,12 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
 
         <!-- Expanded chart dialog -->
         <Dialog :open="expandedMetric != null" @update:open="(open) => !open && (expandedMetric = null)">
-          <DialogContent class="rank-border-chart-dialog">
+          <DialogContent size="2xl">
             <DialogHeader>
               <DialogTitle>{{ expandedMetric ? chartMeta[expandedMetric].title : "" }}</DialogTitle>
               <DialogDescription>{{ traceScopeLabel }}</DialogDescription>
             </DialogHeader>
+            <DialogBody>
             <TrendChartCard
               v-if="expandedMetric && expandedCharts"
               large
@@ -1284,6 +1286,7 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
                 </span>
               </template>
             </TrendChartCard>
+            </DialogBody>
           </DialogContent>
         </Dialog>
 
@@ -1381,10 +1384,3 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
 }
 </style>
 
-<style>
-/* DialogContent teleports to <body>, out of reach of scoped :deep selectors. */
-.rank-border-chart-dialog {
-  width: min(96vw, 68rem);
-  max-width: none;
-}
-</style>

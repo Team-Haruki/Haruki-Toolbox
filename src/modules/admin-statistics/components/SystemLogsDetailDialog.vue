@@ -5,14 +5,16 @@ import { LucideCopy } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
+  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogScrollContent,
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
 import LogsResultChip from "@/modules/admin-statistics/components/LogsResultChip.vue"
 import type { ErrorDescription } from "@/lib/error-utils"
 import type { SystemLogEntry } from "@/modules/admin-statistics/api/system-log"
@@ -60,11 +62,14 @@ const rows = computed<Row[]>(() => {
   ]
   return rows.filter((row): row is Row => row !== null)
 })
+
+const DT = "w-24 shrink-0 text-xs leading-5 text-muted-foreground"
+const DD = "min-w-0 flex-1 text-sm [overflow-wrap:anywhere]"
 </script>
 
 <template>
   <Dialog v-model:open="open">
-    <DialogScrollContent class="sm:max-w-2xl">
+    <DialogContent size="lg">
       <DialogHeader>
         <DialogTitle>{{ t("adminStatistics.systemLogs.detail.title") }}</DialogTitle>
         <!-- Which log this is: its id and when it happened. -->
@@ -72,47 +77,47 @@ const rows = computed<Row[]>(() => {
           {{ log ? `#${log.id} · ${formatTime(log.eventTime)}` : t("adminStatistics.common.fallback") }}
         </DialogDescription>
       </DialogHeader>
-      <template v-if="loading">
-        <Skeleton class="h-32 w-full" />
-      </template>
-      <template v-else-if="error">
+      <DialogBody>
+        <Skeleton v-if="loading" class="h-32 w-full" />
         <LoadErrorState
+          v-else-if="error"
           :title="t('adminStatistics.systemLogs.toast.loadDetailFailedTitle')"
           :description="error.message"
           :detail="error.detail"
           :retrying="loading"
           @retry="emit('retry')"
         />
-      </template>
-      <template v-else-if="log">
-        <div class="flex min-w-0 flex-col gap-3 text-sm">
-          <dl class="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-3 gap-y-2">
-            <dt class="text-muted-foreground">{{ t("adminStatistics.systemLogs.detail.result") }}</dt>
-            <dd><LogsResultChip :success="log.result === 'success'" /></dd>
-            <template v-for="row in rows" :key="row.key">
-              <dt class="text-muted-foreground">{{ row.label }}</dt>
-              <dd :class="['min-w-0 [overflow-wrap:anywhere]', row.mono ? 'font-mono text-[13px]' : 'tabular-nums']">{{ row.value }}</dd>
-            </template>
-          </dl>
-          <div v-if="log.userAgent" class="flex flex-col gap-1">
-            <span class="text-muted-foreground">User Agent</span>
-            <p class="rounded-md bg-muted p-3 text-xs [overflow-wrap:anywhere]">{{ log.userAgent }}</p>
-          </div>
-          <div v-if="detailText" class="flex flex-col gap-1">
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-muted-foreground">{{ t("adminStatistics.systemLogs.detail.detail") }}</span>
-              <Button variant="ghost" size="sm" class="h-7" @click="emit('copy')">
-                <LucideCopy class="mr-1 size-3.5" aria-hidden="true" />
+        <template v-else-if="log">
+          <SettingsGroup>
+            <dl class="divide-y divide-border/60">
+              <div class="flex gap-3 px-4 py-2.5">
+                <dt :class="DT">{{ t("adminStatistics.systemLogs.detail.result") }}</dt>
+                <dd :class="DD"><LogsResultChip :success="log.result === 'success'" /></dd>
+              </div>
+              <div v-for="row in rows" :key="row.key" class="flex gap-3 px-4 py-2.5">
+                <dt :class="DT">{{ row.label }}</dt>
+                <dd :class="[DD, row.mono ? 'font-mono text-[13px]' : 'tabular-nums']">{{ row.value }}</dd>
+              </div>
+              <div v-if="log.userAgent" class="flex gap-3 px-4 py-2.5">
+                <dt :class="DT">User Agent</dt>
+                <dd :class="[DD, 'text-xs leading-5']">{{ log.userAgent }}</dd>
+              </div>
+            </dl>
+          </SettingsGroup>
+          <SettingsGroup v-if="detailText" :title="t('adminStatistics.systemLogs.detail.detail')">
+            <template #action>
+              <Button variant="ghost" size="sm" class="h-7 pointer-coarse:h-9" @click="emit('copy')">
+                <LucideCopy class="size-3.5" aria-hidden="true" />
                 {{ t("adminStatistics.systemLogs.detail.copy") }}
               </Button>
-            </div>
-            <pre class="max-h-[50vh] overflow-auto rounded-md bg-muted p-3 text-xs break-words whitespace-pre-wrap">{{ detailText }}</pre>
-          </div>
-        </div>
-      </template>
+            </template>
+            <pre class="whitespace-pre-wrap px-4 py-3 font-mono text-xs leading-relaxed [overflow-wrap:anywhere]">{{ detailText }}</pre>
+          </SettingsGroup>
+        </template>
+      </DialogBody>
       <DialogFooter v-if="!loading && !error">
         <Button variant="outline" @click="open = false">{{ t("common.close") }}</Button>
       </DialogFooter>
-    </DialogScrollContent>
+    </DialogContent>
   </Dialog>
 </template>

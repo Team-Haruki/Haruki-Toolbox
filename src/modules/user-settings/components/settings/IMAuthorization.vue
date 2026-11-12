@@ -11,23 +11,22 @@ import {
   MessagesSquare,
   Pencil,
   Plus,
-  Save,
   Send,
   Trash2,
   User,
-  X,
   Zap,
 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
 import {
   Dialog,
+  DialogBody,
+  DialogClose,
+  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogClose,
-  DialogScrollContent
 } from "@/components/ui/dialog"
 import {
   Select,
@@ -152,7 +151,7 @@ function getPlatformIcon(platform: SocialPlatform) {
   </div>
 
   <Dialog v-model:open="showEditDialog">
-    <DialogScrollContent class="sm:max-w-xl">
+    <DialogContent>
       <DialogHeader>
         <DialogTitle>
           {{ isCreateMode ? t("userSettings.imAuthorization.dialog.createTitle") : t("userSettings.imAuthorization.dialog.editTitle") }}
@@ -165,7 +164,7 @@ function getPlatformIcon(platform: SocialPlatform) {
           </template>
         </DialogDescription>
       </DialogHeader>
-      <div v-if="editTarget" class="flex flex-col gap-4 py-2">
+      <DialogBody v-if="editTarget">
         <div class="grid gap-1.5">
           <Label id="im-auth-platform-label" for="im-auth-platform">{{ t("userSettings.imAuthorization.fields.platform") }}</Label>
           <Select id="im-auth-platform" :key="locale" v-model="editTarget.platform" @update:model-value="clearAccountError">
@@ -207,30 +206,26 @@ function getPlatformIcon(platform: SocialPlatform) {
           <Label for="im-auth-remark">{{ t("userSettings.imAuthorization.fields.remark") }}</Label>
           <Input id="im-auth-remark" v-model="editTarget.comment"/>
         </div>
-        <div class="flex items-start gap-3 rounded-lg border bg-muted/20 p-3">
-          <Switch id="im-auth-fast-verification" v-model="editTarget.allowFastVerification" class="mt-0.5" />
-          <div class="min-w-0 flex-1 space-y-1">
+        <div class="flex items-start justify-between gap-4 border-t border-border/60 pt-4">
+          <div class="flex min-w-0 flex-1 flex-col gap-1">
             <Label for="im-auth-fast-verification">{{ t("userSettings.imAuthorization.fields.allowFastVerification") }}</Label>
-            <p class="text-xs text-muted-foreground leading-snug">
+            <p class="text-xs leading-snug text-muted-foreground">
               {{ t("userSettings.imAuthorization.fields.allowFastVerificationHint") }}
             </p>
           </div>
+          <Switch id="im-auth-fast-verification" v-model="editTarget.allowFastVerification" class="shrink-0" />
         </div>
-      </div>
+      </DialogBody>
       <DialogFooter>
         <DialogClose as-child>
-          <Button variant="outline">
-            <X class="h-4 w-4 mr-2" />
-            {{ t("userSettings.common.cancel") }}
-          </Button>
+          <Button variant="outline">{{ t("userSettings.common.cancel") }}</Button>
         </DialogClose>
-        <Button :disabled="isSaving" @click="handleEditSave">
-          <Loader2 v-if="isSaving" class="h-4 w-4 mr-2 animate-spin" />
-          <Save v-else class="h-4 w-4 mr-2" />
+        <Button :disabled="isSaving" :aria-busy="isSaving || undefined" @click="handleEditSave">
+          <Loader2 v-if="isSaving" class="size-4 animate-spin" />
           {{ t("common.save") }}
         </Button>
       </DialogFooter>
-    </DialogScrollContent>
+    </DialogContent>
   </Dialog>
 
   <ConfirmDialog

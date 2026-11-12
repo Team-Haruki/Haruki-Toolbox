@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button"
 import VerificationStatusBadge from "@/modules/user-settings/components/VerificationStatusBadge.vue"
 import {
   Dialog,
+  DialogBody,
   DialogClose,
+  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogScrollContent,
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -26,7 +27,6 @@ import {
   Armchair,
   Bot,
   Globe,
-  Save,
   ShieldAlert,
   ShieldCheck,
 } from "lucide-vue-next"
@@ -199,7 +199,7 @@ const permissionGroups = computed<PermissionGroupView[]>(() => {
 
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogScrollContent class="max-h-[90vh] overflow-y-auto sm:max-w-[560px]">
+    <DialogContent>
       <DialogHeader>
         <DialogTitle>
           {{ isCreating ? t("userSettings.gameBinding.editDialog.createTitle") : t("userSettings.gameBinding.editDialog.editTitle") }}
@@ -209,7 +209,7 @@ const permissionGroups = computed<PermissionGroupView[]>(() => {
         </DialogDescription>
       </DialogHeader>
 
-      <div class="flex flex-col gap-5 py-1">
+      <DialogBody class="gap-5">
         <!-- Which account: fields while creating, a fixed summary afterwards. -->
         <SettingsGroup :title="t('userSettings.gameBinding.editDialog.basicInfoTitle')">
           <div v-if="isCreating" class="grid gap-3 px-4 py-3 sm:grid-cols-[9rem_minmax(0,1fr)]">
@@ -331,12 +331,12 @@ const permissionGroups = computed<PermissionGroupView[]>(() => {
             <template #below>
               <!-- On a phone the tiles take the row's full width (the slot is
                    indented under the label), or the bot names get cut off. -->
-              <div class="-ml-11 grid grid-cols-2 gap-2 sm:ml-0">
+              <div class="-ml-11 grid grid-cols-2 gap-x-6 gap-y-0.5 sm:ml-0">
                 <label
                   v-for="bot in group.bots"
                   :key="bot.key"
                   :for="`binding-${group.key}-${bot.key}`"
-                  class="flex min-w-0 cursor-pointer items-center justify-between gap-2 rounded-lg border bg-background px-3 py-2 text-sm"
+                  class="flex min-h-9 min-w-0 cursor-pointer items-center justify-between gap-2 text-sm pointer-coarse:min-h-10"
                   :title="bot.title"
                 >
                   <span class="min-w-0 truncate">{{ bot.name }}</span>
@@ -351,7 +351,7 @@ const permissionGroups = computed<PermissionGroupView[]>(() => {
             </template>
           </SettingsRow>
         </SettingsGroup>
-      </div>
+      </DialogBody>
 
       <DialogFooter>
         <DialogClose as-child>
@@ -363,10 +363,9 @@ const permissionGroups = computed<PermissionGroupView[]>(() => {
           :disabled="isSaving || (isCreating && !verificationTriggered)"
           @click="emit('save')"
         >
-          <Save class="size-4" />
           {{ t("common.save") }}
         </Button>
       </DialogFooter>
-    </DialogScrollContent>
+    </DialogContent>
   </Dialog>
 </template>

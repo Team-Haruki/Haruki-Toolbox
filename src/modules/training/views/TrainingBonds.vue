@@ -7,7 +7,13 @@ import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { LucideCheck, LucideChevronRight, LucideHeart } from "lucide-vue-next"
 import { Card, CardContent } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import CatalogCharacterPicker from "@/shared/components/catalog/CatalogCharacterPicker.vue"
 import { useTrainingRefresh } from "@/modules/training/composables/training-context"
@@ -283,10 +289,9 @@ function retry() {
 
       <!-- Per-level rewards dialog -->
       <Dialog :open="dialogRow != null" @update:open="handleDialogOpenChange">
-        <DialogContent class="max-h-[85vh] gap-3 overflow-y-auto sm:max-w-xl" :description="t('training.bonds.rewardsTitle')">
-          <!-- `pr-8` keeps the level out from under the close button. -->
+        <DialogContent :description="t('training.bonds.rewardsTitle')">
           <DialogHeader v-if="dialogRow">
-            <DialogTitle class="flex items-center gap-2 pr-8 text-base">
+            <DialogTitle class="flex items-center gap-2">
               <img
                 v-if="dialogRow.iconUrl1"
                 :src="dialogRow.iconUrl1"
@@ -308,15 +313,15 @@ function retry() {
               </span>
             </DialogTitle>
           </DialogHeader>
-          <div v-if="dialogRow" class="flex flex-col gap-1">
-            <p class="text-[11px] font-medium text-muted-foreground">
+          <DialogBody v-if="dialogRow" class="gap-0">
+            <p class="pb-2 text-xs text-muted-foreground">
               {{ t("training.bonds.rewardsTitle") }}
             </p>
             <div
               v-for="rankRow in dialogRow.rewardRanks"
               :key="rankRow.rank"
               :class="[
-                'flex flex-wrap items-center gap-x-2 gap-y-1 text-xs',
+                'flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border/60 py-2 text-xs',
                 rankRow.rank <= dialogRow.bondLevel ? 'opacity-50' : '',
               ]"
             >
@@ -330,12 +335,12 @@ function retry() {
               <span
                 v-for="(item, index) in rankRow.items"
                 :key="index"
-                class="rounded-full border bg-muted/30 px-2 py-0.5"
+                class="rounded-full bg-muted px-2 py-0.5"
               >
                 {{ rewardLabel(item) }}
               </span>
             </div>
-          </div>
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </template>

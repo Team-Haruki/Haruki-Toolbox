@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue"
+import { computed, onMounted, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import {
   CircleAlert,
@@ -20,17 +20,7 @@ import { Button } from "@/components/ui/button"
 import SettingsFacts, { type SettingsFact } from "@/shared/components/settings/SettingsFacts.vue"
 import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
 import SettingsRow, { type SettingsRowTone } from "@/shared/components/settings/SettingsRow.vue"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import { Progress } from "@/components/ui/progress"
 import { resolveSekaiRegionLabel, SEKAI_REGIONS } from "@/lib/sekai-region"
 import {
@@ -74,6 +64,9 @@ onMounted(() => {
 function refreshMasterData(region: SekaiRegion) {
   sekaiDataStore.refreshRegionData(region, SEKAI_DATA_TOOLBOX_MASTER_FILES)
 }
+
+/** The region whose "clear local data" confirmation is open. */
+const clearTarget = ref<SekaiRegion | null>(null)
 
 function clearRegion(region: SekaiRegion) {
   sekaiDataStore.clearRegionData(region)
@@ -239,34 +232,26 @@ function formatTime(value: number | null) {
           <RefreshCw class="size-3.5" :class="{ 'animate-spin': row.refreshing }" />
           {{ t("userSettings.sekaiData.refreshMasterData") }}
         </Button>
-        <AlertDialog>
-          <AlertDialogTrigger as-child>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              class="text-destructive hover:text-destructive"
-              :disabled="row.refreshing"
-            >
-              <Eraser class="size-3.5" />
-              {{ t("userSettings.sekaiData.clear") }}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{{ t("userSettings.sekaiData.clearDialog.title") }}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {{ t("userSettings.sekaiData.clearDialog.description", { region: resolveSekaiRegionLabel(row.region, t) }) }}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{{ t("common.cancel") }}</AlertDialogCancel>
-              <AlertDialogAction class="bg-destructive text-white hover:bg-destructive/90" @click="clearRegion(row.region)">
-                {{ t("userSettings.sekaiData.clearDialog.confirm") }}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          class="text-destructive hover:text-destructive"
+          :disabled="row.refreshing"
+          @click="clearTarget = row.region"
+        >
+          <Eraser class="size-3.5" />
+          {{ t("userSettings.sekaiData.clear") }}
+        </Button>
+        <ConfirmDialog
+          :open="clearTarget === row.region"
+          :title="t('userSettings.sekaiData.clearDialog.title')"
+          :description="t('userSettings.sekaiData.clearDialog.description', { region: resolveSekaiRegionLabel(row.region, t) })"
+          :confirm-label="t('userSettings.sekaiData.clearDialog.confirm')"
+          destructive
+          :on-confirm="() => clearRegion(row.region)"
+          @update:open="(value) => { if (!value) clearTarget = null }"
+        />
 
         <template v-if="row.refreshing || row.status === 'loading' || row.status === 'clearing' || row.error" #below>
           <div v-if="row.refreshing || row.status === 'loading' || row.status === 'clearing'" class="space-y-1">

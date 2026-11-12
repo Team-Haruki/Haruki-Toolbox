@@ -52,10 +52,11 @@ function pointStyle(point: RankBorderChartPoint) {
 </script>
 
 <template>
-  <div :class="['rank-border-chart-card min-h-0 min-w-0 rounded-xl border bg-card p-3 sm:px-4', large ? 'rank-border-chart-card--large' : '']">
+  <!-- `large` is the chart inside its dialog: the dialog is the frame and carries the title. -->
+  <div :class="['rank-border-chart-card min-h-0 min-w-0', large ? 'rank-border-chart-card--large' : 'rounded-xl border bg-card p-3 sm:px-4']">
     <div class="mb-1.5 flex items-center justify-between gap-2">
-      <h2 class="text-sm font-semibold">{{ title }}</h2>
-      <span class="inline-flex items-center gap-1.5">
+      <h2 v-if="!large" class="text-sm font-semibold">{{ title }}</h2>
+      <span class="ml-auto inline-flex items-center gap-1.5">
         <!-- Axis ticks and tooltips are in the viewer's local time zone; say so. -->
         <span class="text-xs text-muted-foreground" :title="t('rankBorder.result.localTimeHint')">
           {{ unitLabel }} · {{ t("rankBorder.result.localTime") }}

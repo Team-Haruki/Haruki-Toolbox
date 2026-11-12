@@ -8,9 +8,10 @@ import { computed } from "vue"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Dialog,
+  DialogBody,
+  DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogScrollContent,
   DialogTitle,
 } from "@/components/ui/dialog"
 import { LucideUsers } from "lucide-vue-next"
@@ -56,9 +57,9 @@ const dataTypeItems = computed(() => toMeterItems(summary.value.byDataType, prop
 
 <template>
   <Dialog :open="props.open" @update:open="emit('update:open', $event)">
-    <DialogScrollContent class="sm:max-w-[720px]">
+    <DialogContent size="lg">
       <DialogHeader>
-        <DialogTitle class="[overflow-wrap:anywhere]">{{ t("adminWebhooks.subscribers.title", { id: props.webhookId }) }}</DialogTitle>
+        <DialogTitle>{{ t("adminWebhooks.subscribers.title", { id: props.webhookId }) }}</DialogTitle>
         <DialogDescription>
           {{ t("adminWebhooks.subscribers.description") }}
           <span v-if="props.subscribersGeneratedAt" class="mt-1 block tabular-nums">
@@ -67,7 +68,7 @@ const dataTypeItems = computed(() => toMeterItems(summary.value.byDataType, prop
         </DialogDescription>
       </DialogHeader>
 
-      <div class="@container flex min-w-0 flex-col gap-4">
+      <DialogBody class="@container">
         <div v-if="props.subscribersLoading" class="divide-y divide-border/60 overflow-hidden rounded-xl border bg-card">
           <div v-for="row in 3" :key="row" class="px-4 py-3">
             <Skeleton class="h-4 w-full" />
@@ -139,7 +140,7 @@ const dataTypeItems = computed(() => toMeterItems(summary.value.byDataType, prop
             </ul>
           </div>
         </template>
-      </div>
-    </DialogScrollContent>
+      </DialogBody>
+    </DialogContent>
   </Dialog>
 </template>

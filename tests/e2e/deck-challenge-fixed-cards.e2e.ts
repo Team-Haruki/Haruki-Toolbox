@@ -84,6 +84,8 @@ for (const width of [1280, 390]) {
     await card(201).click()
     await card(202).click()
     // A character filter in the browser must not survive a change of challenge character.
+    // The filters start folded; open them to reach the character select.
+    await picker.getByRole("button", { name: /^筛选/ }).click()
     await picker.getByRole("combobox").click()
     await page.getByRole("option", { name: /Character\s*2/ }).click()
     await picker.getByRole("button", { name: "完成", exact: true }).click()

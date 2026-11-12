@@ -3,6 +3,7 @@ import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogDescription,
     DialogFooter,
@@ -41,22 +42,24 @@ const { t } = useI18n()
           {{ t("adminUsers.detail.dialog.email.description", { name: userName }) }}
         </DialogDescription>
       </DialogHeader>
-      <form id="admin-user-email-form" class="flex flex-col gap-4 py-1" novalidate @submit.prevent="emit('save')">
-        <div class="grid gap-1.5">
-          <Label :for="ADMIN_USER_EMAIL_FIELD_ID">{{ t("adminUsers.detail.dialog.email.newEmail") }}</Label>
-          <Input
-            :id="ADMIN_USER_EMAIL_FIELD_ID"
-            :model-value="email"
-            :placeholder="t('adminUsers.detail.dialog.email.placeholder')"
-            type="email"
-            autocomplete="off"
-            :aria-invalid="!!emailError || undefined"
-            :aria-describedby="emailError ? `${ADMIN_USER_EMAIL_FIELD_ID}-error` : undefined"
-            @update:model-value="emit('update:email', String($event ?? ''))"
-          />
-          <FieldError :id="`${ADMIN_USER_EMAIL_FIELD_ID}-error`" :message="emailError" />
-        </div>
-      </form>
+      <DialogBody>
+        <form id="admin-user-email-form" class="grid gap-4" novalidate @submit.prevent="emit('save')">
+          <div class="grid gap-1.5">
+            <Label :for="ADMIN_USER_EMAIL_FIELD_ID">{{ t("adminUsers.detail.dialog.email.newEmail") }}</Label>
+            <Input
+              :id="ADMIN_USER_EMAIL_FIELD_ID"
+              :model-value="email"
+              :placeholder="t('adminUsers.detail.dialog.email.placeholder')"
+              type="email"
+              autocomplete="off"
+              :aria-invalid="!!emailError || undefined"
+              :aria-describedby="emailError ? `${ADMIN_USER_EMAIL_FIELD_ID}-error` : undefined"
+              @update:model-value="emit('update:email', String($event ?? ''))"
+            />
+            <FieldError :id="`${ADMIN_USER_EMAIL_FIELD_ID}-error`" :message="emailError" />
+          </div>
+        </form>
+      </DialogBody>
       <DialogFooter>
         <Button variant="outline" @click="emit('update:open', false)">{{ t("adminUsers.common.cancel") }}</Button>
         <Button type="submit" form="admin-user-email-form" :disabled="!email.trim() || actionLoading">

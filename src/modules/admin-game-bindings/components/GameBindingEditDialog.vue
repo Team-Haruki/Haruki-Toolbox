@@ -3,10 +3,11 @@ import { computed, type Component } from "vue"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
+  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogScrollContent,
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -19,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { LucideArmchair, LucideBot, LucideGlobe, LucideSave, LucideShieldAlert } from "lucide-vue-next"
+import { LucideArmchair, LucideBot, LucideGlobe, LucideShieldAlert } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import {
   isMysekaiPermissionKey,
@@ -155,7 +156,7 @@ const permissionGroups = computed<PermissionGroupView[]>(() => [
 
 <template>
   <Dialog :open="props.open" @update:open="emit('update:open', $event)">
-    <DialogScrollContent class="sm:max-w-[560px]">
+    <DialogContent>
       <DialogHeader>
         <DialogTitle>
           {{ props.isEditMode ? t("adminGameBindings.editDialog.editTitle") : t("adminGameBindings.editDialog.createTitle") }}
@@ -165,7 +166,7 @@ const permissionGroups = computed<PermissionGroupView[]>(() => [
         </DialogDescription>
       </DialogHeader>
 
-      <div class="flex min-w-0 flex-col gap-5 py-1">
+      <DialogBody class="gap-5">
         <SettingsGroup :title="t('adminGameBindings.editDialog.accountTitle')">
           <!-- An existing binding keeps its identity: shown as it is, with
                where to change it, instead of three greyed-out fields. -->
@@ -255,12 +256,12 @@ const permissionGroups = computed<PermissionGroupView[]>(() => [
             <template #below>
               <!-- On a phone the tiles take the row's full width (the slot is
                    indented under the label), or the bot names get cut off. -->
-              <div class="-ml-11 grid grid-cols-2 gap-2 sm:ml-0">
+              <div class="-ml-11 grid grid-cols-2 gap-x-6 gap-y-0.5 sm:ml-0">
                 <label
                   v-for="bot in group.bots"
                   :key="bot.key"
                   :for="`admin-binding-${group.key}-${bot.key}`"
-                  class="flex min-w-0 cursor-pointer items-center justify-between gap-2 rounded-lg border bg-background px-3 py-2 text-sm"
+                  class="flex min-h-9 min-w-0 cursor-pointer items-center justify-between gap-2 text-sm pointer-coarse:min-h-10"
                   :title="bot.title"
                 >
                   <span class="min-w-0 truncate">{{ bot.name }}</span>
@@ -275,7 +276,7 @@ const permissionGroups = computed<PermissionGroupView[]>(() => [
             </template>
           </SettingsRow>
         </SettingsGroup>
-      </div>
+      </DialogBody>
 
       <DialogFooter>
         <Button variant="outline" @click="emit('update:open', false)">{{ t("adminGameBindings.common.cancel") }}</Button>
@@ -283,10 +284,9 @@ const permissionGroups = computed<PermissionGroupView[]>(() => [
           :disabled="!props.editTargetUserId.trim() || !props.editGameUserId.trim() || props.actionLoading"
           @click="emit('save')"
         >
-          <LucideSave v-if="props.isEditMode" class="size-4" aria-hidden="true" />
           {{ props.isEditMode ? t("common.save") : t("adminGameBindings.common.create") }}
         </Button>
       </DialogFooter>
-    </DialogScrollContent>
+    </DialogContent>
   </Dialog>
 </template>

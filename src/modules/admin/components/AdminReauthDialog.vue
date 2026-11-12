@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { onBeforeUnmount, watch } from "vue"
 import { useI18n } from "vue-i18n"
-import { LucideLoader2, LucideShieldCheck } from "lucide-vue-next"
+import { LucideLoader2 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,
@@ -50,16 +51,14 @@ onBeforeUnmount(() => {
       DOM, so at the shared z-50 it would sit under their overlay and clicks on
       the password field would land on that overlay and dismiss the prompt.
     -->
-    <DialogContent class="admin-reauth-dialog z-[60] sm:max-w-md" overlay-class="z-[60]">
+    <DialogContent class="admin-reauth-dialog z-[60]" size="sm" overlay-class="z-[60]">
       <DialogHeader>
-        <DialogTitle class="flex items-center gap-2">
-          <LucideShieldCheck class="h-4 w-4 shrink-0 text-primary" />
-          {{ t("admin.reauth.title") }}
-        </DialogTitle>
+        <DialogTitle>{{ t("admin.reauth.title") }}</DialogTitle>
         <DialogDescription>{{ t("admin.reauth.description") }}</DialogDescription>
       </DialogHeader>
-      <form class="space-y-4" novalidate @submit.prevent="submit">
-        <div class="space-y-2">
+      <!-- The form spans the body and the footer, so it carries the dialog's column on. -->
+      <form class="flex min-h-0 flex-1 flex-col" novalidate @submit.prevent="submit">
+        <DialogBody class="gap-2">
           <Label for="admin-reauth-password">{{ t("admin.reauth.passwordLabel") }}</Label>
           <Input
             id="admin-reauth-password"
@@ -74,13 +73,13 @@ onBeforeUnmount(() => {
           <p v-if="inlineError" id="admin-reauth-error" role="alert" class="text-sm text-destructive">
             {{ inlineError }}
           </p>
-        </div>
+        </DialogBody>
         <DialogFooter>
           <DialogClose as-child>
             <Button type="button" variant="outline">{{ t("common.cancel") }}</Button>
           </DialogClose>
           <Button type="submit" :disabled="submitting">
-            <LucideLoader2 v-if="submitting" class="mr-1 h-4 w-4 animate-spin" />
+            <LucideLoader2 v-if="submitting" class="size-4 animate-spin" />
             {{ t("admin.reauth.submit") }}
           </Button>
         </DialogFooter>

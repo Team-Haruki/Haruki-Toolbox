@@ -10,7 +10,7 @@ import { computed } from "vue"
 import type { OAuthClientStatistics } from "@/types/admin"
 import DateTimePicker24h from "@/components/ui/datetime-picker/DateTimePicker24h.vue"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -162,7 +162,8 @@ const timeRangeErrorId = "oauth-stats-time-range-error"
 
 <template>
   <Dialog :open="props.open" @update:open="(value) => emit('update:open', value)">
-    <DialogContent class="max-h-[85vh] overflow-y-auto sm:max-w-5xl">
+    <!-- Without a client id there is no visible description; the title then stands in for screen readers. -->
+    <DialogContent size="xl" :description="props.clientId ? undefined : t('adminOAuthClients.statsDialog.title')">
       <DialogHeader>
         <DialogTitle>{{ t("adminOAuthClients.statsDialog.title") }}</DialogTitle>
         <DialogDescription v-if="props.clientId" class="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -171,7 +172,7 @@ const timeRangeErrorId = "oauth-stats-time-range-error"
         </DialogDescription>
       </DialogHeader>
 
-      <div class="@container flex min-w-0 flex-col gap-4">
+      <DialogBody class="@container">
         <!-- The range comes first: every number under it is for this range. -->
         <form
           class="rounded-xl border bg-card px-4 py-3"
@@ -365,7 +366,7 @@ const timeRangeErrorId = "oauth-stats-time-range-error"
           <LucideChartLine class="size-8 text-muted-foreground/60" aria-hidden="true" />
           <p class="text-sm text-muted-foreground">{{ t("adminOAuthClients.common.empty") }}</p>
         </div>
-      </div>
+      </DialogBody>
     </DialogContent>
   </Dialog>
 </template>

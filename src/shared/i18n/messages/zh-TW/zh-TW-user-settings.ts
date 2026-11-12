@@ -500,12 +500,6 @@ export default {
         "kr": "韓服",
         "cn": "國服"
       },
-      "table": {
-        "server": "區服",
-        "userId": "遊戲UID",
-        "verificationStatus": "驗證狀態",
-        "actions": "操作"
-      },
       "status": {
         "verified": "已驗證",
         "unverified": "未驗證",
@@ -674,12 +668,7 @@ export default {
           "writeOnlyNotice": "未勾選讀取：對方只能上傳，不能檢視該帳號已有的資料。"
         },
         "table": {
-          "owner": "授權來源",
-          "grantee": "被授權使用者",
-          "dataType": "資料類型",
-          "permissions": "權限",
-          "expiresAt": "過期時間",
-          "actions": "操作"
+          "expiresAt": "過期時間"
         },
         "revokeDialog": {
           "title": "撤銷資料授權",

@@ -5,11 +5,12 @@
  */
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
-import { LucideLoader2, LucideSave } from "lucide-vue-next"
+import { LucideLoader2 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import DateTimePicker24h from "@/components/ui/datetime-picker/DateTimePicker24h.vue"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -70,73 +71,74 @@ function handleOpenChange(value: boolean) {
 
 <template>
   <Dialog :open="props.open" @update:open="handleOpenChange">
-    <DialogContent class="sm:max-w-[min(32rem,92vw)]">
+    <DialogContent>
       <DialogHeader>
         <DialogTitle>
           {{ props.editing ? t("adminSponsors.duration.manual.editDialogTitle") : t("adminSponsors.duration.manual.addDialogTitle") }}
         </DialogTitle>
         <DialogDescription>{{ t("adminSponsors.duration.form.startsAtHelp") }}</DialogDescription>
       </DialogHeader>
-      <form id="admin-sponsor-manual-form" class="grid gap-3" novalidate @submit.prevent="emit('save')">
-        <div class="grid gap-3 sm:grid-cols-[8rem_8rem_1fr]">
+      <DialogBody>
+        <form id="admin-sponsor-manual-form" class="grid gap-3" novalidate @submit.prevent="emit('save')">
+          <div class="grid gap-3 sm:grid-cols-[8rem_8rem_1fr]">
+            <div class="space-y-1.5">
+              <Label :for="SPONSOR_FIELD_IDS.manualAmount">{{ t("adminSponsors.duration.form.amount") }}</Label>
+              <Input
+                :id="SPONSOR_FIELD_IDS.manualAmount"
+                :model-value="props.form.amount"
+                type="number"
+                min="1"
+                step="1"
+                inputmode="numeric"
+                :aria-invalid="!!props.errors.amount || undefined"
+                :aria-describedby="props.errors.amount ? `${SPONSOR_FIELD_IDS.manualAmount}-error` : undefined"
+                @update:model-value="update('amount', $event)"
+              />
+            </div>
+            <div class="space-y-1.5 [&_[data-slot=native-select-wrapper]]:w-full">
+              <Label for="admin-sponsor-manual-unit">{{ t("adminSponsors.duration.form.unit") }}</Label>
+              <NativeSelect
+                id="admin-sponsor-manual-unit"
+                :model-value="props.form.unit"
+                class="w-full"
+                @update:model-value="update('unit', $event === 'day' ? 'day' : 'month')"
+              >
+                <NativeSelectOption value="month">{{ t("adminSponsors.duration.form.units.month") }}</NativeSelectOption>
+                <NativeSelectOption value="day">{{ t("adminSponsors.duration.form.units.day") }}</NativeSelectOption>
+              </NativeSelect>
+            </div>
+            <div class="space-y-1.5">
+              <Label for="admin-sponsor-manual-starts-at">{{ t("adminSponsors.duration.form.startsAt") }}</Label>
+              <DateTimePicker24h
+                id="admin-sponsor-manual-starts-at"
+                :model-value="startsAtDate"
+                :placeholder="t('adminSponsors.duration.form.startsAtPlaceholder')"
+                @update:model-value="updateStartsAt"
+              />
+            </div>
+          </div>
+          <FieldError :id="`${SPONSOR_FIELD_IDS.manualAmount}-error`" :message="props.errors.amount" />
           <div class="space-y-1.5">
-            <Label :for="SPONSOR_FIELD_IDS.manualAmount">{{ t("adminSponsors.duration.form.amount") }}</Label>
+            <Label :for="SPONSOR_FIELD_IDS.manualNote">{{ t("adminSponsors.duration.form.note") }}</Label>
             <Input
-              :id="SPONSOR_FIELD_IDS.manualAmount"
-              :model-value="props.form.amount"
-              type="number"
-              min="1"
-              step="1"
-              inputmode="numeric"
-              :aria-invalid="!!props.errors.amount || undefined"
-              :aria-describedby="props.errors.amount ? `${SPONSOR_FIELD_IDS.manualAmount}-error` : undefined"
-              @update:model-value="update('amount', $event)"
+              :id="SPONSOR_FIELD_IDS.manualNote"
+              :model-value="props.form.note"
+              maxlength="500"
+              :placeholder="t('adminSponsors.duration.form.notePlaceholder')"
+              :aria-invalid="!!props.errors.note || undefined"
+              :aria-describedby="props.errors.note ? `${SPONSOR_FIELD_IDS.manualNote}-error` : undefined"
+              @update:model-value="update('note', String($event ?? ''))"
             />
+            <FieldError :id="`${SPONSOR_FIELD_IDS.manualNote}-error`" :message="props.errors.note" />
           </div>
-          <div class="space-y-1.5 [&_[data-slot=native-select-wrapper]]:w-full">
-            <Label for="admin-sponsor-manual-unit">{{ t("adminSponsors.duration.form.unit") }}</Label>
-            <NativeSelect
-              id="admin-sponsor-manual-unit"
-              :model-value="props.form.unit"
-              class="w-full"
-              @update:model-value="update('unit', $event === 'day' ? 'day' : 'month')"
-            >
-              <NativeSelectOption value="month">{{ t("adminSponsors.duration.form.units.month") }}</NativeSelectOption>
-              <NativeSelectOption value="day">{{ t("adminSponsors.duration.form.units.day") }}</NativeSelectOption>
-            </NativeSelect>
-          </div>
-          <div class="space-y-1.5">
-            <Label for="admin-sponsor-manual-starts-at">{{ t("adminSponsors.duration.form.startsAt") }}</Label>
-            <DateTimePicker24h
-              id="admin-sponsor-manual-starts-at"
-              :model-value="startsAtDate"
-              :placeholder="t('adminSponsors.duration.form.startsAtPlaceholder')"
-              @update:model-value="updateStartsAt"
-            />
-          </div>
-        </div>
-        <FieldError :id="`${SPONSOR_FIELD_IDS.manualAmount}-error`" :message="props.errors.amount" />
-        <div class="space-y-1.5">
-          <Label :for="SPONSOR_FIELD_IDS.manualNote">{{ t("adminSponsors.duration.form.note") }}</Label>
-          <Input
-            :id="SPONSOR_FIELD_IDS.manualNote"
-            :model-value="props.form.note"
-            maxlength="500"
-            :placeholder="t('adminSponsors.duration.form.notePlaceholder')"
-            :aria-invalid="!!props.errors.note || undefined"
-            :aria-describedby="props.errors.note ? `${SPONSOR_FIELD_IDS.manualNote}-error` : undefined"
-            @update:model-value="update('note', String($event ?? ''))"
-          />
-          <FieldError :id="`${SPONSOR_FIELD_IDS.manualNote}-error`" :message="props.errors.note" />
-        </div>
-      </form>
+        </form>
+      </DialogBody>
       <DialogFooter>
         <Button type="button" variant="outline" :disabled="props.saving" @click="emit('update:open', false)">
           {{ t("common.cancel") }}
         </Button>
         <Button type="submit" form="admin-sponsor-manual-form" :disabled="props.saving">
-          <LucideLoader2 v-if="props.saving" class="mr-1.5 h-4 w-4 animate-spin" />
-          <LucideSave v-else class="mr-1.5 h-4 w-4" />
+          <LucideLoader2 v-if="props.saving" class="size-4 animate-spin" />
           {{ props.editing ? t("common.save") : t("adminSponsors.duration.manual.add") }}
         </Button>
       </DialogFooter>

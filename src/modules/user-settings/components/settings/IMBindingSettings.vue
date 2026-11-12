@@ -12,12 +12,13 @@ import SettingsRow from "@/shared/components/settings/SettingsRow.vue"
 import {Loader2, MailWarning, MessageCircle, User, Send, Key, Unlink, ShieldCheck} from "lucide-vue-next"
 import {
   Dialog,
-  DialogTitle,
+  DialogBody,
   DialogClose,
+  DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogDescription,
-  DialogScrollContent
+  DialogTitle,
 } from "@/components/ui/dialog"
 import {
   Select,
@@ -218,19 +219,16 @@ const unbindDialogOpen = ref(false)
     <p class="px-1 text-xs text-muted-foreground">{{ t("userSettings.imBinding.description") }}</p>
 
   <Dialog v-model:open="showCodeDialog">
-    <DialogScrollContent class="sm:max-w-[425px]">
+    <DialogContent size="sm">
       <DialogHeader>
-        <DialogTitle class="flex items-center gap-2">
-          <ShieldCheck class="h-5 w-5" />
-          {{ t("userSettings.imBinding.dialog.title") }}
-        </DialogTitle>
+        <DialogTitle>{{ t("userSettings.imBinding.dialog.title") }}</DialogTitle>
         <DialogDescription>
           <span v-if="dialogMode === 'qq'">{{ t("userSettings.imBinding.dialog.qqDescription") }}</span>
           <span v-else>{{ t("userSettings.imBinding.dialog.otherDescription") }}</span>
         </DialogDescription>
       </DialogHeader>
 
-      <div class="space-y-2 py-2">
+      <DialogBody class="gap-2">
         <template v-if="dialogMode === 'qq'">
           <div class="relative w-full items-center">
             <Input
@@ -251,23 +249,22 @@ const unbindDialogOpen = ref(false)
             </span>
           </div>
         </template>
-        <p v-else class="select-all text-center font-mono text-lg" data-testid="im-binding-generated-code">
+        <p v-else class="select-all py-2 text-center font-mono text-2xl font-semibold tabular-nums [overflow-wrap:anywhere]" data-testid="im-binding-generated-code">
           {{ generatedCode }}
         </p>
         <p v-if="dialogError" :id="CODE_ERROR_ID" role="alert" class="text-sm text-destructive">{{ dialogError }}</p>
-      </div>
+      </DialogBody>
 
       <DialogFooter>
         <DialogClose as-child>
           <Button variant="outline">{{ t("userSettings.common.cancel") }}</Button>
         </DialogClose>
-        <Button :disabled="verifying || !isEmailVerified" @click="handleDialogVerify">
-          <Loader2 v-if="verifying" class="mr-2 h-4 w-4 animate-spin" />
-          <ShieldCheck v-else class="mr-2 h-4 w-4" />
-          <span>{{ t("userSettings.imBinding.dialog.verifyButton") }}</span>
+        <Button :disabled="verifying || !isEmailVerified" :aria-busy="verifying || undefined" @click="handleDialogVerify">
+          <Loader2 v-if="verifying" class="size-4 animate-spin" />
+          {{ t("userSettings.imBinding.dialog.verifyButton") }}
         </Button>
       </DialogFooter>
-    </DialogScrollContent>
+    </DialogContent>
   </Dialog>
 
   <ConfirmDialog

@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -36,7 +37,7 @@ const emit = defineEmits<{
     <DialogContent>
       <DialogHeader>
         <DialogTitle>{{ t("adminGameBindings.reassignDialog.title") }}</DialogTitle>
-        <DialogDescription class="[overflow-wrap:anywhere]">
+        <DialogDescription>
           <i18n-t keypath="adminGameBindings.reassignDialog.description" scope="global">
             <template #server>{{ serverLabel(target?.server ?? "") }}</template>
             <template #gameId><strong>{{ target?.gameUserId }}</strong></template>
@@ -44,7 +45,7 @@ const emit = defineEmits<{
           </i18n-t>
         </DialogDescription>
       </DialogHeader>
-      <div class="flex flex-col gap-2 py-2">
+      <DialogBody class="gap-2">
         <Label :for="TARGET_USER_ID">{{ t("adminGameBindings.reassignDialog.targetUserIdLabel") }}</Label>
         <Input
           :id="TARGET_USER_ID"
@@ -52,7 +53,7 @@ const emit = defineEmits<{
           :placeholder="t('adminGameBindings.reassignDialog.targetUserIdPlaceholder')"
           @update:model-value="emit('update:targetUserId', String($event ?? ''))"
         />
-      </div>
+      </DialogBody>
       <DialogFooter>
         <Button variant="outline" @click="emit('update:open', false)">{{ t("adminGameBindings.common.cancel") }}</Button>
         <Button
