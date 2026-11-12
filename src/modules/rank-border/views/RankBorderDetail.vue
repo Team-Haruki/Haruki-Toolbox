@@ -35,7 +35,7 @@ import type { ComboboxOption } from "@/components/ui/combobox"
 import ComparisonCenter, { type ComparisonTableRow } from "../components/ComparisonCenter.vue"
 import DetailHero, { type DetailHeroLine, type DetailHeroNeighbour } from "../components/DetailHero.vue"
 import DetailHistoryPanel from "../components/DetailHistoryPanel.vue"
-import DetailInsights, { type DetailInsightGroup, type DetailInsightRow } from "../components/DetailInsights.vue"
+import DetailDashboard, { type DashboardRival } from "../components/DetailDashboard.vue"
 import DetailTable, { type DetailTableColumn, type DetailTableRow } from "../components/DetailTable.vue"
 import TrendChartCard from "../components/TrendChartCard.vue"
 import { useRankBorderHonors } from "../composables/useRankBorderHonors"
@@ -61,7 +61,6 @@ import {
 import { buildMasterRecordMap } from "../lib/master-data-types"
 import {
   OVERVIEW_KEY_SEATS,
-  projectFinalScore,
   resolveCatchUpSeconds,
   resolveHourlySpeed,
 } from "../lib/overview-stats"
@@ -89,12 +88,7 @@ import {
   listHolderRuns,
   resolveCushion,
   resolveMilestones,
-  SESSION_GAP_SECONDS,
-  summarizeActivity,
   summarizeDays,
-  summarizeGames,
-  summarizeHolders,
-  summarizeRankHistory,
 } from "../lib/trace-insights"
 import { resolveTraceMetricStats } from "../lib/trace-stats"
 import { resolveWorldBloomModeSelection } from "../lib/world-bloom-mode"
@@ -350,7 +344,6 @@ const dataNow = computed(() => {
   )
   return eventEndAt.value != null ? Math.min(latest, eventEndAt.value) : latest
 })
-const eventEnded = computed(() => eventEndAt.value != null && dataNow.value >= eventEndAt.value)
 
 /** The subject's own pace right now; a selected heatmap hour is history, not a pace to project from. */
 const liveSpeed = computed(() => (selectedWindow.value ? null : primaryStats.value.hourlySpeed))
@@ -481,146 +474,66 @@ const profileWord = computed(() => {
   return word?.trim() || null
 })
 
-// --- Insights ----------------------------------------------------------------
+// --- Dashboard ---------------------------------------------------------------
 
 /** A seat or a border line: its trace is the line's history, not one player's games. */
 const seatView = computed(() => isLineTarget.value || traceSource.value === "border")
 
-const gameSummary = computed(() => summarizeGames(scopedTrace.value))
-const rankHistory = computed(() => summarizeRankHistory(scopedTrace.value))
-const activitySummary = computed(() =>
-  summarizeActivity(scopedTrace.value, selectedWindow.value?.end ?? dataNow.value),
-)
-const holderSummary = computed(() => (seatView.value ? summarizeHolders(activeTrace.value, dataNow.value) : null))
+const subjectRankLabel = computed(() => {
+  const rank = current.value?.rank ?? (params.value?.target.kind === "line" ? params.value.target.rank : null)
+  return isLineTarget.value ? formatTargetRank(rank) : formatRank(rank)
+})
 
-const insightsCaption = computed(() =>
-  selectedWindow.value
-    ? t("rankBorder.detail.insights.captionWindow", { window: selectedWindow.value.label })
-    : t("rankBorder.detail.insights.caption", { interval: traceScopeLabel.value }),
-)
-
-const insightGroups = computed<DetailInsightGroup[]>(() => {
-  const stats = primaryStats.value
-  const groups: DetailInsightGroup[] = []
-  const row = (key: string, value: string, extra: Partial<DetailInsightRow> = {}): DetailInsightRow => ({
-    key,
-    label: t(`rankBorder.detail.insights.${key}`),
-    value,
-    ...extra,
-  })
-  const count = (key: string, value: number) => t(`rankBorder.detail.insights.${key}`, { count: formatNumberCN(value) })
-
-  // Pace
-  const paceRows: DetailInsightRow[] = [
-    { key: "threeWindowSpeed", label: t("rankBorder.result.twentyMinTripleSpeed"), value: formatPerHour(stats.threeWindowSpeed) },
-  ]
-  if (!seatView.value) {
-    paceRows.push({ key: "loopCount", label: t("rankBorder.result.loopCount"), value: formatLoopCount(stats.loopCount) })
+/** Who the subject is projected against: the seats beside it and the nearest key line each way. */
+const projectionRivals = computed<DashboardRival[]>(() => {
+  const data = overview.value
+  const score = subjectScore.value
+  if (!data || score == null) {
+    return []
   }
-  const remainingSeconds = eventEndAt.value != null && !eventEnded.value ? eventEndAt.value - dataNow.value : null
-  const projected = projectFinalScore(subjectScore.value, liveSpeed.value, remainingSeconds)
-  if (projected != null) {
-    paceRows.push(row("projected", formatPt(projected), { hint: t("rankBorder.overview.lines.projectedHint") }))
-  }
-  if (remainingSeconds != null && remainingSeconds > 0) {
-    paceRows.push(row("remaining", formatDurationLabel(t, remainingSeconds)))
-  }
-  groups.push({
-    key: "pace",
-    title: t("rankBorder.detail.insights.pace"),
-    headline: { key: "hourlySpeed", label: t("rankBorder.result.hourlySpeed"), value: formatPerHour(stats.hourlySpeed), note: traceScopeLabel.value },
-    rows: paceRows,
-  })
 
-  const games = gameSummary.value
-  if (seatView.value) {
-    // A line's steps are samples of the line, not single games.
-    groups.push({
-      key: "line",
-      title: t("rankBorder.detail.insights.line"),
-      headline: { key: "latestPointGrowth", label: t("rankBorder.detail.insights.latestStep"), value: formatGrowth(stats.latestPointGrowth) },
-      rows: [
-        row("recentStep", formatPt(stats.recentAveragePt)),
-        row("totalGrowth", games.games > 0 ? formatGrowth(games.totalPt) : "-"),
-        row("updates", count("times", games.games)),
-      ],
-    })
-
-    const holders = holderSummary.value
-    if (holders) {
-      groups.push({
-        key: "holders",
-        title: t("rankBorder.detail.insights.holders"),
-        headline: {
-          key: "heldFor",
-          label: t("rankBorder.detail.insights.heldFor"),
-          value: holders.heldSince != null ? formatDurationLabel(t, Math.max(0, dataNow.value - holders.heldSince)) : "-",
-        },
-        rows: [
-          row("turnovers", count("times", holders.turnovers)),
-          row("holdersCount", count("people", holders.holders)),
-          row("longestHold", formatDurationLabel(t, holders.longestHoldSeconds)),
-        ],
-      })
+  const rivals: DashboardRival[] = []
+  const seen = new Set<number>([current.value?.rank ?? -1])
+  const add = (entry: RankBorderLatest | RankBorderLine | null) => {
+    if (!entry || seen.has(entry.rank)) {
+      return
     }
-    return groups
+    seen.add(entry.rank)
+    const player = isLatestResult(entry) ? entry : null
+    rivals.push({
+      key: `rank:${entry.rank}`,
+      label: player ? formatRank(entry.rank) : formatTargetRank(entry.rank),
+      name: player ? plainNameText(player.name) : null,
+      score: entry.score,
+      speed: player ? playerSpeed(player.userId, entry.rank) : seatSpeed(entry.rank),
+    })
   }
 
-  // Per game
-  groups.push({
-    key: "games",
-    title: t("rankBorder.detail.insights.games"),
-    headline: { key: "recentAveragePt", label: t("rankBorder.result.recentAveragePt"), value: formatPt(stats.recentAveragePt) },
-    rows: [
-      { key: "latestPointGrowth", label: t("rankBorder.result.latestPointGrowth"), value: formatGrowth(stats.latestPointGrowth) },
-      row("medianPt", formatPt(games.medianPt)),
-      row("maxPt", formatPt(games.maxPt)),
-      row("gamesCount", count("gamesValue", games.games)),
-    ],
-  })
-
-  // Rank
-  const history = rankHistory.value
-  groups.push({
-    key: "rank",
-    title: t("rankBorder.detail.insights.rank"),
-    headline: { key: "rankShift", label: t("rankBorder.result.rankShift"), value: formatRankShift(stats.rankShift), note: traceScopeLabel.value },
-    rows: [
-      row("bestRank", formatRank(history.best), { note: history.bestAt != null ? formatMoment(history.bestAt) : null }),
-      row("worstRank", formatRank(history.worst)),
-      row("rankChanges", count("times", history.changes)),
-    ],
-  })
-
-  // Activity
-  const activity = activitySummary.value
-  const restHint = t("rankBorder.detail.insights.restHint", { minutes: SESSION_GAP_SECONDS / 60 })
-  const live = !selectedWindow.value && !eventEnded.value && activity.idleSeconds != null
-  const elapsed = !selectedWindow.value && eventStartAt.value != null ? dataNow.value - eventStartAt.value : null
-  const activeTotal = row("activeTotal", activity.sessions > 0 ? formatDurationLabel(t, activity.activeSeconds) : "-", {
-    note: elapsed != null && elapsed > 0 && activity.activeSeconds > 0
-      ? t("rankBorder.detail.insights.activeShare", { percent: Math.min(100, Math.round((activity.activeSeconds / elapsed) * 100)) })
-      : null,
-    hint: restHint,
-  })
-  let headline = activeTotal
-  if (live && activity.active && activity.currentSessionStart != null) {
-    headline = row("streak", formatDurationLabel(t, Math.max(0, dataNow.value - activity.currentSessionStart)), { hint: restHint })
-  } else if (live) {
-    headline = row("idle", formatDurationLabel(t, activity.idleSeconds ?? 0), { hint: restHint })
+  add(previous.value)
+  add(next.value)
+  const keySeats: readonly number[] = OVERVIEW_KEY_SEATS
+  const lines: RankBorderLine[] = [
+    ...data.topRankings.filter((entry) => keySeats.includes(entry.rank)).map(({ rank, score: lineScore, timestamp }) => ({ rank, score: lineScore, timestamp })),
+    ...data.borderLines.filter((line) => line.rank > PERSONAL_COLLECTION_LIMIT),
+  ].filter((line) => !seen.has(line.rank))
+  const above = resolveMilestones(score, lines, 1)[0]
+  const below = resolveCushion(score, lines)
+  for (const milestone of [above, below]) {
+    add(lines.find((line) => line.rank === milestone?.rank) ?? null)
   }
-  groups.push({
-    key: "activity",
-    title: t("rankBorder.detail.insights.activity"),
-    headline,
-    rows: [
-      ...(headline === activeTotal ? [] : [activeTotal]),
-      row("longestSession", activity.sessions > 0 ? formatDurationLabel(t, activity.longestSessionSeconds) : "-", { hint: restHint }),
-      row("longestRest", activity.longestRestSeconds > 0 ? formatDurationLabel(t, activity.longestRestSeconds) : "-", { hint: restHint }),
-      row("sessions", count("sessionsValue", activity.sessions), { hint: restHint }),
-    ],
-  })
-  return groups
+  return rivals
+})
+
+/** The top 100's own speeds over the interval, and the subject's among them. */
+const paceField = computed(() =>
+  (overview.value?.topPlayerGrowths ?? [])
+    .map((entry) => resolveHourlySpeed(entry))
+    .filter((speed): speed is number => speed != null && speed >= 0),
+)
+const paceFieldOwn = computed(() => {
+  const userId = current.value && isLatestResult(current.value) ? current.value.userId : null
+  const growth = userId ? overview.value?.topPlayerGrowths.find((entry) => entry.userId === userId) : null
+  return growth ? resolveHourlySpeed(growth) : null
 })
 
 // --- Daily totals and seat holders -------------------------------------------
@@ -1049,17 +962,6 @@ function formatPerHour(value: number | null | undefined) {
   return `${sign}${formatNumberCN(value)} pt/h`
 }
 
-/** Places climbed (↑) or lost (↓) over the interval. */
-function formatRankShift(value: number | null | undefined) {
-  if (typeof value !== "number") {
-    return "-"
-  }
-  if (value === 0) {
-    return t("rankBorder.detail.insights.rankSteady")
-  }
-  return `${value > 0 ? "↑" : "↓"} ${formatNumberCN(Math.abs(value))}`
-}
-
 function formatMoment(timestamp: number) {
   return new Date(timestamp * 1000).toLocaleString(getI18nLocale(), {
     month: "numeric",
@@ -1219,7 +1121,7 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
           :honors="honorViews"
           :title-segments="titleSegments"
           :status="statusBadge"
-          :rank-label="isLineTarget ? formatTargetRank(current?.rank ?? (params.target.kind === 'line' ? params.target.rank : null)) : formatRank(current?.rank ?? null)"
+          :rank-label="subjectRankLabel"
           :score-label="formatPt(subjectScore)"
           :latest-label="t('rankBorder.result.latest', { value: formatTimestamp(current?.timestamp ?? primaryStats.latest?.timestamp ?? null) })"
           :not-ranked-hint="notRanked ? t('rankBorder.result.notRankedHint') : null"
@@ -1246,11 +1148,26 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
           </span>
         </DetailHero>
 
-        <DetailInsights
+        <DetailDashboard
           v-if="primaryStats.hasChart"
-          :title="t('rankBorder.detail.insights.title')"
-          :caption="insightsCaption"
-          :groups="insightGroups"
+          :trace="scopedTrace"
+          :full-trace="activeTrace"
+          :stats="primaryStats"
+          :seat-view="seatView"
+          :scope-label="traceScopeLabel"
+          :window="selectedWindow"
+          :data-now="dataNow"
+          :event-start-at="eventStartAt"
+          :event-end-at="eventEndAt"
+          :score="subjectScore"
+          :live-speed="liveSpeed"
+          :self-label="subjectRankLabel"
+          :rivals="projectionRivals"
+          :field="paceField"
+          :field-own="paceFieldOwn"
+          :show-tooltip="showTooltip"
+          :move-tooltip="moveTooltip"
+          :hide-tooltip="hideTooltip"
         />
 
         <!-- Comparison center -->

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "bun:test"
 import {
+  buildHistogram,
+  histogramBinIndex,
   listHolderRuns,
+  listSessions,
+  resolveFieldPosition,
+  summarizeHourlyPeak,
   resolveCushion,
   resolveMilestones,
   summarizeActivity,
@@ -132,5 +137,68 @@ describe("listHolderRuns", () => {
 
   it("skips rows without a holder", () => {
     expect(listHolderRuns([p(0, 1, 500), p(10, 2, 500)])).toEqual([])
+  })
+})
+
+describe("listSessions", () => {
+  it("groups score changes into runs", () => {
+    const trace = [p(0, 0), p(100, 1), p(250, 2), p(400, 3), p(2400, 4), p(2500, 5)]
+    expect(listSessions(trace, 900)).toEqual([{ start: 100, end: 400 }, { start: 2400, end: 2500 }])
+  })
+
+  it("ignores rows that did not raise the score", () => {
+    expect(listSessions([p(0, 5), p(50, 5, 2)], 900)).toEqual([])
+  })
+})
+
+describe("buildHistogram", () => {
+  it("counts values into equal bins", () => {
+    const histogram = buildHistogram([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 5, 1)!
+    expect(histogram.bins.map((bin) => bin.count)).toEqual([2, 2, 2, 2, 3])
+    expect(histogram).toMatchObject({ lo: 0, hi: 10, peak: 3, underflow: false, overflow: false })
+  })
+
+  it("folds outliers at both ends into the end bins", () => {
+    const values = [1, ...Array.from({ length: 98 }, (_, index) => 100 + index), 5000]
+    const histogram = buildHistogram(values, 4, 0.98)!
+    expect(histogram.lo).toBeGreaterThan(1)
+    expect(histogram.hi).toBeLessThan(5000)
+    expect(histogram).toMatchObject({ underflow: true, overflow: true })
+    expect(histogram.bins.reduce((sum, bin) => sum + bin.count, 0)).toBe(100)
+  })
+
+  it("handles one value and no values", () => {
+    expect(buildHistogram([7, 7, 7])).toMatchObject({ bins: [{ from: 7, to: 7, count: 3 }], peak: 3 })
+    expect(buildHistogram([])).toBeNull()
+  })
+
+  it("locates a value's bin", () => {
+    const histogram = buildHistogram([0, 10], 5, 1)!
+    expect(histogramBinIndex(histogram, 0)).toBe(0)
+    expect(histogramBinIndex(histogram, 5)).toBe(2)
+    expect(histogramBinIndex(histogram, 99)).toBe(4)
+    expect(histogramBinIndex(histogram, null)).toBe(-1)
+  })
+})
+
+describe("summarizeHourlyPeak", () => {
+  it("finds the best clock hour and the average pace", () => {
+    const trace = [p(0, 0), p(1800, 100), p(3500, 300), p(4000, 350), p(7200, 400)]
+    expect(summarizeHourlyPeak(trace)).toEqual({ peak: 300, peakAt: 0, average: 200 })
+  })
+
+  it("is empty without gains", () => {
+    expect(summarizeHourlyPeak([p(0, 5)])).toEqual({ peak: null, peakAt: null, average: null })
+  })
+})
+
+describe("resolveFieldPosition", () => {
+  it("ranks a value in the field", () => {
+    expect(resolveFieldPosition(50, [10, 20, 50, 80])).toEqual({ position: 2, slowerShare: 0.5 })
+  })
+
+  it("is null without a value or a field", () => {
+    expect(resolveFieldPosition(null, [1])).toBeNull()
+    expect(resolveFieldPosition(1, [])).toBeNull()
   })
 })

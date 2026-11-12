@@ -21,13 +21,8 @@ export type GameSummary = {
   minPt: number | null
 }
 
-/**
- * The score increases between consecutive rows. Where the tracker samples
- * every few seconds each increase is one finished game; on a slowly sampled
- * line several games merge into one, which is why the page only shows this
- * for a player's own trace.
- */
-export function summarizeGames(trace: readonly InsightPoint[]): GameSummary {
+/** Every score increase in the trace, in order. */
+export function listGains(trace: readonly InsightPoint[]): number[] {
   const gains: number[] = []
   for (let index = 1; index < trace.length; index += 1) {
     const gain = trace[index]!.score - trace[index - 1]!.score
@@ -35,6 +30,17 @@ export function summarizeGames(trace: readonly InsightPoint[]): GameSummary {
       gains.push(gain)
     }
   }
+  return gains
+}
+
+/**
+ * The score increases between consecutive rows. Where the tracker samples
+ * every few seconds each increase is one finished game; on a slowly sampled
+ * line several games merge into one, which is why the page only shows this
+ * for a player's own trace.
+ */
+export function summarizeGames(trace: readonly InsightPoint[]): GameSummary {
+  const gains = listGains(trace)
   if (gains.length === 0) {
     return { games: 0, totalPt: 0, medianPt: null, maxPt: null, minPt: null }
   }
@@ -79,47 +85,58 @@ export function summarizeActivity(
   nowSecond: number,
   gapSeconds = SESSION_GAP_SECONDS,
 ): ActivitySummary {
-  const changes: number[] = []
-  for (let index = 1; index < trace.length; index += 1) {
-    if (trace[index]!.score > trace[index - 1]!.score) {
-      changes.push(trace[index]!.timestamp)
-    }
-  }
-  if (changes.length === 0) {
+  const sessions = listSessions(trace, gapSeconds)
+  if (sessions.length === 0) {
     return { sessions: 0, activeSeconds: 0, longestSessionSeconds: 0, longestRestSeconds: 0, currentSessionStart: null, idleSeconds: null, active: false }
   }
 
-  let sessions = 1
-  let sessionStart = changes[0]!
   let activeSeconds = 0
   let longestSession = 0
   let longestRest = 0
-  for (let index = 1; index < changes.length; index += 1) {
-    const gap = changes[index]! - changes[index - 1]!
-    if (gap > gapSeconds) {
-      const length = changes[index - 1]! - sessionStart
-      activeSeconds += length
-      longestSession = Math.max(longestSession, length)
-      longestRest = Math.max(longestRest, gap)
-      sessions += 1
-      sessionStart = changes[index]!
+  for (let index = 0; index < sessions.length; index += 1) {
+    const length = sessions[index]!.end - sessions[index]!.start
+    activeSeconds += length
+    longestSession = Math.max(longestSession, length)
+    if (index > 0) {
+      longestRest = Math.max(longestRest, sessions[index]!.start - sessions[index - 1]!.end)
     }
   }
-  const last = changes[changes.length - 1]!
-  const lastLength = last - sessionStart
-  activeSeconds += lastLength
-  longestSession = Math.max(longestSession, lastLength)
 
-  const idleSeconds = Math.max(0, nowSecond - last)
+  const last = sessions[sessions.length - 1]!
+  const idleSeconds = Math.max(0, nowSecond - last.end)
   return {
-    sessions,
+    sessions: sessions.length,
     activeSeconds,
     longestSessionSeconds: longestSession,
     longestRestSeconds: longestRest,
-    currentSessionStart: sessionStart,
+    currentSessionStart: last.start,
     idleSeconds,
     active: idleSeconds <= gapSeconds,
   }
+}
+
+export type Session = {
+  /** The first and the last score change of the run, in Unix seconds. */
+  start: number
+  end: number
+}
+
+/** Runs of score changes with no pause longer than the session gap, oldest first. */
+export function listSessions(trace: readonly InsightPoint[], gapSeconds = SESSION_GAP_SECONDS): Session[] {
+  const sessions: Session[] = []
+  for (let index = 1; index < trace.length; index += 1) {
+    if (trace[index]!.score <= trace[index - 1]!.score) {
+      continue
+    }
+    const at = trace[index]!.timestamp
+    const last = sessions[sessions.length - 1]
+    if (last && at - last.end <= gapSeconds) {
+      last.end = at
+    } else {
+      sessions.push({ start: at, end: at })
+    }
+  }
+  return sessions
 }
 
 export type RankHistory = {
@@ -319,4 +336,125 @@ export function listHolderRuns(trace: readonly InsightPoint[], limit = Number.PO
     runs.push({ userId: point.userId, from: point.timestamp, to: null, score: point.score })
   }
   return runs.reverse().slice(0, limit)
+}
+
+export type HistogramBin = { from: number; to: number; count: number }
+
+export type Histogram = {
+  bins: HistogramBin[]
+  /** The tallest bin's count. */
+  peak: number
+  lo: number
+  hi: number
+  /** Values below `lo` were folded into the first bin. */
+  underflow: boolean
+  /** Values above `hi` were folded into the last bin. */
+  overflow: boolean
+}
+
+/**
+ * Equal-width bins over the values. The range runs between the
+ * `1 - clipQuantile` and `clipQuantile` values, not the extremes, so a few
+ * odd samples (two games read as one, a game cut short) do not squash the
+ * bulk into one bar; whatever lies outside lands in the end bins. null
+ * without values.
+ */
+export function buildHistogram(values: readonly number[], binCount = 16, clipQuantile = 0.98): Histogram | null {
+  if (values.length === 0) {
+    return null
+  }
+  const sorted = [...values].sort((a, b) => a - b)
+  const bottom = sorted[0]!
+  const top = sorted[sorted.length - 1]!
+  let lo = sorted[Math.ceil((sorted.length - 1) * (1 - clipQuantile))]!
+  let hi = sorted[Math.floor((sorted.length - 1) * clipQuantile)]!
+  if (hi <= lo) {
+    lo = bottom
+    hi = top
+  }
+  if (hi <= lo) {
+    return { bins: [{ from: lo, to: hi, count: sorted.length }], peak: sorted.length, lo, hi, underflow: false, overflow: false }
+  }
+
+  const width = (hi - lo) / binCount
+  const bins: HistogramBin[] = Array.from({ length: binCount }, (_, index) => ({
+    from: lo + width * index,
+    to: lo + width * (index + 1),
+    count: 0,
+  }))
+  for (const value of sorted) {
+    bins[Math.min(binCount - 1, Math.max(0, Math.floor((value - lo) / width)))]!.count += 1
+  }
+  return { bins, peak: Math.max(...bins.map((bin) => bin.count)), lo, hi, underflow: bottom < lo, overflow: top > hi }
+}
+
+/** Which bin a value falls in (clamped to the ends), or -1 without a value. */
+export function histogramBinIndex(histogram: Histogram, value: number | null | undefined): number {
+  if (value == null) {
+    return -1
+  }
+  if (histogram.hi <= histogram.lo) {
+    return 0
+  }
+  const width = (histogram.hi - histogram.lo) / histogram.bins.length
+  return Math.min(histogram.bins.length - 1, Math.max(0, Math.floor((value - histogram.lo) / width)))
+}
+
+export type HourlyPeak = {
+  /** The most pt earned in one clock hour. */
+  peak: number | null
+  /** Start of that hour, Unix seconds. */
+  peakAt: number | null
+  /** pt per hour over the whole trace. */
+  average: number | null
+}
+
+/** The best clock hour and the average pace, the two references a current speed is read against. */
+export function summarizeHourlyPeak(trace: readonly InsightPoint[]): HourlyPeak {
+  const hours = new Map<number, number>()
+  let total = 0
+  for (let index = 1; index < trace.length; index += 1) {
+    const gain = trace[index]!.score - trace[index - 1]!.score
+    if (gain <= 0) {
+      continue
+    }
+    total += gain
+    const hour = Math.floor(trace[index]!.timestamp / 3600) * 3600
+    hours.set(hour, (hours.get(hour) ?? 0) + gain)
+  }
+
+  let peak: number | null = null
+  let peakAt: number | null = null
+  for (const [hour, gained] of hours) {
+    if (peak == null || gained > peak) {
+      peak = gained
+      peakAt = hour
+    }
+  }
+  const span = trace.length >= 2 ? trace[trace.length - 1]!.timestamp - trace[0]!.timestamp : 0
+  return { peak, peakAt, average: span > 0 ? Math.round((total / span) * 3600) : null }
+}
+
+export type FieldPosition = {
+  /** 1 = the fastest. */
+  position: number
+  /** Share of the field that is slower, 0–1. */
+  slowerShare: number
+}
+
+/** Where a value ranks among a field of values (a player's pace among the top 100). */
+export function resolveFieldPosition(value: number | null | undefined, field: readonly number[]): FieldPosition | null {
+  if (value == null || field.length === 0) {
+    return null
+  }
+  let faster = 0
+  let slower = 0
+  for (const other of field) {
+    if (other > value) {
+      faster += 1
+    } else if (other < value) {
+      slower += 1
+    }
+  }
+  return { position: faster + 1, slowerShare: slower / field.length }
 }
