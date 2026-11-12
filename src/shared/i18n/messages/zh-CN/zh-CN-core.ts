@@ -840,16 +840,49 @@ export default {
   },
   "globalSearch": {
     "title": "快速搜索",
-    "description": "在本地游戏数据库中搜索歌曲、卡牌与活动",
-    "placeholder": "搜索歌曲、卡牌、活动…",
-    "typeToSearch": "输入关键词以搜索歌曲、卡牌与活动",
-    "error": "游戏数据库加载失败",
+    "description": "搜索游戏数据和站内页面",
+    "placeholder": "搜索歌曲、卡牌、活动、卡池、角色、剧情、页面…",
+    "loading": "正在加载游戏数据…",
+    "loadFailed": "部分游戏数据加载失败",
     "retry": "重试",
     "empty": "没有找到匹配的结果",
+    "emptyHint": "换个关键词，或试试拼音、罗马音和 ID。",
     "groups": {
+      "page": "页面",
+      "character": "角色",
       "music": "歌曲",
       "card": "卡牌",
-      "event": "活动"
+      "event": "活动",
+      "gacha": "卡池",
+      "story": "剧情"
+    },
+    "scopes": {
+      "label": "搜索范围",
+      "all": "全部"
+    },
+    "sections": {
+      "recent": "最近打开",
+      "ongoing": "进行中的活动",
+      "suggested": "常用页面",
+      "clearRecent": "清除"
+    },
+    "more": {
+      "list": "在{page}中查看全部 {count} 条",
+      "scope": "显示全部 {count} 条"
+    },
+    "meta": {
+      "cardCount": "{count} 张卡牌",
+      "episodes": "{count} 话",
+      "storyKind": {
+        "unit": "主线剧情",
+        "event": "活动剧情",
+        "special": "特别剧情"
+      }
+    },
+    "hints": {
+      "navigate": "↑↓ 选择",
+      "open": "Enter 打开",
+      "scope": "Tab 切换范围"
     },
     "footerRegion": "数据区服：{region}",
     "footerHint": "{shortcut} 打开或关闭搜索"

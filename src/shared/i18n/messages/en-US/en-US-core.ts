@@ -840,16 +840,49 @@ export default {
   },
   "globalSearch": {
     "title": "Quick search",
-    "description": "Search music, cards, and events from the local game database",
-    "placeholder": "Search music, cards, events...",
-    "typeToSearch": "Type to search music, cards, and events",
-    "error": "Failed to load the game database",
+    "description": "Search the game data and the site's pages",
+    "placeholder": "Search songs, cards, events, gachas, characters, stories, pages…",
+    "loading": "Loading game data…",
+    "loadFailed": "Some game data failed to load",
     "retry": "Retry",
     "empty": "No results found",
+    "emptyHint": "Try another keyword, romaji, pinyin or an ID.",
     "groups": {
-      "music": "Music",
+      "page": "Pages",
+      "character": "Characters",
+      "music": "Songs",
       "card": "Cards",
-      "event": "Events"
+      "event": "Events",
+      "gacha": "Gachas",
+      "story": "Stories"
+    },
+    "scopes": {
+      "label": "Search in",
+      "all": "All"
+    },
+    "sections": {
+      "recent": "Recently opened",
+      "ongoing": "Ongoing events",
+      "suggested": "Common pages",
+      "clearRecent": "Clear"
+    },
+    "more": {
+      "list": "View all {count} in {page}",
+      "scope": "Show all {count}"
+    },
+    "meta": {
+      "cardCount": "{count} cards",
+      "episodes": "{count} episodes",
+      "storyKind": {
+        "unit": "Main story",
+        "event": "Event story",
+        "special": "Special story"
+      }
+    },
+    "hints": {
+      "navigate": "↑↓ to select",
+      "open": "Enter to open",
+      "scope": "Tab to switch scope"
     },
     "footerRegion": "Data region: {region}",
     "footerHint": "{shortcut} to toggle search"

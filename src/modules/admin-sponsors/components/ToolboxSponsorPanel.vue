@@ -154,11 +154,12 @@ function statusLabel(item: ToolboxSponsorUser) {
   <Dialog v-model:open="adding">
     <DialogContent>
       <DialogHeader><DialogTitle>{{ t("adminSponsors.toolbox.add") }}</DialogTitle><DialogDescription>{{ t("adminSponsors.toolbox.addDescription") }}</DialogDescription></DialogHeader>
+      <!-- The search stays put while the matches scroll under it. -->
+      <form class="flex shrink-0 gap-2 border-b border-border/60 px-4 py-3 sm:px-5" @submit.prevent="search()">
+        <Input v-model="candidateQuery" class="min-w-0 flex-1" :maxlength="128" :aria-label="t('adminSponsors.toolbox.findUser')" :placeholder="t('adminSponsors.toolbox.searchHint')" />
+        <Button type="submit" class="shrink-0" :disabled="searching || !candidateQuery.trim()">{{ t("adminSponsors.toolbox.search") }}</Button>
+      </form>
       <DialogBody>
-        <form class="flex gap-2" @submit.prevent="search()">
-          <Input v-model="candidateQuery" class="min-w-0 flex-1" :maxlength="128" :aria-label="t('adminSponsors.toolbox.findUser')" :placeholder="t('adminSponsors.toolbox.searchHint')" />
-          <Button type="submit" class="shrink-0" :disabled="searching || !candidateQuery.trim()">{{ t("adminSponsors.toolbox.search") }}</Button>
-        </form>
         <p v-if="candidateError" role="alert" class="text-sm text-destructive">{{ candidateError }}</p>
         <p v-if="searching" role="status" class="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 class="size-4 animate-spin" />{{ t("adminSponsors.toolbox.loading") }}

@@ -146,12 +146,20 @@ const KANA_ROMAJI: Readonly<Record<string, string>> = {
 }
 
 export function matchesCommandSearch(parts: readonly string[], search: string): boolean {
+  return matchesCommandSearchEntries(buildCommandSearchEntries(parts), search)
+}
+
+/**
+ * `matchesCommandSearch` against a haystack already built with
+ * `buildCommandSearchEntries`, for an index that is searched on every
+ * keystroke and should not rebuild each record's variants each time.
+ */
+export function matchesCommandSearchEntries(haystack: readonly string[], search: string): boolean {
   const rawSearch = search.trim()
   if (!rawSearch) {
     return true
   }
 
-  const haystack = buildCommandSearchEntries(parts)
   if (matchesAnyVariant(haystack, buildSearchVariants(rawSearch))) {
     return true
   }
