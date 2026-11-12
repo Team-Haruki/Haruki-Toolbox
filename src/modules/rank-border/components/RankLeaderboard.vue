@@ -10,7 +10,8 @@ import {
   sanitizeDomId,
   type RankBorderLeaderVisual,
 } from "../lib/honor-visuals"
-import { PERSONAL_COLLECTION_LIMIT } from "../lib/rank-border-constants"
+import { formatDurationLabel } from "../lib/duration-label"
+import { resolveCatchUpSeconds, resolveHourlySpeed } from "../lib/overview-stats"
 import type {
   RankBorderHonorView,
   RankBorderQuickFacts,
@@ -25,15 +26,13 @@ const { t } = useI18n()
 
 const { query, live, honors, ui } = useRankBorderContext()
 
-const { selectedEvent, intervalOptions, intervalSeconds } = query
+const { intervalOptions, intervalSeconds } = query
 const {
   tracker,
   liveRefreshing,
   canRefresh,
   top100Rows,
   hasTop100Data,
-  top100GrowthByRank,
-  segmentRows,
   refreshData,
 } = live
 const { honorContext } = honors
@@ -43,7 +42,6 @@ const {
   toggleRowExpansion,
   reportVisibleRank,
   formatRank,
-  formatTargetRank,
   formatPt,
   formatGrowth,
   formatPerHour,
@@ -58,13 +56,16 @@ const {
  */
 type LeaderRowVM = {
   rank: number
+  empty: boolean
   timestamp: number | null
   scoreLabel: string
   scoreChanged: boolean
+  /** pt behind the seat above, as "-12,345"; null for #1 or an unknown neighbour. */
+  gapLabel: string | null
   growthLabel: string | null
   growthPositive: boolean
-  rankGrowthLabel: string | null
-  rankGrowthPositive: boolean
+  /** The holder's own pt/h over the window. */
+  speedLabel: string | null
   growthChanged: boolean
   nameSegments: RichNameSegment[]
   leader: RankBorderLeaderVisual | null
@@ -74,22 +75,29 @@ type LeaderRowVM = {
 const rowViewModels = computed<LeaderRowVM[]>(() => {
   const renderAssets = shouldRenderProfileAssets.value
   const ctx = honorContext.value
-  return top100Rows.value.map((row) => ({
-    rank: row.rank,
-    timestamp: row.timestamp,
-    scoreLabel: formatPt(row.score),
-    scoreChanged: row.scoreChanged,
-    growthLabel: row.displayGrowth != null ? formatGrowth(row.displayGrowth) : null,
-    growthPositive: (row.displayGrowth ?? 0) > 0,
-    rankGrowthLabel: row.displayRankGrowth != null ? formatGrowth(row.displayRankGrowth) : null,
-    rankGrowthPositive: (row.displayRankGrowth ?? 0) > 0,
-    growthChanged: row.growthChanged,
-    nameSegments: richUserLabelSegments(row.detail, t("rankBorder.result.noPlayer")),
-    leader: renderAssets ? resolveLeaderVisual(row.detail, ctx) : null,
-    honorViews: renderAssets
-      ? buildProfileHonorViews(row.detail, ctx, 3, `row-${row.rank}-${sanitizeDomId(row.detail?.userId ?? "line")}`)
-      : [],
-  }))
+  const rows = top100Rows.value
+  return rows.map((row, index) => {
+    const above = index > 0 ? rows[index - 1] : null
+    const speed = resolveHourlySpeed(row.growth)
+    return {
+      rank: row.rank,
+      empty: row.detail == null,
+      timestamp: row.timestamp,
+      scoreLabel: formatPt(row.score),
+      scoreChanged: row.scoreChanged,
+      gapLabel: above?.score != null && row.score != null ? formatGrowth(row.score - above.score) : null,
+      growthLabel: row.displayGrowth != null ? formatGrowth(row.displayGrowth) : null,
+      growthPositive: (row.displayGrowth ?? 0) > 0,
+      speedLabel: speed != null ? formatPerHour(speed) : null,
+      growthChanged: row.growthChanged,
+      nameSegments: richUserLabelSegments(row.detail, t("rankBorder.result.noPlayer")),
+      leader: renderAssets ? resolveLeaderVisual(row.detail, ctx) : null,
+      // Honors show in the expanded row and, on a wide list, beside the name.
+      honorViews: renderAssets
+        ? buildProfileHonorViews(row.detail, ctx, 3, `row-${row.rank}-${sanitizeDomId(row.detail?.userId ?? "line")}`)
+        : [],
+    }
+  })
 })
 
 const intervalLabel = computed(() =>
@@ -97,97 +105,55 @@ const intervalLabel = computed(() =>
 )
 
 // --- Quick-facts (inline expansion) ------------------------------------------
-// Derived entirely from the overview payload already in memory: neighbors come
-// from the comparable-points list, speed from the interval growth. Zero fetches.
+// Derived entirely from the overview payload already in memory: the seats on
+// either side, the holder's and the seat's pace over the window, and how long
+// the gaps would take to close at those paces. Zero fetches.
 
-const comparablePoints = computed<ComparablePoint[]>(() => {
-  const points: ComparablePoint[] = []
-  for (const row of top100Rows.value) {
-    if (row.score != null) {
-      points.push({ rank: row.rank, score: row.score })
-    }
-  }
-  for (const row of segmentRows.value) {
-    points.push({ rank: row.rank, score: row.score })
-  }
-  return points.sort((a, b) => a.rank - b.rank)
-})
-
-type ComparablePoint = { rank: number; score: number }
-
-/** The expanded point with its nearest comparable neighbours on either side. */
-type PointNeighbours = {
-  point: ComparablePoint
-  previous: ComparablePoint | null
-  next: ComparablePoint | null
-}
-
-function hourlySpeedLabel(growth: { growth: number | null; timeDiff: number | null } | null): string | null {
-  return growth?.growth != null && growth.timeDiff
-    ? formatPerHour(Math.round((growth.growth / growth.timeDiff) * 3600))
-    : null
-}
-
-function buildSeatFacts(rank: number, { point, previous, next }: PointNeighbours): RankBorderQuickFacts {
-  const row = top100Rows.value[rank - 1]
-  return {
-    kind: "rank",
-    rank,
-    userId: row?.detail?.userId?.trim() || null,
-    scoreLabel: formatPt(point.score),
-    timestamp: row?.timestamp ?? null,
-    playerGrowthLabel: row?.displayGrowth != null ? formatGrowth(row.displayGrowth) : null,
-    playerGrowthPositive: (row?.displayGrowth ?? 0) > 0,
-    rankGrowthLabel: row?.displayRankGrowth != null ? formatGrowth(row.displayRankGrowth) : null,
-    rankGrowthPositive: (row?.displayRankGrowth ?? 0) > 0,
-    hourlySpeedLabel: hourlySpeedLabel(top100GrowthByRank.value.get(rank) ?? null),
-    prevGapLabel: previous ? formatGrowth(previous.score - point.score) : null,
-    prevLabel: t("rankBorder.result.previousRank"),
-    nextGapLabel: next ? formatGrowth(point.score - next.score) : null,
-    nextLabel: t("rankBorder.result.nextRank"),
-  }
-}
-
-function buildLineFacts(rank: number, { point, previous, next }: PointNeighbours): RankBorderQuickFacts {
-  const segment = segmentRows.value.find((row) => row.rank === rank) ?? null
-  const growth = segment?.growth ?? null
-  return {
-    kind: "line",
-    rank,
-    userId: null,
-    scoreLabel: formatPt(point.score),
-    timestamp: segment?.timestamp ?? null,
-    playerGrowthLabel: null,
-    playerGrowthPositive: false,
-    rankGrowthLabel: growth?.growth != null ? formatGrowth(growth.growth) : null,
-    rankGrowthPositive: (growth?.growth ?? 0) > 0,
-    hourlySpeedLabel: hourlySpeedLabel(growth),
-    prevGapLabel: previous ? formatGrowth(previous.score - point.score) : null,
-    prevLabel: t("rankBorder.result.previousLine"),
-    nextGapLabel: next ? formatGrowth(point.score - next.score) : null,
-    nextLabel: t("rankBorder.result.nextLine"),
-  }
+function catchUpLabel(key: "catchUp" | "caughtBy", gap: number | null, chaser: number | null, leader: number | null): string | null {
+  const seconds = resolveCatchUpSeconds(gap, chaser, leader)
+  return seconds != null ? t(`rankBorder.overview.facts.${key}`, { duration: formatDurationLabel(t, seconds) }) : null
 }
 
 const expandedFacts = computed<RankBorderQuickFacts | null>(() => {
   const rank = expandedRank.value
-  if (rank == null) {
+  const rows = top100Rows.value
+  const row = rank != null ? rows[rank - 1] : null
+  if (rank == null || !row || row.score == null) {
     return null
   }
 
-  const points = comparablePoints.value
-  const index = points.findIndex((point) => point.rank === rank)
-  if (index < 0) {
-    return null
-  }
+  const above = rank > 1 ? rows[rank - 2] : null
+  const below = rows[rank] ?? null
+  const holderSpeed = resolveHourlySpeed(row.growth)
+  const seatSpeed = resolveHourlySpeed(row.rankGrowth)
+  const aboveGap = above?.score != null ? above.score - row.score : null
+  const belowGap = below?.score != null ? row.score - below.score : null
 
-  const neighbours: PointNeighbours = {
-    point: points[index],
-    previous: index > 0 ? points[index - 1] : null,
-    next: index + 1 < points.length ? points[index + 1] : null,
+  return {
+    kind: "rank",
+    rank,
+    userId: row.detail?.userId?.trim() || null,
+    scoreLabel: formatPt(row.score),
+    timestamp: row.timestamp,
+    playerGrowthLabel: row.displayGrowth != null ? formatGrowth(row.displayGrowth) : null,
+    playerGrowthPositive: (row.displayGrowth ?? 0) > 0,
+    rankGrowthLabel: row.displayRankGrowth != null ? formatGrowth(row.displayRankGrowth) : null,
+    rankGrowthPositive: (row.displayRankGrowth ?? 0) > 0,
+    hourlySpeedLabel: holderSpeed != null ? formatPerHour(holderSpeed) : null,
+    seatSpeedLabel: seatSpeed != null ? formatPerHour(seatSpeed) : null,
+    prevGapLabel: aboveGap != null ? formatGrowth(-aboveGap) : null,
+    prevLabel: t("rankBorder.result.previousRank"),
+    prevNote: catchUpLabel("catchUp", aboveGap, holderSpeed, resolveHourlySpeed(above?.growth)),
+    nextGapLabel: belowGap != null ? formatGrowth(belowGap) : null,
+    nextLabel: t("rankBorder.result.nextRank"),
+    nextNote: catchUpLabel("caughtBy", belowGap, resolveHourlySpeed(below?.growth), holderSpeed),
+    profileWord: row.detail?.profileWord?.trim() || null,
   }
-  return rank <= PERSONAL_COLLECTION_LIMIT ? buildSeatFacts(rank, neighbours) : buildLineFacts(rank, neighbours)
 })
+
+const expandedHonors = computed(() =>
+  expandedRank.value != null ? rowViewModels.value[expandedRank.value - 1]?.honorViews ?? [] : [],
+)
 
 // --- Visible-rank tracking (jump-rail sync) via IntersectionObserver ---------
 
@@ -240,7 +206,7 @@ onMounted(() => {
   void nextTick(observeRows)
 })
 
-watch([hasTop100Data, () => segmentRows.value.length], () => {
+watch(hasTop100Data, () => {
   void nextTick(observeRows)
 })
 
@@ -255,17 +221,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section ref="listRoot" class="grid min-w-0 gap-3 rounded-lg border bg-muted/10 p-2.5 sm:p-3">
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-      <div class="min-w-0">
-        <h2 class="truncate text-base font-semibold">{{ selectedEvent?.label ?? t("rankBorder.sections.lines") }}</h2>
-        <p class="text-sm text-muted-foreground">
-          {{ t("rankBorder.sections.linesDescription") }}
-        </p>
-      </div>
-    </div>
+  <section ref="listRoot" class="@container flex min-w-0 flex-col overflow-hidden rounded-xl border bg-card" data-testid="rank-leaderboard">
+    <header class="border-b border-border/60 px-4 py-3">
+      <h2 class="text-sm font-semibold">{{ t("rankBorder.overview.board.title") }}</h2>
+      <p class="mt-0.5 text-xs text-muted-foreground">{{ t("rankBorder.overview.board.description", { interval: intervalLabel }) }}</p>
+    </header>
 
-    <div v-if="tracker.error.value" class="rounded-md border border-destructive/40 bg-destructive/5">
+    <div v-if="tracker.error.value" class="border-b border-border/60">
       <LoadErrorState
         :title="t('rankBorder.result.loadErrorTitle')"
         :description="tracker.error.value"
@@ -277,491 +239,152 @@ onBeforeUnmount(() => {
       />
     </div>
 
-    <!-- The empty placeholder yields to the error card: "nothing collected yet" under "could not load" would contradict it. -->
-    <div v-if="!hasTop100Data && !tracker.error.value" class="rounded-md border border-dashed">
-      <EmptyState :title="t('rankBorder.result.emptyLines')" size="sm" />
-    </div>
-    <div v-else-if="hasTop100Data" class="rank-border-table-shell rounded-md border bg-background/80">
-      <div class="rank-border-table-header rank-border-top-header">
-        <span>{{ t("rankBorder.table.rank") }}</span>
-        <span>{{ t("rankBorder.table.player") }}</span>
-        <span class="text-right">{{ t("rankBorder.table.score") }}</span>
+    <!-- The empty placeholder yields to the error block: "nothing collected yet" under "could not load" would contradict it. -->
+    <EmptyState v-if="!hasTop100Data && !tracker.error.value" :title="t('rankBorder.result.emptyLines')" size="sm" />
+
+    <template v-else-if="hasTop100Data">
+      <!-- Captions for the wide table; a narrow list labels nothing and folds the extras under the score. -->
+      <div class="hidden items-center gap-3 bg-muted/30 px-3 py-1.5 text-[11px] text-muted-foreground @min-[44rem]:flex">
+        <span class="w-11 shrink-0">{{ t("rankBorder.table.rank") }}</span>
+        <span class="min-w-0 flex-1">{{ t("rankBorder.table.player") }}</span>
+        <span class="w-32 shrink-0 text-right">{{ t("rankBorder.table.score") }}</span>
+        <span class="w-24 shrink-0 text-right">{{ t("rankBorder.result.previousRank") }}</span>
+        <span class="w-24 shrink-0 text-right">{{ t("rankBorder.overview.board.holderGrowth") }}</span>
+        <span class="hidden w-28 shrink-0 text-right @min-[54rem]:block">{{ t("rankBorder.table.hourlySpeed") }}</span>
+        <span class="w-16 shrink-0 text-right">{{ t("rankBorder.result.updatedAgo") }}</span>
       </div>
 
-      <div class="rank-border-top-list">
-        <div
+      <ul class="divide-y divide-border/60" role="list">
+        <li
           v-for="row in rowViewModels"
           :key="row.rank"
           :data-rank-border-row="row.rank"
-          class="rank-border-top-item border-b"
+          class="rank-border-top-item"
         >
           <button
             type="button"
             :class="[
-              'rank-border-table-row rank-border-top-row text-left transition-colors hover:bg-cyan-50/60 dark:hover:bg-cyan-500/10',
-              row.rank <= 3 ? 'bg-cyan-50/55 dark:bg-cyan-500/10' : 'bg-background/80',
-              expandedRank === row.rank ? 'ring-1 ring-cyan-500/50' : '',
+              'flex w-full items-center gap-2 px-3 py-1.5 text-left outline-none transition-colors hover:bg-accent/50 focus-visible:bg-accent/50 @min-[44rem]:gap-3 dark:hover:bg-accent/30',
+              expandedRank === row.rank ? 'bg-primary/5' : '',
             ]"
             :aria-expanded="expandedRank === row.rank"
             @click="toggleRowExpansion(row.rank)"
           >
-            <div class="rank-border-rank-cell">
+            <span class="w-11 shrink-0">
               <span
                 :class="[
-                  'inline-flex min-w-10 justify-center rounded-md border px-1.5 py-1 text-xs font-semibold tabular-nums sm:min-w-12 sm:px-2 sm:text-sm',
-                  row.rank === 1 ? 'border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-100' : '',
-                  row.rank === 2 ? 'border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-500/30 dark:bg-slate-500/15 dark:text-slate-100' : '',
-                  row.rank === 3 ? 'border-orange-200 bg-orange-100 text-orange-800 dark:border-orange-500/30 dark:bg-orange-500/15 dark:text-orange-100' : '',
-                  row.rank > 3 ? 'bg-background text-foreground' : '',
+                  'inline-flex min-w-10 justify-center rounded-md px-1 py-0.5 text-xs font-semibold tabular-nums',
+                  row.rank === 1 ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-100' : '',
+                  row.rank === 2 ? 'bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-100' : '',
+                  row.rank === 3 ? 'bg-orange-100 text-orange-800 dark:bg-orange-500/15 dark:text-orange-100' : '',
+                  row.rank > 3 ? 'bg-muted text-foreground' : '',
                 ]"
               >
                 {{ formatRank(row.rank) }}
               </span>
-            </div>
+            </span>
 
-            <div class="rank-border-player-scroll">
-              <div
-                :class="[
-                  'rank-border-player-track',
-                  shouldRenderProfileAssets ? 'rank-border-player-track--assets' : 'rank-border-player-track--plain',
-                ]"
+            <span class="flex min-w-0 flex-1 items-center gap-2">
+              <LeaderCard v-if="shouldRenderProfileAssets" :leader="row.leader" variant="row" class="rank-border-row-card" />
+              <span
+                :class="['min-w-0 truncate text-sm font-medium', row.empty ? 'text-muted-foreground' : '']"
               >
-                <LeaderCard v-if="shouldRenderProfileAssets" :leader="row.leader" variant="row" />
-                <div class="rank-border-player-copy">
-                  <p class="rank-border-player-name">
-                    <span
-                      v-for="segment in row.nameSegments"
-                      :key="segment.key"
-                      :style="richNameSegmentStyle(segment)"
-                    >
-                      {{ segment.text }}
-                    </span>
-                  </p>
-                  <div v-if="row.honorViews.length > 0" class="rank-border-honor-strip rank-border-honor-strip--row">
-                    <HonorBadge
-                      v-for="honor in row.honorViews"
-                      :key="honor.key"
-                      :honor="honor"
-                      variant="row"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
+                <span
+                  v-for="segment in row.nameSegments"
+                  :key="segment.key"
+                  :style="richNameSegmentStyle(segment)"
+                >{{ segment.text }}</span>
+              </span>
+              <!-- Room for the honors only on a wide list; they are always in the expanded row. -->
+              <span v-if="row.honorViews.length > 0" class="hidden shrink-0 items-center gap-1 @min-[72rem]:flex">
+                <HonorBadge
+                  v-for="honor in row.honorViews"
+                  :key="honor.key"
+                  :honor="honor"
+                  variant="row"
+                  class="rank-border-row-honor"
+                />
+              </span>
+            </span>
 
-            <div class="rank-border-score-cell">
+            <span class="flex shrink-0 flex-col items-end @min-[44rem]:w-32">
               <span
                 :key="`score:${row.scoreLabel}`"
-                :class="[
-                  'rank-border-live-number rank-border-row-score',
-                  row.scoreChanged ? 'rank-border-live-number--changed' : '',
-                ]"
+                :class="['text-sm font-semibold tabular-nums', row.scoreChanged ? 'rank-border-flash' : '']"
               >
                 {{ row.scoreLabel }}
               </span>
-              <div class="rank-border-score-meta flex flex-wrap items-center justify-end gap-x-1.5 gap-y-0.5 text-[0.6875rem] leading-4 text-muted-foreground sm:gap-2 sm:text-xs">
-                <span
-                  v-if="row.growthLabel"
-                  :key="`growth:${row.growthLabel}`"
-                  :class="[
-                    'rank-border-live-number inline-flex items-center gap-1',
-                    row.growthChanged ? 'rank-border-live-number--changed' : '',
-                    row.growthPositive ? 'text-emerald-600 dark:text-emerald-300' : '',
-                  ]"
-                >
-                  <span class="text-muted-foreground">{{ t("rankBorder.result.playerGrowthShort") }}</span>
-                  <span>{{ row.growthLabel }}</span>
-                </span>
-                <span
-                  v-if="row.rankGrowthLabel"
-                  :key="`rank-growth:${row.rankGrowthLabel}`"
-                  :class="[
-                    'rank-border-live-number inline-flex items-center gap-1',
-                    row.growthChanged ? 'rank-border-live-number--changed' : '',
-                    row.rankGrowthPositive ? 'text-emerald-600 dark:text-emerald-300' : '',
-                  ]"
-                >
-                  <span class="text-muted-foreground">{{ t("rankBorder.result.rankGrowthShort") }}</span>
-                  <span>{{ row.rankGrowthLabel }}</span>
-                </span>
+              <!-- Narrow list: growth and age under the score. -->
+              <span class="flex items-center gap-1.5 text-[11px] tabular-nums text-muted-foreground @min-[44rem]:hidden">
+                <span v-if="row.growthLabel" :class="row.growthPositive ? 'text-emerald-600 dark:text-emerald-400' : ''">{{ row.growthLabel }}</span>
                 <RelativeTime :timestamp="row.timestamp" />
-              </div>
-            </div>
-          </button>
-
-          <RankQuickFacts v-if="expandedRank === row.rank && expandedFacts" :facts="expandedFacts" />
-        </div>
-      </div>
-
-      <div v-if="segmentRows.length > 0" class="rank-border-segment-divider">
-        <span>{{ t("rankBorder.sections.segmentLines") }}</span>
-        <span class="text-muted-foreground/80">{{ t("rankBorder.sections.segmentLinesDescription", { interval: intervalLabel }) }}</span>
-      </div>
-
-      <div
-        v-for="row in segmentRows"
-        :key="row.rank"
-        :data-rank-border-row="row.rank"
-        class="border-b last:border-b-0"
-      >
-        <button
-          type="button"
-          :class="[
-            'rank-border-table-row rank-border-segment-row bg-background/80 text-left transition-colors hover:bg-cyan-50/60 dark:hover:bg-cyan-500/10',
-            expandedRank === row.rank ? 'ring-1 ring-cyan-500/50' : '',
-          ]"
-          :aria-expanded="expandedRank === row.rank"
-          @click="toggleRowExpansion(row.rank)"
-        >
-          <div class="rank-border-rank-cell">
-            <span class="inline-flex min-w-12 justify-center rounded-md border bg-background px-2 py-1 text-sm font-semibold tabular-nums text-foreground">
-              {{ formatTargetRank(row.rank) }}
+              </span>
             </span>
-          </div>
 
-          <div class="rank-border-player-scroll">
-            <div class="rank-border-player-track rank-border-player-track--plain">
-              <p class="rank-border-player-name">
-              {{ t("rankBorder.result.borderLine") }}
-              </p>
-            </div>
-          </div>
-
-          <div class="rank-border-score-cell">
+            <span class="hidden w-24 shrink-0 text-right text-xs tabular-nums text-muted-foreground @min-[44rem]:block">
+              {{ row.gapLabel ?? "—" }}
+            </span>
             <span
-              :key="`score:${row.score}`"
+              :key="`growth:${row.growthLabel}`"
               :class="[
-                'rank-border-live-number rank-border-row-score',
-                row.scoreChanged ? 'rank-border-live-number--changed' : '',
+                'hidden w-24 shrink-0 text-right text-xs tabular-nums @min-[44rem]:block',
+                row.growthPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground',
+                row.growthChanged ? 'rank-border-flash' : '',
               ]"
             >
-              {{ formatPt(row.score) }}
+              {{ row.growthLabel ?? "—" }}
             </span>
-            <div class="rank-border-score-meta flex flex-wrap items-center gap-2 text-xs text-muted-foreground sm:justify-end">
-              <span
-                v-if="row.growth?.growth != null"
-                :key="`growth:${row.growth.growth}`"
-                :class="[
-                  'rank-border-live-number',
-                  row.growthChanged ? 'rank-border-live-number--changed' : '',
-                  row.growth.growth > 0 ? 'text-emerald-600 dark:text-emerald-300' : '',
-                ]"
-              >
-                {{ formatGrowth(row.growth.growth) }}
-              </span>
+            <span class="hidden w-28 shrink-0 text-right text-xs tabular-nums @min-[54rem]:block">
+              {{ row.speedLabel ?? "—" }}
+            </span>
+            <span class="hidden w-16 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground @min-[44rem]:block">
               <RelativeTime :timestamp="row.timestamp" />
-            </div>
-          </div>
-        </button>
+            </span>
+          </button>
 
-        <RankQuickFacts v-if="expandedRank === row.rank && expandedFacts" :facts="expandedFacts" />
-      </div>
-    </div>
+          <RankQuickFacts
+            v-if="expandedRank === row.rank && expandedFacts"
+            :facts="expandedFacts"
+            :honors="expandedHonors"
+          />
+        </li>
+      </ul>
+    </template>
   </section>
 </template>
 
 <style scoped>
-.rank-border-live-number {
-  display: inline-block;
-  align-items: baseline;
-  backface-visibility: hidden;
-  transform-origin: center;
-  transition: color 180ms ease, opacity 180ms ease;
-}
-
-.rank-border-live-number--changed {
-  color: rgb(5 150 105);
-  animation: rank-border-number-lift 520ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.rank-border-table-shell {
-  overflow-x: auto;
-  overflow-y: hidden;
-  overscroll-behavior-x: contain;
-}
-
-.rank-border-table-header,
-.rank-border-table-row {
-  display: grid;
-  min-width: 0;
-  align-items: center;
-}
-
-.rank-border-table-header {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in oklab, var(--muted) 45%, var(--background));
-  color: var(--muted-foreground);
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.5rem 0.75rem;
-}
-
-.rank-border-segment-divider {
-  display: flex;
-  min-width: 0;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.25rem 0.625rem;
-  border-block: 1px solid var(--border);
-  background: color-mix(in oklab, var(--muted) 45%, var(--background));
-  color: var(--muted-foreground);
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.4rem 0.75rem;
-}
-
-.rank-border-segment-divider > span:last-child {
-  font-weight: 400;
-}
-
-.rank-border-table-row {
-  width: 100%;
-  min-height: 4.375rem;
-  border: 0;
-  padding: 0.5rem 0.75rem;
-}
-
-.rank-border-top-list {
-  position: relative;
-}
-
-/* Off-screen rows skip layout/paint entirely; the placeholder size keeps the
-   scrollbar stable. */
+/* Off-screen rows skip layout and paint; the placeholder size keeps the scrollbar stable. */
 .rank-border-top-item {
   content-visibility: auto;
-  contain-intrinsic-size: auto 4.4375rem;
+  contain-intrinsic-size: auto 2.875rem;
 }
 
-.rank-border-top-header,
-.rank-border-top-row {
-  grid-template-columns: 4.75rem minmax(0, 1fr) clamp(6.85rem, 13vw, 10.25rem);
-  column-gap: 0.75rem;
+/* The leader card and honor badges size themselves in their own stylesheets; a compact row needs them smaller. */
+.rank-border-row-card {
+  width: 2.25rem !important;
+  height: 2.25rem !important;
 }
 
-.rank-border-segment-row {
-  grid-template-columns: 4.75rem minmax(0, 1fr) clamp(6.75rem, 12vw, 9.25rem);
-  column-gap: 0.75rem;
+.rank-border-row-honor {
+  width: 3.6rem !important;
 }
 
-.rank-border-rank-cell {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.5rem;
+/* A number that just changed lifts once; the key on the node replays it. */
+.rank-border-flash {
+  color: rgb(5 150 105);
+  animation: rank-border-flash 520ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.rank-border-player-scroll {
-  min-width: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-
-.rank-border-player-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.rank-border-player-track {
-  display: grid;
-  width: max-content;
-  min-width: 100%;
-  align-items: center;
-  justify-content: start;
-  gap: 0.5rem;
-  padding-block: 0.125rem;
-  padding-inline-end: 0.75rem;
-}
-
-.rank-border-player-track--assets {
-  grid-template-columns: max-content max-content;
-}
-
-.rank-border-player-track--plain {
-  width: max-content;
-  min-width: 100%;
-}
-
-/* The scroller is an inline-size container so the name can be capped at the
-   visible width (100cqw, minus the leader card beside it): a long name ends
-   in an ellipsis instead of running under the score block, while the honor
-   strip may still overflow and keep the track scrollable. */
-.rank-border-player-scroll {
-  container-type: inline-size;
-}
-
-.rank-border-player-copy {
-  --rank-border-player-copy-max: 100cqw;
-  display: grid;
-  width: max-content;
-  min-width: 0;
-  max-width: var(--rank-border-player-copy-max);
-  justify-items: start;
-  gap: 0.375rem;
-  text-align: left;
-}
-
-.rank-border-player-track--assets .rank-border-player-copy {
-  --rank-border-player-copy-max: calc(100cqw - 3.5rem - 0.5rem);
-}
-
-.rank-border-player-name {
-  display: block;
-  width: auto;
-  justify-self: start;
-  min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
-  color: var(--foreground);
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.35;
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rank-border-score-cell {
-  position: relative;
-  z-index: 2;
-  display: grid;
-  min-width: min-content;
-  justify-items: end;
-  gap: 0.25rem;
-  align-self: stretch;
-  align-content: center;
-  padding-inline-start: 0.25rem;
-  text-align: right;
-}
-
-.rank-border-row-score {
-  min-width: 0;
-  max-width: 100%;
-  overflow: visible;
-  font-size: clamp(0.9375rem, 1.65vw, 1.25rem);
-  font-variant-numeric: tabular-nums;
-  font-weight: 650;
-  line-height: 1.15;
-  white-space: nowrap;
-}
-
-.rank-border-honor-strip {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.25rem;
-  overflow: visible;
-}
-
-.rank-border-honor-strip--row {
-  flex-wrap: nowrap;
-  gap: 0.25rem 0.375rem;
-  width: max-content;
-  max-width: none;
-  overflow-x: visible;
-  overflow-y: hidden;
-  scrollbar-width: none;
-}
-
-.rank-border-honor-strip--row::-webkit-scrollbar {
-  display: none;
-}
-
-@keyframes rank-border-number-lift {
-  0% {
-    transform: translateY(0);
-    filter: brightness(1);
-  }
-
+@keyframes rank-border-flash {
   38% {
     transform: translateY(-0.12rem);
-    filter: brightness(1.12);
-  }
-
-  100% {
-    transform: translateY(0);
-    filter: brightness(1);
   }
 }
 
-@media (max-width: 767px) {
-  .rank-border-table-header {
-    display: none;
-  }
-
-  .rank-border-table-row {
-    min-height: 3.75rem;
-    padding: 0.5rem 0.625rem;
-  }
-
-  .rank-border-top-item {
-    contain-intrinsic-size: auto 3.8125rem;
-  }
-
-  .rank-border-top-row {
-    grid-template-columns: 3.1rem minmax(0, 1fr) minmax(6.9rem, 7.65rem);
-    column-gap: 0.375rem;
-  }
-
-  .rank-border-segment-row {
-    grid-template-columns: 4.2rem minmax(0, 1fr) minmax(6.45rem, 7rem);
-    column-gap: 0.375rem;
-  }
-
-  .rank-border-player-track {
-    gap: 0.5rem;
-    padding-inline-end: 0.5rem;
-  }
-
-  .rank-border-player-track--assets {
-    grid-template-columns: auto max-content;
-  }
-
-  .rank-border-player-track--assets .rank-border-player-copy {
-    --rank-border-player-copy-max: calc(100cqw - 2.65rem - 0.5rem);
-  }
-
-  .rank-border-player-name {
-    font-size: 0.8125rem;
-  }
-
-  .rank-border-honor-strip--row {
-    gap: 0.1875rem;
-    max-width: none;
-    overflow-x: visible;
-  }
-
-  .rank-border-score-cell {
-    gap: 0.15rem;
-    min-width: 0;
-    padding-inline-start: 0.125rem;
-  }
-
-  .rank-border-row-score {
-    font-size: clamp(0.765rem, 2.95vw, 0.9375rem);
-    letter-spacing: 0;
-  }
-
-  .rank-border-score-meta {
-    display: grid;
-    justify-items: end;
-    gap: 0.0625rem;
-    font-size: 0.75rem;
-    line-height: 1.15;
-  }
-
-  .rank-border-score-meta span {
-    min-width: 0;
-    max-width: 100%;
-    white-space: nowrap;
-  }
-
-  .rank-border-segment-row .rank-border-score-meta {
-    font-size: 0.8125rem;
+@media (prefers-reduced-motion: reduce) {
+  .rank-border-flash {
+    animation: none;
   }
 }
 </style>

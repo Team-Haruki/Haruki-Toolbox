@@ -263,7 +263,7 @@ function formatPercentValue(value: number) {
           :key="step"
           class="flex items-center gap-2 text-sm"
         >
-          <LucideCheck v-if="runnerPhaseIndex > stepIndex" class="size-4 shrink-0 text-emerald-500" />
+          <LucideCheck v-if="runnerPhaseIndex > stepIndex" class="size-4 shrink-0 text-primary" />
           <span
             v-else-if="runnerPhaseIndex === stepIndex"
             class="size-4 shrink-0 animate-spin rounded-full border-2 border-primary border-t-transparent"
@@ -291,7 +291,7 @@ function formatPercentValue(value: number) {
     <!-- Nothing run yet -->
     <div
       v-if="!showResultCard && !runner.running.value"
-      class="flex min-h-64 flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-8 text-center"
+      class="flex min-h-64 flex-col items-center justify-center gap-2 rounded-xl border bg-card p-8 text-center"
     >
       <LucideGamepad2 class="size-8 text-muted-foreground/50" />
       <p class="text-sm font-medium">{{ t("deckRecommend.result.title") }}</p>
@@ -364,7 +364,7 @@ function formatPercentValue(value: number) {
           {{ t("core.errors.detail", { detail: runner.errorDescription.value.detail }) }}
         </p>
       </div>
-      <div v-else-if="resultDecks.length === 0" class="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+      <div v-else-if="resultDecks.length === 0" class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
         {{ t("deckRecommend.result.empty") }}
       </div>
 

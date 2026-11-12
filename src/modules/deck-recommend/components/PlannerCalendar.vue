@@ -5,10 +5,12 @@ import { useScrollEdges } from "@/composables/useScrollEdges"
 import { resolveSekaiLiveBoostMultiplier } from "@/shared/sekai/live-boost"
 import {
   buildPlannerRectangleHourKeys,
+  PLANNER_HOUR_MS,
   type PlannerBrush,
   type PlannerCalendarDay,
   type PlannerCellCoordinate,
   type PlannerCells,
+  type PlannerDayStat,
 } from "../lib/planner-calendar"
 
 const props = defineProps<{
@@ -17,6 +19,12 @@ const props = defineProps<{
   brushes: PlannerBrush[]
   /** Active tool: a brush id or the special "eraser". */
   activeTool: string
+  /** One entry per day, in order: what the day adds and the running total. */
+  dayStats: readonly PlannerDayStat[]
+  /** Hours before this no longer count toward the target and are drawn faded; null counts everything. */
+  countFromMs: number | null
+  /** The current time, to mark the hour the player is in. */
+  nowMs: number
 }>()
 
 const emit = defineEmits<{
@@ -35,6 +43,15 @@ const dayFormatter = computed(() => new Intl.DateTimeFormat(locale.value, {
 }))
 
 const exactRateFormatter = computed(() => new Intl.NumberFormat(locale.value))
+const compactFormatter = computed(() => new Intl.NumberFormat(locale.value, { notation: "compact", maximumFractionDigits: 1 }))
+
+function isPastHour(hourStartMs: number) {
+  return props.countFromMs != null && hourStartMs < props.countFromMs
+}
+
+function isCurrentHour(hourStartMs: number) {
+  return props.nowMs >= hourStartMs && props.nowMs < hourStartMs + PLANNER_HOUR_MS
+}
 
 /** Loops per hour of the painted brush; rest cells stay unlabeled. */
 function cellPlaysLabel(hourStartMs: number): string {
@@ -265,7 +282,8 @@ const { edgeClass } = useScrollEdges(scroller)
     <div ref="scroller" class="overflow-x-auto">
     <div
       ref="grid"
-      class="min-w-[58rem] select-none touch-pan-x touch-pan-y [-webkit-touch-callout:none]"
+      class="min-w-[66rem] select-none touch-pan-x touch-pan-y [-webkit-touch-callout:none]"
+      data-testid="planner-calendar"
       @pointerdown="handlePointerDown"
       @pointermove="handlePointerMove"
       @pointerup="handlePointerUp"
@@ -275,8 +293,8 @@ const { edgeClass } = useScrollEdges(scroller)
       @contextmenu.prevent
     >
       <!-- Hour header -->
-      <div class="mb-1 grid grid-cols-[5.5rem_repeat(24,minmax(2rem,1fr))] gap-x-px">
-        <span class="sticky left-0 z-10 bg-background" />
+      <div class="mb-1 grid grid-cols-[5.5rem_repeat(24,minmax(2rem,1fr))_4.5rem_5.5rem] items-end gap-x-px">
+        <span class="sticky left-0 z-10 bg-card" />
         <span
           v-for="hour in HOUR_COLUMNS"
           :key="hour"
@@ -284,14 +302,17 @@ const { edgeClass } = useScrollEdges(scroller)
         >
           {{ hour % 2 === 0 ? hour : "" }}
         </span>
+        <span class="pr-1 text-right text-[11px] text-muted-foreground">{{ t("eventPlanner.calendar.dayPoints") }}</span>
+        <span class="text-right text-[11px] text-muted-foreground">{{ t("eventPlanner.calendar.dayTotal") }}</span>
       </div>
 
       <div
         v-for="(day, dayIndex) in days"
         :key="day.dayStartMs"
-        class="grid grid-cols-[5.5rem_repeat(24,minmax(2rem,1fr))] items-center gap-x-px py-0.5"
+        class="grid grid-cols-[5.5rem_repeat(24,minmax(2rem,1fr))_4.5rem_5.5rem] items-center gap-x-px py-0.5"
+        data-testid="planner-day"
       >
-        <span class="sticky left-0 z-10 self-stretch bg-background pr-2 text-right text-xs leading-[2rem] tabular-nums text-muted-foreground">
+        <span class="sticky left-0 z-10 self-stretch bg-card pr-2 text-right text-xs leading-[2rem] tabular-nums text-muted-foreground">
           {{ dayFormatter.format(day.dayStartMs) }}
         </span>
         <button
@@ -304,6 +325,8 @@ const { edgeClass } = useScrollEdges(scroller)
           :class="[
             'flex aspect-square w-full items-center justify-center overflow-hidden rounded-[4px] border transition-colors',
             cellBrush(hour.hourStartMs) != null ? 'border-transparent' : 'border-border/50 bg-muted/30 hover:bg-muted/60',
+            isPastHour(hour.hourStartMs) ? 'opacity-35' : '',
+            isCurrentHour(hour.hourStartMs) ? 'outline-2 -outline-offset-2 outline-foreground/70' : '',
             isPreviewing(hour.hourStartMs)
               ? strokeMode === 'erase' ? 'ring-2 ring-destructive/60' : 'ring-2 ring-primary/60'
               : '',
@@ -324,6 +347,27 @@ const { edgeClass } = useScrollEdges(scroller)
             </span>
           </span>
         </button>
+        <!-- What the day adds, and where the total stands when it ends. -->
+        <span
+          class="pr-1 text-right text-xs tabular-nums"
+          :class="(dayStats[dayIndex]?.points ?? 0) > 0 ? '' : 'text-muted-foreground'"
+          style="grid-column-start: 26"
+          data-testid="planner-day-points"
+        >
+          {{ (dayStats[dayIndex]?.points ?? 0) > 0 ? `+${compactFormatter.format(dayStats[dayIndex]!.points)}` : "–" }}
+        </span>
+        <span
+          :class="[
+            'text-right text-xs tabular-nums',
+            dayStats[dayIndex]?.reachesTarget ? 'font-semibold text-primary' : dayStats[dayIndex]?.cumulative == null ? 'text-muted-foreground' : '',
+          ]"
+          :title="dayStats[dayIndex]?.reachesTarget ? t('eventPlanner.calendar.reachesTarget') : undefined"
+          style="grid-column-start: 27"
+          data-testid="planner-day-total"
+        >
+          {{ dayStats[dayIndex]?.cumulative != null ? compactFormatter.format(dayStats[dayIndex]!.cumulative!) : "–" }}
+          <span v-if="dayStats[dayIndex]?.reachesTarget" class="block text-[10px] leading-none font-medium">{{ t("eventPlanner.calendar.reachesTarget") }}</span>
+        </span>
       </div>
     </div>
     </div>

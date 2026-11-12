@@ -7,11 +7,6 @@ import type { AcceptableValue } from "reka-ui"
 import { useI18n } from "vue-i18n"
 import { useMediaQuery } from "@vueuse/core"
 import { toast } from "vue-sonner"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import PageHeader from "@/shared/components/PageHeader.vue"
 import { resolveSekaiRegionLabel } from "@/lib/sekai-region"
@@ -1783,10 +1778,10 @@ provideDeckRecommendFormContext({
       <PageHeader :title="t('deckRecommend.title')" :description="t('deckRecommend.description')" class="px-3 sm:px-0" />
       <!-- Wide screens: config pane on the left stays put while the results scroll on the right. -->
       <div class="grid min-w-0 grid-cols-1 gap-3 sm:gap-4 xl:grid-cols-[24rem_minmax(0,1fr)] xl:items-start">
-        <div class="min-w-0 xl:sticky xl:top-16 xl:max-h-[calc(100dvh-5rem)] xl:overflow-y-auto xl:overscroll-contain xl:rounded-lg">
+        <div class="min-w-0 xl:sticky xl:top-16 xl:max-h-[calc(100dvh-5rem)] xl:overflow-y-auto xl:overscroll-contain xl:rounded-xl">
           <!-- Compact card with its own header/footer paddings: the vertical padding and gap are owned by the sections. -->
-          <Card v-show="showConfigCard" size="compact" class="gap-0 py-0">
-            <CardHeader class="@container gap-2 border-b px-3 py-3 sm:px-4 [.border-b]:pb-3">
+          <section v-show="showConfigCard" class="rounded-xl border bg-card" data-testid="deck-config">
+            <div class="@container border-b border-border/60 px-3 py-3 sm:px-4">
               <Tabs :model-value="recommendMode" class="w-full min-w-0" @update:model-value="updateRecommendMode">
                 <TabsList class="grid h-auto w-full grid-cols-3 gap-1 @xs:grid-cols-5">
                   <TabsTrigger
@@ -1799,16 +1794,16 @@ provideDeckRecommendFormContext({
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
-            </CardHeader>
-            <CardContent class="@container grid min-w-0 grid-cols-1 gap-4 px-3 py-4 sm:px-4">
+            </div>
+            <div class="@container grid min-w-0 grid-cols-1 gap-4 px-3 py-4 sm:px-4">
               <DeckBasicSection />
 
               <DeckAdvancedSection v-model:open="advancedConfigOpen" />
 
               <DeckExpertSheet v-model:open="expertConfigOpen" />
-            </CardContent>
+            </div>
             <!-- Sticks to the bottom of the scrolling pane, so the run button is always reachable. -->
-            <div class="sticky bottom-0 z-10 rounded-b-lg border-t bg-card" data-page-bottom-bar>
+            <div class="sticky bottom-0 z-10 rounded-b-xl border-t border-border/60 bg-card" data-page-bottom-bar>
               <DeckConfigActions
                 :running="runner.running.value"
                 :can-run="canRunRecommend"
@@ -1819,7 +1814,7 @@ provideDeckRecommendFormContext({
                 @run="runRecommend"
               />
             </div>
-          </Card>
+          </section>
 
           <DeckConfigSummaryBar
             v-show="showSummaryBar"

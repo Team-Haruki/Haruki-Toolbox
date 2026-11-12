@@ -4,15 +4,23 @@ import { ChartLine } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { useRankBorderContext } from "../composables/rank-border-context"
 import { resolveQuickFactsDetailTarget } from "../lib/detail-link"
-import type { RankBorderQuickFacts } from "../lib/rank-border-types"
+import type { RankBorderHonorView, RankBorderQuickFacts } from "../lib/rank-border-types"
+import HonorBadge from "./HonorBadge.vue"
 import RelativeTime from "./RelativeTime.vue"
 
 /**
- * Inline quick-view card under a leaderboard row. Every number here comes from
- * the already-loaded overview payload — expanding a row costs zero requests;
- * deep analysis lives on the standalone detail page.
+ * What a row opens into: the player's honors and profile comment, then every
+ * figure the overview already holds for the seat (the holder's and the seat's
+ * growth and pace, the gaps on either side and how long they would take to
+ * close). Expanding a row costs zero requests; the trends live on the detail
+ * page behind the button.
  */
-const props = defineProps<{ facts: RankBorderQuickFacts }>()
+const props = withDefaults(defineProps<{
+  facts: RankBorderQuickFacts
+  honors?: readonly RankBorderHonorView[]
+}>(), {
+  honors: () => [],
+})
 
 const { t } = useI18n()
 const { ui } = useRankBorderContext()
@@ -24,107 +32,59 @@ function openFullDetail() {
 </script>
 
 <template>
-  <div class="rank-border-quick-facts">
-    <div class="rank-border-quick-facts__metrics">
-      <div>
-        <span>{{ t("rankBorder.result.score") }}</span>
-        <strong>{{ facts.scoreLabel }}</strong>
-      </div>
-      <!-- The value is relative ("50 s ago"), so the label says "updated" rather than naming a clock. -->
-      <div :title="facts.timestamp ? t('rankBorder.result.latest', { value: ui.formatTimestamp(facts.timestamp) }) : undefined">
-        <span>{{ t("rankBorder.result.updatedAgo") }}</span>
-        <strong><RelativeTime :timestamp="facts.timestamp" /></strong>
-      </div>
-      <div v-if="facts.hourlySpeedLabel">
-        <span>{{ t("rankBorder.result.hourlySpeed") }}</span>
-        <strong>{{ facts.hourlySpeedLabel }}</strong>
-      </div>
-      <div v-if="facts.playerGrowthLabel">
-        <span>{{ t("rankBorder.result.playerGrowthShort") }}</span>
-        <strong :class="facts.playerGrowthPositive ? 'text-emerald-600 dark:text-emerald-300' : ''">{{ facts.playerGrowthLabel }}</strong>
-      </div>
-      <div v-if="facts.rankGrowthLabel">
-        <span>{{ facts.kind === "line" ? t("rankBorder.table.growth") : t("rankBorder.result.rankGrowthShort") }}</span>
-        <strong :class="facts.rankGrowthPositive ? 'text-emerald-600 dark:text-emerald-300' : ''">{{ facts.rankGrowthLabel }}</strong>
-      </div>
-      <div v-if="facts.prevGapLabel">
-        <span>{{ facts.prevLabel }}</span>
-        <strong>{{ facts.prevGapLabel }}</strong>
-      </div>
-      <div v-if="facts.nextGapLabel">
-        <span>{{ facts.nextLabel }}</span>
-        <strong>{{ facts.nextGapLabel }}</strong>
-      </div>
+  <div class="@container flex flex-col gap-2.5 border-t border-border/60 bg-muted/20 px-3 py-2.5" data-slot="rank-quick-facts">
+    <div v-if="honors.length > 0 || facts.profileWord" class="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <span v-if="honors.length > 0" class="flex shrink-0 flex-wrap items-center gap-1.5">
+        <HonorBadge v-for="honor in honors" :key="honor.key" :honor="honor" variant="row" />
+      </span>
+      <p
+        v-if="facts.profileWord"
+        class="min-w-0 flex-1 basis-48 text-xs whitespace-pre-line text-muted-foreground [overflow-wrap:anywhere]"
+        :title="t('rankBorder.overview.facts.profileWord')"
+      >
+        {{ facts.profileWord }}
+      </p>
     </div>
-    <div class="rank-border-quick-facts__actions">
-      <Button type="button" size="sm" class="h-8" @click.stop="openFullDetail">
+
+    <div class="flex flex-wrap items-end gap-x-4 gap-y-2.5">
+      <dl class="grid min-w-0 flex-1 basis-64 grid-cols-2 gap-x-4 gap-y-2 @min-[34rem]:grid-cols-3 @min-[52rem]:grid-cols-4">
+        <div v-if="facts.playerGrowthLabel" class="flex min-w-0 flex-col">
+          <dt class="truncate text-[11px] text-muted-foreground">{{ t("rankBorder.overview.facts.holderGrowth") }}</dt>
+          <dd :class="['truncate text-sm font-semibold tabular-nums', facts.playerGrowthPositive ? 'text-emerald-600 dark:text-emerald-400' : '']">
+            {{ facts.playerGrowthLabel }}
+          </dd>
+          <dd v-if="facts.hourlySpeedLabel" class="truncate text-[11px] tabular-nums text-muted-foreground">{{ facts.hourlySpeedLabel }}</dd>
+        </div>
+        <div v-if="facts.rankGrowthLabel" class="flex min-w-0 flex-col">
+          <dt class="truncate text-[11px] text-muted-foreground">{{ t("rankBorder.overview.facts.seatGrowth") }}</dt>
+          <dd :class="['truncate text-sm font-semibold tabular-nums', facts.rankGrowthPositive ? 'text-emerald-600 dark:text-emerald-400' : '']">
+            {{ facts.rankGrowthLabel }}
+          </dd>
+          <dd v-if="facts.seatSpeedLabel" class="truncate text-[11px] tabular-nums text-muted-foreground">{{ facts.seatSpeedLabel }}</dd>
+        </div>
+        <div v-if="facts.prevGapLabel" class="flex min-w-0 flex-col">
+          <dt class="truncate text-[11px] text-muted-foreground">{{ facts.prevLabel }}</dt>
+          <dd class="truncate text-sm font-semibold tabular-nums">{{ facts.prevGapLabel }}</dd>
+          <dd v-if="facts.prevNote" class="text-[11px] text-muted-foreground">{{ facts.prevNote }}</dd>
+        </div>
+        <div v-if="facts.nextGapLabel" class="flex min-w-0 flex-col">
+          <dt class="truncate text-[11px] text-muted-foreground">{{ facts.nextLabel }}</dt>
+          <dd class="truncate text-sm font-semibold tabular-nums">{{ facts.nextGapLabel }}</dd>
+          <dd v-if="facts.nextNote" class="text-[11px] text-muted-foreground">{{ facts.nextNote }}</dd>
+        </div>
+        <!-- The value is relative ("50 s ago"), so the label says "updated" rather than naming a clock. -->
+        <div
+          class="flex min-w-0 flex-col"
+          :title="facts.timestamp ? t('rankBorder.result.latest', { value: ui.formatTimestamp(facts.timestamp) }) : undefined"
+        >
+          <dt class="truncate text-[11px] text-muted-foreground">{{ t("rankBorder.result.updatedAgo") }}</dt>
+          <dd class="truncate text-sm font-semibold tabular-nums"><RelativeTime :timestamp="facts.timestamp" /></dd>
+        </div>
+      </dl>
+      <Button type="button" size="sm" class="ml-auto h-8 shrink-0" @click.stop="openFullDetail">
         <ChartLine class="size-4" />
         {{ t("rankBorder.actions.openDetailPage") }}
       </Button>
     </div>
   </div>
 </template>
-
-<style scoped>
-.rank-border-quick-facts {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 0.625rem;
-  border-top: 1px solid color-mix(in oklab, var(--border) 72%, transparent);
-  background: color-mix(in oklab, var(--muted) 30%, transparent);
-  padding: 0.625rem 0.75rem 0.75rem;
-}
-
-.rank-border-quick-facts__metrics {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
-  gap: 0.375rem;
-}
-
-.rank-border-quick-facts__metrics div {
-  min-width: 0;
-  border: 1px solid color-mix(in oklab, var(--border) 78%, transparent);
-  border-radius: 0.375rem;
-  background: color-mix(in oklab, var(--background) 82%, transparent);
-  padding: 0.45rem 0.5rem;
-}
-
-.rank-border-quick-facts__metrics span {
-  display: block;
-  overflow: hidden;
-  color: var(--muted-foreground);
-  font-size: 0.6875rem;
-  line-height: 1rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rank-border-quick-facts__metrics strong {
-  display: block;
-  overflow: hidden;
-  margin-top: 0.125rem;
-  font-size: 0.8125rem;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rank-border-quick-facts__actions {
-  display: flex;
-  align-items: flex-end;
-}
-
-@media (max-width: 520px) {
-  .rank-border-quick-facts {
-    grid-template-columns: minmax(0, 1fr);
-    align-items: stretch;
-  }
-
-  .rank-border-quick-facts__actions {
-    justify-content: flex-end;
-  }
-}
-</style>

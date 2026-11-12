@@ -1,257 +1,195 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
-import {
-  CalendarDays,
-  ExternalLink,
-  Heart,
-  Info,
-  Users,
-} from "lucide-vue-next"
+import { ExternalLink, Heart } from "lucide-vue-next"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import PageHeader from "@/shared/components/PageHeader.vue"
 import { formatLocalizedDate, formatLocalizedDateTime } from "@/lib/date-time"
 import { useSponsors } from "@/modules/sponsor/composables/useSponsors"
-import { groupSponsorsByCategory, sponsorStatus } from "@/modules/sponsor/lib/categories"
+import { groupSponsorsByCategory, groupSponsorsByPlan, sponsorStatus } from "@/modules/sponsor/lib/categories"
 import type { SponsorSupporter } from "@/modules/sponsor/types"
+import EmptyState from "@/shared/components/EmptyState.vue"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import PageHeader from "@/shared/components/PageHeader.vue"
 
 const AFDIAN_URL = "https://afdian.com/a/seiunx"
 
 const { t } = useI18n()
-const { supporters, summary, loading, loadFailed } = useSponsors()
-
-const hasSupporters = computed(() => supporters.value.length > 0)
-
-// A failed request shows "—": nothing is pending, the number is unknown.
-const heroStats = computed(() => {
-  const stats: { key: string; label: string; value: string }[] = [
-    {
-      key: "supporters",
-      label: t("sponsor.summary.supporters"),
-      value: loadFailed.value || loading.value ? "—" : String(summary.value.supporterCount),
-    },
-  ]
-
-  if (summary.value.supporterCount > 0) {
-    stats.push({ key: "current", label: t("sponsor.summary.current"), value: String(groups.value.current.length) })
-  }
-
-  return stats
-})
-
-type SponsorSectionKey = "current" | "former"
-type SponsorSection = {
-  key: SponsorSectionKey
-  title: string
-  supporters: SponsorSupporter[]
-}
-
-const generatedAtLabel = computed(() => {
-  if (!summary.value.generatedAt) {
-    return ""
-  }
-  return formatLocalizedDateTime(summary.value.generatedAt, "dateTime", summary.value.generatedAt)
-})
+const { supporters, summary, loading, loadFailed, retry } = useSponsors()
 
 // The backend decides each supporter's category and already orders them by
-// tier, then by expiry, so every section renders in server order.
+// tier, then by expiry, so every list renders in server order.
 const groups = computed(() => groupSponsorsByCategory(supporters.value))
+const currentPlans = computed(() => groupSponsorsByPlan(groups.value.current))
 
-const sponsorSections = computed<SponsorSection[]>(() => [
-  {
-    key: "current",
-    title: t("sponsor.sections.current.title"),
-    supporters: groups.value.current,
-  },
-  {
-    key: "former",
-    title: t("sponsor.sections.former.title"),
-    supporters: groups.value.former,
-  },
+const stats = computed(() => [
+  { key: "supporters", label: t("sponsor.summary.supporters"), value: summary.value.supporterCount },
+  { key: "current", label: t("sponsor.summary.current"), value: groups.value.current.length },
+  { key: "former", label: t("sponsor.summary.former"), value: groups.value.former.length },
 ])
 
-function fallbackName(sponsor: SponsorSupporter) {
+const generatedAtLabel = computed(() =>
+  summary.value.generatedAt
+    ? formatLocalizedDateTime(summary.value.generatedAt, "dateTime", summary.value.generatedAt)
+    : "",
+)
+
+function displayName(sponsor: SponsorSupporter) {
   return sponsor.name || t("sponsor.supporter.anonymous")
 }
 
-function fallbackInitial(sponsor: SponsorSupporter) {
-  return fallbackName(sponsor).charAt(0).toUpperCase()
+function initial(sponsor: SponsorSupporter) {
+  return displayName(sponsor).charAt(0).toUpperCase()
 }
 
-function formatDate(value: string) {
-  return formatLocalizedDate(value, "date", t("sponsor.supporter.recent"))
-}
-
-function sponsorSubtitle(sponsor: SponsorSupporter) {
-  return sponsor.planName || t("sponsor.supporter.pastPlan")
-}
-
-function sponsorStatusLabel(sponsor: SponsorSupporter) {
+function statusLabel(sponsor: SponsorSupporter) {
   const status = sponsorStatus(sponsor)
   if ("date" in status) {
-    return t(`sponsor.supporter.${status.key}`, { date: formatDate(status.date) })
+    return t(`sponsor.supporter.${status.key}`, {
+      date: formatLocalizedDate(status.date, "date", t("sponsor.supporter.recent")),
+    })
   }
   return t(`sponsor.supporter.${status.key}`)
+}
+
+/** "Sponsored until 2027/02/02 · 3 times": the second part only once there is a second time. */
+function supporterMeta(sponsor: SponsorSupporter) {
+  const parts = [statusLabel(sponsor)]
+  if (sponsor.supportCount != null && sponsor.supportCount > 1) {
+    parts.push(t("sponsor.supporter.supportCount", { count: sponsor.supportCount }))
+  }
+  return parts.join(" · ")
+}
+
+function formerTitle(sponsor: SponsorSupporter) {
+  return [sponsor.planName, statusLabel(sponsor)].filter(Boolean).join(" · ")
 }
 </script>
 
 <template>
-  <div class="w-full flex-1 px-0 py-4">
-    <div class="mx-auto flex w-full max-w-6xl flex-col gap-8">
-      <!-- Hero -->
-      <section
-        class="flex flex-col gap-4 border-b pb-8 pt-2 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500 md:pt-4"
-      >
-        <!-- The app page header (not the editorial one of /about, /privacy, /tos). -->
-        <PageHeader :eyebrow="t('sponsor.hero.badge')" :title="t('sponsor.hero.title')" :description="t('sponsor.hero.description')" />
+  <div class="flex w-full flex-1 flex-col items-center px-1 py-2 sm:px-0 sm:py-4">
+    <div class="mx-auto grid w-full max-w-6xl gap-4">
+      <!-- The app page header (not the editorial one of /about, /privacy, /tos). -->
+      <PageHeader :eyebrow="t('sponsor.hero.badge')" :title="t('sponsor.hero.title')" :description="t('sponsor.hero.description')">
+        <template #actions>
+          <Button variant="outline" as-child>
+            <RouterLink to="/about">{{ t("sponsor.hero.aboutCta") }}</RouterLink>
+          </Button>
+          <Button as-child variant="brand" class="font-semibold">
+            <a :href="AFDIAN_URL" target="_blank" rel="noopener noreferrer">
+              <Heart class="size-4 fill-current" />
+              {{ t("sponsor.hero.cta") }}
+              <ExternalLink class="size-4" />
+            </a>
+          </Button>
+        </template>
+      </PageHeader>
 
-        <div class="mt-1 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <div class="flex flex-wrap gap-3">
-            <Button
-              as-child
-              variant="brand"
-              class="h-11 px-5 font-semibold"
-            >
-              <a :href="AFDIAN_URL" target="_blank" rel="noopener noreferrer">
-                <Heart class="h-4 w-4 fill-current" />
-                {{ t("sponsor.hero.cta") }}
-                <ExternalLink class="h-4 w-4" />
-              </a>
-            </Button>
-            <Button variant="outline" as-child class="h-11 px-5 font-semibold">
-              <router-link to="/about">
-                <Info class="h-4 w-4" />
-                {{ t("sponsor.hero.aboutCta") }}
-              </router-link>
-            </Button>
+      <div v-if="loading" class="grid gap-4" aria-busy="true">
+        <Skeleton class="h-20 rounded-xl" />
+        <Skeleton class="h-64 rounded-xl" />
+      </div>
+
+      <div v-else-if="loadFailed" class="rounded-xl border bg-card px-4">
+        <LoadErrorState
+          :title="t('sponsor.empty.unavailableTitle')"
+          :description="t('sponsor.empty.unavailableDescription')"
+          @retry="retry"
+        />
+      </div>
+
+      <div v-else-if="supporters.length === 0" class="rounded-xl border bg-card px-4">
+        <EmptyState :icon="Heart" :title="t('sponsor.empty.title')" :description="t('sponsor.empty.description')" />
+      </div>
+
+      <template v-else>
+        <!-- How many, and as of when -->
+        <section class="@container rounded-xl border bg-card" data-testid="sponsor-summary">
+          <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 px-4 py-3">
+            <dl class="flex flex-wrap gap-x-8 gap-y-2">
+              <div v-for="stat in stats" :key="stat.key" class="flex flex-col" :data-stat="stat.key">
+                <dt class="text-[11px] text-muted-foreground">{{ stat.label }}</dt>
+                <dd class="text-2xl leading-tight font-semibold tabular-nums">{{ stat.value }}</dd>
+              </div>
+            </dl>
+            <p v-if="generatedAtLabel" class="text-xs tabular-nums text-muted-foreground">
+              {{ t("sponsor.summary.updatedAt", { time: generatedAtLabel }) }}
+            </p>
           </div>
+        </section>
 
-          <!-- Numeric strip -->
-          <dl class="flex items-stretch gap-6 sm:gap-8">
-            <div
-              v-for="(card, index) in heroStats"
-              :key="card.key"
-              :class="['min-w-0', index > 0 ? 'border-l pl-6 sm:pl-8' : '']"
-            >
-              <dt class="text-xs font-medium text-muted-foreground">{{ card.label }}</dt>
-              <dd class="mt-0.5 text-2xl font-extrabold tracking-tight tabular-nums">{{ card.value }}</dd>
-            </div>
-          </dl>
-        </div>
-      </section>
-
-      <!-- Supporters -->
-      <section class="space-y-5">
-        <header class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-          <h2 class="flex min-w-0 items-center gap-2 text-xl font-bold tracking-tight">
-            <Users class="h-5 w-5 text-primary" />
-            {{ t("sponsor.list.title") }}
+        <!-- Current supporters, plan by plan -->
+        <section class="grid gap-2" data-testid="sponsor-section-current">
+          <h2 class="flex items-baseline gap-2 px-1 text-sm font-semibold">
+            {{ t("sponsor.sections.current.title") }}
+            <span class="text-xs font-normal tabular-nums text-muted-foreground">{{ groups.current.length }}</span>
           </h2>
-          <span
-            v-if="generatedAtLabel"
-            class="inline-flex items-center gap-1 text-xs text-muted-foreground"
-          >
-            <CalendarDays class="h-3.5 w-3.5" />
-            {{ generatedAtLabel }}
-          </span>
-        </header>
 
-        <div v-if="loading" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <Skeleton v-for="index in 6" :key="index" class="h-24 rounded-xl" />
-        </div>
-
-        <div
-          v-else-if="!hasSupporters"
-          class="rounded-xl border border-dashed bg-muted/20 px-5 py-12 text-center"
-        >
-          <Heart class="mx-auto h-9 w-9 text-muted-foreground/60" />
-          <h3 class="mt-4 text-base font-semibold">
-            {{ loadFailed ? t("sponsor.empty.unavailableTitle") : t("sponsor.empty.title") }}
-          </h3>
-          <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-            {{ loadFailed ? t("sponsor.empty.unavailableDescription") : t("sponsor.empty.description") }}
+          <p v-if="groups.current.length === 0" class="rounded-xl border bg-card px-4 py-6 text-center text-sm text-muted-foreground">
+            {{ t("sponsor.sections.current.empty") }}
           </p>
-        </div>
 
-        <div v-else class="space-y-8">
-          <div
-            v-for="section in sponsorSections"
-            :key="section.key"
-            class="space-y-3"
+          <section
+            v-for="(plan, index) in currentPlans"
+            :key="index"
+            class="@container overflow-hidden rounded-xl border bg-card"
+            data-testid="sponsor-plan"
           >
-            <h3 class="flex items-baseline gap-2 text-base font-semibold">
-              {{ section.title }}
-              <span class="text-sm font-normal tabular-nums text-muted-foreground">{{ section.supporters.length }}</span>
-            </h3>
-
-            <div
-              v-if="section.supporters.length === 0"
-              class="rounded-xl border border-dashed bg-muted/20 px-5 py-6 text-center text-sm text-muted-foreground"
-            >
-              {{ t(`sponsor.sections.${section.key}.empty`) }}
-            </div>
-
-            <!-- Former supporters: quiet chip wall -->
-            <div v-else-if="section.key === 'former'" class="flex flex-wrap gap-2">
-              <span
-                v-for="sponsor in section.supporters"
-                :key="sponsor.id"
-                class="inline-flex max-w-full items-center gap-2 rounded-full border bg-card py-1 pl-1 pr-3"
-                :title="`${sponsorSubtitle(sponsor)} · ${sponsorStatusLabel(sponsor)}`"
-              >
-                <Avatar class="h-6 w-6 border">
-                  <AvatarImage :src="sponsor.avatar" :alt="fallbackName(sponsor)" loading="lazy" decoding="async" />
-                  <AvatarFallback class="bg-muted text-[10px] font-semibold">
-                    {{ fallbackInitial(sponsor) }}
-                  </AvatarFallback>
-                </Avatar>
-                <span class="truncate text-xs font-medium">{{ fallbackName(sponsor) }}</span>
+            <header class="flex items-baseline justify-between gap-3 border-b border-border/60 px-4 py-2.5">
+              <h3 class="min-w-0 truncate text-sm font-semibold">{{ plan.planName || t("sponsor.supporter.defaultPlan") }}</h3>
+              <span class="shrink-0 text-xs tabular-nums text-muted-foreground">
+                {{ t("sponsor.sections.planCount", { count: plan.supporters.length }) }}
               </span>
-            </div>
-
-            <!-- Current supporters: cards -->
-            <div
-              v-else
-              class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
-            >
-              <article
-                v-for="sponsor in section.supporters"
+            </header>
+            <!-- Each cell draws its own right and bottom hairline; the negative margin tucks the outer ones under the panel edge. -->
+            <ul class="-mr-px -mb-px grid grid-cols-1 @min-[36rem]:grid-cols-2 @min-[58rem]:grid-cols-3">
+              <li
+                v-for="sponsor in plan.supporters"
                 :key="sponsor.id"
-                class="flex h-full flex-col gap-2.5 rounded-xl border bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-pink-500/45 hover:shadow-md"
+                class="flex min-w-0 items-start gap-3 border-r border-b border-border/60 px-4 py-3"
               >
-                <div class="flex items-center gap-3">
-                  <Avatar class="h-11 w-11 border">
-                    <AvatarImage :src="sponsor.avatar" :alt="fallbackName(sponsor)" loading="lazy" decoding="async" />
-                    <AvatarFallback class="bg-pink-500/5 text-sm font-semibold text-pink-600 dark:text-pink-300">
-                      {{ fallbackInitial(sponsor) }}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div class="min-w-0 flex-1">
-                    <p class="truncate text-sm font-semibold">{{ fallbackName(sponsor) }}</p>
-                    <p class="truncate text-xs font-medium text-pink-600/90 dark:text-pink-300/90">
-                      {{ sponsorSubtitle(sponsor) }}
-                    </p>
-                  </div>
+                <Avatar class="size-10 shrink-0 border">
+                  <AvatarImage :src="sponsor.avatar" :alt="displayName(sponsor)" loading="lazy" decoding="async" />
+                  <AvatarFallback class="bg-muted text-sm font-semibold">{{ initial(sponsor) }}</AvatarFallback>
+                </Avatar>
+                <div class="flex min-w-0 flex-1 flex-col">
+                  <p class="truncate text-sm font-medium">{{ displayName(sponsor) }}</p>
+                  <p class="truncate text-xs tabular-nums text-muted-foreground">{{ supporterMeta(sponsor) }}</p>
+                  <p v-if="sponsor.message" class="mt-1 line-clamp-3 text-xs text-foreground/80 [overflow-wrap:anywhere]">
+                    “{{ sponsor.message }}”
+                  </p>
                 </div>
-                <p
-                  v-if="sponsorStatusLabel(sponsor) !== sponsorSubtitle(sponsor)"
-                  class="truncate text-xs text-muted-foreground"
-                >
-                  {{ sponsorStatusLabel(sponsor) }}
-                </p>
-                <p
-                  v-if="sponsor.message"
-                  class="line-clamp-2 rounded-r border-l-2 border-pink-500/30 bg-pink-500/[0.03] py-0.5 pl-2 text-xs font-medium italic text-pink-600/80 dark:text-pink-300/80"
-                >
-                  {{ sponsor.message }}
-                </p>
-              </article>
-            </div>
-          </div>
-        </div>
-      </section>
+              </li>
+            </ul>
+          </section>
+        </section>
+
+        <!-- Former supporters: named, without the detail -->
+        <section class="grid gap-2" data-testid="sponsor-section-former">
+          <h2 class="flex items-baseline gap-2 px-1 text-sm font-semibold">
+            {{ t("sponsor.sections.former.title") }}
+            <span class="text-xs font-normal tabular-nums text-muted-foreground">{{ groups.former.length }}</span>
+          </h2>
+          <p v-if="groups.former.length === 0" class="rounded-xl border bg-card px-4 py-6 text-center text-sm text-muted-foreground">
+            {{ t("sponsor.sections.former.empty") }}
+          </p>
+          <ul v-else class="flex flex-wrap gap-x-5 gap-y-2.5 rounded-xl border bg-card px-4 py-3">
+            <li
+              v-for="sponsor in groups.former"
+              :key="sponsor.id"
+              class="flex max-w-full min-w-0 items-center gap-1.5"
+              :title="formerTitle(sponsor)"
+            >
+              <Avatar class="size-5 shrink-0 border">
+                <AvatarImage :src="sponsor.avatar" :alt="displayName(sponsor)" loading="lazy" decoding="async" />
+                <AvatarFallback class="bg-muted text-[10px] font-semibold">{{ initial(sponsor) }}</AvatarFallback>
+              </Avatar>
+              <span class="truncate text-xs">{{ displayName(sponsor) }}</span>
+            </li>
+          </ul>
+        </section>
+      </template>
     </div>
   </div>
 </template>

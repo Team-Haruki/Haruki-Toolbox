@@ -15,6 +15,8 @@ export interface SponsorSupporter {
   isActive: boolean
   totalAmount: number | null
   month: number | null
+  /** How many times this supporter has sponsored; null when the backend does not say. */
+  supportCount: number | null
   paidAt: string
   message: string
 }

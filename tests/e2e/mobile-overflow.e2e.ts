@@ -99,11 +99,13 @@ async function mockMobileData(page: Page, enlargedText = false, withCards = fals
   })
 }
 
-test("point calculator advanced fields fit with enlarged English text", async ({ page }) => {
+test("score control conditions fit with enlarged English text", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 844 })
   await mockMobileData(page, true)
   await page.goto("/pt-calculator")
-  await page.getByRole("button", { name: "Advanced options", exact: true }).click()
+  // Folded on a phone; open them so the range inputs, boost chips and selects are measured too.
+  await page.getByRole("button", { name: /^Conditions/ }).click()
+  await page.getByRole("tab", { name: "Current and target", exact: true }).click()
   await expectControlsToFit(page.locator("main"))
   await expectPageToFit(page)
 })

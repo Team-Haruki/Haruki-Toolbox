@@ -558,7 +558,7 @@ export default {
     "tools": {
       "deckRecommend": "从你的卡牌里算出活动最优卡组",
       "rankBorder": "活动各档位的榜线与涨速",
-      "ptCalculator": "按目标 Pt 反推所需加成和分数区间",
+      "ptCalculator": "把要拿的 Pt 拆成几局，算出每局的加成、体力和分数",
       "eventPlanner": "在活动日历上排每小时的打歌计划",
       "uploadData": "把游戏账号数据同步到工具箱",
       "playerProfile": "账号的游戏档案",
@@ -1345,7 +1345,7 @@ export default {
     "deckRecommend": "组卡推荐",
     "rankBorder": "榜线查询",
     "rankBorderDetail": "榜线详情",
-    "ptCalculator": "活动Pt计算器",
+    "ptCalculator": "控分计算",
     "clientConfigGenerator": "Client 配置生成器",
     "uploadData": "上传数据",
     "sekaiStation": "协力车站",

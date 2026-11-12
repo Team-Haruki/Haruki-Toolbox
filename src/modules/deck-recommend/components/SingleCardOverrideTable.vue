@@ -203,7 +203,7 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
       @select="addOverrideForOption"
     />
 
-    <div v-if="props.modelValue.length === 0" class="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+    <div v-if="props.modelValue.length === 0" class="text-sm text-muted-foreground">
       {{ t("deckRecommend.singleCard.empty") }}
     </div>
     <template v-else>
@@ -211,7 +211,7 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
         <article
           v-for="item in props.modelValue"
           :key="item.cardId"
-          class="grid min-w-0 gap-3 rounded-md border bg-background/60 p-2.5"
+          class="grid min-w-0 gap-3 rounded-lg bg-muted/40 p-3"
         >
           <div class="flex min-w-0 items-start justify-between gap-2">
             <div class="flex min-w-0 items-center gap-2">
@@ -257,7 +257,7 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
           </div>
 
           <div class="grid min-w-0 gap-2 sm:grid-cols-2">
-            <label :for="`single-card-disabled-${item.cardId}`" class="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-2.5 py-2 text-sm">
+            <label :for="`single-card-disabled-${item.cardId}`" class="flex items-center justify-between gap-3 text-sm">
               <span class="font-medium">{{ t("deckRecommend.training.disabled") }}</span>
               <Checkbox
                 :id="`single-card-disabled-${item.cardId}`"
@@ -267,7 +267,7 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
               />
             </label>
 
-            <label :for="`single-card-canvas-${item.cardId}`" class="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-2.5 py-2 text-sm">
+            <label :for="`single-card-canvas-${item.cardId}`" class="flex items-center justify-between gap-3 text-sm">
               <span class="font-medium">{{ t("deckRecommend.training.mySekaiCanvas") }}</span>
               <Checkbox
                 :id="`single-card-canvas-${item.cardId}`"

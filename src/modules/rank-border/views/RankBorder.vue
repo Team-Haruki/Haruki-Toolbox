@@ -5,8 +5,11 @@ import { useRouter } from "vue-router"
 import { DATE_FORMAT_PRESETS, formatLocalizedDateTime } from "@/lib/date-time"
 import { formatNumberCN } from "@/lib/number-format"
 import { EXPANSION_MEMORY_STORAGE_KEY, matchExpansionMemory, serializeExpansionMemory } from "../lib/expansion-memory"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import RankBorderLines from "../components/RankBorderLines.vue"
 import RankJumpRail from "../components/RankJumpRail.vue"
 import RankLeaderboard from "../components/RankLeaderboard.vue"
+import RankOverviewSummary from "../components/RankOverviewSummary.vue"
 import RankReplayRail from "../components/RankReplayRail.vue"
 import RankToolbar from "../components/RankToolbar.vue"
 import { RANK_BORDER_CONTEXT_KEY } from "../composables/rank-border-context"
@@ -21,6 +24,7 @@ import {
 } from "../lib/detail-link"
 import {
   DEFAULT_REPLAY_WINDOW_SECONDS,
+  PERSONAL_COLLECTION_LIMIT,
   TRACKER_UPDATE_INTERVAL_SECONDS,
 } from "../lib/rank-border-constants"
 import type {
@@ -86,6 +90,8 @@ const rankBorderTooltip = ref<RankBorderTooltipState>({
 // Seats stay expanded for the player, not the rank (see lib/row-expansion).
 const expandedRowKey = ref<RowExpansionKey | null>(null)
 const visibleRank = ref<number | null>(null)
+// Which list a narrow page shows (both show side by side from `xl`).
+const narrowPanel = ref<"lines" | "board">("lines")
 
 const live = useRankBorderLive({
   trackerEndpoint,
@@ -176,6 +182,8 @@ function restoreExpandedRow() {
     sessionStorage.removeItem(EXPANSION_MEMORY_STORAGE_KEY)
     if (key) {
       expandedRowKey.value = key
+      // Coming back from a player's detail page: reopen the list that row is in.
+      narrowPanel.value = "board"
     }
   } catch {
     // Same as above.
@@ -209,6 +217,7 @@ function jumpToRank(rank: number) {
 
   visibleRank.value = rank
   expandedRowKey.value = resolveRowExpansionKey(rank, top100Rows.value)
+  narrowPanel.value = rank <= PERSONAL_COLLECTION_LIMIT ? "board" : "lines"
   void nextTick(() => {
     document.querySelector<HTMLElement>(`[data-rank-border-row="${rank}"]`)?.scrollIntoView({
       behavior: "smooth",
@@ -458,14 +467,38 @@ function resolveTooltipPosition(event: MouseEvent) {
 
 <template>
   <div class="flex w-full flex-1 flex-col items-center px-1 py-2 sm:px-0 sm:py-4">
-    <div class="mx-auto grid w-full max-w-6xl gap-2 sm:gap-3">
+    <div class="mx-auto grid w-full max-w-7xl gap-2 sm:gap-3">
       <RankToolbar />
+
+      <RankOverviewSummary />
 
       <RankReplayRail />
 
-      <RankJumpRail />
-
-      <RankLeaderboard />
+      <!-- The lines people chase come first on a narrow page and sit beside
+           the top 100 on a wide one, where they stay in view while the list
+           scrolls. -->
+      <!-- Below the two-column width the two lists are tabs, so neither sits
+           a long scroll under the other. -->
+      <Tabs v-model="narrowPanel" class="xl:hidden">
+        <TabsList class="grid w-full grid-cols-2">
+          <TabsTrigger value="lines">{{ t("rankBorder.overview.lines.title") }}</TabsTrigger>
+          <TabsTrigger value="board">{{ t("rankBorder.overview.board.title") }}</TabsTrigger>
+        </TabsList>
+      </Tabs>
+      <div class="grid min-w-0 gap-2 sm:gap-3 xl:grid-cols-[minmax(0,1fr)_25rem] xl:items-start">
+        <div
+          :class="[
+            'min-w-0 xl:sticky xl:top-16 xl:col-start-2 xl:row-start-1 xl:block xl:max-h-[calc(100dvh-5rem)] xl:overflow-y-auto xl:overscroll-contain xl:rounded-xl',
+            narrowPanel === 'lines' ? '' : 'hidden',
+          ]"
+        >
+          <RankBorderLines />
+        </div>
+        <div :class="['min-w-0 gap-2 sm:gap-3 xl:col-start-1 xl:row-start-1 xl:grid', narrowPanel === 'board' ? 'grid' : 'hidden']">
+          <RankJumpRail />
+          <RankLeaderboard />
+        </div>
+      </div>
     </div>
 
     <div

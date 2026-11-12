@@ -47,5 +47,6 @@ export function useSponsors() {
     summary,
     loading,
     loadFailed,
+    retry: fetchSponsors,
   }
 }

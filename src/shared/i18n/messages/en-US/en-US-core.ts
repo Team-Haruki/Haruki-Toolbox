@@ -558,7 +558,7 @@ export default {
     "tools": {
       "deckRecommend": "The best event deck from the cards you own",
       "rankBorder": "Score lines and their pace for every rank tier",
-      "ptCalculator": "Work back from a target Pt to the bonus and score range",
+      "ptCalculator": "Split the pt you need into games, with the bonus, boost and score for each",
       "eventPlanner": "Plan each hour of play on the event calendar",
       "uploadData": "Sync your game account data to the toolbox",
       "playerProfile": "Your in-game profile",
@@ -1345,7 +1345,7 @@ export default {
     "deckRecommend": "Deck recommendation",
     "rankBorder": "Rank border",
     "rankBorderDetail": "Rank border detail",
-    "ptCalculator": "Event Pt calculator",
+    "ptCalculator": "Score control",
     "clientConfigGenerator": "Client config generator",
     "uploadData": "Upload data",
     "sekaiStation": "Sekai Station",

@@ -971,61 +971,101 @@ export default {
       }
     },
     "pointCalculator": {
-      "title": "活动 Pt 控分计算器",
-      "description": "根据目标活动 Pt 和歌曲基础 Pt，反推所需活动加成与可打分数区间。",
-      "tips": {
-        "title": "小提示",
-        "beta": "测试中",
-        "boostConfig": "控分之前请务必确保您的体力消耗（Live Boost）配置正确，谨防控分失败。",
-        "testingPrefix": "该功能处于测试状态，",
-        "testingSuffix": "如果遇到任何问题请联系 Haruki Dev Team 进行反馈。",
-        "deckRecommend": "控分结果会有「加成组卡」按钮，方便快速跳转组卡。"
+      "title": "控分计算",
+      "description": "填要拿的活动 Pt，算出每一局用多少加成、几火、打到多少分。一局打不出来的数会自动拆成几局。",
+      "entry": {
+        "label": "要拿多少 Pt",
+        "gapTab": "填差值",
+        "rangeTab": "填当前和目标",
+        "gap": "还差的活动 Pt",
+        "gapPlaceholder": "例如 23154",
+        "current": "当前活动 Pt",
+        "currentPlaceholder": "例如 1234567",
+        "target": "目标活动 Pt",
+        "targetPlaceholder": "例如 1257721",
+        "parsed": "按 {value} 计算",
+        "invalid": "请输入非负整数，可以带 万 / w / k 后缀。"
       },
-      "fields": {
+      "song": {
+        "label": "歌曲",
         "region": "区服",
-        "music": "歌曲",
-        "loadingMusic": "正在准备歌曲...",
-        "musicPlaceholder": "请选择歌曲",
-        "musicSearchPlaceholder": "搜索歌曲名、#ID、假名、拼音或罗马音...",
-        "musicEmpty": "没有找到歌曲。",
-        "targetPt": "目标活动 Pt",
-        "targetPtPlaceholder": "请输入目标活动 Pt",
-        "targetPtInvalid": "目标活动 Pt 需要是大于 0 的整数。",
-        "maxResults": "输出结果上限",
-        "maxResultsPlaceholder": "默认 10",
-        "bonusRange": "自定义加成范围",
-        "bonusRangeHelp": "只搜索该范围内的活动加成，默认按 100% 到 435% 计算，可填写 0% 到 1000%。",
-        "customBonusFloor": "自定义加成下限",
-        "customBonusFloorPlaceholder": "默认 100",
-        "customBonusCap": "自定义加成上限",
-        "customBonusCapPlaceholder": "默认 435",
-        "bonusRangeInvalid": "加成范围需要是 0 到 1000 之间的整数，且下限不能大于上限。",
-        "boostIndex": "体力消耗（Live Boost）",
-        "boostIndexAll": "全部档位",
-        "boostIndexOption": "{index} 火（{rate}倍）",
-        "advanced": "高级选项"
+        "basicPoint": "基础 Pt {value}。基础 Pt 越低，能凑出的数越细。",
+        "missingBasicPoint": "这首歌暂时没有基础 Pt 数据，请换一首歌。"
+      },
+      "conditions": {
+        "title": "打法条件",
+        "summary": "加成 {min}–{max}% · {boosts} · 最多 {games} 局",
+        "bonusRange": "卡组加成范围",
+        "bonusRangeHelp": "只用这个范围内的活动加成来凑，填你的卡组能配出来的范围。",
+        "bonusMin": "加成下限",
+        "bonusMax": "加成上限",
+        "bonusRangeInvalid": "加成范围需要是 0 到 {max} 之间的整数，且下限不能大于上限。",
+        "worldLink": "World Link 活动",
+        "worldLinkHelp": "加成上限放宽到 {max}%。",
+        "boosts": "可用体力（火）",
+        "boostsHelp": "只用选中的体力档位；0 火不消耗体力。",
+        "boostsNone": "至少选一个体力档位。",
+        "boostsAll": "全部体力档位",
+        "boostsSome": "{list} 火",
+        "boostOption": "{index} 火",
+        "selectAllBoosts": "全选",
+        "maxGames": "最多拆成几局",
+        "maxGamesOption": "{count} 局"
       },
       "actions": {
-        "calculate": "开始计算",
-        "buildDeck": "加成组卡"
-      },
-      "meta": {
-        "title": "计算数据",
-        "music": "歌曲：{value}",
-        "basicPoint": "基础 Pt：{value}",
-        "bonusRange": "加成范围：{min}% ~ {max}%",
-        "missingBasicPoint": "这首歌暂时没有基础 Pt 数据，请换一首歌或换个难度。"
+        "buildDeck": "加成组卡",
+        "retry": "重试"
       },
       "result": {
-        "title": "计算结果",
-        "placeholder": "输入目标活动 Pt 后会在这里显示可用方案。",
-        "summary": "共找到 {count} 组方案。",
-        "empty": "还没有计算结果。",
-        "deckBonus": "所需加成 {value}%",
-        "boost": "{index} 火 / {rate}倍",
-        "scoreRangeLabel": "可打分数区间",
-        "noMatchTitle": "未找到符合条件的方案",
-        "noMatchDescription": "请尝试调整目标 Pt、体力消耗（Live Boost）或自定义加成上限。"
+        "empty": "填上要拿的 Pt，这里会给出打法。",
+        "emptyHint": "可以直接填还差多少，也可以填当前和目标 Pt。数字大到一局打不出来也没关系，会拆成几局。",
+        "gapLabel": "要拿",
+        "fromTo": "从 {current} 到 {target}，要拿",
+        "singleNote": "一局放置就能打出来，共有 {count} 种单局打法。",
+        "singleScoreNote": "一局能打出来，但 {count} 种单局打法都要把分数控制在某个区间；下面优先给出放置就行的分局打法。",
+        "splitNote": "一局打不出 {gap} Pt（这些条件下单局能拿 {min}–{max}），已拆成几局。",
+        "plansTitle": "推荐打法",
+        "planTitle": "方案 {index}",
+        "planTotals": "{games} 局 · {energy} 火 · {decks} 套卡组",
+        "needsScore": "需要控制分数",
+        "tags": {
+          "fewestGames": "局数最少",
+          "leastEnergy": "体力最省",
+          "singleDeck": "只需一套卡组"
+        },
+        "step": {
+          "times": "×{count}",
+          "deck": "加成 {value}%",
+          "boost": "{index} 火（{rate} 倍）",
+          "idle": "放置即可",
+          "idleDetail": "分数低于 {score}",
+          "scoreDetail": "打到这个分数区间内停手",
+          "each": "每局 +{value}",
+          "after": "打完后 {value}"
+        },
+        "allSingle": "全部单局打法",
+        "allSingleHint": "共 {count} 种，越靠前越好打。",
+        "showAll": "显示全部 {count} 种",
+        "columns": {
+          "bonus": "所需加成",
+          "boost": "体力",
+          "score": "分数"
+        },
+        "status": {
+          "reached": "已经在目标上了，不用再打。",
+          "overshot": "已经超过目标 {gap} Pt。活动 Pt 不会减少，这个目标到不了了。",
+          "tooClose": "只差 {gap} Pt，但这些条件下一局最少也会拿 {min} Pt，再打一局就超了。",
+          "tooCloseAction": "把加成下限降到 0%",
+          "tooFar": "还差 {gap} Pt，超出了 {games} 局放置能凑出的范围（最多 {reach} Pt）。先正常打歌，打到只差 {reach} Pt 以内再回来算。",
+          "tooFarTarget": "也就是先打到 {value} Pt 左右。",
+          "tooFarAction": "改成最多 {count} 局",
+          "none": "这些条件下凑不出 {gap} Pt。放宽加成范围、多选几个体力档位或增加局数再试。"
+        }
+      },
+      "tips": {
+        "boost": "开打前确认体力消耗（Live Boost）和方案里写的一致，差一档 Pt 就不对。",
+        "idle": "「放置即可」指整局分数低于 20,000：开局后不打音符，等歌曲结束。",
+        "beta": "该功能仍在测试中，控分结果不保证准确；重要的数字请先核对活动加成和游戏内数据。"
       }
     }
   },

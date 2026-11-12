@@ -77,7 +77,7 @@ function isDeckRecommendUnit(value: string): value is DeckRecommendUnitType {
 </script>
 
 <template>
-  <div v-if="props.gates.length === 0" class="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+  <div v-if="props.gates.length === 0" class="text-sm text-muted-foreground">
     {{ t("deckRecommend.options.mysekaiGateOverride.empty") }}
   </div>
 
@@ -85,7 +85,7 @@ function isDeckRecommendUnit(value: string): value is DeckRecommendUnitType {
     <div
       v-for="gate in props.gates"
       :key="gate.id"
-      class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_100px] items-center gap-2 rounded-md border bg-background/70 p-2 text-sm"
+      class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_100px] items-center gap-2 rounded-md bg-muted/40 p-2 text-sm"
     >
       <img
         v-if="gateIconUrl(gate)"

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue"
 import { useI18n } from "vue-i18n"
-import { ArrowLeftRight, ListOrdered, Plus, X } from "lucide-vue-next"
+import { ListOrdered, Plus, X } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox"
 import { Input } from "@/components/ui/input"
@@ -65,10 +65,10 @@ function submitPlayer() {
 </script>
 
 <template>
-  <section class="rank-border-comparison-center grid min-w-0 gap-3 rounded-md border bg-muted/15 p-3">
-    <div class="flex flex-wrap items-baseline justify-between gap-2">
-      <h3 class="text-sm font-semibold">{{ t("rankBorder.comparison.title") }}</h3>
-      <span class="text-xs text-muted-foreground">{{ t("rankBorder.comparison.hint", { max: limit }) }}</span>
+  <section class="grid min-w-0 gap-3 rounded-xl border bg-card px-4 py-3" data-testid="rank-detail-comparison">
+    <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
+      <h2 class="text-sm font-semibold">{{ t("rankBorder.comparison.title") }}</h2>
+      <p class="text-xs text-muted-foreground">{{ t("rankBorder.comparison.hint", { max: limit }) }}</p>
     </div>
 
     <div class="flex flex-wrap items-end gap-x-4 gap-y-2">
@@ -109,11 +109,7 @@ function submitPlayer() {
       </div>
     </div>
 
-    <div v-if="rows.length <= 1" class="rank-border-comparison-empty">
-      <ArrowLeftRight class="size-7 text-muted-foreground/50" />
-      <p class="max-w-[22rem] text-xs leading-5 text-muted-foreground">{{ t("rankBorder.comparison.emptyHint") }}</p>
-    </div>
-    <div v-else class="rank-border-comparison-table">
+    <div v-if="rows.length > 1" class="rank-border-comparison-table">
       <div class="rank-border-comparison-table__scroll">
         <table>
           <thead>
@@ -192,32 +188,10 @@ function submitPlayer() {
 </template>
 
 <style scoped>
-/* Packs controls to the top and lets the last row (table or empty state) fill
-   the remaining height, so the card never shows dead stretch gaps when it sits
-   beside the taller hero panel. */
-.rank-border-comparison-center {
-  grid-template-rows: auto auto minmax(0, 1fr);
-  align-content: start;
-}
-
-.rank-border-comparison-empty {
-  display: grid;
-  min-height: 7rem;
-  align-content: center;
-  justify-items: center;
-  gap: 0.5rem;
-  border: 1px dashed color-mix(in oklab, var(--border) 80%, transparent);
-  border-radius: 0.5rem;
-  background: color-mix(in oklab, var(--background) 60%, transparent);
-  padding: 1rem;
-  text-align: center;
-}
-
 .rank-border-comparison-table {
   min-width: 0;
-  border: 1px solid var(--border);
-  border-radius: 0.375rem;
-  background: color-mix(in oklab, var(--background) 74%, transparent);
+  margin-inline: -1rem;
+  border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
 }
 
 .rank-border-comparison-table__scroll {
@@ -238,20 +212,30 @@ th,
 td {
   max-width: 12rem;
   overflow: hidden;
-  padding: 0.375rem 0.625rem;
+  padding: 0.375rem 0.5rem;
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-th {
-  border-bottom: 1px solid var(--border);
-  color: var(--muted-foreground);
-  font-weight: 600;
+th:first-child,
+td:first-child {
+  padding-left: 1rem;
 }
 
-tbody tr:nth-child(even) {
-  background: color-mix(in oklab, var(--muted) 42%, transparent);
+th:last-child,
+td:last-child {
+  padding-right: 1rem;
+}
+
+th {
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  font-weight: 400;
+}
+
+tbody tr {
+  border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
 }
 
 tbody tr:first-child td {

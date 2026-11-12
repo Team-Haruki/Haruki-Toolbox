@@ -17,11 +17,23 @@ export default {
       "resolved": "已解决",
       "closed": "已关闭"
     },
+    "userStatus": {
+      "all": "全部",
+      "open": "待处理",
+      "pendingAdmin": "处理中",
+      "pendingUser": "等你回复",
+      "resolved": "已解决",
+      "closed": "已关闭"
+    },
     "userStatusHint": {
       "waitingAdmin": "我们已经收到你的工单，目前等待管理员处理。",
+      "waitingAdminAssigned": "已有管理员接手你的工单，回复会显示在下方的沟通记录里。",
       "waitingUser": "管理员已回复，等待你补充信息或确认后续处理。",
-      "resolved": "此工单已标记为已解决，如问题确认处理完毕可以关闭工单。",
+      "resolved": "此工单已标记为已解决。问题还在的话直接回复即可，确认处理完毕可以关闭工单。",
       "closed": "此工单已关闭，如还有新问题请重新创建工单。"
+    },
+    "time": {
+      "justNow": "刚刚"
     },
     "priority": {
       "low": "低",
@@ -45,12 +57,27 @@ export default {
       "title": "我的工单",
       "description": "查看处理进度，并在需要时补充说明。",
       "createButton": "创建工单",
-      "empty": "暂无工单，点击上方按钮创建",
-      "emptyFiltered": "该状态下暂无工单，试试切换筛选条件",
+      "filterLabel": "按状态筛选",
+      "waitingCount": "{count} 个工单等你回复",
+      "refresh": "刷新",
+      "loading": "正在加载工单…",
+      "empty": "还没有工单",
+      "emptyDescription": "遇到 Bug、账号问题或有建议时，可以创建工单联系管理员。",
+      "emptyFiltered": "没有「{status}」的工单",
+      "showAll": "查看全部工单",
       "total": "共 {total} 个工单",
-      "updatedAt": "更新",
+      "columns": {
+        "ticket": "工单",
+        "status": "状态"
+      },
+      "updatedAt": "最近更新",
+      "priorityTag": "{priority}优先级",
+      "assigned": "已有管理员跟进",
+      "createdOn": "创建于 {date}",
+      "closedOn": "关闭于 {date}",
       "pagination": {
         "label": "工单分页",
+        "page": "第 {page} / {total} 页",
         "prevPage": "上一页",
         "nextPage": "下一页"
       },
@@ -65,22 +92,40 @@ export default {
       "description": "工单用于反馈 Bug、处理工具箱账号相关的问题和提出建议，不提供使用教程指导。把关键信息写清楚，管理员会更容易判断下一步。",
       "submit": "提交工单",
       "submitting": "提交中...",
+      "typeTitle": "问题类型",
+      "contentTitle": "问题内容",
+      "count": "{count} / {max}",
       "fields": {
         "subject": "主题",
-        "subjectPlaceholder": "请简要描述您的问题",
+        "subjectPlaceholder": "一句话说明遇到的问题",
         "subjectHint": "例如：上传数据失败、无法绑定账号、无法授权第三方应用。",
         "category": "分类",
         "categoryHint": "选择最接近的分类即可，不确定可以选其他。",
         "priority": "优先级",
         "priorityHint": "紧急优先级请留给影响登录、数据或主要功能的问题。",
         "message": "描述",
-        "messagePlaceholder": "请详细描述您遇到的问题…",
-        "messageHint": "建议包含账号 ID、服务器、出现时间、操作步骤、错误提示或相关链接。"
+        "messagePlaceholder": "详细描述遇到的问题…"
+      },
+      "guide": {
+        "upload": "建议写明区服、上传方式（模块、抓包或引继码）、出现时间和页面上的错误提示。",
+        "account": "建议写明受影响的账号 ID、区服、出现时间和页面上的错误提示。",
+        "bug": "建议写明操作步骤、预期结果和实际结果，以及使用的设备和浏览器。",
+        "feature": "建议说明使用场景，以及现在是怎么做的、哪里不方便。",
+        "other": "建议写明出现时间、操作步骤、错误提示或相关链接。"
+      },
+      "tips": {
+        "title": "提交之前",
+        "usage": "使用方法和教程类问题请到{link}提问。",
+        "usageLink": "推荐群聊",
+        "secrets": "不要在工单里填写密码、引继码等敏感信息，管理员不会向你索要。",
+        "oneIssue": "一个工单只说一个问题，方便跟进和回复。",
+        "followUp": "提交后可以在工单里继续补充；管理员回复后，侧边栏的「我的工单」会出现提醒。"
       },
       "toast": {
         "subjectRequired": "请输入工单主题",
         "messageRequired": "请输入工单描述",
         "subjectTooLong": "主题最多 {max} 个字符",
+        "messageTooLong": "描述最多 {max} 个字符",
         "loginRequired": "请先登录",
         "createSuccess": "工单已创建",
         "createFailedTitle": "创建工单失败",
@@ -91,20 +136,34 @@ export default {
       "backButton": "返回工单列表",
       "prioritySuffix": "优先级",
       "createdAt": "创建于 {date}",
+      "infoTitle": "工单信息",
       "summary": {
         "category": "分类",
         "priority": "优先级",
         "createdAt": "创建时间",
-        "updatedAt": "最近更新"
+        "updatedAt": "最近更新",
+        "closedAt": "关闭时间",
+        "ticketId": "工单编号"
       },
+      "copyId": "复制工单编号",
+      "idCopied": "已复制工单编号",
+      "copyFailed": "复制失败",
+      "threadTitle": "沟通记录",
+      "messageCount": "{count} 条消息",
+      "showEarlier": "显示更早的 {count} 条消息",
+      "refresh": "刷新",
+      "selfSender": "你",
       "adminSender": "管理员",
-      "systemSender": "系统",
       "noMessages": "暂无消息",
-      "inputPlaceholder": "补充说明或回复管理员…",
+      "replyLabel": "回复",
+      "inputPlaceholder": "回复管理员…",
       "composeHint": "Enter 发送，Shift+Enter 换行",
+      "reopenHint": "回复后工单会重新打开，由管理员继续处理。",
+      "replyTooLong": "回复最多 {max} 个字符",
       "sentState": "已发送",
       "sendButton": "发送",
-      "closedHint": "工单已关闭，无法发送消息",
+      "closedHint": "工单已关闭，无法继续回复。",
+      "newTicket": "创建新工单",
       "closeButton": "关闭工单",
       "closeDialog": {
         "title": "确认关闭工单",

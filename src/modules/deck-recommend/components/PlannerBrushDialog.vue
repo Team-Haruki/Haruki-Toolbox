@@ -366,7 +366,7 @@ function save() {
 
       <div class="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
         <!-- Deck building against the selected event -->
-        <div class="flex flex-col gap-2 rounded-md border bg-muted/20 p-3">
+        <div class="flex flex-col gap-2 rounded-lg bg-muted/40 p-3">
           <div class="flex flex-wrap items-center gap-3">
             <Button :disabled="!canRunDeck" @click="runDeck">
               <LucideLoaderCircle v-if="runner.running.value || rankingLoading" class="mr-1 size-4 animate-spin" />
@@ -400,7 +400,7 @@ function save() {
         </p>
 
         <!-- Deck result -->
-        <div v-if="deckView" class="flex flex-col gap-2 rounded-md border bg-muted/20 p-3">
+        <div v-if="deckView" class="flex flex-col gap-2 rounded-lg bg-muted/40 p-3">
           <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
             <span class="font-medium text-foreground">{{ t("eventPlanner.dialog.deckTitle") }}</span>
             <span>{{ t("eventPlanner.dialog.deckPower") }} {{ formatInteger(Number(deckView.deck.total_power) || 0) }}</span>
@@ -448,7 +448,7 @@ function save() {
           <p v-if="rankingLoading" class="py-4 text-center text-xs text-muted-foreground">
             {{ t("eventPlanner.dialog.rankingLoading") }}
           </p>
-          <div v-else class="max-h-64 min-w-0 overflow-auto rounded-md border">
+          <div v-else class="max-h-64 min-w-0 overflow-auto rounded-lg border">
             <table class="w-full text-xs">
               <thead class="sticky top-0 bg-background">
                 <tr class="border-b text-muted-foreground">
@@ -495,7 +495,7 @@ function save() {
         </p>
 
         <!-- Brush identity: loops per hour and boost are set on the brush list. -->
-        <div v-if="selectedSong || editingBrush" class="flex flex-col gap-2 rounded-md border bg-muted/20 p-3">
+        <div v-if="selectedSong || editingBrush" class="flex flex-col gap-2 rounded-lg bg-muted/40 p-3">
           <div class="grid min-w-0 grid-cols-1 items-start gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
             <div class="grid min-w-0 grid-cols-1 gap-1.5">
               <Label for="planner-brush-name" class="text-xs text-muted-foreground">
@@ -516,6 +516,7 @@ function save() {
                   ]"
                   :style="{ backgroundColor: color }"
                   :aria-pressed="brushColor === color"
+                  :aria-label="`${t('eventPlanner.dialog.brushColor')} ${color}`"
                   @click="brushColor = color"
                 />
               </div>

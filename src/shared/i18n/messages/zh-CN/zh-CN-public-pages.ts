@@ -7,6 +7,10 @@ export default {
       "description": "一些与pjsk相关的群聊推荐",
       "loading": "载入中...",
       "empty": "暂无推荐群聊",
+      "count": "{count} 个群",
+      "copyNumber": "复制群号 {number}",
+      "copied": "已复制群号 {number}",
+      "copyFailed": "复制失败，请手动复制群号。",
       "toast": {
         "loadFailedTitle": "加载推荐群聊失败"
       }
@@ -187,9 +191,12 @@ export default {
     },
     "summary": {
       "supporters": "赞助者",
-      "current": "当前赞助"
+      "current": "当前赞助",
+      "former": "曾经赞助",
+      "updatedAt": "数据更新于 {time}"
     },
     "sections": {
+      "planCount": "{count} 人",
       "current": {
         "title": "当前赞助",
         "empty": "暂无正在赞助的赞助者。"
@@ -199,19 +206,15 @@ export default {
         "empty": "暂无赞助时长已到期的赞助者。"
       }
     },
-    "list": {
-      "title": "赞助者名单"
-    },
     "supporter": {
       "anonymous": "匿名赞助者",
       "defaultPlan": "爱发电赞助",
       "pastPlan": "曾经赞助",
       "active": "正在赞助",
       "activeUntil": "赞助至 {date}",
-      "expired": "赞助时长到期",
       "expiredAt": "已于 {date} 到期",
       "recent": "近期赞助",
-      "months": "{month} 个月"
+      "supportCount": "已赞助 {count} 次"
     },
     "empty": {
       "title": "暂无赞助数据",

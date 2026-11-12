@@ -41,12 +41,19 @@ test.describe("public sponsor wall", () => {
     })
     await page.goto("/sponsors")
 
-    const section = (title: RegExp) => page.locator("div.space-y-3").filter({ has: page.getByRole("heading", { level: 3, name: title }) })
-    await expect(section(/当前赞助|Current sponsors/)).toContainText("Current Fan", { timeout: 30_000 })
-    await expect(section(/曾经赞助|Past sponsors/)).toContainText("Lapsed Fan")
-    await expect(section(/曾经赞助|Past sponsors/)).toContainText("Shop Fan")
-    // There is no one-time section or count any more.
-    await expect(page.getByRole("heading", { level: 3 })).toHaveCount(2)
+    const current = page.getByTestId("sponsor-section-current")
+    const former = page.getByTestId("sponsor-section-former")
+    await expect(current).toContainText("Current Fan", { timeout: 30_000 })
+    await expect(current.getByRole("heading", { level: 2 })).toHaveText(/(当前赞助|Current sponsors)\s*1/)
+    // Current supporters are listed under their plan.
+    await expect(current.getByTestId("sponsor-plan")).toHaveCount(1)
+    await expect(current.getByRole("heading", { level: 3 })).toHaveText("支持一下")
+    await expect(former).toContainText("Lapsed Fan")
+    await expect(former).toContainText("Shop Fan")
+    await expect(former.getByRole("heading", { level: 2 })).toHaveText(/(曾经赞助|Past sponsors)\s*2/)
+    // The summary counts match the lists, and there is no one-time section or count.
+    await expect(page.getByTestId("sponsor-summary").locator("[data-stat=supporters] dd")).toHaveText("3")
+    await expect(page.getByRole("heading", { level: 2 })).toHaveCount(2)
     await expect(page.getByText(/一次性|One-time/)).toHaveCount(0)
   })
 })

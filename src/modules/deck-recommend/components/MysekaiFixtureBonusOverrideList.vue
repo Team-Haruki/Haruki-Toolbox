@@ -42,7 +42,7 @@ function updateOverride(characterId: number, value: string) {
 </script>
 
 <template>
-  <div v-if="props.characters.length === 0" class="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+  <div v-if="props.characters.length === 0" class="text-sm text-muted-foreground">
     {{ t("deckRecommend.options.mysekaiFixtureBonusOverride.empty") }}
   </div>
 
@@ -50,7 +50,7 @@ function updateOverride(characterId: number, value: string) {
     <div
       v-for="character in props.characters"
       :key="character.id"
-      class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_110px] items-center gap-2 rounded-md border bg-background/70 p-2 text-sm"
+      class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_110px] items-center gap-2 rounded-md bg-muted/40 p-2 text-sm"
     >
       <img
         :src="character.iconUrl"

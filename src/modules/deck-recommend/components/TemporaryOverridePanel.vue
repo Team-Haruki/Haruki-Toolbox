@@ -20,7 +20,7 @@ const props = withDefaults(defineProps<{
   badgeClass?: string
 }>(), {
   clearDisabled: false,
-  badgeClass: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200",
+  badgeClass: "bg-primary/10 text-primary",
 })
 
 const emit = defineEmits<{
@@ -30,7 +30,7 @@ const emit = defineEmits<{
 
 <template>
   <Collapsible v-slot="{ open: isOpen }" v-model:open="open" as-child>
-    <section class="grid min-w-0 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+    <section class="grid min-w-0 gap-3 py-4">
       <CollapsibleTrigger as-child>
         <button
           type="button"
@@ -42,7 +42,7 @@ const emit = defineEmits<{
               <span
                 v-if="props.selectedCount > 0"
                 :class="[
-                  'rounded-md border px-1.5 py-0.5 text-[11px] font-semibold',
+                  'rounded-md px-1.5 py-0.5 text-[11px] font-medium',
                   props.badgeClass,
                 ]"
               >

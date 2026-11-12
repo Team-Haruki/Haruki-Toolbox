@@ -44,7 +44,7 @@ const { t } = useI18n()
           :region="region"
           :disabled="running || !dataReady"
         />
-        <label for="custom-bonus-filter-other-unit" class="flex items-center justify-between gap-3 rounded-md border bg-background/60 p-3 text-sm">
+        <label for="custom-bonus-filter-other-unit" class="flex items-center justify-between gap-3 text-sm">
           <span>{{ t("deckRecommend.form.filterOtherUnit") }}</span>
           <Switch
             id="custom-bonus-filter-other-unit"

@@ -187,7 +187,7 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
       </div>
 
       <div data-slot="card-browse-scroll" class="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain">
-        <div class="grid gap-3 rounded-md border bg-muted/20 p-3">
+        <div class="grid gap-3 rounded-lg bg-muted/40 p-3">
           <CatalogSelectField
             v-model="browseCharacterId"
             :label="t('deckRecommend.form.character')"
@@ -267,7 +267,7 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
         </div>
         <div
           v-else
-          class="rounded-md border border-dashed p-10 text-center text-sm text-muted-foreground"
+          class="p-10 text-center text-sm text-muted-foreground"
         >
           {{ t("deckRecommend.options.constraints.cardEmpty") }}
         </div>

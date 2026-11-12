@@ -2,26 +2,20 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import type { AcceptableValue } from "reka-ui"
 import { useI18n } from "vue-i18n"
-import { toast } from "vue-sonner"
+import { useIntervalFn } from "@vueuse/core"
 import {
-  LucideBrush,
+  LucideCalendarRange,
   LucideEraser,
   LucideMoon,
   LucidePencil,
   LucidePlus,
+  LucideRows3,
   LucideTrash2,
-  LucideX,
 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
   Select,
   SelectContent,
@@ -33,6 +27,8 @@ import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-regio
 import { formatGameAccountLabel } from "@/lib/game-account-display"
 import GameAccountOption from "@/shared/components/GameAccountOption.vue"
 import CatalogTimeZoneHint from "@/shared/components/catalog/CatalogTimeZoneHint.vue"
+import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
+import EmptyState from "@/shared/components/EmptyState.vue"
 import PageHeader from "@/shared/components/PageHeader.vue"
 import { SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES } from "@/shared/sekai/worker-protocol"
 import { useEventPlannerStore, type EventPlannerPlan } from "../stores/event-planner"
@@ -59,8 +55,11 @@ import {
   buildPlannerRectangleHourKeys,
   PLANNER_REST_BRUSH_ID,
   resolvePlannerBrushPointsPerHour,
-  resolvePlannerRemainingPoint,
+  resolvePlannerCountFromMs,
+  resolvePlannerProgress,
+  selectPlannerCellsFrom,
   summarizePlannerCells,
+  summarizePlannerDays,
   type PlannerBrush,
 } from "../lib/planner-calendar"
 import { resolveSekaiLiveBoostMultiplier } from "@/shared/sekai/live-boost"
@@ -184,9 +183,29 @@ const restBrush = computed<PlannerBrush>(() => ({
   deckCardIds: [],
 }))
 
-const summary = computed(() => summarizePlannerCells(cells.value, allBrushes.value))
+// The hour the player is in, refreshed each minute so the marker and the
+// "hours already gone" boundary move with the clock.
+const nowMs = ref(Date.now())
+useIntervalFn(() => {
+  nowMs.value = Date.now()
+}, 60_000)
 
-const remainingPoint = computed(() => resolvePlannerRemainingPoint({
+/** Hours before this are already part of the current pt and no longer count toward the target. */
+const countFromMs = computed(() => resolvePlannerCountFromMs({
+  now: nowMs.value,
+  startAt: selectedEventOption.value?.startAt ?? null,
+  aggregateAt: selectedEventOption.value?.aggregateAt ?? null,
+  currentPointKnown: currentPoint.value.value != null,
+}))
+
+/** Everything painted: what each brush covers on the calendar. */
+const paintedSummary = computed(() => summarizePlannerCells(cells.value, allBrushes.value))
+/** What still counts: the plan from the current hour on. */
+const summary = computed(() =>
+  summarizePlannerCells(selectPlannerCellsFrom(cells.value, countFromMs.value), allBrushes.value),
+)
+
+const progress = computed(() => resolvePlannerProgress({
   targetPoint: targetPoint.value.value,
   currentPoint: currentPoint.value.value ?? 0,
   plannedPoints: summary.value.plannedPoints,
@@ -204,7 +223,24 @@ const dailyPoint = computed(() => {
     currentPointKnown: currentPoint.value.value != null,
     startAt: option.startAt,
     aggregateAt: option.aggregateAt,
+    now: nowMs.value,
   })
+})
+
+const progressVerdict = computed(() => {
+  const value = progress.value
+  if (!value) {
+    return null
+  }
+  if (value.remaining > 0) {
+    return { tone: "short" as const, text: t("eventPlanner.progress.short", { remaining: formatInteger(value.remaining) }) }
+  }
+  return {
+    tone: "reached" as const,
+    text: value.surplus > 0
+      ? t("eventPlanner.progress.over", { projected: formatInteger(value.projected), surplus: formatInteger(value.surplus) })
+      : t("eventPlanner.progress.exact"),
+  }
 })
 
 const summaryItems = computed(() => [
@@ -221,14 +257,17 @@ const summaryItems = computed(() => [
   {
     key: "planned",
     label: t("eventPlanner.summary.plannedPoint"),
-    value: formatInteger(summary.value.plannedPoints),
+    value: `+${formatInteger(summary.value.plannedPoints)}`,
+  },
+  {
+    key: "projected",
+    label: t("eventPlanner.summary.projectedPoint"),
+    value: formatInteger((currentPoint.value.value ?? 0) + summary.value.plannedPoints),
   },
   {
     key: "remaining",
     label: t("eventPlanner.summary.remainingPoint"),
-    value: remainingPoint.value != null ? formatInteger(remainingPoint.value) : "-",
-    highlight: remainingPoint.value != null && remainingPoint.value > 0,
-    reached: remainingPoint.value === 0,
+    value: progress.value ? formatInteger(progress.value.remaining) : "-",
   },
   {
     key: "daily",
@@ -248,7 +287,15 @@ const calendarDays = computed(() => {
   return buildPlannerCalendar(option.startAt, option.aggregateAt)
 })
 
+const dayStats = computed(() => summarizePlannerDays(calendarDays.value, cells.value, allBrushes.value, {
+  basePoint: currentPoint.value.value ?? 0,
+  targetPoint: targetPoint.value.value,
+  countFromMs: countFromMs.value,
+}))
+
 // --- Batch fill -------------------------------------------------------------
+
+const batchOpen = ref(false)
 
 const batchFromDay = ref("0")
 const batchToDay = ref("0")
@@ -294,6 +341,7 @@ function applyBatchFill() {
     hourKeys,
     brushId: batchBrushId.value === ERASER_TOOL_ID ? null : batchBrushId.value,
   })
+  batchOpen.value = false
 }
 
 function handleStroke(changes: { hourKeys: string[]; brushId: string | null }) {
@@ -306,26 +354,9 @@ function handleStroke(changes: { hourKeys: string[]; brushId: string | null }) {
     }
   }
   cells.value = next
-  announceRemaining()
 }
 
-function announceRemaining() {
-  if (remainingPoint.value == null) {
-    return
-  }
-
-  if (remainingPoint.value <= 0) {
-    toast.success(t("eventPlanner.toasts.reached", {
-      planned: formatInteger(summary.value.plannedPoints),
-    }))
-    return
-  }
-
-  toast.info(t("eventPlanner.toasts.remaining", {
-    planned: formatInteger(summary.value.plannedPoints),
-    remaining: formatInteger(remainingPoint.value),
-  }))
-}
+const clearDialogOpen = ref(false)
 
 function clearPlanCells() {
   cells.value = {}
@@ -381,6 +412,36 @@ function updateBrushBoost(brushId: string, value: AcceptableValue) {
   const boostCount = Number(value)
   if (Number.isInteger(boostCount) && boostCount >= 0 && boostCount <= 10) {
     updateBrushSettings(brushId, { boostCount })
+  }
+}
+
+/** What each brush covers on the calendar, for its card. */
+const brushUsage = computed(() => new Map(brushes.value.map((brush) => {
+  const hours = paintedSummary.value.hoursByBrush.get(brush.id) ?? 0
+  return [brush.id, { hours, points: Math.round(hours * brush.pointsPerHour) }]
+})))
+
+const brushToRemove = ref<PlannerBrush | null>(null)
+
+/** A brush that is on the calendar takes its hours with it, so that one asks first. */
+function requestRemoveBrush(brush: PlannerBrush) {
+  if ((brushUsage.value.get(brush.id)?.hours ?? 0) > 0) {
+    brushToRemove.value = brush
+  } else {
+    removeBrush(brush.id)
+  }
+}
+
+const activeToolLabel = computed(() => {
+  if (activeTool.value === ERASER_TOOL_ID) {
+    return t("eventPlanner.brushes.eraser")
+  }
+  return allBrushes.value.find((brush) => brush.id === activeTool.value)?.name ?? t("eventPlanner.brushes.rest")
+})
+
+function updateActiveTool(value: AcceptableValue) {
+  if (typeof value === "string") {
+    activeTool.value = value
   }
 }
 
@@ -539,21 +600,17 @@ function formatInteger(value: number) {
 </script>
 
 <template>
-  <div class="flex min-w-0 w-full flex-1 flex-col items-center justify-center px-0 py-4">
-    <div class="mx-auto min-w-0 w-full max-w-7xl space-y-3 sm:space-y-4">
-      <PageHeader :title="t('eventPlanner.title')" :description="t('eventPlanner.description')" class="px-3 sm:px-0" />
+  <div class="flex w-full min-w-0 flex-1 flex-col items-center px-1 py-2 sm:px-0 sm:py-4">
+    <div class="mx-auto grid w-full max-w-7xl min-w-0 gap-4">
+      <PageHeader :title="t('eventPlanner.title')" :description="t('eventPlanner.description')" />
 
-      <!-- Setup -->
-      <Card size="compact">
-        <CardHeader>
-          <CardTitle class="text-base">{{ t("eventPlanner.sections.setup.title") }}</CardTitle>
-          <CardDescription>{{ t("eventPlanner.sections.setup.description") }}</CardDescription>
-        </CardHeader>
-        <CardContent class="grid min-w-0 grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <!-- Whose plan, for which event, toward what -->
+      <section class="@container min-w-0 rounded-xl border bg-card p-4" data-testid="planner-setup">
+        <div class="grid min-w-0 grid-cols-1 items-start gap-3 @min-[40rem]:grid-cols-2 @min-[64rem]:grid-cols-3">
           <div class="grid min-w-0 grid-cols-1 content-start gap-1.5">
-            <Label id="planner-account-label" for="planner-account" class="text-xs text-muted-foreground">{{ t("deckRecommend.form.account") }}</Label>
-            <Select id="planner-account" :key="locale" :model-value="selectedAccountKey" @update:model-value="updateAccount">
-              <SelectTrigger class="w-full" aria-labelledby="planner-account-label">
+            <Label for="planner-account" class="text-xs text-muted-foreground">{{ t("deckRecommend.form.account") }}</Label>
+            <Select id="planner-account" :key="locale" :model-value="selectedAccountKey" :aria-label="t('deckRecommend.form.account')" @update:model-value="updateAccount">
+              <SelectTrigger class="w-full" :aria-label="t('deckRecommend.form.account')">
                 <GameAccountOption
                   v-if="selectedAccount"
                   :server="selectedAccount.server"
@@ -587,9 +644,9 @@ function formatInteger(value: number) {
             </p>
           </div>
           <div class="grid min-w-0 grid-cols-1 content-start gap-1.5">
-            <Label id="planner-region-label" for="planner-region" class="text-xs text-muted-foreground">{{ t("deckRecommend.form.dataRegion") }}</Label>
-            <Select id="planner-region" :key="locale" :model-value="dataRegion" @update:model-value="updateDataRegion">
-              <SelectTrigger class="w-full" aria-labelledby="planner-region-label">
+            <Label for="planner-region" class="text-xs text-muted-foreground">{{ t("deckRecommend.form.dataRegion") }}</Label>
+            <Select id="planner-region" :key="locale" :model-value="dataRegion" :aria-label="t('deckRecommend.form.dataRegion')" @update:model-value="updateDataRegion">
+              <SelectTrigger class="w-full" :aria-label="t('deckRecommend.form.dataRegion')">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -617,17 +674,22 @@ function formatInteger(value: number) {
               @update:model-value="selectedCharacterId = $event"
             />
           </div>
+          <!-- The two totals stay side by side, on a phone too. -->
+          <div class="grid min-w-0 grid-cols-2 items-start gap-3 @min-[40rem]:col-span-2">
           <div class="grid min-w-0 grid-cols-1 content-start gap-1.5">
             <Label for="planner-target-point" class="text-xs text-muted-foreground">{{ t("eventPlanner.form.targetPoint") }}</Label>
             <Input
               id="planner-target-point"
               v-model="targetPointInput"
+              class="tabular-nums"
+              autocomplete="off"
+              :aria-invalid="targetPoint.invalid || undefined"
               :placeholder="t('eventPlanner.form.targetPointPlaceholder')"
             />
-            <p v-if="targetPoint.invalid" class="text-[11px] text-destructive">
+            <p v-if="targetPoint.invalid" class="text-[11px] text-destructive" role="alert">
               {{ t("eventPlanner.form.invalidPoint") }}
             </p>
-            <p v-else-if="targetPoint.value != null" class="text-[11px] text-muted-foreground">
+            <p v-else-if="targetPoint.value != null" class="text-[11px] tabular-nums text-muted-foreground">
               {{ t("eventPlanner.form.parsedValue", { value: formatInteger(targetPoint.value) }) }}
             </p>
           </div>
@@ -636,275 +698,334 @@ function formatInteger(value: number) {
             <Input
               id="planner-current-point"
               v-model="currentPointInput"
+              class="tabular-nums"
+              autocomplete="off"
+              :aria-invalid="currentPoint.invalid || undefined"
               :placeholder="t('eventPlanner.form.currentPointPlaceholder')"
             />
-            <p v-if="currentPoint.invalid" class="text-[11px] text-destructive">
+            <p v-if="currentPoint.invalid" class="text-[11px] text-destructive" role="alert">
               {{ t("eventPlanner.form.invalidPoint") }}
             </p>
-            <p v-else-if="currentPoint.value != null" class="text-[11px] text-muted-foreground">
+            <p v-else-if="currentPoint.value != null" class="text-[11px] tabular-nums text-muted-foreground">
               {{ t("eventPlanner.form.parsedValue", { value: formatInteger(currentPoint.value) }) }}
             </p>
           </div>
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+      </section>
 
-      <!-- Summary -->
-      <!-- Five tiles: on phones the odd one (daily pace) spans the row instead of sitting alone. -->
-      <div class="grid grid-cols-2 gap-2 sm:grid-cols-5">
-        <Card v-for="item in summaryItems" :key="item.key" size="compact" class="last:col-span-2 sm:last:col-span-1">
-          <CardContent>
-            <div class="text-xs text-muted-foreground">{{ item.label }}</div>
-            <div
-              :class="[
-                'mt-0.5 break-all text-lg font-bold tabular-nums',
-                item.reached ? 'text-emerald-500' : item.highlight ? 'text-amber-500' : '',
-              ]"
-            >
-              {{ item.value }}
+      <!-- Where the plan lands against the target -->
+      <section class="@container min-w-0 rounded-xl border bg-card" data-testid="planner-progress" :data-state="progressVerdict?.tone ?? 'none'">
+        <div class="grid gap-3 px-4 py-3">
+          <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
+            <h2 class="text-sm font-semibold">{{ t("eventPlanner.progress.title") }}</h2>
+            <p class="text-xs tabular-nums text-muted-foreground">
+              {{ t("eventPlanner.summary.plannedHours", { hours: summary.plannedHours, rest: summary.restHours }) }}
+            </p>
+          </div>
+
+          <template v-if="progress && progressVerdict">
+            <div class="pt-4" role="img" :aria-label="progressVerdict.text">
+              <div class="relative">
+                <div class="flex h-2.5 overflow-hidden rounded-full bg-muted">
+                  <span class="h-full bg-primary" :style="{ width: `${progress.currentRatio * 100}%` }" />
+                  <span class="h-full bg-primary/35" :style="{ width: `${progress.plannedRatio * 100}%` }" />
+                </div>
+                <!-- The target, as a tick on the same scale. -->
+                <span
+                  class="absolute -top-1 -bottom-1 w-0.5 rounded-full bg-foreground"
+                  :style="{ left: `min(${progress.targetRatio * 100}%, calc(100% - 2px))` }"
+                >
+                  <span
+                    :class="[
+                      'absolute -top-4 text-[11px] leading-none whitespace-nowrap text-muted-foreground',
+                      progress.targetRatio > 0.85 ? 'right-0' : 'left-0',
+                    ]"
+                  >
+                    {{ t("eventPlanner.progress.targetMark") }}
+                  </span>
+                </span>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-      <p v-if="remainingPoint === 0 && targetPoint.value != null" class="text-sm font-medium text-emerald-500">
-        {{ t("eventPlanner.summary.reached") }}
-      </p>
+            <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+              <p
+                :class="['text-sm font-medium', progressVerdict.tone === 'short' ? 'text-amber-700 dark:text-amber-300' : 'text-primary']"
+                data-testid="planner-verdict"
+              >
+                {{ progressVerdict.text }}
+              </p>
+              <p class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+                <span class="inline-flex items-center gap-1"><span class="inline-block h-2 w-3 rounded-full bg-primary" aria-hidden="true" />{{ t("eventPlanner.progress.legendCurrent") }}</span>
+                <span class="inline-flex items-center gap-1"><span class="inline-block h-2 w-3 rounded-full bg-primary/35" aria-hidden="true" />{{ t("eventPlanner.progress.legendPlanned") }}</span>
+              </p>
+            </div>
+          </template>
+          <p v-else class="text-sm text-muted-foreground">{{ t("eventPlanner.progress.noTarget") }}</p>
 
-      <!-- Brushes -->
-      <Card size="compact">
-        <CardHeader>
-          <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
-            <span>{{ t("eventPlanner.brushes.title") }}</span>
-            <Button size="sm" class="h-8" :disabled="!selectedEventId || !selectedAccount" @click="openBrushDialog()">
-              <LucidePlus class="mr-1 size-4" /> {{ t("eventPlanner.brushes.add") }}
-            </Button>
-          </CardTitle>
-          <CardDescription>{{ t("eventPlanner.brushes.description") }}</CardDescription>
-        </CardHeader>
-        <CardContent class="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            :class="[
-              'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors pointer-coarse:min-h-10',
-              activeTool === PLANNER_REST_BRUSH_ID
-                ? 'border-primary ring-2 ring-primary/30'
-                : 'border-border hover:bg-muted/40',
-            ]"
-            :aria-pressed="activeTool === PLANNER_REST_BRUSH_ID"
-            @click="activeTool = PLANNER_REST_BRUSH_ID"
-          >
-            <LucideMoon class="size-3.5" :style="{ color: restBrush.color }" />
-            {{ t("eventPlanner.brushes.rest") }}
-          </button>
-          <button
-            type="button"
-            :class="[
-              'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors pointer-coarse:min-h-10',
-              activeTool === ERASER_TOOL_ID
-                ? 'border-primary ring-2 ring-primary/30'
-                : 'border-border hover:bg-muted/40',
-            ]"
-            :aria-pressed="activeTool === ERASER_TOOL_ID"
-            @click="activeTool = ERASER_TOOL_ID"
-          >
-            <LucideEraser class="size-3.5" />
-            {{ t("eventPlanner.brushes.eraser") }}
-          </button>
-          <span
+          <dl class="grid grid-cols-2 gap-x-6 gap-y-2 border-t border-border/60 pt-3 @min-[36rem]:grid-cols-3 @min-[64rem]:grid-cols-6">
+            <div v-for="item in summaryItems" :key="item.key" class="flex min-w-0 flex-col" :data-stat="item.key">
+              <dt class="truncate text-[11px] text-muted-foreground">{{ item.label }}</dt>
+              <dd class="truncate text-sm font-semibold tabular-nums">{{ item.value }}</dd>
+            </div>
+          </dl>
+          <p v-if="countFromMs != null" class="text-[11px] text-muted-foreground">{{ t("eventPlanner.progress.pastNote") }}</p>
+        </div>
+      </section>
+
+      <!-- Brushes: what an hour of play is worth -->
+      <section class="grid min-w-0 gap-2" data-testid="planner-brushes">
+        <div class="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 px-1">
+          <div class="min-w-0">
+            <h2 class="text-sm font-semibold">{{ t("eventPlanner.brushes.title") }}</h2>
+            <p class="text-xs text-muted-foreground">{{ t("eventPlanner.brushes.description") }}</p>
+          </div>
+          <Button size="sm" :disabled="!selectedEventId || !selectedAccount" @click="openBrushDialog()">
+            <LucidePlus class="size-4" /> {{ t("eventPlanner.brushes.add") }}
+          </Button>
+        </div>
+
+        <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          <!-- The two built-in tools share one card. -->
+          <div class="grid grid-cols-2 divide-x divide-border/60 overflow-hidden rounded-xl border bg-card">
+            <button
+              type="button"
+              :class="[
+                'flex min-w-0 items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none pointer-coarse:min-h-11',
+                activeTool === PLANNER_REST_BRUSH_ID ? 'bg-primary/10 font-semibold text-primary' : '',
+              ]"
+              :aria-pressed="activeTool === PLANNER_REST_BRUSH_ID"
+              @click="activeTool = PLANNER_REST_BRUSH_ID"
+            >
+              <LucideMoon class="size-4 shrink-0" />
+              <span class="min-w-0">
+                <span class="block truncate">{{ t("eventPlanner.brushes.rest") }}</span>
+                <span class="block truncate text-[11px] font-normal tabular-nums text-muted-foreground">
+                  {{ t("eventPlanner.brushes.usedHours", { hours: paintedSummary.restHours }) }}
+                </span>
+              </span>
+            </button>
+            <button
+              type="button"
+              :class="[
+                'flex min-w-0 items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none pointer-coarse:min-h-11',
+                activeTool === ERASER_TOOL_ID ? 'bg-primary/10 font-semibold text-primary' : '',
+              ]"
+              :aria-pressed="activeTool === ERASER_TOOL_ID"
+              @click="activeTool = ERASER_TOOL_ID"
+            >
+              <LucideEraser class="size-4 shrink-0" />
+              <span class="min-w-0">
+                <span class="block truncate">{{ t("eventPlanner.brushes.eraser") }}</span>
+                <span class="block truncate text-[11px] font-normal text-muted-foreground">{{ t("eventPlanner.brushes.eraserHint") }}</span>
+              </span>
+            </button>
+          </div>
+
+          <div
             v-for="brush in brushes"
             :key="brush.id"
-            :class="[
-              'inline-flex min-w-0 max-w-full flex-wrap items-center gap-1.5 rounded-full border py-1 pl-3 pr-1.5 text-xs transition-colors',
-              activeTool === brush.id
-                ? 'border-primary ring-2 ring-primary/30'
-                : 'border-border hover:bg-muted/40',
-            ]"
+            :class="['flex min-w-0 flex-col rounded-xl border bg-card', activeTool === brush.id ? 'border-primary ring-1 ring-primary' : '']"
+            data-testid="planner-brush"
           >
-            <button
-              type="button"
-              class="inline-flex min-w-0 max-w-full flex-wrap items-center gap-1.5"
-              :aria-pressed="activeTool === brush.id"
-              @click="activeTool = brush.id"
-            >
-              <LucideBrush class="size-3.5 shrink-0" :style="{ color: brush.color }" />
-              <span class="max-w-40 truncate">{{ brush.name }}</span>
-              <span class="tabular-nums text-muted-foreground">
-                {{ t("eventPlanner.brushes.perHour", { points: formatInteger(brush.pointsPerHour) }) }}
+            <div class="flex min-w-0 items-center pr-1.5">
+              <button
+                type="button"
+                class="flex min-w-0 flex-1 items-center gap-2.5 rounded-xl px-3 py-2.5 text-left focus-visible:bg-muted/40 focus-visible:outline-none"
+                :aria-pressed="activeTool === brush.id"
+                @click="activeTool = brush.id"
+              >
+                <span class="size-3 shrink-0 rounded-full" :style="{ backgroundColor: brush.color }" aria-hidden="true" />
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate text-sm font-medium">{{ brush.name }}</span>
+                  <span class="block truncate text-xs tabular-nums text-muted-foreground">
+                    {{ t("eventPlanner.brushes.perHour", { points: formatInteger(brush.pointsPerHour) }) }}
+                    <template v-if="(brushUsage.get(brush.id)?.hours ?? 0) > 0">
+                      · {{ t("eventPlanner.brushes.usage", { hours: brushUsage.get(brush.id)!.hours, points: formatInteger(brushUsage.get(brush.id)!.points) }) }}
+                    </template>
+                  </span>
+                </span>
+              </button>
+              <Button variant="ghost" size="icon" class="size-8 shrink-0 text-muted-foreground" :aria-label="t('eventPlanner.brushes.edit')" @click="openBrushDialog(brush)">
+                <LucidePencil class="size-3.5" />
+              </Button>
+              <Button variant="ghost" size="icon" class="size-8 shrink-0 text-muted-foreground" :aria-label="t('eventPlanner.brushes.delete')" @click="requestRemoveBrush(brush)">
+                <LucideTrash2 class="size-3.5" />
+              </Button>
+            </div>
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-border/60 px-3 py-2 text-xs text-muted-foreground">
+              <span class="inline-flex items-center gap-1.5">
+                <Label :for="`planner-brush-plays-${brush.id}`" class="text-xs font-normal text-muted-foreground">{{ t("eventPlanner.brushes.playsTitle") }}</Label>
+                <Input
+                  :id="`planner-brush-plays-${brush.id}`"
+                  type="number"
+                  min="1"
+                  max="120"
+                  inputmode="numeric"
+                  :model-value="brush.playsPerHour ?? undefined"
+                  class="h-7 w-16 px-1.5 text-center text-xs tabular-nums"
+                  @input="handleBrushPlaysInput(brush.id, $event)"
+                />
               </span>
-            </button>
-            <span class="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-              <Input
-                type="number"
-                min="1"
-                max="120"
-                :model-value="brush.playsPerHour ?? undefined"
-                class="h-6 w-14 px-1.5 text-center text-[11px] tabular-nums"
-                :title="t('eventPlanner.brushes.playsTitle')"
-                :aria-label="t('eventPlanner.brushes.playsTitle')"
-                @input="handleBrushPlaysInput(brush.id, $event)"
-              />
-              {{ t("eventPlanner.brushes.playsUnit") }}
-            </span>
-            <Label :id="`planner-brush-boost-${brush.id}-label`" :for="`planner-brush-boost-${brush.id}`" class="sr-only">
-              {{ t("eventPlanner.brushes.boostTitle") }}
-            </Label>
-            <Select
-              :id="`planner-brush-boost-${brush.id}`"
-              :model-value="String(brush.boostCount ?? 0)"
-              @update:model-value="updateBrushBoost(brush.id, $event)"
-            >
-              <SelectTrigger class="h-6 w-24 px-1.5 text-[11px]" :title="t('eventPlanner.brushes.boostTitle')" :aria-labelledby="`planner-brush-boost-${brush.id}-label`">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="count in BOOST_COUNT_OPTIONS" :key="count" :value="String(count)">
-                  {{ t("eventPlanner.brushes.boostOption", { count, multiplier: resolveSekaiLiveBoostMultiplier(count) }) }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <button
-              type="button"
-              class="inline-flex items-center rounded-full p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              :aria-label="t('eventPlanner.brushes.edit')"
-              @click="openBrushDialog(brush)"
-            >
-              <LucidePencil class="size-3" />
-            </button>
-            <button
-              type="button"
-              class="inline-flex items-center rounded-full p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              :aria-label="t('eventPlanner.brushes.delete')"
-              @click="removeBrush(brush.id)"
-            >
-              <LucideX class="size-3" />
-            </button>
-          </span>
-          <p v-if="brushes.length === 0" class="text-xs text-muted-foreground">
+              <span class="inline-flex items-center gap-1.5">
+                {{ t("eventPlanner.brushes.boostShort") }}
+                <Select
+                  :model-value="String(brush.boostCount ?? 0)"
+                  :aria-label="t('eventPlanner.brushes.boostTitle')"
+                  @update:model-value="updateBrushBoost(brush.id, $event)"
+                >
+                  <SelectTrigger class="h-7 w-24 px-1.5 text-xs" :aria-label="t('eventPlanner.brushes.boostTitle')">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="count in BOOST_COUNT_OPTIONS" :key="count" :value="String(count)">
+                      {{ t("eventPlanner.brushes.boostOption", { count, multiplier: resolveSekaiLiveBoostMultiplier(count) }) }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </span>
+            </div>
+          </div>
+
+          <p v-if="brushes.length === 0" class="flex items-center rounded-xl border bg-card px-4 py-3 text-xs text-muted-foreground">
             {{ t("eventPlanner.brushes.empty") }}
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       <!-- Calendar -->
-      <Card size="compact">
-        <CardHeader>
-          <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
-            <span class="flex flex-wrap items-center gap-2">
-              {{ t("eventPlanner.calendar.title") }}
-              <!-- Hours are the viewer's wall clock; the tag names both zones so JST 15:00 is not read as local. -->
-              <CatalogTimeZoneHint :region="dataRegion" />
-            </span>
-            <span class="flex flex-wrap items-center gap-2 text-xs font-normal text-muted-foreground">
-              <span class="tabular-nums">
-                {{ t("eventPlanner.summary.plannedHours", {
-                  hours: summary.plannedHours,
-                  rest: summary.restHours,
-                }) }}
-              </span>
+      <section class="min-w-0 rounded-xl border bg-card" data-testid="planner-calendar-panel">
+        <header class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border/60 px-4 py-2.5">
+          <h2 class="text-sm font-semibold">{{ t("eventPlanner.calendar.title") }}</h2>
+          <!-- Hours are the viewer's wall clock; the tag names both zones so JST 15:00 is not read as local. -->
+          <CatalogTimeZoneHint :region="dataRegion" />
+          <template v-if="calendarDays.length > 0">
+            <div class="ml-auto flex flex-wrap items-center gap-2">
+              <!-- The brush list can be a screen away on a phone: pick the tool here too. -->
+              <Select :model-value="activeTool" :aria-label="t('eventPlanner.calendar.tool')" @update:model-value="updateActiveTool">
+                <SelectTrigger class="h-8 w-44 text-xs" :aria-label="t('eventPlanner.calendar.tool')">
+                  <span class="truncate">{{ t("eventPlanner.calendar.toolValue", { name: activeToolLabel }) }}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="brush in allBrushes" :key="brush.id" :value="brush.id">
+                    <span class="inline-flex items-center gap-1.5">
+                      <span class="inline-block size-2.5 rounded-full" :style="{ backgroundColor: brush.color }" />
+                      <span class="max-w-40 truncate">{{ brush.name }}</span>
+                    </span>
+                  </SelectItem>
+                  <SelectItem :value="ERASER_TOOL_ID">{{ t("eventPlanner.brushes.eraser") }}</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Popover v-model:open="batchOpen">
+                <PopoverTrigger as-child>
+                  <Button variant="outline" size="sm" class="h-8 text-xs">
+                    <LucideRows3 class="size-3.5" /> {{ t("eventPlanner.batch.title") }}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" class="grid w-[min(22rem,calc(100vw-2rem))] gap-3">
+                  <p class="text-xs text-muted-foreground">{{ t("eventPlanner.batch.hint") }}</p>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div class="grid gap-1">
+                      <Label for="planner-batch-from-day" class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.fromDay") }}</Label>
+                      <Select id="planner-batch-from-day" :model-value="batchFromDay" :aria-label="t('eventPlanner.batch.fromDay')" @update:model-value="batchFromDay = typeof $event === 'string' ? $event : batchFromDay">
+                        <SelectTrigger class="h-8 w-full text-xs" :aria-label="t('eventPlanner.batch.fromDay')">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem v-for="option in batchDayOptions" :key="option.value" :value="option.value">
+                            {{ option.label }}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div class="grid gap-1">
+                      <Label for="planner-batch-to-day" class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.toDay") }}</Label>
+                      <Select id="planner-batch-to-day" :model-value="batchToDay" :aria-label="t('eventPlanner.batch.toDay')" @update:model-value="batchToDay = typeof $event === 'string' ? $event : batchToDay">
+                        <SelectTrigger class="h-8 w-full text-xs" :aria-label="t('eventPlanner.batch.toDay')">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem v-for="option in batchDayOptions" :key="option.value" :value="option.value">
+                            {{ option.label }}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div class="grid gap-1">
+                      <Label for="planner-batch-from-hour" class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.fromHour") }}</Label>
+                      <Select id="planner-batch-from-hour" :model-value="batchFromHour" :aria-label="t('eventPlanner.batch.fromHour')" @update:model-value="batchFromHour = typeof $event === 'string' ? $event : batchFromHour">
+                        <SelectTrigger class="h-8 w-full text-xs" :aria-label="t('eventPlanner.batch.fromHour')">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem v-for="hour in BATCH_HOUR_OPTIONS" :key="hour" :value="hour">
+                            {{ t("eventPlanner.calendar.hourLabel", { hour }) }}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div class="grid gap-1">
+                      <Label for="planner-batch-to-hour" class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.toHour") }}</Label>
+                      <Select id="planner-batch-to-hour" :model-value="batchToHour" :aria-label="t('eventPlanner.batch.toHour')" @update:model-value="batchToHour = typeof $event === 'string' ? $event : batchToHour">
+                        <SelectTrigger class="h-8 w-full text-xs" :aria-label="t('eventPlanner.batch.toHour')">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem v-for="hour in BATCH_HOUR_OPTIONS" :key="hour" :value="hour">
+                            {{ t("eventPlanner.calendar.hourLabel", { hour }) }}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div class="col-span-2 grid gap-1">
+                      <Label for="planner-batch-brush" class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.brush") }}</Label>
+                      <Select id="planner-batch-brush" :model-value="batchBrushId" :aria-label="t('eventPlanner.batch.brush')" @update:model-value="batchBrushId = typeof $event === 'string' ? $event : batchBrushId">
+                        <SelectTrigger class="h-8 w-full text-xs" :aria-label="t('eventPlanner.batch.brush')">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem v-for="brush in allBrushes" :key="brush.id" :value="brush.id">
+                            <span class="inline-flex items-center gap-1.5">
+                              <span class="inline-block size-2.5 rounded-full" :style="{ backgroundColor: brush.color }" />
+                              <span class="max-w-40 truncate">{{ brush.name }}</span>
+                            </span>
+                          </SelectItem>
+                          <SelectItem :value="ERASER_TOOL_ID">{{ t("eventPlanner.brushes.eraser") }}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <Button size="sm" data-testid="planner-batch-apply" @click="applyBatchFill">{{ t("eventPlanner.batch.apply") }}</Button>
+                </PopoverContent>
+              </Popover>
+
               <Button
                 variant="ghost"
                 size="sm"
-                class="h-7 gap-1 text-xs text-muted-foreground"
+                class="h-8 gap-1 text-xs text-muted-foreground"
                 :disabled="Object.keys(cells).length === 0"
-                @click="clearPlanCells"
+                @click="clearDialogOpen = true"
               >
                 <LucideTrash2 class="size-3.5" /> {{ t("eventPlanner.calendar.clear") }}
               </Button>
-            </span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p v-if="calendarDays.length === 0" class="py-8 text-center text-sm text-muted-foreground">
-            {{ t("eventPlanner.calendar.noEvent") }}
-          </p>
-          <template v-else>
-            <div class="mb-3 flex flex-col gap-2 rounded-md border bg-muted/20 p-3">
-              <span class="text-xs font-medium">{{ t("eventPlanner.batch.title") }}</span>
-              <div class="flex flex-wrap items-end gap-2">
-                <div class="grid gap-1">
-                  <Label id="planner-batch-from-day-label" for="planner-batch-from-day" class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.fromDay") }}</Label>
-                  <Select id="planner-batch-from-day" :model-value="batchFromDay" @update:model-value="batchFromDay = typeof $event === 'string' ? $event : batchFromDay">
-                    <SelectTrigger class="h-8 w-36 text-xs" aria-labelledby="planner-batch-from-day-label">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="option in batchDayOptions" :key="option.value" :value="option.value">
-                        {{ option.label }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div class="grid gap-1">
-                  <Label id="planner-batch-to-day-label" for="planner-batch-to-day" class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.toDay") }}</Label>
-                  <Select id="planner-batch-to-day" :model-value="batchToDay" @update:model-value="batchToDay = typeof $event === 'string' ? $event : batchToDay">
-                    <SelectTrigger class="h-8 w-36 text-xs" aria-labelledby="planner-batch-to-day-label">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="option in batchDayOptions" :key="option.value" :value="option.value">
-                        {{ option.label }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div class="grid gap-1">
-                  <Label id="planner-batch-from-hour-label" for="planner-batch-from-hour" class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.fromHour") }}</Label>
-                  <Select id="planner-batch-from-hour" :model-value="batchFromHour" @update:model-value="batchFromHour = typeof $event === 'string' ? $event : batchFromHour">
-                    <SelectTrigger class="h-8 w-24 text-xs" aria-labelledby="planner-batch-from-hour-label">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="hour in BATCH_HOUR_OPTIONS" :key="hour" :value="hour">
-                        {{ t("eventPlanner.calendar.hourLabel", { hour }) }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div class="grid gap-1">
-                  <Label id="planner-batch-to-hour-label" for="planner-batch-to-hour" class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.toHour") }}</Label>
-                  <Select id="planner-batch-to-hour" :model-value="batchToHour" @update:model-value="batchToHour = typeof $event === 'string' ? $event : batchToHour">
-                    <SelectTrigger class="h-8 w-24 text-xs" aria-labelledby="planner-batch-to-hour-label">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="hour in BATCH_HOUR_OPTIONS" :key="hour" :value="hour">
-                        {{ t("eventPlanner.calendar.hourLabel", { hour }) }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div class="grid gap-1">
-                  <Label id="planner-batch-brush-label" for="planner-batch-brush" class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.brush") }}</Label>
-                  <Select id="planner-batch-brush" :model-value="batchBrushId" @update:model-value="batchBrushId = typeof $event === 'string' ? $event : batchBrushId">
-                    <SelectTrigger class="h-8 w-44 text-xs" aria-labelledby="planner-batch-brush-label">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="brush in allBrushes" :key="brush.id" :value="brush.id">
-                        <span class="inline-flex items-center gap-1.5">
-                          <span class="inline-block size-2.5 rounded-full" :style="{ backgroundColor: brush.color }" />
-                          <span class="max-w-32 truncate">{{ brush.name }}</span>
-                        </span>
-                      </SelectItem>
-                      <SelectItem :value="ERASER_TOOL_ID">{{ t("eventPlanner.brushes.eraser") }}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button size="sm" class="h-8" @click="applyBatchFill">
-                  {{ t("eventPlanner.batch.apply") }}
-                </Button>
-              </div>
-              <p class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.hint") }}</p>
             </div>
-            <PlannerCalendar
-              :days="calendarDays"
-              :cells="cells"
-              :brushes="allBrushes"
-              :active-tool="activeTool"
-              @stroke="handleStroke"
-            />
           </template>
-        </CardContent>
-      </Card>
+        </header>
+
+        <EmptyState v-if="calendarDays.length === 0" :icon="LucideCalendarRange" :title="t('eventPlanner.calendar.noEvent')" class="px-4" />
+        <div v-else class="min-w-0 p-4">
+          <PlannerCalendar
+            :days="calendarDays"
+            :cells="cells"
+            :brushes="allBrushes"
+            :active-tool="activeTool"
+            :day-stats="dayStats"
+            :count-from-ms="countFromMs"
+            :now-ms="nowMs"
+            @stroke="handleStroke"
+          />
+        </div>
+      </section>
     </div>
 
     <PlannerBrushDialog
@@ -919,6 +1040,24 @@ function formatInteger(value: number) {
       :editing-brush="editingBrush"
       @update:open="handleBrushDialogOpenChange"
       @save="handleBrushSave"
+    />
+
+    <ConfirmDialog
+      v-model:open="clearDialogOpen"
+      :title="t('eventPlanner.calendar.clearConfirmTitle')"
+      :description="t('eventPlanner.calendar.clearConfirmDescription')"
+      :confirm-label="t('eventPlanner.calendar.clear')"
+      destructive
+      @confirm="clearPlanCells"
+    />
+    <ConfirmDialog
+      :open="brushToRemove != null"
+      :title="t('eventPlanner.brushes.deleteConfirmTitle', { name: brushToRemove?.name ?? '' })"
+      :description="t('eventPlanner.brushes.deleteConfirmDescription', { hours: brushToRemove ? brushUsage.get(brushToRemove.id)?.hours ?? 0 : 0 })"
+      :confirm-label="t('eventPlanner.brushes.delete')"
+      destructive
+      @update:open="(open: boolean) => { if (!open) brushToRemove = null }"
+      @confirm="brushToRemove && removeBrush(brushToRemove.id)"
     />
   </div>
 </template>

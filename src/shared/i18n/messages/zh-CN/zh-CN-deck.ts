@@ -561,12 +561,6 @@ export default {
   "eventPlanner": {
     "title": "活动规划",
     "description": "用时速笔刷在活动日历上安排每小时的打歌计划，并实时对照目标 PT。「笔刷」= 一套卡组+歌曲的每小时 Pt；把它涂在日历上就能算出总 Pt。",
-    "sections": {
-      "setup": {
-        "title": "账号与活动",
-        "description": "选择已绑定账号、区服和活动；连接世界活动可选择章节角色。"
-      }
-    },
     "form": {
       "targetPoint": "目标 PT",
       "targetPointPlaceholder": "例如 1000w、120万、1.5亿",
@@ -581,8 +575,19 @@ export default {
       "plannedPoint": "已规划 PT",
       "remainingPoint": "还差 PT",
       "dailyPoint": "日均需求",
-      "plannedHours": "已规划 {hours} 小时 · 休息 {rest} 小时",
-      "reached": "当前规划已覆盖目标 PT！"
+      "projectedPoint": "规划后预计",
+      "plannedHours": "打歌 {hours} 小时 · 休息 {rest} 小时"
+    },
+    "progress": {
+      "title": "规划进度",
+      "targetMark": "目标",
+      "short": "按现在的规划还差 {remaining} PT。",
+      "over": "规划完成后预计 {projected} PT，比目标多 {surplus}。",
+      "exact": "规划刚好覆盖目标。",
+      "legendCurrent": "当前 PT",
+      "legendPlanned": "已规划",
+      "noTarget": "填写目标 PT 后，这里会显示规划离目标还有多远。",
+      "pastNote": "活动进行中：已经过去的小时不再计入已规划 PT，因为当前 PT 已经包含了它们。"
     },
     "brushes": {
       "title": "时速笔刷",
@@ -593,8 +598,13 @@ export default {
       "perHour": "{points}/时",
       "edit": "编辑笔刷",
       "delete": "删除笔刷",
-      "playsUnit": "周/时",
-      "playsTitle": "每小时周回数",
+      "playsTitle": "每小时周回",
+      "boostShort": "火",
+      "usedHours": "已涂 {hours} 小时",
+      "usage": "已涂 {hours} 小时，共 {points}",
+      "eraserHint": "清掉涂过的格子",
+      "deleteConfirmTitle": "删除笔刷「{name}」？",
+      "deleteConfirmDescription": "日历上用它涂的 {hours} 小时会一起清掉。",
       "boostTitle": "每局消耗的火数",
       "boostOption": "{count} 火 ×{multiplier}",
       "empty": "还没有时速笔刷，点击「新建笔刷」组卡并选歌。"
@@ -638,6 +648,13 @@ export default {
       "title": "活动日历",
       "noEvent": "选择带有开始/结算时间的活动后显示日历。",
       "clear": "清空规划",
+      "clearConfirmTitle": "清空整个日历？",
+      "clearConfirmDescription": "所有涂过的小时都会清掉，笔刷会保留。",
+      "tool": "当前画笔",
+      "toolValue": "画笔：{name}",
+      "dayPoints": "当日 PT",
+      "dayTotal": "日终累计",
+      "reachesTarget": "达标",
       "hourLabel": "{hour} 时",
       "dragHint": "单击填充一格，按住拖动可框选多天 × 多小时的时间段批量填充；用同一笔刷再次框选即为擦除。格内数字为每小时周回数。",
       "touchHint": "轻点填充一格；长按后拖动可框选多天 × 多小时的时间段；横向滑动查看其他小时。用同一笔刷再次涂抹即为擦除。",
@@ -652,10 +669,6 @@ export default {
       "brush": "笔刷",
       "apply": "填充",
       "hint": "将所选日期范围内每天的该时间段（包含首尾小时）填充为所选笔刷；选择擦除可批量清除。"
-    },
-    "toasts": {
-      "remaining": "已规划 {planned} PT，距目标还差 {remaining} PT",
-      "reached": "已规划 {planned} PT，目标已覆盖！"
     },
     "errors": {
       "noResult": "没有算出可用卡组，无法估算单局 PT。请确认该账号已上传数据，并在组卡页检查过滤条件。"

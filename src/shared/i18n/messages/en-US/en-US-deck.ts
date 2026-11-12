@@ -561,12 +561,6 @@ export default {
   "eventPlanner": {
     "title": "Event planner",
     "description": "Paint the event calendar with points-per-hour brushes and track the gap to your target PT in real time. A “brush” is one deck + song and its Pt per hour; painting it onto the calendar adds up the total Pt.",
-    "sections": {
-      "setup": {
-        "title": "Account & Event",
-        "description": "Pick a bound account, the region and the event; World Link events can select a chapter character."
-      }
-    },
     "form": {
       "targetPoint": "Target PT",
       "targetPointPlaceholder": "e.g. 1000w, 120万, 1.5亿",
@@ -581,8 +575,19 @@ export default {
       "plannedPoint": "Planned PT",
       "remainingPoint": "Still missing",
       "dailyPoint": "Daily pace",
-      "plannedHours": "{hours} h planned · {rest} h rest",
-      "reached": "The plan already covers the target PT!"
+      "projectedPoint": "Projected total",
+      "plannedHours": "{hours} h playing · {rest} h rest"
+    },
+    "progress": {
+      "title": "Plan against the target",
+      "targetMark": "Target",
+      "short": "The plan is {remaining} PT short of the target.",
+      "over": "The plan lands at {projected} PT, {surplus} above the target.",
+      "exact": "The plan covers the target exactly.",
+      "legendCurrent": "Current PT",
+      "legendPlanned": "Planned",
+      "noTarget": "Enter a target PT to see how far the plan is from it.",
+      "pastNote": "The event is running: hours already gone no longer count as planned PT, since your current PT includes them."
     },
     "brushes": {
       "title": "Hourly-Rate Brushes",
@@ -593,8 +598,13 @@ export default {
       "perHour": "{points}/h",
       "edit": "Edit brush",
       "delete": "Delete brush",
-      "playsUnit": "loops/h",
       "playsTitle": "Loops per hour",
+      "boostShort": "Boost",
+      "usedHours": "{hours} h painted",
+      "usage": "{hours} h painted, {points} in all",
+      "eraserHint": "Clears painted cells",
+      "deleteConfirmTitle": "Delete the brush “{name}”?",
+      "deleteConfirmDescription": "The {hours} hours painted with it will be cleared from the calendar.",
       "boostTitle": "Boost fires spent per play",
       "boostOption": "{count} fire ×{multiplier}",
       "empty": "No brushes yet — click “New brush” to build a deck and pick a song."
@@ -638,6 +648,13 @@ export default {
       "title": "Event Calendar",
       "noEvent": "Select an event with start/aggregate times to show the calendar.",
       "clear": "Clear plan",
+      "clearConfirmTitle": "Clear the whole calendar?",
+      "clearConfirmDescription": "Every painted hour is cleared; your brushes stay.",
+      "tool": "Current brush",
+      "toolValue": "Brush: {name}",
+      "dayPoints": "Day PT",
+      "dayTotal": "Total by day end",
+      "reachesTarget": "Target met",
       "hourLabel": "{hour}:00",
       "dragHint": "Click to fill one cell, or drag to batch-fill a rectangle of days × hours; selecting with the same brush again erases. Cell numbers are loops per hour.",
       "touchHint": "Tap to fill one cell; press and hold, then drag to select a block of days × hours; swipe sideways to reach other hours. Painting with the same brush again erases.",
@@ -652,10 +669,6 @@ export default {
       "brush": "Brush",
       "apply": "Fill",
       "hint": "Fills the selected daily hour range (inclusive) across the chosen days with the selected brush; pick the eraser to batch-clear."
-    },
-    "toasts": {
-      "remaining": "{planned} PT planned — {remaining} PT still missing",
-      "reached": "{planned} PT planned — target covered!"
     },
     "errors": {
       "noResult": "No usable deck was found, so PT per play cannot be estimated. Make sure the account has uploaded data and check the filters on the deck page."

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { LucideChevronDown, LucideSettings2 } from "lucide-vue-next"
+import { LucideChevronDown } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import CatalogChipsField from "@/shared/components/catalog/CatalogChipsField.vue"
 import type { CatalogFieldOption } from "@/shared/components/catalog/types"
@@ -115,7 +115,7 @@ function setAttrFilters(values: string[]) {
 </script>
 
 <template>
-            <section class="grid min-w-0 grid-cols-1 gap-3 border-t pt-4">
+            <section class="grid min-w-0 grid-cols-1 gap-3 border-t border-border/60 pt-4">
               <button
                 type="button"
                 class="flex min-w-0 w-full items-start justify-between gap-3 rounded-md text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-10"
@@ -125,7 +125,6 @@ function setAttrFilters(values: string[]) {
               >
                     <span class="min-w-0 space-y-1">
                       <span class="flex min-w-0 items-center gap-2 text-sm font-semibold text-foreground">
-                        <LucideSettings2 class="size-3.5 shrink-0" />
                         {{ t("deckRecommend.layers.advanced.title") }}
                       </span>
                       <span class="block text-xs font-normal text-muted-foreground">
@@ -379,7 +378,7 @@ function setAttrFilters(values: string[]) {
                         <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.constraints.description") }}</p>
                       </div>
                       <div class="grid min-w-0 grid-cols-1 gap-3">
-                        <label for="deck-use-current" class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-2.5 text-sm sm:p-3">
+                        <label for="deck-use-current" class="flex items-center justify-between gap-3 text-sm">
                           <span class="min-w-0 space-y-1">
                             <span class="block font-medium">{{ t("deckRecommend.options.constraints.useCurrentDeck") }}</span>
                             <span class="block text-xs leading-5 text-muted-foreground">
@@ -395,7 +394,7 @@ function setAttrFilters(values: string[]) {
                         </label>
 
                         <div v-if="!isCurrentDeckEnabled" class="grid min-w-0 grid-cols-1 gap-3 @3xl:grid-cols-2">
-                          <div class="grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-background/50 p-2.5 sm:p-3">
+                          <div class="grid min-w-0 grid-cols-1 gap-3">
                             <div class="space-y-1">
                               <h4 class="text-sm font-medium">{{ t("deckRecommend.options.constraints.fixedGroup") }}</h4>
                               <p class="text-xs leading-5 text-muted-foreground">
@@ -427,7 +426,7 @@ function setAttrFilters(values: string[]) {
                               />
                             </div>
                           </div>
-                          <div class="grid min-w-0 grid-cols-1 content-start gap-3 rounded-md border bg-background/50 p-2.5 sm:p-3">
+                          <div class="grid min-w-0 grid-cols-1 content-start gap-3">
                             <div class="space-y-1">
                               <h4 class="text-sm font-medium">{{ t("deckRecommend.options.constraints.excludedGroup") }}</h4>
                               <p class="text-xs leading-5 text-muted-foreground">

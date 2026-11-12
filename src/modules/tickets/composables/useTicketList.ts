@@ -1,4 +1,4 @@
-import { computed, onMounted, ref, watch } from "vue"
+import { onMounted, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
 import { useUserStore } from "@/shared/stores/user"
@@ -7,10 +7,8 @@ import type { Ticket } from "@/types/ticket"
 import { usePagedList } from "@/composables/usePagedList"
 import { createPageQuery } from "@/core/http/query"
 import { describeError, type ErrorDescription } from "@/lib/error-utils"
-import {
-  getTicketStatusFilterOptions,
-  type TicketStatusFilter,
-} from "@/modules/tickets/lib/meta"
+import type { TicketStatusFilter } from "@/modules/tickets/lib/meta"
+import { isUserTicketStatusFilter } from "@/modules/tickets/lib/user-ticket"
 import {
   buildTicketListQuery,
   readPageQuery,
@@ -24,10 +22,17 @@ export function useTicketList() {
   const router = useRouter()
   const userStore = useUserStore()
   const statusFilter = ref<TicketStatusFilter>(readStatusQuery(route.query.status))
-  const statusOptions = computed(() => getTicketStatusFilterOptions(t))
   // The last failed load; cleared by the next attempt. The list renders it in
   // place of the rows so a backend failure never looks like "no tickets".
   const loadError = ref<ErrorDescription | null>(null)
+  /**
+   * How many tickets wait for the user's reply, whatever the filter shows:
+   * the `total` of a one-row request, like the sidebar badge. `null` until it
+   * is known (or when that request failed; the list itself is unaffected).
+   */
+  const waitingCount = ref<number | null>(null)
+  let waitingCountRequestId = 0
+
   const {
     loading,
     items: tickets,
@@ -60,10 +65,30 @@ export function useTicketList() {
     onBeforeLoad: () => {
       loadError.value = null
     },
+    onSuccess: (response) => {
+      // The filtered list already carries the figure.
+      if (statusFilter.value === "pending_user" && typeof response.total === "number") {
+        waitingCountRequestId += 1
+        waitingCount.value = response.total
+      }
+    },
     onError: (error) => {
       loadError.value = describeError(error, t("tickets.list.toast.loadFailedFallback"))
     },
   })
+
+  async function loadWaitingCount() {
+    const userId = userStore.userId
+    if (!userId || statusFilter.value === "pending_user") return
+    const requestId = ++waitingCountRequestId
+    try {
+      const response = await getUserTickets(userId, { page: 1, page_size: 1, status: "pending_user" }, { skipErrorToast: true })
+      if (requestId === waitingCountRequestId) waitingCount.value = response.total
+    } catch {
+      // A missing badge is not worth an error: the list reports its own failures.
+      if (requestId === waitingCountRequestId) waitingCount.value = null
+    }
+  }
 
   // Filter and page live in the URL so back/forward and reloads keep them.
   // Local -> URL. Needs no guard: when the route watcher below set the local
@@ -109,18 +134,17 @@ export function useTicketList() {
 
   onMounted(() => {
     void loadTickets()
+    void loadWaitingCount()
   })
 
   function reload() {
     void loadTickets()
+    void loadWaitingCount()
   }
 
-  function openCreateTicket() {
-    void router.push({ name: "tickets.create" })
-  }
-
-  function openTicketDetail(ticketId: string) {
-    void router.push({ name: "tickets.detail", params: { ticketId } })
+  /** Picks a filter chip; anything that is not a filter (a chip toggled off) is ignored. */
+  function setStatusFilter(value: unknown) {
+    if (isUserTicketStatusFilter(value)) statusFilter.value = value
   }
 
   return {
@@ -132,11 +156,10 @@ export function useTicketList() {
     pageSize,
     totalPages,
     statusFilter,
-    statusOptions,
+    waitingCount,
     prevPage,
     nextPage,
     reload,
-    openCreateTicket,
-    openTicketDetail,
+    setStatusFilter,
   }
 }

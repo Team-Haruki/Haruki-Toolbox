@@ -57,3 +57,8 @@ function normalizeRichNameColor(code: string) {
 export function richNameSegmentStyle(segment: RichNameSegment) {
   return segment.color ? { color: segment.color } : undefined
 }
+
+/** A (possibly colour-tagged) player name as plain text, for labels and titles. */
+export function plainNameText(name: string): string {
+  return parseRichNameSegments(name).map((segment) => segment.text).join("")
+}

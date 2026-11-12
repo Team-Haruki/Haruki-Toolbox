@@ -1,32 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import type { AcceptableValue } from "reka-ui"
+import { useLocalStorage } from "@vueuse/core"
 import { useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
-import {
-  ArrowRight,
-  ChevronDown,
-  Flame,
-  List,
-  LucideAlertCircle,
-  LucideCalculator,
-  Percent,
-  SlidersHorizontal,
-  Target,
-} from "lucide-vue-next"
+import { ChevronDown, RefreshCcw, Target } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/components/ui/alert"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -36,299 +15,445 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
+import { Switch } from "@/components/ui/switch"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { formatNumberCN } from "@/lib/number-format"
-import { MusicSelect } from "@/modules/deck-recommend"
-import { readSekaiMasterFile, readSekaiMusicMetas } from "@/shared/sekai/cache"
+import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
+import { MusicSelect, parseEventPlannerPointInput } from "@/modules/deck-recommend"
+import EmptyState from "@/shared/components/EmptyState.vue"
+import PageHeader from "@/shared/components/PageHeader.vue"
+import { readSekaiMusicMetas } from "@/shared/sekai/cache"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import type { SekaiRegion } from "@/types"
+import ScoreControlPlanCard from "../components/score-control/ScoreControlPlanCard.vue"
+import ScoreControlSolutionTable from "../components/score-control/ScoreControlSolutionTable.vue"
 import {
   findScoreControlRanges,
   SCORE_CONTROL_BOOST_MULTIPLIERS,
   SCORE_CONTROL_DEFAULT_MUSIC_ID,
   SCORE_CONTROL_MAX_EVENT_BONUS,
+  SCORE_CONTROL_MAX_WORLD_LINK_EVENT_BONUS,
   selectScoreControlBasicPoint,
   type ScoreControlMusicMeta,
   type ScoreControlRange,
 } from "../lib/score-control"
+import {
+  isIdleRange,
+  planScoreControl,
+  resolveScoreControlPointBounds,
+  sortScoreControlRangesByEase,
+  type ScoreControlSettings,
+} from "../lib/score-control-plan"
 
-type SekaiMusic = {
-  id?: number
-  seq?: number
-  title?: string
-  pronunciation?: string
-  assetbundleName?: string
+const DEFAULT_BONUS_FLOOR = 100
+const BONUS_LIMIT = 1000
+const MAX_GAMES_OPTIONS = [3, 5, 10, 20] as const
+const DEFAULT_MAX_GAMES = 5
+const ALL_BOOSTS = Object.keys(SCORE_CONTROL_BOOST_MULTIPLIERS).map(Number).sort((a, b) => a - b)
+
+type EntryMode = "gap" | "range"
+
+type StoredSettings = {
+  region: SekaiRegion
+  musicId: string
+  entryMode: EntryMode
+  minBonus: number
+  maxBonus: number
+  worldLink: boolean
+  boosts: number[]
+  maxGames: number
 }
-
-type MusicOption = {
-  id: number
-  value: string
-  label: string
-  seq: number | null
-  pronunciation: string | null
-  assetbundleName: string | null
-}
-
-const POINT_CALCULATOR_DEFAULT_RESULT_LIMIT = 10
-const POINT_CALCULATOR_DEFAULT_BONUS_FLOOR = 100
-const POINT_CALCULATOR_MIN_BONUS_LIMIT = 0
-const POINT_CALCULATOR_MAX_BONUS_LIMIT = 1000
 
 const { t } = useI18n()
 const router = useRouter()
 const sekaiDataStore = useSekaiDataStore()
 
-const selectedRegion = ref<SekaiRegion>("jp")
-const selectedMusicId = ref(String(SCORE_CONTROL_DEFAULT_MUSIC_ID))
-const inputPt = ref<number | undefined>(undefined)
-const selectedBoost = ref("all")
-const maxResults = ref<number | undefined>(POINT_CALCULATOR_DEFAULT_RESULT_LIMIT)
-const customBonusFloor = ref<number | undefined>(POINT_CALCULATOR_DEFAULT_BONUS_FLOOR)
-const customBonusCap = ref<number | undefined>(SCORE_CONTROL_MAX_EVENT_BONUS)
+// How the player plays is the same from one visit to the next; the pt they
+// are chasing is not, so only the conditions are remembered.
+const settings = useLocalStorage<StoredSettings>("haruki:score-control:settings", {
+  region: "jp",
+  musicId: String(SCORE_CONTROL_DEFAULT_MUSIC_ID),
+  entryMode: "gap",
+  minBonus: DEFAULT_BONUS_FLOOR,
+  maxBonus: SCORE_CONTROL_MAX_EVENT_BONUS,
+  worldLink: false,
+  boosts: ALL_BOOSTS,
+  maxGames: DEFAULT_MAX_GAMES,
+}, { mergeDefaults: true })
+
+sanitizeSettings()
+
+function sanitizeSettings() {
+  const value = settings.value
+  if (!SEKAI_REGION_OPTIONS.some((option) => option.value === value.region)) {
+    value.region = "jp"
+  }
+  if (value.entryMode !== "gap" && value.entryMode !== "range") {
+    value.entryMode = "gap"
+  }
+  value.boosts = Array.isArray(value.boosts)
+    ? ALL_BOOSTS.filter((boost) => value.boosts.includes(boost))
+    : ALL_BOOSTS
+  if (!MAX_GAMES_OPTIONS.includes(value.maxGames as (typeof MAX_GAMES_OPTIONS)[number])) {
+    value.maxGames = DEFAULT_MAX_GAMES
+  }
+  if (!isBonus(value.minBonus) || !isBonus(value.maxBonus) || value.minBonus > value.maxBonus) {
+    value.minBonus = DEFAULT_BONUS_FLOOR
+    value.maxBonus = value.worldLink ? SCORE_CONTROL_MAX_WORLD_LINK_EVENT_BONUS : SCORE_CONTROL_MAX_EVENT_BONUS
+  }
+}
+
+function isBonus(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= BONUS_LIMIT
+}
+
+// --- Song data ---------------------------------------------------------------
+
 const loading = ref(false)
-const advancedOpen = ref(false)
 const loadError = ref<string | null>(null)
-const musicOptions = ref<MusicOption[]>([])
 const musicMetas = ref<ScoreControlMusicMeta[]>([])
-const results = ref<ScoreControlRange[]>([])
-const calculatedOnce = ref(false)
 
-const boostOptions = computed(() => [
-  { value: "all", label: t("tools.pointCalculator.fields.boostIndexAll") },
-  ...Object.entries(SCORE_CONTROL_BOOST_MULTIPLIERS).map(([boost, multiplier]) => ({
-    value: boost,
-    label: t("tools.pointCalculator.fields.boostIndexOption", { index: boost, rate: multiplier }),
-  })),
-])
-const currentRegionState = computed(() => sekaiDataStore.regionStates[selectedRegion.value])
-const selectedBasicPoint = computed(() =>
-  selectScoreControlBasicPoint(selectedMusicId.value, musicMetas.value),
-)
-const minEventBonus = computed(() => normalizeBonusBound(customBonusFloor.value, POINT_CALCULATOR_DEFAULT_BONUS_FLOOR))
-const maxEventBonus = computed(() => normalizeBonusBound(customBonusCap.value, SCORE_CONTROL_MAX_EVENT_BONUS))
-const maxResultsInvalid = computed(() => {
-  if (maxResults.value == null || String(maxResults.value).trim() === "") {
-    return false
-  }
+const basicPoint = computed(() => selectScoreControlBasicPoint(settings.value.musicId, musicMetas.value))
 
-  return !Number.isInteger(Number(maxResults.value)) || Number(maxResults.value) <= 0
-})
-const customBonusCapInvalid = computed(() => {
-  if (customBonusCap.value == null || String(customBonusCap.value).trim() === "") {
-    return false
-  }
-
-  const parsed = Number(customBonusCap.value)
-  return !Number.isInteger(parsed)
-    || parsed < POINT_CALCULATOR_MIN_BONUS_LIMIT
-    || parsed > POINT_CALCULATOR_MAX_BONUS_LIMIT
-    || parsed < minEventBonus.value
-})
-const customBonusFloorInvalid = computed(() => {
-  if (customBonusFloor.value == null || String(customBonusFloor.value).trim() === "") {
-    return false
-  }
-
-  const parsed = Number(customBonusFloor.value)
-  return !Number.isInteger(parsed)
-    || parsed < POINT_CALCULATOR_MIN_BONUS_LIMIT
-    || parsed > POINT_CALCULATOR_MAX_BONUS_LIMIT
-    || parsed > maxEventBonus.value
-})
-const targetPointInvalid = computed(() => {
-  if (inputPt.value == null || String(inputPt.value).trim() === "") {
-    return false
-  }
-
-  return !Number.isInteger(Number(inputPt.value)) || Number(inputPt.value) <= 0
-})
-const canCalculate = computed(() =>
-  !loading.value
-  && !targetPointInvalid.value
-  && !maxResultsInvalid.value
-  && !customBonusFloorInvalid.value
-  && !customBonusCapInvalid.value
-  && Number.isInteger(Number(inputPt.value))
-  && Number(inputPt.value) > 0
-  && selectedBasicPoint.value != null,
-)
-watch(
-  selectedRegion,
-  () => {
-    void loadScoreControlData()
-  },
-  { immediate: true },
-)
+watch(() => settings.value.region, () => {
+  void loadScoreControlData()
+}, { immediate: true })
 
 async function loadScoreControlData() {
+  const region = settings.value.region
   loading.value = true
   loadError.value = null
   try {
-    if (!currentRegionState.value.masterFetchVersion || !currentRegionState.value.files.includes("musics")) {
-      await sekaiDataStore.ensureRegionData(selectedRegion.value, { files: ["musics"] })
+    const state = sekaiDataStore.regionStates[region]
+    if (!state.masterFetchVersion || !state.files.includes("musics")) {
+      await sekaiDataStore.ensureRegionData(region, { files: ["musics"] })
     }
-    const [musics, metas] = await Promise.all([
-      readSekaiMasterFile<SekaiMusic[]>(selectedRegion.value, "musics"),
-      readSekaiMusicMetas<ScoreControlMusicMeta[]>(selectedRegion.value),
-    ])
-    musicOptions.value = buildMusicOptions(musics)
-    musicMetas.value = Array.isArray(metas) ? metas : []
-    if (!musicOptions.value.some((option) => option.value === selectedMusicId.value)) {
-      selectedMusicId.value = musicOptions.value.some((option) => option.id === SCORE_CONTROL_DEFAULT_MUSIC_ID)
-        ? String(SCORE_CONTROL_DEFAULT_MUSIC_ID)
-        : musicOptions.value[0]?.value ?? ""
+    const metas = await readSekaiMusicMetas<ScoreControlMusicMeta[]>(region)
+    if (settings.value.region === region) {
+      musicMetas.value = Array.isArray(metas) ? metas : []
     }
   } catch (error) {
-    musicOptions.value = []
-    musicMetas.value = []
-    loadError.value = error instanceof Error ? error.message : String(error)
+    if (settings.value.region === region) {
+      musicMetas.value = []
+      loadError.value = error instanceof Error ? error.message : String(error)
+    }
   } finally {
-    loading.value = false
+    if (settings.value.region === region) {
+      loading.value = false
+    }
   }
 }
 
 function updateRegion(value: AcceptableValue) {
-  if (typeof value === "string" && isSekaiRegionValue(value)) {
-    selectedRegion.value = value
+  if (typeof value === "string" && SEKAI_REGION_OPTIONS.some((option) => option.value === value)) {
+    settings.value.region = value as SekaiRegion
   }
 }
 
 function updateMusic(value: string | null) {
-  selectedMusicId.value = value || ""
-  results.value = []
-  calculatedOnce.value = false
+  settings.value.musicId = value || ""
 }
 
-function updateBoost(value: AcceptableValue) {
-  selectedBoost.value = typeof value === "string" ? value : "all"
+// --- What to earn ------------------------------------------------------------
+
+const gapInput = ref("")
+const currentInput = ref("")
+const targetInput = ref("")
+
+const gapEntry = computed(() => parseEventPlannerPointInput(gapInput.value))
+const currentEntry = computed(() => parseEventPlannerPointInput(currentInput.value))
+const targetEntry = computed(() => parseEventPlannerPointInput(targetInput.value))
+
+/** Shown when the text was shorthand ("2.3w"), so the player sees the number being used. */
+function parsedHint(raw: string, value: number | null) {
+  return value != null && !/^\d+$/.test(raw.trim()) ? t("tools.pointCalculator.entry.parsed", { value: formatNumberCN(value) }) : null
 }
 
-function calcResult(): void {
-  const targetPoint = Number(inputPt.value)
-  const basicPoint = selectedBasicPoint.value
-  if (!Number.isInteger(targetPoint) || targetPoint <= 0 || !basicPoint) {
-    calculatedOnce.value = false
-    results.value = []
-    return
+function updateEntryMode(value: AcceptableValue) {
+  if (value === "gap" || value === "range") {
+    settings.value.entryMode = value
   }
+}
 
-  results.value = findScoreControlRanges({
-    targetPoint,
-    basicPoint: basicPoint.basicPoint,
-    worldLink: false,
-    boost: selectedBoost.value === "all" ? null : Number(selectedBoost.value),
-    minEventBonus: minEventBonus.value,
-    maxEventBonus: maxEventBonus.value,
-    limit: maxResults.value == null || maxResults.value <= 0
-      ? POINT_CALCULATOR_DEFAULT_RESULT_LIMIT
-      : Number(maxResults.value),
+/** The two totals to plan between; with only a gap entered it starts from zero and no running total is shown. */
+const request = computed(() => {
+  if (settings.value.entryMode === "gap") {
+    const gap = gapEntry.value.value
+    return gap != null && gap > 0 ? { current: 0, target: gap, start: null as number | null } : null
+  }
+  const current = currentEntry.value.value
+  const target = targetEntry.value.value
+  return current != null && target != null ? { current, target, start: current as number | null } : null
+})
+
+// --- Conditions --------------------------------------------------------------
+
+const conditionsOpen = ref(typeof window === "undefined" || window.matchMedia("(min-width: 1024px)").matches)
+
+const bonusFloorInput = ref<number | string>(settings.value.minBonus)
+const bonusCapInput = ref<number | string>(settings.value.maxBonus)
+
+const bonusRangeInvalid = computed(() => {
+  const floor = Number(bonusFloorInput.value)
+  const cap = Number(bonusCapInput.value)
+  return String(bonusFloorInput.value).trim() === ""
+    || String(bonusCapInput.value).trim() === ""
+    || !isBonus(floor)
+    || !isBonus(cap)
+    || floor > cap
+})
+
+watch([bonusFloorInput, bonusCapInput], () => {
+  if (!bonusRangeInvalid.value) {
+    settings.value.minBonus = Number(bonusFloorInput.value)
+    settings.value.maxBonus = Number(bonusCapInput.value)
+  }
+})
+
+function updateWorldLink(value: boolean) {
+  settings.value.worldLink = value
+  // Move the cap with the event type unless the player set their own.
+  if (value && Number(bonusCapInput.value) === SCORE_CONTROL_MAX_EVENT_BONUS) {
+    bonusCapInput.value = SCORE_CONTROL_MAX_WORLD_LINK_EVENT_BONUS
+  } else if (!value && Number(bonusCapInput.value) === SCORE_CONTROL_MAX_WORLD_LINK_EVENT_BONUS) {
+    bonusCapInput.value = SCORE_CONTROL_MAX_EVENT_BONUS
+  }
+}
+
+const boostValues = computed(() => settings.value.boosts.map(String))
+
+function updateBoosts(value: AcceptableValue | AcceptableValue[] | undefined) {
+  const picked = new Set((Array.isArray(value) ? value : []).map(Number))
+  settings.value.boosts = ALL_BOOSTS.filter((boost) => picked.has(boost))
+}
+
+function updateMaxGames(value: AcceptableValue) {
+  const parsed = Number(value)
+  if (MAX_GAMES_OPTIONS.includes(parsed as (typeof MAX_GAMES_OPTIONS)[number])) {
+    settings.value.maxGames = parsed
+  }
+}
+
+const boostSummary = computed(() => {
+  const boosts = settings.value.boosts
+  if (boosts.length === ALL_BOOSTS.length) {
+    return t("tools.pointCalculator.conditions.boostsAll")
+  }
+  return t("tools.pointCalculator.conditions.boostsSome", { list: boosts.join("/") || "-" })
+})
+
+const conditionsSummary = computed(() => t("tools.pointCalculator.conditions.summary", {
+  min: settings.value.minBonus,
+  max: settings.value.maxBonus,
+  boosts: boostSummary.value,
+  games: settings.value.maxGames,
+}))
+
+// --- Results -----------------------------------------------------------------
+
+const controlSettings = computed<ScoreControlSettings | null>(() => {
+  const basic = basicPoint.value
+  if (!basic || bonusRangeInvalid.value || settings.value.boosts.length === 0) {
+    return null
+  }
+  return {
+    basicPoint: basic.basicPoint,
+    minEventBonus: settings.value.minBonus,
+    maxEventBonus: settings.value.maxBonus,
+    boosts: settings.value.boosts,
+  }
+})
+
+const pointBounds = computed(() => (controlSettings.value ? resolveScoreControlPointBounds(controlSettings.value) : null))
+
+const planResult = computed(() => {
+  const value = request.value
+  const control = controlSettings.value
+  if (!value || !control) {
+    return null
+  }
+  return planScoreControl({
+    ...control,
+    currentPoint: value.current,
+    targetPoint: value.target,
+    maxGames: settings.value.maxGames,
   })
-  calculatedOnce.value = true
+})
+
+/** Every single game that earns the gap, easiest first. */
+const singleRanges = computed<ScoreControlRange[]>(() => {
+  const result = planResult.value
+  const control = controlSettings.value
+  if (!result || !control || result.gap <= 0) {
+    return []
+  }
+  const allowed = new Set(control.boosts)
+  return sortScoreControlRangesByEase(
+    findScoreControlRanges({
+      targetPoint: result.gap,
+      basicPoint: control.basicPoint,
+      minEventBonus: control.minEventBonus,
+      maxEventBonus: control.maxEventBonus,
+      limit: 0,
+    }).filter((range) => allowed.has(range.boost)),
+  )
+})
+
+/** Where to play up to before coming back, when the gap is still too wide and both totals are known. */
+const resumePoint = computed(() => {
+  const result = planResult.value
+  const start = request.value?.start
+  return result?.status === "tooFar" && start != null && request.value
+    ? Math.max(start, request.value.target - result.reach)
+    : null
+})
+
+const resultNote = computed(() => {
+  const result = planResult.value
+  if (!result) {
+    return null
+  }
+  const named = { gap: formatNumberCN(Math.abs(result.gap)) }
+  switch (result.status) {
+    case "ok":
+      if (singleRanges.value.length === 0) {
+        return t("tools.pointCalculator.result.splitNote", {
+          ...named,
+          min: formatNumberCN(pointBounds.value?.min ?? 0),
+          max: formatNumberCN(pointBounds.value?.max ?? 0),
+        })
+      }
+      // One game can do it; say whether that game is free or needs a precise score.
+      return t(
+        singleRanges.value.some(isIdleRange) ? "tools.pointCalculator.result.singleNote" : "tools.pointCalculator.result.singleScoreNote",
+        { count: singleRanges.value.length },
+      )
+    case "reached":
+      return t("tools.pointCalculator.result.status.reached")
+    case "overshot":
+      return t("tools.pointCalculator.result.status.overshot", named)
+    case "tooClose":
+      return t("tools.pointCalculator.result.status.tooClose", { ...named, min: formatNumberCN(result.minPoint) })
+    case "tooFar": {
+      const note = t("tools.pointCalculator.result.status.tooFar", {
+        ...named,
+        games: settings.value.maxGames,
+        reach: formatNumberCN(result.reach),
+      })
+      return resumePoint.value != null
+        ? note + t("tools.pointCalculator.result.status.tooFarTarget", { value: formatNumberCN(resumePoint.value) })
+        : note
+    }
+    default:
+      return t("tools.pointCalculator.result.status.none", named)
+  }
+})
+
+const nextMaxGames = computed(() => {
+  const result = planResult.value
+  if (result?.status !== "tooFar") {
+    return null
+  }
+  const perGame = result.reach / settings.value.maxGames
+  return MAX_GAMES_OPTIONS.find((count) => count > settings.value.maxGames && count * perGame >= result.gap) ?? null
+})
+
+const canLowerFloor = computed(() => planResult.value?.status === "tooClose" && settings.value.minBonus > 0)
+
+function lowerBonusFloor() {
+  bonusFloorInput.value = 0
 }
 
-function goToDeckRecommend(row: ScoreControlRange) {
-  if (row.eventBonus <= 0) {
-    return
-  }
-
+function goToDeckRecommend(range: ScoreControlRange) {
   void router.push({
     path: "/deck-recommend",
     query: {
       source: "score-control",
       mode: "bonus",
-      dataRegion: selectedRegion.value,
+      dataRegion: settings.value.region,
       liveType: "solo",
-      musicId: selectedMusicId.value,
-      musicDifficulty: selectedBasicPoint.value?.difficulty ?? "master",
-      bonusTargets: String(row.eventBonus),
-      boost: String(row.boost),
+      musicId: settings.value.musicId,
+      musicDifficulty: basicPoint.value?.difficulty ?? "master",
+      bonusTargets: String(range.eventBonus),
+      boost: String(range.boost),
     },
   })
-}
-
-function buildMusicOptions(items: SekaiMusic[] | null): MusicOption[] {
-  return (items ?? [])
-    .map((item) => {
-      const id = normalizePositiveNumber(item.id)
-      if (!id) {
-        return null
-      }
-
-      return {
-        id,
-        value: String(id),
-        label: normalizeText(item.title) ?? `#${id}`,
-        seq: normalizePositiveNumber(item.seq),
-        pronunciation: normalizeText(item.pronunciation),
-        assetbundleName: normalizeText(item.assetbundleName),
-      }
-    })
-    .filter((item): item is MusicOption => item != null)
-    .sort((a, b) => (a.seq ?? a.id) - (b.seq ?? b.id))
-}
-
-function normalizePositiveNumber(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null
-}
-
-function normalizeText(value: unknown): string | null {
-  if (typeof value !== "string") {
-    return null
-  }
-
-  const trimmed = value.trim()
-  return trimmed ? trimmed : null
-}
-
-function isSekaiRegionValue(value: string): value is SekaiRegion {
-  return SEKAI_REGION_OPTIONS.some((option) => option.value === value)
-}
-
-function formatScore(value: number) {
-  return formatNumberCN(value, "0")
-}
-
-function normalizeBonusBound(value: unknown, fallback: number) {
-  if (value == null || String(value).trim() === "") {
-    return fallback
-  }
-
-  const parsed = Number(value)
-  return Number.isInteger(parsed)
-    && parsed >= POINT_CALCULATOR_MIN_BONUS_LIMIT
-    && parsed <= POINT_CALCULATOR_MAX_BONUS_LIMIT
-    ? parsed
-    : fallback
 }
 </script>
 
 <template>
-  <div class="flex w-full flex-1 items-center justify-center px-0 py-4">
-    <div class="mx-auto w-full max-w-5xl space-y-4">
-      <Alert>
-        <LucideAlertCircle class="h-4 w-4" />
-        <AlertTitle>{{ t("tools.pointCalculator.tips.title") }}</AlertTitle>
-        <AlertDescription class="space-y-1 leading-6">
-          <p>{{ t("tools.pointCalculator.tips.boostConfig") }}</p>
-          <p>{{ t("tools.pointCalculator.tips.deckRecommend") }}</p>
-        </AlertDescription>
-      </Alert>
+  <div class="flex w-full flex-1 flex-col items-center px-1 py-2 sm:px-0 sm:py-4">
+    <div class="mx-auto grid w-full max-w-6xl gap-4">
+      <PageHeader :title="t('tools.pointCalculator.title')" :description="t('tools.pointCalculator.description')" />
 
-      <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-        <Card class="self-start">
-          <CardHeader>
-            <CardTitle as="h1" class="flex flex-wrap items-center gap-2 text-lg">
-              <LucideCalculator class="size-5" />
-              {{ t("tools.pointCalculator.title") }}
-            </CardTitle>
-            <CardDescription>{{ t("tools.pointCalculator.description") }}</CardDescription>
-          </CardHeader>
-          <CardContent class="space-y-4">
-            <!-- Primary inputs: region context + the song and target Pt that define the problem. -->
-            <div class="grid min-w-0 grid-cols-1 gap-2">
-              <Label id="point-calculator-region-label" for="point-calculator-region">{{ t("tools.pointCalculator.fields.region") }}</Label>
-              <Select id="point-calculator-region" :model-value="selectedRegion" :disabled="loading" @update:model-value="updateRegion">
-                <SelectTrigger class="w-full" aria-labelledby="point-calculator-region-label">
+      <div class="grid items-start gap-4 lg:grid-cols-[23rem_minmax(0,1fr)]">
+        <!-- Inputs: what to earn, on which song, under which conditions -->
+        <section class="divide-y divide-border/60 rounded-xl border bg-card lg:sticky lg:top-4" data-testid="score-control-form">
+          <div class="grid gap-3 p-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h2 class="text-sm font-semibold">{{ t("tools.pointCalculator.entry.label") }}</h2>
+              <Tabs :model-value="settings.entryMode" @update:model-value="updateEntryMode">
+                <TabsList class="h-8">
+                  <TabsTrigger value="gap" class="px-2.5 text-xs">{{ t("tools.pointCalculator.entry.gapTab") }}</TabsTrigger>
+                  <TabsTrigger value="range" class="px-2.5 text-xs">{{ t("tools.pointCalculator.entry.rangeTab") }}</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+
+            <div v-if="settings.entryMode === 'gap'" class="grid gap-1.5">
+              <Label for="score-control-gap" class="text-xs text-muted-foreground">{{ t("tools.pointCalculator.entry.gap") }}</Label>
+              <Input
+                id="score-control-gap"
+                v-model="gapInput"
+                class="h-11 text-base font-semibold tabular-nums"
+                inputmode="numeric"
+                autocomplete="off"
+                :aria-invalid="gapEntry.invalid || undefined"
+                :placeholder="t('tools.pointCalculator.entry.gapPlaceholder')"
+              />
+              <p v-if="gapEntry.invalid" class="text-xs text-destructive" role="alert">{{ t("tools.pointCalculator.entry.invalid") }}</p>
+              <p v-else-if="parsedHint(gapInput, gapEntry.value)" class="text-xs text-muted-foreground">{{ parsedHint(gapInput, gapEntry.value) }}</p>
+            </div>
+
+            <div v-else class="grid grid-cols-2 gap-3">
+              <div class="grid content-start gap-1.5">
+                <Label for="score-control-current" class="text-xs text-muted-foreground">{{ t("tools.pointCalculator.entry.current") }}</Label>
+                <Input
+                  id="score-control-current"
+                  v-model="currentInput"
+                  class="h-10 font-semibold tabular-nums"
+                  inputmode="numeric"
+                  autocomplete="off"
+                  :aria-invalid="currentEntry.invalid || undefined"
+                  :placeholder="t('tools.pointCalculator.entry.currentPlaceholder')"
+                />
+                <p v-if="parsedHint(currentInput, currentEntry.value)" class="text-xs text-muted-foreground">{{ parsedHint(currentInput, currentEntry.value) }}</p>
+              </div>
+              <div class="grid content-start gap-1.5">
+                <Label for="score-control-target" class="text-xs text-muted-foreground">{{ t("tools.pointCalculator.entry.target") }}</Label>
+                <Input
+                  id="score-control-target"
+                  v-model="targetInput"
+                  class="h-10 font-semibold tabular-nums"
+                  inputmode="numeric"
+                  autocomplete="off"
+                  :aria-invalid="targetEntry.invalid || undefined"
+                  :placeholder="t('tools.pointCalculator.entry.targetPlaceholder')"
+                />
+                <p v-if="parsedHint(targetInput, targetEntry.value)" class="text-xs text-muted-foreground">{{ parsedHint(targetInput, targetEntry.value) }}</p>
+              </div>
+              <p v-if="currentEntry.invalid || targetEntry.invalid" class="col-span-2 text-xs text-destructive" role="alert">
+                {{ t("tools.pointCalculator.entry.invalid") }}
+              </p>
+            </div>
+          </div>
+
+          <div class="grid gap-3 p-4">
+            <div class="flex items-center justify-between gap-3">
+              <h2 class="text-sm font-semibold">{{ t("tools.pointCalculator.song.label") }}</h2>
+              <Select :model-value="settings.region" :disabled="loading" :aria-label="t('tools.pointCalculator.song.region')" @update:model-value="updateRegion">
+                <SelectTrigger class="h-8 w-28 text-xs" :aria-label="t('tools.pointCalculator.song.region')">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -338,227 +463,185 @@ function normalizeBonusBound(value: unknown, fallback: number) {
                 </SelectContent>
               </Select>
             </div>
-
-            <div class="grid min-w-0 grid-cols-1 gap-2">
-              <p class="text-sm font-medium">{{ t("tools.pointCalculator.fields.music") }}</p>
-              <MusicSelect
-                :model-value="selectedMusicId"
-                :region="selectedRegion"
-                :disabled="loading"
-                hide-difficulty
-                @update:model-value="updateMusic"
-              />
-              <!-- Derived basic Pt is the key intermediate — surface it inline instead of a separate meta box. -->
-              <p v-if="loadError" class="text-xs text-destructive">{{ loadError }}</p>
-              <p v-else-if="selectedBasicPoint" class="text-xs text-muted-foreground">
-                {{ t("tools.pointCalculator.meta.basicPoint", { value: selectedBasicPoint.basicPoint }) }}
-              </p>
-              <p v-else-if="!loading" class="text-xs text-destructive">
-                {{ t("tools.pointCalculator.meta.missingBasicPoint") }}
-              </p>
+            <MusicSelect
+              :model-value="settings.musicId"
+              :region="settings.region"
+              :disabled="loading"
+              hide-difficulty
+              @update:model-value="updateMusic"
+            />
+            <div v-if="loadError" class="flex flex-wrap items-center gap-2 text-xs text-destructive">
+              <span class="min-w-0 [overflow-wrap:anywhere]">{{ loadError }}</span>
+              <Button type="button" variant="outline" size="sm" class="h-7" @click="loadScoreControlData">
+                <RefreshCcw class="size-3.5" />
+                {{ t("tools.pointCalculator.actions.retry") }}
+              </Button>
             </div>
+            <p v-else-if="basicPoint" class="text-xs text-muted-foreground">
+              {{ t("tools.pointCalculator.song.basicPoint", { value: basicPoint.basicPoint }) }}
+            </p>
+            <p v-else-if="!loading" class="text-xs text-destructive">{{ t("tools.pointCalculator.song.missingBasicPoint") }}</p>
+          </div>
 
-            <div class="grid min-w-0 grid-cols-1 gap-2">
-              <Label for="score-control-target-pt" class="text-sm font-medium">
-                {{ t("tools.pointCalculator.fields.targetPt") }}
-              </Label>
-              <div class="relative min-w-0 w-full items-center">
-                <Input
-                  id="score-control-target-pt"
-                  v-model.number="inputPt"
-                  class="h-11 pl-10 text-base font-semibold tabular-nums"
-                  type="number"
-                  min="1"
-                  inputmode="numeric"
-                  :aria-invalid="targetPointInvalid || undefined"
-                  :placeholder="t('tools.pointCalculator.fields.targetPtPlaceholder')"
-                  @keydown.enter="calcResult"
-                />
-                <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2.5">
-                  <Target class="size-5 text-primary" />
-                </span>
-              </div>
-              <!-- Say why the button is off instead of silently accepting a negative/fractional target. -->
-              <p v-if="targetPointInvalid" class="text-xs text-destructive" role="alert">
-                {{ t("tools.pointCalculator.fields.targetPtInvalid") }}
-              </p>
-            </div>
-
-            <!-- Advanced options: sensible defaults, folded away so the default view stays "song → target → calculate". -->
-            <div class="rounded-md border">
-              <button
-                type="button"
-                class="flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent/50"
-                :aria-expanded="advancedOpen"
-                @click="advancedOpen = !advancedOpen"
-              >
-                <span class="flex items-center gap-2">
-                  <SlidersHorizontal class="size-4 text-muted-foreground" />
-                  {{ t("tools.pointCalculator.fields.advanced") }}
-                </span>
-                <ChevronDown class="size-4 text-muted-foreground transition-transform" :class="advancedOpen ? 'rotate-180' : ''" />
-              </button>
-              <div v-show="advancedOpen" class="grid min-w-0 grid-cols-1 gap-4 border-t p-3">
-                <div class="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2">
-                  <div class="grid min-w-0 grid-cols-1 gap-2">
-                    <Label id="point-calculator-boost-label" for="point-calculator-boost">{{ t("tools.pointCalculator.fields.boostIndex") }}</Label>
-                    <div class="relative min-w-0 w-full items-center">
-                      <Select id="point-calculator-boost" :model-value="selectedBoost" @update:model-value="updateBoost">
-                        <SelectTrigger class="w-full pl-10" aria-labelledby="point-calculator-boost-label">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem v-for="option in boostOptions" :key="option.value" :value="option.value">
-                            {{ option.label }}
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2 pointer-events-none">
-                        <Flame class="size-4 text-muted-foreground" />
-                      </span>
-                    </div>
-                  </div>
-
-                  <div class="grid min-w-0 grid-cols-1 gap-2">
-                    <Label for="point-calculator-max-results">{{ t("tools.pointCalculator.fields.maxResults") }}</Label>
-                    <div class="relative min-w-0 w-full items-center">
-                      <Input
-                        id="point-calculator-max-results"
-                        v-model.number="maxResults"
-                        class="pl-10"
-                        type="number"
-                        min="1"
-                        inputmode="numeric"
-                        :aria-invalid="maxResultsInvalid || undefined"
-                        :placeholder="t('tools.pointCalculator.fields.maxResultsPlaceholder')"
-                      />
-                      <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                        <List class="size-4 text-muted-foreground" />
-                      </span>
-                    </div>
-                  </div>
+          <div>
+            <button
+              type="button"
+              class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-accent/50 focus-visible:bg-accent/50 focus-visible:outline-none"
+              :aria-expanded="conditionsOpen"
+              aria-controls="score-control-conditions"
+              @click="conditionsOpen = !conditionsOpen"
+            >
+              <span class="min-w-0 flex-1">
+                <span class="block text-sm font-semibold">{{ t("tools.pointCalculator.conditions.title") }}</span>
+                <span v-if="!conditionsOpen" class="block text-xs text-muted-foreground">{{ conditionsSummary }}</span>
+              </span>
+              <ChevronDown :class="['size-4 shrink-0 text-muted-foreground transition-transform', conditionsOpen ? 'rotate-180' : '']" />
+            </button>
+            <div v-show="conditionsOpen" id="score-control-conditions" class="grid gap-4 px-4 pb-4">
+              <div class="grid gap-1.5">
+                <p class="text-sm font-medium">{{ t("tools.pointCalculator.conditions.bonusRange") }}</p>
+                <p class="text-xs text-muted-foreground">{{ t("tools.pointCalculator.conditions.bonusRangeHelp") }}</p>
+                <div class="flex items-center gap-2">
+                  <Input
+                    v-model.number="bonusFloorInput"
+                    class="min-w-0 tabular-nums"
+                    type="number"
+                    min="0"
+                    :max="BONUS_LIMIT"
+                    inputmode="numeric"
+                    :aria-invalid="bonusRangeInvalid || undefined"
+                    :aria-label="t('tools.pointCalculator.conditions.bonusMin')"
+                  />
+                  <span class="shrink-0 text-muted-foreground">–</span>
+                  <Input
+                    v-model.number="bonusCapInput"
+                    class="min-w-0 tabular-nums"
+                    type="number"
+                    min="0"
+                    :max="BONUS_LIMIT"
+                    inputmode="numeric"
+                    :aria-invalid="bonusRangeInvalid || undefined"
+                    :aria-label="t('tools.pointCalculator.conditions.bonusMax')"
+                  />
+                  <span class="shrink-0 text-sm text-muted-foreground">%</span>
                 </div>
-
-                <div class="grid min-w-0 grid-cols-1 gap-2">
-                  <div class="space-y-0.5">
-                    <p class="text-sm font-medium">{{ t("tools.pointCalculator.fields.bonusRange") }}</p>
-                    <p class="text-xs leading-5 text-muted-foreground">
-                      {{ t("tools.pointCalculator.fields.bonusRangeHelp") }}
-                    </p>
-                  </div>
-                  <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <div class="relative min-w-0 w-full items-center">
-                      <Input
-                        v-model.number="customBonusFloor"
-                        class="pl-10"
-                        type="number"
-                        :min="POINT_CALCULATOR_MIN_BONUS_LIMIT"
-                        :max="POINT_CALCULATOR_MAX_BONUS_LIMIT"
-                        inputmode="numeric"
-                        :aria-invalid="customBonusFloorInvalid || undefined"
-                        :placeholder="t('tools.pointCalculator.fields.customBonusFloorPlaceholder')"
-                        :aria-label="t('tools.pointCalculator.fields.customBonusFloorPlaceholder')"
-                      />
-                      <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                        <Percent class="size-4 text-muted-foreground" />
-                      </span>
-                    </div>
-                    <span class="hidden shrink-0 text-muted-foreground sm:inline">-</span>
-                    <div class="relative min-w-0 w-full items-center">
-                      <Input
-                        v-model.number="customBonusCap"
-                        class="pl-10"
-                        type="number"
-                        :min="POINT_CALCULATOR_MIN_BONUS_LIMIT"
-                        :max="POINT_CALCULATOR_MAX_BONUS_LIMIT"
-                        inputmode="numeric"
-                        :aria-invalid="customBonusCapInvalid || undefined"
-                        :placeholder="t('tools.pointCalculator.fields.customBonusCapPlaceholder')"
-                        :aria-label="t('tools.pointCalculator.fields.customBonusCapPlaceholder')"
-                      />
-                      <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                        <Percent class="size-4 text-muted-foreground" />
-                      </span>
-                    </div>
-                  </div>
-                  <p v-if="customBonusFloorInvalid || customBonusCapInvalid" class="text-xs text-destructive">
-                    {{ t("tools.pointCalculator.fields.bonusRangeInvalid") }}
-                  </p>
+                <p v-if="bonusRangeInvalid" class="text-xs text-destructive" role="alert">
+                  {{ t("tools.pointCalculator.conditions.bonusRangeInvalid", { max: BONUS_LIMIT }) }}
+                </p>
+                <div class="flex items-center justify-between gap-3 pt-1">
+                  <Label for="score-control-world-link" class="flex min-w-0 flex-col items-start gap-0.5 font-normal">
+                    <span class="text-sm">{{ t("tools.pointCalculator.conditions.worldLink") }}</span>
+                    <span class="text-xs text-muted-foreground">{{ t("tools.pointCalculator.conditions.worldLinkHelp", { max: SCORE_CONTROL_MAX_WORLD_LINK_EVENT_BONUS }) }}</span>
+                  </Label>
+                  <Switch id="score-control-world-link" :model-value="settings.worldLink" @update:model-value="updateWorldLink" />
                 </div>
               </div>
-            </div>
 
-            <Button class="w-full" :disabled="!canCalculate" @click="calcResult">
-              <LucideCalculator class="size-4" />
-              {{ t("tools.pointCalculator.actions.calculate") }}
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card class="self-start">
-          <CardHeader>
-            <CardTitle class="flex items-center gap-2 text-lg">
-              <Percent class="size-5" />
-              {{ t("tools.pointCalculator.result.title") }}
-            </CardTitle>
-            <CardDescription>
-              <template v-if="calculatedOnce">
-                {{ t("tools.pointCalculator.result.summary", { count: results.length }) }}
-              </template>
-              <template v-else>
-                {{ t("tools.pointCalculator.result.placeholder") }}
-              </template>
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div v-if="calculatedOnce && results.length > 0" class="overflow-hidden rounded-md border">
-              <div
-                v-for="(row, index) in results"
-                :key="`${row.eventBonus}-${row.boost}-${row.scoreMin}-${row.scoreMax}`"
-                class="flex flex-wrap items-center gap-x-3 gap-y-2 p-3 transition-colors hover:bg-accent/40"
-                :class="index > 0 ? 'border-t' : ''"
-              >
-                <span class="inline-flex shrink-0 items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200">
-                  {{ t("tools.pointCalculator.result.deckBonus", { value: row.eventBonus }) }}
-                </span>
-                <span class="inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
-                  <Flame class="size-3" />
-                  {{ t("tools.pointCalculator.result.boost", { index: row.boost, rate: row.boostMultiplier }) }}
-                </span>
-                <div class="min-w-0 flex-1 basis-40 text-right sm:text-left">
-                  <div class="font-mono text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-300">
-                    {{ formatScore(row.scoreMin) }} ~ {{ formatScore(row.scoreMax) }}
-                  </div>
-                  <div class="text-[11px] text-muted-foreground">
-                    {{ t("tools.pointCalculator.result.scoreRangeLabel") }}
-                  </div>
+              <div class="grid gap-1.5">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="text-sm font-medium">{{ t("tools.pointCalculator.conditions.boosts") }}</p>
+                  <Button
+                    v-if="settings.boosts.length < ALL_BOOSTS.length"
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    class="-mr-2 h-7 px-2 text-xs"
+                    @click="settings.boosts = [...ALL_BOOSTS]"
+                  >
+                    {{ t("tools.pointCalculator.conditions.selectAllBoosts") }}
+                  </Button>
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
+                <ToggleGroup
+                  type="multiple"
+                  variant="chip"
                   size="sm"
-                  class="ml-auto shrink-0"
-                  :disabled="row.eventBonus <= 0"
-                  @click="goToDeckRecommend(row)"
+                  class="min-w-0 max-w-full flex-wrap"
+                  :model-value="boostValues"
+                  :aria-label="t('tools.pointCalculator.conditions.boosts')"
+                  @update:model-value="updateBoosts"
                 >
-                  {{ t("tools.pointCalculator.actions.buildDeck") }}
-                  <ArrowRight class="size-4" />
+                  <ToggleGroupItem v-for="boost in ALL_BOOSTS" :key="boost" :value="String(boost)" class="min-w-9 tabular-nums">
+                    {{ boost }}
+                  </ToggleGroupItem>
+                </ToggleGroup>
+                <p v-if="settings.boosts.length === 0" class="text-xs text-destructive" role="alert">
+                  {{ t("tools.pointCalculator.conditions.boostsNone") }}
+                </p>
+                <p v-else class="text-xs text-muted-foreground">{{ t("tools.pointCalculator.conditions.boostsHelp") }}</p>
+              </div>
+
+              <div class="flex items-center justify-between gap-3">
+                <p class="text-sm font-medium">{{ t("tools.pointCalculator.conditions.maxGames") }}</p>
+                <Select :model-value="String(settings.maxGames)" :aria-label="t('tools.pointCalculator.conditions.maxGames')" @update:model-value="updateMaxGames">
+                  <SelectTrigger class="h-8 w-28 text-xs" :aria-label="t('tools.pointCalculator.conditions.maxGames')">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="count in MAX_GAMES_OPTIONS" :key="count" :value="String(count)">
+                      {{ t("tools.pointCalculator.conditions.maxGamesOption", { count }) }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Results -->
+        <div class="grid min-w-0 gap-4" aria-live="polite" data-testid="score-control-results">
+          <div v-if="!planResult" class="rounded-xl border bg-card px-4">
+            <EmptyState
+              :icon="Target"
+              :title="t('tools.pointCalculator.result.empty')"
+              :description="t('tools.pointCalculator.result.emptyHint')"
+            />
+          </div>
+
+          <template v-else>
+            <section class="rounded-xl border bg-card px-4 py-3" data-testid="score-control-summary" :data-status="planResult.status">
+              <p class="text-xs text-muted-foreground">
+                <template v-if="request?.start != null">
+                  {{ t("tools.pointCalculator.result.fromTo", { current: formatNumberCN(request.current), target: formatNumberCN(request.target) }) }}
+                </template>
+                <template v-else>{{ t("tools.pointCalculator.result.gapLabel") }}</template>
+              </p>
+              <p class="text-2xl leading-tight font-semibold tabular-nums">
+                {{ planResult.gap < 0 ? "−" : "" }}{{ formatNumberCN(Math.abs(planResult.gap)) }}
+                <span class="text-base font-medium text-muted-foreground">Pt</span>
+              </p>
+              <p v-if="resultNote" class="mt-1 text-sm text-muted-foreground">{{ resultNote }}</p>
+              <div v-if="nextMaxGames != null || canLowerFloor" class="mt-2 flex flex-wrap gap-2">
+                <Button v-if="nextMaxGames != null" type="button" variant="outline" size="sm" @click="settings.maxGames = nextMaxGames">
+                  {{ t("tools.pointCalculator.result.status.tooFarAction", { count: nextMaxGames }) }}
+                </Button>
+                <Button v-if="canLowerFloor" type="button" variant="outline" size="sm" @click="lowerBonusFloor">
+                  {{ t("tools.pointCalculator.result.status.tooCloseAction") }}
                 </Button>
               </div>
-            </div>
+            </section>
 
-            <Alert v-else-if="calculatedOnce" variant="destructive">
-              <LucideAlertCircle class="h-4 w-4" />
-              <AlertTitle>{{ t("tools.pointCalculator.result.noMatchTitle") }}</AlertTitle>
-              <AlertDescription>{{ t("tools.pointCalculator.result.noMatchDescription") }}</AlertDescription>
-            </Alert>
+            <section v-if="planResult.status === 'ok'" class="grid gap-2" data-testid="score-control-plans">
+              <h2 class="px-1 text-sm font-semibold">{{ t("tools.pointCalculator.result.plansTitle") }}</h2>
+              <ScoreControlPlanCard
+                v-for="(plan, index) in planResult.plans"
+                :key="index"
+                :plan="plan"
+                :index="index + 1"
+                :start-point="request?.start ?? null"
+                @build-deck="goToDeckRecommend"
+              />
+            </section>
 
-            <div v-else class="rounded-md border border-dashed p-10 text-center text-sm text-muted-foreground">
-              {{ t("tools.pointCalculator.result.empty") }}
-            </div>
-          </CardContent>
-        </Card>
+            <ScoreControlSolutionTable v-if="singleRanges.length > 0" :ranges="singleRanges" @build-deck="goToDeckRecommend" />
+          </template>
+        </div>
       </div>
+
+      <ul class="grid list-disc gap-1 pl-5 text-xs leading-5 text-muted-foreground">
+        <li>{{ t("tools.pointCalculator.tips.boost") }}</li>
+        <li>{{ t("tools.pointCalculator.tips.idle") }}</li>
+        <li>{{ t("tools.pointCalculator.tips.beta") }}</li>
+      </ul>
     </div>
   </div>
 </template>

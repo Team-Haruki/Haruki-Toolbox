@@ -4,7 +4,6 @@ import type { FriendGroupData } from "@/modules/navigation/types"
 
 export function useFriendGroups() {
   const groupData = ref<FriendGroupData[]>([])
-  const openGroups = ref<string[]>([])
   const loading = ref(true)
   /** The last failure, rendered inline by the page (no toast: the page itself is the feedback). */
   const error = shallowRef<unknown>(null)
@@ -19,11 +18,9 @@ export function useFriendGroups() {
       if (requestId !== latestRequestId) return
       const data = rawData.filter((group) => group.groupList.length > 0)
       groupData.value = data
-      openGroups.value = data.map((group) => group.group)
     } catch (loadError: unknown) {
       if (requestId !== latestRequestId) return
       groupData.value = []
-      openGroups.value = []
       error.value = loadError
     } finally {
       if (requestId !== latestRequestId) return
@@ -37,7 +34,6 @@ export function useFriendGroups() {
 
   return {
     groupData,
-    openGroups,
     loading,
     error,
     reload: fetchGroupData,
