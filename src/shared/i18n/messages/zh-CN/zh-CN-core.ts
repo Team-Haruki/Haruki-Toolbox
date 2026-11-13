@@ -913,6 +913,10 @@ export default {
       "accessoryOnly": "仅头饰",
       "accessoryOnlyHint": "单独查看当前头饰",
       "accessoryOnlyUnavailable": "当前头饰不是独立配件",
+      "headExclusive": "专属",
+      "headExclusiveHint": "此角色专用",
+      "headHairStyle": "发型",
+      "headHairStyleHint": "只匹配单独发型",
       "backgrounds": {
         "archive": "游戏背景",
         "transparent": "纯色背景"

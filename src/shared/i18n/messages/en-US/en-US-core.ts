@@ -913,6 +913,10 @@ export default {
       "accessoryOnly": "Accessory only",
       "accessoryOnlyHint": "Show the worn accessory on its own",
       "accessoryOnlyUnavailable": "The current head piece is not a separate accessory",
+      "headExclusive": "Exclusive",
+      "headExclusiveHint": "For this character only",
+      "headHairStyle": "Hairstyle",
+      "headHairStyleHint": "Only fits its own hairstyle",
       "backgrounds": {
         "archive": "Game backdrop",
         "transparent": "Plain"

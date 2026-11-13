@@ -68,6 +68,11 @@ const DRESSUP_MASTER_FILES = ["gameCharacters"] as const
 const loading = ref(false)
 const error = ref<string | null>(null)
 const characterMap = shallowRef<Map<number, CatalogCharacter>>(new Map())
+/**
+ * Characters whose CostumeShop changes unit (gameCharacters.supportUnitType "full", CostumeUtility.IsChangeableUnit:
+ * only Miku); every other character, the other Virtual Singers included, stays on its own unit.
+ */
+const unitChangeableIds = shallowRef<Set<number>>(new Set())
 
 let loadToken = 0
 
@@ -85,6 +90,11 @@ async function loadMaster(targetRegion: SekaiRegion) {
       isCurrent: () => token === loadToken,
       apply: (files) => {
         characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
+        unitChangeableIds.value = new Set(
+          (files.gameCharacters as { id?: unknown; supportUnitType?: unknown }[])
+            .filter((character) => character.supportUnitType === "full" && typeof character.id === "number")
+            .map((character) => character.id as number),
+        )
       },
     })
   } catch (loadError) {
@@ -156,9 +166,9 @@ function setBackground(value: AcceptableValue) {
 
 const defaultUnit = computed<string | null>(() => characterMap.value.get(characterId.value)?.unit ?? null)
 const roleCharacterId = computed<number | null>(() => characterId.value)
-// Only a Virtual Singer (own unit piapro) has other unit versions.
+// Only a character whose CostumeShop changes unit (Miku) has other unit versions.
 const roleUnit = computed<string | null>(() =>
-  defaultUnit.value === "piapro" && unitOverride.value != null ? unitOverride.value : defaultUnit.value,
+  unitChangeableIds.value.has(characterId.value) && unitOverride.value != null ? unitOverride.value : defaultUnit.value,
 )
 
 const {
@@ -450,13 +460,33 @@ function selectCharacter(id: number) {
 
 // Full head sets ship their own hairstyle, so the hair slot has no effect
 // while one is selected (in-game behavior).
-/** The head slot holds an accessory of its own (not a full head with its hair, not the unset head). */
+/**
+ * The head slot holds an accessory of its own. A full head set has none to show alone: its head piece is part of the
+ * set's Hair mesh.
+ */
 const hasStandaloneAccessory = computed(() => {
   const option = roleData.value?.options.head.find((candidate) => candidate.id === headId.value)
   return option != null && !option.includesHair && !NONE_HEAD_COSTUME3D_IDS.has(option.id)
 })
 
 const showingAccessoryOnly = computed(() => accessoryOnly.value && hasStandaloneAccessory.value)
+
+/**
+ * The character's own head of a costume (a head_and_hair set for this role's unit, thumbnail `*_unique_head`), not
+ * the accessory every character gets with it.
+ */
+function isExclusiveHead(group: RackGroup): boolean {
+  return activeOption(group).includesHair
+}
+
+/**
+ * The game's hairstyle label (CostumeSelectCell.labelHairStyle): this head cannot be worn with the hair worn now
+ * (costume3dModelNotAvailablePatterns), so wearing it changes the hair.
+ */
+function isHairStyleHead(group: RackGroup): boolean {
+  const notAvailable = roleData.value?.notAvailable
+  return notAvailable != null && hairId.value != null && notAvailable.has(`${activeOption(group).id}|${hairId.value}`)
+}
 
 const hairLocked = computed(() =>
   roleData.value?.options.head.find((option) => option.id === headId.value)?.includesHair === true,
@@ -779,6 +809,22 @@ watch(() => route.query, () => {
                       ]"
                     >
                       <SekaiAssetImage :sources="thumbnailSources(activeOption(group))" :alt="group.name" fit="contain" placeholder-class="bg-transparent" />
+                      <span v-if="activeSlot === 'head' && (isExclusiveHead(group) || isHairStyleHead(group))" class="absolute top-1 left-1 flex flex-col items-start gap-0.5">
+                        <span
+                          v-if="isExclusiveHead(group)"
+                          class="rounded bg-background/85 px-1 text-[10px] leading-4 text-muted-foreground shadow-sm"
+                          :title="t('costumes.dressup.headExclusiveHint')"
+                        >
+                          {{ t("costumes.dressup.headExclusive") }}
+                        </span>
+                        <span
+                          v-if="isHairStyleHead(group)"
+                          class="rounded bg-background/85 px-1 text-[10px] leading-4 text-muted-foreground shadow-sm"
+                          :title="t('costumes.dressup.headHairStyleHint')"
+                        >
+                          {{ t("costumes.dressup.headHairStyle") }}
+                        </span>
+                      </span>
                       <span
                         v-if="group.options.length > 1"
                         class="absolute top-1 right-1 rounded bg-background/85 px-1 text-[10px] leading-4 text-muted-foreground tabular-nums shadow-sm"

@@ -6,7 +6,7 @@ chunks it loads. The kernel reads original game content supplied by the host (se
 `/api/misc/costume3d/<region>/` (raw-bundle mirror layout plus `master/characters/<id>.json`) through
 `createMirrorContent(base, { masterLayout: "characters" })`; see `../../lib/costume-content.ts`.
 
-Built from Prsk-3D `e49ae341`.
+Built from Prsk-3D `19246b01`.
 
 Files:
 
