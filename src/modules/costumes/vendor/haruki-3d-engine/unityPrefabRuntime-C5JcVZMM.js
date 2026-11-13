@@ -94,10 +94,20 @@ function s(e, t) {
 			m(), e.setViewYawDegrees(t), r || e.renderFrame();
 		},
 		setViewZoom(t) {
-			m(), e.setViewZoom?.(t), r || e.renderFrame();
+			m();
+			let n = e.setViewZoom?.(t) ?? {
+				zoom: t,
+				heightOffset: 0
+			};
+			return r || e.renderFrame(), n;
 		},
 		setViewHeightOffset(t) {
-			m(), e.setViewHeightOffset?.(t), r || e.renderFrame();
+			m();
+			let n = e.setViewHeightOffset?.(t) ?? {
+				zoom: 1,
+				heightOffset: t
+			};
+			return r || e.renderFrame(), n;
 		},
 		async setBackground(n) {
 			m(), await e.setBackgroundMode?.(n, t), !r && !i && e.renderFrame();

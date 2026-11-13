@@ -139,6 +139,12 @@ export type HarukiHeadOptionalRecipe = {
   headOptionalCostume3dId: number
 }
 
+/** The view framing in effect: zoom and the height offset in metres. */
+export interface HarukiViewFraming {
+  zoom: number
+  heightOffset: number
+}
+
 export interface Haruki3DKernel {
   prepare(recipe: HarukiRenderRecipe | HarukiHeadOptionalRecipe): Promise<void>
   load(recipe: HarukiRenderRecipe | HarukiHeadOptionalRecipe): Promise<void>
@@ -147,10 +153,16 @@ export interface Haruki3DKernel {
   resize(width: number, height: number): void
   /** Rotates the CostumeShop CameraRoot without moving the character skeleton. */
   setViewYawDegrees(degrees: number): void
-  /** Dollies the camera: 1 keeps the pose's distance, 2 is twice as close. Clamped to 0.5..3. */
-  setViewZoom(zoom: number): void
-  /** Slides target and camera up or down by the given metres. Clamped to -0.5..0.8. */
-  setViewHeightOffset(metres: number): void
+  /**
+   * Zoom, clamped to 0.5..3: 1 is the game's initial (nearest) view, 0.5 its farthest (the whole character), above 1
+   * closer than the game. Re-clamps the height offset to the new zoom. -> the framing applied.
+   */
+  setViewZoom(zoom: number): HarukiViewFraming
+  /**
+   * Slides the view up or down from its start (the head) by metres, within the game's camera limits at the zoom
+   * (down to the feet; widened past zoom 1 so the frame's edges reach as far). -> the framing applied.
+   */
+  setViewHeightOffset(metres: number): HarukiViewFraming
   setBackground(background: "transparent" | "archive"): Promise<void>
   /**
    * "all": the whole character; "head_optional": only the worn head accessory, taken off the character and framed on
@@ -159,5 +171,8 @@ export interface Haruki3DKernel {
   setPartDisplay(display: "all" | "head_optional"): void
   destroy(): Promise<void>
 }
+
+/** The height in metres the viewer's square frame shows at the character at a zoom (for turning a drag into metres). */
+export declare function studioViewFrameHeight(zoom: number): number
 
 export declare function createHaruki3DKernel(options: Haruki3DKernelOptions): Haruki3DKernel

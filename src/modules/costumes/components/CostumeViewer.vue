@@ -111,6 +111,7 @@ async function ensureKernel(generation: number): Promise<Haruki3DKernel | null> 
   }
   // The game's own backdrop (the character archive costume viewer's) unless the caller asks for the plain frame.
   kernel = engine.createHaruki3DKernel({ canvas, content, background: props.background })
+  frameHeightAt = engine.studioViewFrameHeight
   kernelBaseUrl = baseUrl
   applySize()
   return kernel
@@ -197,12 +198,14 @@ async function loadRecipe() {
 
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 3
-const HEIGHT_MIN = -0.5
-const HEIGHT_MAX = 0.8
 
 let yawDegrees = 0
 let zoom = 1
+// The height offset the kernel applied: it keeps the view within the game's camera limits at the zoom (from the head
+// down to the feet) and re-clamps it on a zoom change.
 let heightOffset = 0
+// The frame's height in metres at the character for a zoom (the engine's), for turning a drag into metres.
+let frameHeightAt: ((zoom: number) => number) | null = null
 
 function applyView(target: Haruki3DKernel | null = kernel) {
   if (target == null) {
@@ -210,7 +213,7 @@ function applyView(target: Haruki3DKernel | null = kernel) {
   }
   target.setViewYawDegrees(yawDegrees)
   target.setViewZoom(zoom)
-  target.setViewHeightOffset(heightOffset)
+  heightOffset = target.setViewHeightOffset(heightOffset).heightOffset
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -220,12 +223,15 @@ function clamp(value: number, min: number, max: number) {
 /** Multiply the zoom by `factor` (>1 moves closer). */
 function zoomBy(factor: number) {
   zoom = clamp(zoom * factor, ZOOM_MIN, ZOOM_MAX)
-  kernel?.setViewZoom(zoom)
+  if (kernel != null) {
+    heightOffset = kernel.setViewZoom(zoom).heightOffset
+  }
 }
 
 function panBy(metres: number) {
-  heightOffset = clamp(heightOffset + metres, HEIGHT_MIN, HEIGHT_MAX)
-  kernel?.setViewHeightOffset(heightOffset)
+  if (kernel != null) {
+    heightOffset = kernel.setViewHeightOffset(heightOffset + metres).heightOffset
+  }
 }
 
 const activePointers = new Map<number, { x: number; y: number }>()
@@ -269,9 +275,12 @@ function handlePointerMove(event: PointerEvent) {
     kernel.setViewYawDegrees(yawDegrees)
   }
   if (deltaY !== 0) {
-    // The scene follows the finger: dragging down lifts the camera.
-    const host = hostRef.value
-    const metresPerPixel = host != null && host.clientHeight > 0 ? 1.6 / host.clientHeight / zoom : 0.003
+    // The scene follows the finger: dragging down lifts the camera by the metres the drag covers at the character
+    // (the square frame is as high as the canvas).
+    const canvas = canvasRef.value
+    const metresPerPixel = canvas != null && canvas.clientHeight > 0 && frameHeightAt != null
+      ? frameHeightAt(zoom) / canvas.clientHeight
+      : 0.002
     panBy(deltaY * metresPerPixel)
   }
 }

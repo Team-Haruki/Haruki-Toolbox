@@ -1,4 +1,4 @@
-import { D as e, E as t, O as n, T as r, c as i, k as a, s as o, w as s } from "./mirrorContent-DQfAGsIQ.js";
+import { A as e, D as t, E as n, O as r, c as i, j as a, k as o, s } from "./mirrorContent-Be21nLOy.js";
 new TextEncoder();
 var c = 4096;
 function l(e, t, n) {
@@ -645,8 +645,8 @@ var B = class {
 	sizes = /* @__PURE__ */ new Map();
 	byCabName = /* @__PURE__ */ new Map();
 	total = 0;
-	constructor(e, n = 384 * 1024 * 1024, r = (e, n) => new t(e, n)) {
-		this.host = e, this.cacheBytes = n, this.read = r;
+	constructor(e, t = 384 * 1024 * 1024, n = (e, t) => new r(e, t)) {
+		this.host = e, this.cacheBytes = t, this.read = n;
 	}
 	catalog() {
 		if (!this.catalogPromise) {
@@ -717,45 +717,45 @@ function q(e) {
 	G.delete(e), V.delete(e);
 }
 async function J(e) {
-	let t = K(e.contentId), n = {};
+	let n = K(e.contentId), r = {};
 	return await Promise.all(e.bundleNames.map(async (e) => {
-		if (!await t.has(e)) {
-			n[e] = null;
+		if (!await n.has(e)) {
+			r[e] = null;
 			return;
 		}
-		let a = await t.load(e);
-		n[e] = a.assetBundle.m_Container.map((e) => a.object(e.second.asset.m_PathID)).filter((e) => e?.classId === r.AnimationClip).map((e) => i(e.read()));
-	})), { clips: n };
+		let a = await n.load(e);
+		r[e] = a.assetBundle.m_Container.map((e) => a.object(e.second.asset.m_PathID)).filter((e) => e?.classId === t.AnimationClip).map((e) => i(e.read()));
+	})), { clips: r };
 }
-async function Y(t) {
-	let n = await K(t.contentId).catalog(), r = e(t.common, t.character, t.characterId, t.unit, (e) => n.bundles.has(e));
+async function Y(e) {
+	let t = await K(e.contentId).catalog(), n = o(e.common, e.character, e.characterId, e.unit, (e) => t.bundles.has(e));
 	return { roleIndex: {
-		...r,
-		masterVersion: r.masterVersion || n.version
+		...n,
+		masterVersion: n.masterVersion || t.version
 	} };
 }
-async function X(e) {
-	let t = await K(e.contentId).catalog(), r = n(e.common, e.gameCharacterId, e.unit);
-	return { bundleName: a(e.common, r, e.motionType, (e) => t.bundles.has(e)) };
+async function X(t) {
+	let n = await K(t.contentId).catalog(), r = e(t.common, t.gameCharacterId, t.unit);
+	return { bundleName: a(t.common, r, t.motionType, (e) => n.bundles.has(e)) };
 }
 async function Z(e) {
-	let t = K(e.contentId), [n, r] = await Promise.all([t.load(e.bundleName), e.colorBundleName ? t.load(e.colorBundleName) : Promise.resolve(null)]), i = o({
+	let t = K(e.contentId), [r, i] = await Promise.all([t.load(e.bundleName), e.colorBundleName ? t.load(e.colorBundleName) : Promise.resolve(null)]), a = s({
 		entry: e.entry,
 		partType: e.partType,
-		bundle: n,
-		colorBundle: r,
+		bundle: r,
+		colorBundle: i,
 		resolveBundle: (e) => t.byCab(e),
 		attachNode: e.attachNode
-	}), a = {};
-	for (let e of i.materialSlots ?? []) for (let n of e.rawMaterial.textureProperties) {
-		if (!n.uri || a[n.uri]) continue;
-		let e = /^original:([^:]+):(-?\d+)$/.exec(n.uri), r = t.byCab(e[1]);
-		if (!r) throw Error(`texture bundle ${e[1]} is not loaded`);
-		a[n.uri] = s(r, BigInt(e[2]));
+	}), o = {};
+	for (let e of a.materialSlots ?? []) for (let r of e.rawMaterial.textureProperties) {
+		if (!r.uri || o[r.uri]) continue;
+		let e = /^original:([^:]+):(-?\d+)$/.exec(r.uri), i = t.byCab(e[1]);
+		if (!i) throw Error(`texture bundle ${e[1]} is not loaded`);
+		o[r.uri] = n(i, BigInt(e[2]));
 	}
 	return {
-		runtime: i,
-		textures: a
+		runtime: a,
+		textures: o
 	};
 }
 function Q(e) {
