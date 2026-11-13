@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it } from "bun:test"
-import { costumeLoadTracker, loadCostumeContent, resolveCostumeContentBaseUrl } from "./costume-content"
+import { resetAssetHostState } from "@/shared/sekai/asset-image-fallback"
+import { costumeLoadTracker, loadCostumeContent, openMirrorOnRoute, resolveCostumeContentBaseUrl } from "./costume-content"
+import type { HarukiCostumeShopContent } from "../vendor/haruki-3d-engine/haruki-3d-engine-costume-shop.js"
 import type { HarukiOriginalAssetBundleElement } from "../vendor/haruki-3d-engine/haruki-3d-engine-costume-shop.js"
+
 
 describe("resolveCostumeContentBaseUrl", () => {
   it("points the 3D kernel at the region's raw-bundle mirror on the chosen asset CDN", () => {
@@ -67,5 +70,44 @@ describe("loadCostumeContent", () => {
     await expect(loadCostumeContent(base)).rejects.toThrow()
     await expect(loadCostumeContent(base)).rejects.toThrow()
     expect(requested).toHaveLength(2)
+  })
+})
+
+describe("openMirrorOnRoute", () => {
+  const china = "https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com/raw-bundles/tw/android/"
+  const global = "https://sekai-assets-haruki.seiunx.net/raw-bundles/tw/android/"
+  afterEach(() => resetAssetHostState())
+
+  const opener = (fail: Record<string, Error>) => {
+    const opened: string[] = []
+    const open = async (base: string) => {
+      opened.push(base)
+      if (fail[base]) {
+        throw fail[base]
+      }
+      return { assetBundleInfo: `${base}catalogs/x.msgpack` } as HarukiCostumeShopContent
+    }
+    return { opened, open }
+  }
+
+  it("opens the mirror on the global route when the China route fails", async () => {
+    const { opened, open } = opener({ [china]: new Error(`${china}current.json: HTTP 503`) })
+    expect((await openMirrorOnRoute(china, open)).assetBundleInfo).toBe(`${global}catalogs/x.msgpack`)
+    expect(opened).toEqual([china, global])
+    // The China host stays behind its twin for a while.
+    opened.length = 0
+    await openMirrorOnRoute(china, open)
+    expect(opened).toEqual([global])
+  })
+
+  it("keeps a missing mirror an error, and has no twin for a configured root", async () => {
+    const missing = opener({ [china]: new Error(`${china}current.json: HTTP 404`) })
+    await expect(openMirrorOnRoute(china, missing.open)).rejects.toThrow("HTTP 404")
+    expect(missing.opened).toEqual([china])
+
+    const local = "http://localhost:4200/raw-bundles/tw/android/"
+    const down = opener({ [local]: new TypeError("failed to fetch") })
+    await expect(openMirrorOnRoute(local, down.open)).rejects.toThrow("failed to fetch")
+    expect(down.opened).toEqual([local])
   })
 })

@@ -1,3 +1,4 @@
+import { markAssetHostDown, preferAssetHost, resolveAssetHostTwinUrl } from "@/shared/sekai/asset-image-fallback"
 import type {
   HarukiCostumeShopContent,
   HarukiOriginalAssetBundleElement,
@@ -74,9 +75,9 @@ export function trackBundleLoads(
       const bytes = Math.max(0, bundle.fileSize || 0)
       tracker.begin(bytes)
       try {
-        const response = await fetchBundle(source, { signal: context.signal })
+        const response = await fetchWithHostFallback(String(source), context.signal, fetchBundle)
         if (!response.ok) {
-          throw new Error(`${String(source)}: HTTP ${response.status}`)
+          throw new Error(`${response.url || String(source)}: HTTP ${response.status}`)
         }
         return await response.arrayBuffer()
       } finally {
@@ -84,6 +85,35 @@ export function trackBundleLoads(
       }
     },
   }
+}
+
+/**
+ * Fetches an asset-CDN file on its route, or on the fallback route (the same path on `global`, see
+ * asset-image-fallback) when the route fails: a network error or a 5xx marks the host down and asks the twin; a 4xx
+ * (the file is missing there) does not. A host already marked down is skipped. URLs outside the asset hosts are
+ * fetched as they are.
+ */
+export async function fetchWithHostFallback(url: string, signal: AbortSignal | undefined, fetchImpl: FetchBundle) {
+  const first = preferAssetHost(url)
+  const twin = first === url ? resolveAssetHostTwinUrl(url) : null
+  if (!twin) {
+    return fetchImpl(first, { signal })
+  }
+  let response: Response
+  try {
+    response = await fetchImpl(first, { signal })
+  } catch (error) {
+    if (signal?.aborted) {
+      throw error
+    }
+    markAssetHostDown(first)
+    return fetchImpl(twin, { signal })
+  }
+  if (response.status < 500) {
+    return response
+  }
+  markAssetHostDown(first)
+  return fetchImpl(twin, { signal })
 }
 
 /** One load's share of the downloads: what was requested and finished since `start`. */

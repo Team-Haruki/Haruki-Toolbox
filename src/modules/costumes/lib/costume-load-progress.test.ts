@@ -1,9 +1,16 @@
-import { describe, expect, it } from "bun:test"
+import { afterEach, describe, expect, it } from "bun:test"
+import { resetAssetHostState } from "@/shared/sekai/asset-image-fallback"
 import type {
   HarukiCostumeShopContent,
   HarukiOriginalAssetBundleElement,
 } from "../vendor/haruki-3d-engine/haruki-3d-engine-costume-shop.js"
-import { BundleLoadTracker, formatMegabytes, loadProgressSince, trackBundleLoads } from "./costume-load-progress"
+import {
+  BundleLoadTracker,
+  fetchWithHostFallback,
+  formatMegabytes,
+  loadProgressSince,
+  trackBundleLoads,
+} from "./costume-load-progress"
 
 const bundle = (bundleName: string, fileSize: number) => ({ bundleName, fileSize }) as HarukiOriginalAssetBundleElement
 const context = () => ({ version: "1", signal: new AbortController().signal })
@@ -84,5 +91,50 @@ describe("formatMegabytes", () => {
   it("shows one decimal", () => {
     expect(formatMegabytes(0)).toBe("0.0")
     expect(formatMegabytes(1536 * 1024)).toBe("1.5")
+  })
+})
+
+describe("fetchWithHostFallback", () => {
+  const china = "https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com/raw-bundles/jp/android/bundles/shader/live.bundle"
+  const global = "https://sekai-assets-haruki.seiunx.net/raw-bundles/jp/android/bundles/shader/live.bundle"
+  afterEach(() => resetAssetHostState())
+
+  function hosts(answer: (url: string) => Response | Error) {
+    const asked: string[] = []
+    const fetchImpl = async (input: string | URL) => {
+      asked.push(String(input))
+      const result = answer(String(input))
+      if (result instanceof Error) {
+        throw result
+      }
+      return result
+    }
+    return { asked, fetchImpl }
+  }
+
+  it("asks the global twin when the China route fails, and goes there first afterwards", async () => {
+    const { asked, fetchImpl } = hosts((url) => (url.startsWith("https://sekai-assets-cn03") ? new Response("", { status: 502 }) : new Response("ok")))
+    expect((await fetchWithHostFallback(china, undefined, fetchImpl)).status).toBe(200)
+    expect(asked).toEqual([china, global])
+    asked.length = 0
+    await fetchWithHostFallback(china, undefined, fetchImpl)
+    expect(asked).toEqual([global])
+  })
+
+  it("falls back on a network error but not on a missing file", async () => {
+    const down = hosts((url) => (url.startsWith("https://sekai-assets-cn03") ? new TypeError("failed to fetch") : new Response("ok")))
+    expect((await fetchWithHostFallback(china, undefined, down.fetchImpl)).status).toBe(200)
+    expect(down.asked).toEqual([china, global])
+
+    resetAssetHostState()
+    const missing = hosts(() => new Response("", { status: 404 }))
+    expect((await fetchWithHostFallback(china, undefined, missing.fetchImpl)).status).toBe(404)
+    expect(missing.asked).toEqual([china])
+  })
+
+  it("fetches other URLs as they are", async () => {
+    const { asked, fetchImpl } = hosts(() => new Response("", { status: 503 }))
+    expect((await fetchWithHostFallback("http://localhost:4200/raw-bundles/jp/android/a.bundle", undefined, fetchImpl)).status).toBe(503)
+    expect(asked).toEqual(["http://localhost:4200/raw-bundles/jp/android/a.bundle"])
   })
 })

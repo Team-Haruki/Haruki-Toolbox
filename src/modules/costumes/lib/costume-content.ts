@@ -2,6 +2,7 @@ import type { SekaiRegion } from "@/types"
 import { resolveSekaiAssetRootUrl } from "@/shared/sekai/data-sources"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import type { HarukiCostumeShopContent } from "../vendor/haruki-3d-engine/haruki-3d-engine-costume-shop.js"
+import { markAssetHostDown, preferAssetHost, resolveAssetHostTwinUrl } from "@/shared/sekai/asset-image-fallback"
 import { BundleLoadTracker, trackBundleLoads } from "./costume-load-progress"
 
 /** A different root of the raw-bundle mirror (a staging or local copy); unset, the asset CDN's `/raw-bundles`. */
@@ -24,6 +25,33 @@ export function resolveCostumeContentBaseUrl(
 /** The engine bundle (~0.6 MB, plus shader tables loaded per material) is loaded on demand. */
 export function loadCostumeEngine() {
   return import("../vendor/haruki-3d-engine/haruki-3d-engine-costume-shop.js")
+}
+
+/** A mirror error the fallback route can help with: a network error or a 5xx (createMirrorContent: "<url>: HTTP n"). */
+function isRouteFailure(error: unknown): boolean {
+  const status = /: HTTP (\d{3})$/.exec(error instanceof Error ? error.message : "")?.[1]
+  return status == null || Number(status) >= 500
+}
+
+/**
+ * Opens the mirror on the asset route, or on its fallback route (`global`) when the route fails, so the catalog and
+ * master rows come from the host that answered; bundles fall back one by one as well (fetchWithHostFallback).
+ */
+export async function openMirrorOnRoute(
+  baseUrl: string,
+  open: (base: string) => Promise<HarukiCostumeShopContent>,
+): Promise<HarukiCostumeShopContent> {
+  const first = preferAssetHost(baseUrl)
+  const twin = first === baseUrl ? resolveAssetHostTwinUrl(baseUrl) : null
+  try {
+    return await open(first)
+  } catch (error) {
+    if (!twin || !isRouteFailure(error)) {
+      throw error
+    }
+    markAssetHostDown(first)
+    return open(twin)
+  }
 }
 
 const contents = new Map<string, Promise<HarukiCostumeShopContent>>()
@@ -49,7 +77,7 @@ export function loadCostumeContent(baseUrl: string): Promise<HarukiCostumeShopCo
     return cached
   }
   const content = loadCostumeEngine()
-    .then((engine) => engine.createMirrorContent(baseUrl, { masterLayout: "characters" }))
+    .then((engine) => openMirrorOnRoute(baseUrl, (base) => engine.createMirrorContent(base, { masterLayout: "characters" })))
     .then((mirror) => trackBundleLoads(mirror, costumeLoadTracker(baseUrl)))
   content.catch(() => {
     // A failed load (mirror unreachable) must not stay cached.
