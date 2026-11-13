@@ -471,9 +471,9 @@ const stageCursor = computed(() => {
           :style="frameStyle"
           data-testid="image-viewer-frame"
         >
-          <!-- The picture is named on a wrapper: a canvas takes no role of its own. -->
+          <!-- The picture is named on a wrapper: a canvas takes no role of its own, and inside an image it is presentational. -->
           <div class="size-full" role="img" :aria-label="pictureLabel">
-            <canvas ref="canvas" class="block size-full" aria-hidden="true" />
+            <canvas ref="canvas" class="block size-full" />
           </div>
           <LightboxRegionOverlay
             v-if="region && baseSize && (mode === 'crop' || mode === 'mask')"
