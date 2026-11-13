@@ -144,6 +144,11 @@ export type HarukiRenderRecipe = {
   headOptionalCostume3dId?: number | null
   motionRoleId?: string | null
   motionType?: "costume" | "result" | "preview" | null
+  /**
+   * Experimental: wear this character's default hairstyle instead of hairCostume3dId, recoloured with the palette of
+   * the role character's own default hair.
+   */
+  hairFromCharacterId?: number | null
 }
 
 /**

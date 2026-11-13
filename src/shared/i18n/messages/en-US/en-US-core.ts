@@ -921,6 +921,15 @@ export default {
       "headHairStyleHint": "Only fits its own hairstyle",
       "setBadge": "SET",
       "setBadgeHint": "Same set as what is worn",
+      "experimental": {
+        "title": "Experiments",
+        "note": "Features in testing; results may be incomplete",
+        "borrowHair": "Borrow another character's default hair",
+        "borrowHairTitle": "Other characters' default hair",
+        "borrowHairHint": "recoloured with this character's default hair colours",
+        "approximateHint": "This character's hair is a gradient or two-tone; the recolouring only approximates it",
+        "borrowedHairCaption": "{name}'s default hair (borrowed)"
+      },
       "filters": {
         "count": "{count} costumes",
         "source": "Source",

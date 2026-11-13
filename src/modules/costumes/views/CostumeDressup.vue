@@ -6,6 +6,7 @@ import {
   LucideCrown,
   LucideImage,
   LucideImageDown,
+  LucideFlaskConical,
   LucideLink,
   LucidePersonStanding,
   LucideRefreshCcw,
@@ -25,6 +26,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox"
 import { Input } from "@/components/ui/input"
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -55,6 +57,7 @@ import { useCostumeRoleData } from "../composables/useCostumeRoleData"
 import { COSTUME_SLOTS, pickDefaultOptionId, type CostumeSlot, type RuntimeCostumeOption } from "../lib/costume-options"
 import { isSameSetCell, NONE_HEAD_COSTUME3D_IDS, orderBySeries, type SeriesContext, type WornPart } from "../lib/costume-series-order"
 import { fitsWornHair, hairForHead, headForHair, type HeadHairRules } from "../lib/costume-head-hair"
+import { defaultHairThumbnail, hairDonors, MULTI_TONE_HAIR_CHARACTER_IDS } from "../lib/costume-borrowed-hair"
 import { MOTION_FOLLOW, motionValue, orderMotions, parseMotionValue } from "../lib/costume-motions"
 import {
   CARD_SUPPLIES,
@@ -96,6 +99,8 @@ const characterMap = shallowRef<Map<number, CatalogCharacter>>(new Map())
  * only Miku); every other character, the other Virtual Singers included, stays on its own unit.
  */
 const unitChangeableIds = shallowRef<Set<number>>(new Set())
+/** gameCharacters.gender, for the experimental borrowed hair (same gender only). */
+const genderById = shallowRef<Map<number, string>>(new Map())
 
 let loadToken = 0
 
@@ -117,6 +122,11 @@ async function loadMaster(targetRegion: SekaiRegion) {
           (files.gameCharacters as { id?: unknown; supportUnitType?: unknown }[])
             .filter((character) => character.supportUnitType === "full" && typeof character.id === "number")
             .map((character) => character.id as number),
+        )
+        genderById.value = new Map(
+          (files.gameCharacters as { id?: unknown; gender?: unknown }[])
+            .filter((character) => typeof character.id === "number" && typeof character.gender === "string")
+            .map((character) => [character.id as number, character.gender as string]),
         )
       },
     })
@@ -145,6 +155,12 @@ const characterId = ref<number>(queryNumber("characterId") ?? 1)
 const bodyId = ref<number | null>(queryNumber("body"))
 const headId = ref<number | null>(queryNumber("head"))
 const hairId = ref<number | null>(queryNumber("hair"))
+/**
+ * Experimental (the toolbar's experiments menu): another character's default hairstyle, recoloured by the engine with
+ * this character's own default hair palette (`hairFrom`, the lending character). Overrides the hair while set.
+ */
+const hairFrom = ref<number | null>(queryNumber("hairFrom"))
+const borrowHairEnabled = ref(hairFrom.value != null)
 
 function queryUnit(): string | null {
   const raw = route.query.unit
@@ -515,6 +531,10 @@ function activeOption(group: RackGroup): RuntimeCostumeOption {
 }
 
 function isGroupSelected(group: RackGroup): boolean {
+  // A borrowed hair stands in for the hair while set: no hair of the character's own is worn.
+  if (activeSlot.value === "hair" && hairFrom.value != null) {
+    return false
+  }
   return group.options.some((option) => option.id === selectedId.value)
 }
 
@@ -547,16 +567,51 @@ function selectOption(id: number) {
       if (rules && head && options) {
         hairId.value = hairForHead(head, hairId.value, rules, new Set(options.hair.map((option) => option.id)))
       }
+      // A full head set brings its own hairstyle: it replaces a borrowed hair too.
+      if (head?.includesHair) {
+        hairFrom.value = null
+      }
       break
     }
     default: {
       hairId.value = id
+      hairFrom.value = null
       if (rules && options) {
         const head = options.head.find((option) => option.id === headId.value) ?? null
         headId.value = headForHair(head, id, rules, options.head, roleData.value?.defaults?.headCostume3dId ?? null)
       }
     }
   }
+}
+
+// --- Experimental: borrowed hair ------------------------------------------
+
+const hairDonorIds = computed(() => hairDonors(characterId.value, genderById.value))
+/** This character's default hair is a gradient or two-tone: recoloured hair only approximates it. */
+const approximatePalette = computed(() => MULTI_TONE_HAIR_CHARACTER_IDS.has(characterId.value))
+
+function setBorrowHair(enabled: boolean) {
+  borrowHairEnabled.value = enabled
+  if (enabled) {
+    activeSlot.value = "hair"
+  } else {
+    hairFrom.value = null
+  }
+}
+
+/** Wears `donorId`'s default hairstyle; a full head set (its own hairstyle) comes off for it. */
+function selectBorrowedHair(donorId: number) {
+  hairFrom.value = donorId
+  const rules = headHairRules()
+  const options = roleData.value?.options
+  const head = options?.head.find((option) => option.id === headId.value) ?? null
+  if (rules && options && head?.includesHair && hairId.value != null) {
+    headId.value = headForHair(head, hairId.value, rules, options.head, roleData.value?.defaults?.headCostume3dId ?? null)
+  }
+}
+
+function donorThumbnailSources(donorId: number): string[] {
+  return thumbnailSources({ thumbnailAssetbundleName: defaultHairThumbnail(donorId) } as RuntimeCostumeOption)
 }
 
 function thumbnailSources(option: RuntimeCostumeOption): string[] {
@@ -575,7 +630,10 @@ function thumbnailSources(option: RuntimeCostumeOption): string[] {
 const currentOutfit = computed(() => {
   const names = roleData.value?.nameById
   const label = (id: number | null) => (id != null ? names?.get(id)?.name ?? `#${id}` : null)
-  return { body: label(bodyId.value), head: label(headId.value), hair: label(hairId.value) }
+  const borrowed = hairFrom.value != null
+    ? t("costumes.dressup.experimental.borrowedHairCaption", { name: characterMap.value.get(hairFrom.value)?.name ?? `#${hairFrom.value}` })
+    : null
+  return { body: label(bodyId.value), head: label(headId.value), hair: borrowed ?? label(hairId.value) }
 })
 
 // --- Stage controls ---------------------------------------------------------
@@ -616,6 +674,7 @@ async function saveImage() {
 function selectCharacter(id: number) {
   if (id !== characterId.value && characterMap.value.has(id)) {
     characterId.value = id
+    hairFrom.value = null
     unitOverride.value = null
     bodyId.value = null
     headId.value = null
@@ -708,11 +767,12 @@ const recipe = computed<CostumeViewerRecipe | null>(() => {
     hairCostume3dId: hairId.value,
     ...parseMotionValue(motionChoice.value),
     accessoryOnly: showingAccessoryOnly.value,
+    hairFromCharacterId: borrowHairEnabled.value ? hairFrom.value : null,
   }
 })
 
 // Keep the URL shareable without polluting history.
-watch([characterId, bodyId, headId, hairId, unitOverride, motionChoice, background, accessoryOnly], ([nextCharacter, nextBody, nextHead, nextHair, nextUnit, nextMotion, nextBackground, nextAccessoryOnly]) => {
+watch([characterId, bodyId, headId, hairId, unitOverride, motionChoice, background, accessoryOnly, hairFrom], ([nextCharacter, nextBody, nextHead, nextHair, nextUnit, nextMotion, nextBackground, nextAccessoryOnly, nextHairFrom]) => {
   void router.replace({
     query: {
       ...route.query,
@@ -724,6 +784,7 @@ watch([characterId, bodyId, headId, hairId, unitOverride, motionChoice, backgrou
       body: nextBody != null ? String(nextBody) : undefined,
       head: nextHead != null ? String(nextHead) : undefined,
       hair: nextHair != null ? String(nextHair) : undefined,
+      hairFrom: nextHairFrom != null ? String(nextHairFrom) : undefined,
     },
   })
 })
@@ -737,6 +798,13 @@ watch(() => route.query, () => {
   const nextBody = queryNumber("body")
   const nextHead = queryNumber("head")
   const nextHair = queryNumber("hair")
+  const nextHairFrom = queryNumber("hairFrom")
+  if (hairFrom.value !== nextHairFrom) {
+    hairFrom.value = nextHairFrom
+    if (nextHairFrom != null) {
+      borrowHairEnabled.value = true
+    }
+  }
   const nextUnit = queryUnit()
   const nextMotion = queryMotion()
   if (characterId.value !== nextCharacter) {
@@ -859,6 +927,25 @@ watch(() => route.query, () => {
               <LucideUndo2 class="size-4" /> {{ t("costumes.dressup.resetView") }}
             </Button>
             <span class="flex-1" />
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <Button variant="outline" size="sm">
+                  <LucideFlaskConical class="size-4" /> {{ t("costumes.dressup.experimental.title") }}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" class="w-72">
+                <DropdownMenuLabel class="text-xs font-normal text-muted-foreground">
+                  {{ t("costumes.dressup.experimental.note") }}
+                </DropdownMenuLabel>
+                <DropdownMenuCheckboxItem
+                  :model-value="borrowHairEnabled"
+                  @update:model-value="setBorrowHair(!!$event)"
+                  @select.prevent
+                >
+                  {{ t("costumes.dressup.experimental.borrowHair") }}
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="outline" size="sm" :disabled="savingImage" @click="saveImage">
               <LucideImageDown class="size-4" /> {{ t("costumes.dressup.saveImage") }}
             </Button>
@@ -1051,6 +1138,41 @@ watch(() => route.query, () => {
                   @update:model-value="patchFilters({ originCharacterIds: $event })"
                 />
               </CatalogFilterPanel>
+
+              <section
+                v-if="activeSlot === 'hair' && borrowHairEnabled && hairDonorIds.length > 0"
+                class="flex flex-col gap-2 rounded-md border border-dashed p-2"
+              >
+                <p class="text-xs font-medium">
+                  {{ t("costumes.dressup.experimental.borrowHairTitle") }}
+                  <span class="font-normal text-muted-foreground">· {{ t("costumes.dressup.experimental.borrowHairHint") }}</span>
+                </p>
+                <p v-if="approximatePalette" class="text-[11px] text-muted-foreground">
+                  {{ t("costumes.dressup.experimental.approximateHint") }}
+                </p>
+                <div class="grid grid-cols-5 gap-1.5 sm:grid-cols-6" role="radiogroup" :aria-label="t('costumes.dressup.experimental.borrowHairTitle')">
+                  <button
+                    v-for="donorId in hairDonorIds"
+                    :key="donorId"
+                    type="button"
+                    role="radio"
+                    :aria-checked="hairFrom === donorId"
+                    :title="characterMap.get(donorId)?.name ?? `#${donorId}`"
+                    class="group flex min-w-0 flex-col items-center gap-0.5 rounded-md text-center outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    @click="selectBorrowedHair(donorId)"
+                  >
+                    <span
+                      :class="[
+                        'relative block aspect-square w-full overflow-hidden rounded-md bg-muted/40 ring-2 transition',
+                        hairFrom === donorId ? 'ring-primary' : 'ring-transparent group-hover:ring-border',
+                      ]"
+                    >
+                      <SekaiAssetImage :sources="donorThumbnailSources(donorId)" :alt="characterMap.get(donorId)?.name ?? ''" fit="contain" placeholder-class="bg-transparent" />
+                    </span>
+                    <span class="w-full truncate text-[10px] leading-tight text-muted-foreground">{{ characterMap.get(donorId)?.name }}</span>
+                  </button>
+                </div>
+              </section>
 
               <p v-if="activeSlot === 'hair' && hairLocked" class="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
                 {{ t("costumes.dressup.hairLockedHint") }}

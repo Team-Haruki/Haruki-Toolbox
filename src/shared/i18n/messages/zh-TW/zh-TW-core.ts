@@ -921,6 +921,15 @@ export default {
       "headHairStyleHint": "只匹配單獨髮型",
       "setBadge": "SET",
       "setBadgeHint": "與目前穿戴同一套",
+      "experimental": {
+        "title": "實驗功能",
+        "note": "測試中的功能，效果可能不完整",
+        "borrowHair": "借用其他角色的預設髮型",
+        "borrowHairTitle": "其他角色的預設髮型",
+        "borrowHairHint": "按本角色預設髮色重新上色",
+        "approximateHint": "本角色是漸層或雙色髮，重新上色只是近似效果",
+        "borrowedHairCaption": "{name}的預設髮型（借用）"
+      },
       "filters": {
         "count": "{count} 件",
         "source": "獲取方式",
