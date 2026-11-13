@@ -2,8 +2,8 @@
 
 Prebuilt CostumeShop entry of the Haruki-3D engine (`haruki-3d-engine/costume_shop`, `bun run build:lib`), with the
 chunks it loads. The kernel reads original game content supplied by the host (see the engine's `docs/api.md`,
-"Content"): the AssetBundleInfo, original bundles and master rows. Here they come from the Toolbox backend's
-`/api/misc/costume3d/<region>/` (raw-bundle mirror layout plus `master/characters/<id>.json`) through
+"Content"): the AssetBundleInfo, original bundles and master rows. Here they come from the raw-bundle mirror on the
+asset CDN, `<asset root>/raw-bundles/<region>/android/` (with `master/characters/<id>.json` cut by the mirror sync), through
 `createMirrorContent(base, { masterLayout: "characters" })`; see `../../lib/costume-content.ts`.
 
 Built from Prsk-3D `a8219538`.

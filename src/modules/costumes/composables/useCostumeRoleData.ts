@@ -71,7 +71,7 @@ function fetchCostumeRoleData(
 
 /**
  * Loads the selectable costume parts and stock defaults of one `<characterId>:<unit>` role, as the 3D kernel
- * builds them from the backend's content (`/api/misc/costume3d/<region>/`).
+ * builds them from the raw-bundle mirror on the asset CDN.
  */
 export function useCostumeRoleData(
   region: Ref<SekaiRegion>,
@@ -79,7 +79,7 @@ export function useCostumeRoleData(
   unit: Ref<string | null>,
 ) {
   const settingsStore = useSettingsStore()
-  const baseUrl = computed(() => resolveCostumeContentBaseUrl(settingsStore.currentEndpoint, region.value))
+  const baseUrl = computed(() => resolveCostumeContentBaseUrl(settingsStore.currentAssetEndpoint, region.value))
   const data = shallowRef<CostumeRoleData | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)

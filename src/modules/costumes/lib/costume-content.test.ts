@@ -3,12 +3,21 @@ import { costumeLoadTracker, loadCostumeContent, resolveCostumeContentBaseUrl } 
 import type { HarukiOriginalAssetBundleElement } from "../vendor/haruki-3d-engine/haruki-3d-engine-costume-shop.js"
 
 describe("resolveCostumeContentBaseUrl", () => {
-  it("points the 3D kernel at the region's content on the selected API endpoint", () => {
-    expect(resolveCostumeContentBaseUrl("https://toolbox-api.example", "jp")).toBe(
-      "https://toolbox-api.example/api/misc/costume3d/jp/",
+  it("points the 3D kernel at the region's raw-bundle mirror on the chosen asset CDN", () => {
+    expect(resolveCostumeContentBaseUrl("global", "jp", undefined)).toBe(
+      "https://sekai-assets-haruki.seiunx.net/raw-bundles/jp/android/",
     )
-    expect(resolveCostumeContentBaseUrl("https://toolbox-api.example/", "tw")).toBe(
-      "https://toolbox-api.example/api/misc/costume3d/tw/",
+    expect(resolveCostumeContentBaseUrl("china_cdn", "tw", undefined)).toBe(
+      "https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com/raw-bundles/tw/android/",
+    )
+  })
+
+  it("takes another mirror root when one is configured", () => {
+    expect(resolveCostumeContentBaseUrl("global", "kr", " http://localhost:4200/raw-bundles/ ")).toBe(
+      "http://localhost:4200/raw-bundles/kr/android/",
+    )
+    expect(resolveCostumeContentBaseUrl("global", "jp", "  ")).toBe(
+      "https://sekai-assets-haruki.seiunx.net/raw-bundles/jp/android/",
     )
   })
 })
@@ -35,8 +44,8 @@ describe("loadCostumeContent", () => {
     return requested
   }
 
-  it("shares one content per backend root and counts the bundles it downloads", async () => {
-    const base = "https://shared.example/api/misc/costume3d/jp/"
+  it("shares one content per mirror root and counts the bundles it downloads", async () => {
+    const base = "https://shared.example/raw-bundles/jp/android/"
     const requested = serve(200)
     const content = await loadCostumeContent(base)
     expect(await loadCostumeContent(base)).toBe(content)
@@ -53,7 +62,7 @@ describe("loadCostumeContent", () => {
   })
 
   it("does not keep a failed load, so the next call asks again", async () => {
-    const base = "https://flaky.example/api/misc/costume3d/jp/"
+    const base = "https://flaky.example/raw-bundles/jp/android/"
     const requested = serve(503)
     await expect(loadCostumeContent(base)).rejects.toThrow()
     await expect(loadCostumeContent(base)).rejects.toThrow()

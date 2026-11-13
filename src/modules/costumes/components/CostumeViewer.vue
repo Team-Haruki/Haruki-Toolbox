@@ -78,8 +78,8 @@ function endLoadProgress() {
 const errorMessage = ref<string | null>(null)
 
 const settingsStore = useSettingsStore()
-// The region's content on the Toolbox backend (AssetBundleInfo, original bundles, master rows).
-const contentBaseUrl = computed(() => resolveCostumeContentBaseUrl(settingsStore.currentEndpoint, props.region))
+// The region's raw-bundle mirror on the asset CDN (AssetBundleInfo, original bundles, master rows).
+const contentBaseUrl = computed(() => resolveCostumeContentBaseUrl(settingsStore.currentAssetEndpoint, props.region))
 
 let kernel: Haruki3DKernel | null = null
 let kernelBaseUrl: string | null = null
