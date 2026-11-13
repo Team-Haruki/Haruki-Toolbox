@@ -195,7 +195,7 @@ export function useStoryPlayback(options: StoryPlaybackOptions) {
       const { canAutoplay } = await import("@/modules/story/engine/story-runtime")
       const autoplay = interacted || (await canAutoplay())
       if (mine !== seq) return
-      const context = { index: idx, kind: hit.episode.kind, eventBundle: hit.episode.bundle, character2ds: catalog.character2ds }
+      const context = { index: idx, kind: hit.episode.kind, eventBundle: hit.episode.bundle, character2ds: catalog.character2ds, units: catalog.units }
       await rt.load(sid, scn, context, autoplay, startAt)
     } catch (error) {
       if (mine !== seq) return

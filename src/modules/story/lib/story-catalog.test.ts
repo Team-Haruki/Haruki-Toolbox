@@ -83,6 +83,21 @@ describe("buildStoryCatalog", () => {
     expect(cat.names[21]).toBe("初音ミク")
   })
 
+  test("keeps what a character's shared voice pack depends on: its kind and whose character it is", () => {
+    const withCharacters = buildStoryCatalog(sources({
+      character2ds: [
+        { id: 298, characterType: "game_character", characterId: 21, unit: "piapro", assetName: "v2_21miku" },
+        { id: 900, characterType: "sub_game_character", characterId: 1, unit: "none", assetName: "v2_sub_sanrio_kitty" },
+        // no asset: nothing is filed under it
+        { id: 32, characterType: "mob", characterId: 1, unit: "none" },
+      ],
+    }))
+    expect([...withCharacters.character2ds]).toEqual([
+      [298, { assetName: "v2_21miku", unit: "piapro", characterType: "game_character", characterId: 21 }],
+      [900, { assetName: "v2_sub_sanrio_kitty", unit: "none", characterType: "sub_game_character", characterId: 1 }],
+    ])
+  })
+
   test("indexes every episode by scenario id", () => {
     expect(cat.bySid.get("street_01_01")?.series.kind).toBe("unit")
     expect(cat.bySid.get("card_9_b")?.episode.title).toBe("B")

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test"
-import type { LoadContext, ModelManifestEntry, ScenarioSceneData } from "pjsk-scenario-player"
+import { sharedVoicePaths, type LoadContext, type ModelManifestEntry, type ScenarioSceneData } from "pjsk-scenario-player"
 import {
   configureStoryRoot,
   createStoryResolver,
@@ -103,6 +103,44 @@ describe("createStoryResolver", () => {
     expect(partVoiceDirs(ep, { character2dId: 300 })[0]).toBe("startapp/sound/scenario/voice/part_voice_v2_10an_street")
     expect(partVoiceDirs(ep, { character2dId: 999 })).toEqual([])
     expect(r.voice("s", "v001", sp, { character2dId: 1 })).toHaveLength(3) // not a part voice
+  })
+
+  test("adds the shared packs of the appearing characters when given the library's rule", () => {
+    const shared = createStoryResolver({ sharedVoicePaths })
+    const character2ds = new Map([
+      [278, { assetName: "v2_01ichika", unit: "light_sound", characterType: "game_character", characterId: 1 }],
+      [298, { assetName: "v2_21miku", unit: "piapro", characterType: "game_character", characterId: 21 }],
+      [306, { assetName: "v2_22rin", unit: "idol", characterType: "game_character", characterId: 22 }],
+      // a sub character: its characterId counts sub characters, not gameCharacters
+      [900, { assetName: "v2_sub_sanrio_kitty", unit: "none", characterType: "sub_game_character", characterId: 1 }],
+      [32, { assetName: "mob", unit: "none", characterType: "mob", characterId: 1 }],
+    ])
+    const units = { 1: "light_sound", 21: "piapro", 22: "piapro" }
+    const scenario = { AppearCharacters: [278, 298, 306, 900, 32].map((Character2dId) => ({ Character2dId })) } as unknown as ScenarioSceneData
+    const sp: LoadContext = { scenario, data: { index, kind: "special", character2ds, units } }
+
+    // No speaker on the line (a full-screen voice): only the appearing characters name packs.
+    // The cue's "band" suffix does not: it sits in the idol-unit Rin pack.
+    const noSpeaker = shared.voice("sp_01", "partvoice_96_022_band", sp, {}) as string[]
+    expect(noSpeaker.slice(0, 5)).toEqual([
+      `${ROOT}/tutorial/sound/scenario/part_voice/v2_21miku_piapro/partvoice_96_022_band.mp3`,
+      `${ROOT}/startapp/sound/scenario/voice/part_voice_v2_21miku_piapro/partvoice_96_022_band.mp3`,
+      `${ROOT}/tutorial/sound/scenario/part_voice/v2_22rin_idol/partvoice_96_022_band.mp3`,
+      `${ROOT}/startapp/sound/scenario/voice/part_voice_v2_22rin_idol/partvoice_96_022_band.mp3`,
+      `${ROOT}/startapp/sound/scenario/voice/part_voice_v2_sub_sanrio_kitty/partvoice_96_022_band.mp3`,
+    ])
+    expect(noSpeaker).toHaveLength(8) // then the scenario folders
+
+    // With a speaker: its own packs lead, and a pack both rules name is listed once.
+    const spoken = shared.voice("sp_01", "partvoice_28_021_piapro", sp, { character2dId: 298 }) as string[]
+    expect(spoken[0]).toBe(`${ROOT}/startapp/sound/scenario/voice/part_voice_v2_21miku_piapro/partvoice_28_021_piapro.mp3`)
+    expect(new Set(spoken).size).toBe(spoken.length)
+    expect(spoken.filter((url) => url.includes("part_voice_v2_21miku_piapro/"))).toHaveLength(1)
+    expect(spoken).toContain(`${ROOT}/startapp/sound/scenario/voice/part_voice_v2_22rin_idol/partvoice_28_021_piapro.mp3`)
+
+    // Other voices are untouched, and a context without the master rows adds nothing.
+    expect(shared.voice("sp_01", "v001", sp, { character2dId: 298 })).toHaveLength(3)
+    expect(shared.voice("sp_01", "partvoice_1", ctx({ index, kind: "special" }), {})).toHaveLength(3)
   })
 
   test("maps movies through the index", () => {

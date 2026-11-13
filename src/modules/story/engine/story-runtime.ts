@@ -8,6 +8,7 @@
 import {
   DEFAULT_MENU,
   PjskPlayer,
+  sharedVoicePaths,
   type ModelManifest,
   type PlayerModes,
   type ScenarioSceneData,
@@ -263,7 +264,7 @@ export class StoryRuntime {
     }
 
     this.player = new PjskPlayer(this.box, {
-      assets: createStoryResolver(),
+      assets: createStoryResolver({ sharedVoicePaths }),
       models: () => this.models,
       menu: DEFAULT_MENU,
       auto: opts.auto,

@@ -11,7 +11,15 @@
 // fails (network, timeout, 5xx, cut short; never a 404), and the page's own
 // lookups use storyUrls.fallback.
 
-import type { AssetResolver, LoadContext, ModelManifestEntry, VoiceInfo } from "pjsk-scenario-player"
+import type {
+  AssetResolver,
+  LoadContext,
+  ModelManifestEntry,
+  VoiceCharacter2d,
+  VoiceGameCharacter,
+  VoiceInfo,
+  sharedVoicePaths,
+} from "pjsk-scenario-player"
 import { resolveAssetHostTwinUrl } from "@/shared/sekai/asset-image-fallback"
 
 /** One Live2D costume of the JP tree (the backend's jp-index entry). */
@@ -39,7 +47,9 @@ export interface StoryEpisodeContext {
   /** event stories: the event bundle (event-only SEs live next to its scenarios) */
   eventBundle?: string
   /** character2dId → model asset and unit, for part voices (master character2ds) */
-  character2ds?: ReadonlyMap<number, { assetName: string; unit: string }>
+  character2ds?: ReadonlyMap<number, { assetName: string; unit: string; characterType?: string; characterId?: number }>
+  /** gameCharacterId → unit: which appearing characters bring a shared voice pack */
+  units?: Readonly<Record<number, string>>
 }
 
 const PLAYER_DIR = "story-player/v1"
@@ -134,8 +144,39 @@ export function partVoiceDirs(ep: StoryEpisodeContext, info: VoiceInfo | undefin
   return dirs
 }
 
+/** The master rows `sharedVoicePaths` reads, built once per episode context. */
+const voiceMasters = new WeakMap<StoryEpisodeContext, { characters: VoiceCharacter2d[]; games: VoiceGameCharacter[] }>()
+
+function voiceMastersOf(ep: StoryEpisodeContext) {
+  let masters = voiceMasters.get(ep)
+  if (!masters) {
+    masters = {
+      characters: [...(ep.character2ds ?? [])].map(([id, c]) => ({
+        id,
+        characterId: c.characterId,
+        characterType: c.characterType ?? "",
+        assetName: c.assetName,
+        unit: c.unit,
+      })),
+      games: Object.entries(ep.units ?? {}).map(([id, unit]) => ({ id: Number(id), unit })),
+    }
+    voiceMasters.set(ep, masters)
+  }
+  return masters
+}
+
+export type StoryResolverOptions = {
+  /**
+   * The library's rule for shared part voices: the packs of the characters
+   * that appear in the scenario, whoever speaks the line. Handed in by the
+   * runtime, which already loads the library; this file imports only types,
+   * so the pages that build URLs do not pull the player in.
+   */
+  sharedVoicePaths?: typeof sharedVoicePaths
+}
+
 /** The library resolver for the JP tree (candidate folders, the episode's index). */
-export function createStoryResolver(): AssetResolver {
+export function createStoryResolver(options: StoryResolverOptions = {}): AssetResolver {
   return {
     // the page fetches scenarios and the index itself
     scenario: (id) => jp(`${id}.json`),
@@ -162,7 +203,15 @@ export function createStoryResolver(): AssetResolver {
       const urls = dirs.map((d) => jp(`${d}/${scenarioId}/${voiceId}.mp3`))
       // area talk voices sit in the additional voice pack
       if (ep.kind === "area") urls.unshift(jp(`additionalvoice/sound/actionset/voice/${scenarioId}/${voiceId}.mp3`))
-      if (voiceId.startsWith("partvoice")) urls.unshift(...partVoiceDirs(ep, info).map((d) => jp(`${d}/${voiceId}.mp3`)))
+      if (voiceId.startsWith("partvoice")) {
+        // The speaker's own packs first (most lines), then the packs of every
+        // appearing character: a line's speaker can be missing, and its
+        // suffix does not name the pack it is filed in.
+        const speaker = partVoiceDirs(ep, info).map((d) => jp(`${d}/${voiceId}.mp3`))
+        const { characters, games } = voiceMastersOf(ep)
+        const shared = (options.sharedVoicePaths?.(ctx.scenario, voiceId, characters, games) ?? []).map(jp)
+        urls.unshift(...new Set([...speaker, ...shared]))
+      }
       return urls
     },
     background: (id) => [

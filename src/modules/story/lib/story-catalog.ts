@@ -78,7 +78,14 @@ export type StoryCatalog = {
   unreleased?: ReadonlySet<string>
 }
 
-export type StoryCharacter2d = { assetName: string; unit: string }
+export type StoryCharacter2d = {
+  assetName: string
+  unit: string
+  /** "game_character" | "sub_game_character" | "mob" (shared voice packs depend on it) */
+  characterType: string
+  /** A game character's gameCharacters id; for a sub character it counts sub characters instead. */
+  characterId?: number
+}
 
 /** The subset of the shared indexes the catalog needs. */
 export type StoryCatalogSources = {
@@ -275,7 +282,9 @@ export function buildStoryCatalog(src: StoryCatalogSources): StoryCatalog {
   for (const c of records(files.character2ds)) {
     const id = num(c.id)
     const assetName = str(c.assetName)
-    if (id != null && assetName) character2ds.set(id, { assetName, unit: str(c.unit) })
+    if (id != null && assetName) {
+      character2ds.set(id, { assetName, unit: str(c.unit), characterType: str(c.characterType), characterId: num(c.characterId) ?? undefined })
+    }
   }
 
   return { tabs, units, names, bySid, character2ds }
