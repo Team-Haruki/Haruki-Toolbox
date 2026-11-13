@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils"
 import { useSettingsStore } from "@/shared/stores/settings"
 import type { SekaiRegion } from "@/types"
 import type { Haruki3DKernel } from "../vendor/haruki-3d-engine/haruki-3d-engine-costume-shop.js"
-import { loadCostumeContent, loadCostumeEngine, resolveCostumeContentBaseUrl } from "../lib/costume-content"
+import { costumeLoadTracker, loadCostumeContent, loadCostumeEngine, resolveCostumeContentBaseUrl } from "../lib/costume-content"
+import { formatMegabytes, loadProgressSince, type CostumeLoadProgress } from "../lib/costume-load-progress"
 import type { CostumeMotionType } from "../lib/costume-motions"
 
 export type CostumeViewerRecipe = {
@@ -54,6 +55,26 @@ const { t } = useI18n()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const hostRef = ref<HTMLDivElement | null>(null)
 const status = ref<"idle" | "loading" | "ready" | "error">("idle")
+/** The current load's bundle downloads; null until the kernel asks for its first bundle. */
+const loadProgress = ref<CostumeLoadProgress | null>(null)
+let stopLoadProgress: (() => void) | null = null
+
+function watchLoadProgress() {
+  stopLoadProgress?.()
+  const tracker = costumeLoadTracker(contentBaseUrl.value)
+  const start = tracker.snapshot()
+  loadProgress.value = null
+  stopLoadProgress = tracker.subscribe((counts) => {
+    const progress = loadProgressSince(start, counts)
+    loadProgress.value = progress.requested > 0 ? progress : null
+  })
+}
+
+function endLoadProgress() {
+  stopLoadProgress?.()
+  stopLoadProgress = null
+  loadProgress.value = null
+}
 const errorMessage = ref<string | null>(null)
 
 const settingsStore = useSettingsStore()
@@ -122,6 +143,7 @@ async function loadRecipe() {
 
   status.value = "loading"
   errorMessage.value = null
+  watchLoadProgress()
   try {
     const activeKernel = await ensureKernel()
     if (activeKernel == null || generation !== loadGeneration) {
@@ -156,6 +178,10 @@ async function loadRecipe() {
     }
     errorMessage.value = loadError instanceof Error ? loadError.message : String(loadError)
     status.value = "error"
+  } finally {
+    if (generation === loadGeneration) {
+      endLoadProgress()
+    }
   }
 }
 
@@ -305,6 +331,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  endLoadProgress()
   loadGeneration += 1
   document.removeEventListener("visibilitychange", handleVisibilityChange)
   resizeObserver?.disconnect()
@@ -327,7 +354,30 @@ onBeforeUnmount(() => {
       v-if="status === 'loading'"
       class="absolute inset-0 flex items-center justify-center bg-black/30"
     >
-      <LucideLoaderCircle class="size-8 animate-spin text-white/80" />
+      <div class="flex w-48 max-w-[70%] flex-col items-center gap-2" role="status" aria-live="polite">
+        <LucideLoaderCircle class="size-8 animate-spin text-white/80" />
+        <template v-if="loadProgress">
+          <div
+            class="h-1.5 w-full overflow-hidden rounded-full bg-white/20"
+            role="progressbar"
+            :aria-valuenow="Math.round((loadProgress.fraction ?? 0) * 100)"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            <div class="h-full rounded-full bg-white/80 transition-[width]" :style="{ width: `${(loadProgress.fraction ?? 0) * 100}%` }" />
+          </div>
+          <p class="text-xs text-white/80 tabular-nums">
+            {{
+              t("costumes.viewer.loadingProgress", {
+                done: loadProgress.done,
+                total: loadProgress.requested,
+                mb: formatMegabytes(loadProgress.bytesDone),
+              })
+            }}
+          </p>
+        </template>
+        <p v-else class="text-xs text-white/80">{{ t("costumes.viewer.loadingPrepare") }}</p>
+      </div>
     </div>
     <div
       v-else-if="status === 'error'"

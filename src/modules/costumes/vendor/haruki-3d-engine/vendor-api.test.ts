@@ -32,3 +32,27 @@ test("every relative import of the vendored files resolves inside the directory"
     }
   }
 })
+
+// Only the CostumeShop entry is published here. The engine's other players (MV, Virtual Live, StreamingLive,
+// MySekai, audio) and its source maps stay in the private engine repository.
+test("the vendored files carry only the CostumeShop entry, without source maps", () => {
+  const files = [
+    ...readdirSync(directory).filter((name) => name.endsWith(".js")),
+    ...readdirSync(`${directory}/assets`).filter((name) => name.endsWith(".js")).map((name) => `assets/${name}`),
+  ]
+  const markers = [
+    /StreamingLive/i,
+    /VirtualLive|virtual_live/i,
+    /MySekai/i,
+    /HarukiMvBridge|mv_data/,
+    /criware|CriAtom|CriMana/i,
+    /sourceMappingURL/,
+  ]
+  for (const name of files) {
+    const source = read(name)
+    for (const marker of markers) {
+      expect({ name, found: marker.test(source) }).toEqual({ name, found: false })
+    }
+  }
+  expect(readdirSync(directory).some((name) => name.endsWith(".map"))).toBe(false)
+})

@@ -1,5 +1,6 @@
 import type { SekaiRegion } from "@/types"
 import type { HarukiCostumeShopContent } from "../vendor/haruki-3d-engine/haruki-3d-engine-costume-shop.js"
+import { BundleLoadTracker, trackBundleLoads } from "./costume-load-progress"
 
 /**
  * The 3D costume kernel reads the game's own content: the AssetBundleInfo, original bundles and master rows. The
@@ -16,6 +17,17 @@ export function loadCostumeEngine() {
 }
 
 const contents = new Map<string, Promise<HarukiCostumeShopContent>>()
+const trackers = new Map<string, BundleLoadTracker>()
+
+/** The bundle downloads of a backend root's content (the viewer's loading bar). */
+export function costumeLoadTracker(baseUrl: string): BundleLoadTracker {
+  let tracker = trackers.get(baseUrl)
+  if (!tracker) {
+    tracker = new BundleLoadTracker()
+    trackers.set(baseUrl, tracker)
+  }
+  return tracker
+}
 
 /**
  * One content object per backend root: the viewer's kernel and the part lists share its worker, so the
@@ -26,9 +38,9 @@ export function loadCostumeContent(baseUrl: string): Promise<HarukiCostumeShopCo
   if (cached) {
     return cached
   }
-  const content = loadCostumeEngine().then((engine) =>
-    engine.createMirrorContent(baseUrl, { masterLayout: "characters" }),
-  )
+  const content = loadCostumeEngine()
+    .then((engine) => engine.createMirrorContent(baseUrl, { masterLayout: "characters" }))
+    .then((mirror) => trackBundleLoads(mirror, costumeLoadTracker(baseUrl)))
   content.catch(() => {
     // A failed load (backend unreachable) must not stay cached.
     contents.delete(baseUrl)

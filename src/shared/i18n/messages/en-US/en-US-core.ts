@@ -933,6 +933,8 @@ export default {
     },
     "viewer": {
       "loadError": "Failed to load the 3D model",
+      "loadingProgress": "Downloading models {done}/{total} · {mb} MB",
+      "loadingPrepare": "Preparing…",
       "retry": "Retry",
       "idle": "Select a costume to preview"
     }

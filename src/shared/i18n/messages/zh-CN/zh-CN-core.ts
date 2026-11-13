@@ -933,6 +933,8 @@ export default {
     },
     "viewer": {
       "loadError": "3D 模型加载失败",
+      "loadingProgress": "正在下载模型 {done}/{total} · {mb} MB",
+      "loadingPrepare": "正在准备…",
       "retry": "重试",
       "idle": "选择要预览的服装"
     }
