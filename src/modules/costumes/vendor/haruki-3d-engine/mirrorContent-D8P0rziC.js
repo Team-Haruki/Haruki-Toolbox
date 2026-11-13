@@ -1002,7 +1002,7 @@ var Dt = 1, Ot = class {
 			contentId: this.id
 		};
 		if (typeof Worker > "u") {
-			this.inPlace ??= import("./originalPartWorker-zVeqNO18.js").then((e) => (e.registerOriginalHost(this.id, this.host), e));
+			this.inPlace ??= import("./originalPartWorker-De8PllAC.js").then((e) => (e.registerOriginalHost(this.id, this.host), e));
 			try {
 				return {
 					id: 0,
@@ -9584,18 +9584,18 @@ async function vs(e) {
 	return await t.json();
 }
 async function ys(e, t = {}) {
-	let n = _s(e), r = await vs(new URL("current.json", n));
-	if (!r.catalog) throw Error(`${new URL("current.json", n)} names no catalog`);
-	let i = _s(t.masterBaseUrl ?? new URL("master/", n).toString()), a = null;
+	let n = _s(e), r = await vs(new URL("current.json", n)), i = r.costumeCatalog || r.catalog;
+	if (!i) throw Error(`${new URL("current.json", n)} names no catalog`);
+	let a = _s(t.masterBaseUrl ?? new URL("master/", n).toString()), o = null;
 	return {
-		assetBundleInfo: new URL(r.catalog, n).toString(),
+		assetBundleInfo: new URL(i, n).toString(),
 		provideBundle: (e) => new URL(`bundles/${e.bundleName.split("/").map(encodeURIComponent).join("/")}.bundle?h=${encodeURIComponent(e.hash || `crc${e.crc}-${e.fileSize}`)}`, n).toString(),
-		provideMasterData: (e) => t.masterLayout === "characters" ? vs(new URL(`characters/${e}.json`, i)) : (a ??= Promise.all(gs.map((e) => vs(new URL(`${e}.json`, i)))).then((e) => ({
+		provideMasterData: (e) => t.masterLayout === "characters" ? vs(new URL(`characters/${e}.json`, a)) : (o ??= Promise.all(gs.map((e) => vs(new URL(`${e}.json`, a)))).then((e) => ({
 			version: r.dataVersion ?? r.assetVersion,
 			...Object.fromEntries(gs.map((t, n) => [t, e[n]]))
-		})), a.catch(() => {
-			a = null;
-		}), a),
+		})), o.catch(() => {
+			o = null;
+		}), o),
 		archiveBackgroundBaseUrl: _s(t.archiveBackgroundBaseUrl ?? n.toString()).toString()
 	};
 }

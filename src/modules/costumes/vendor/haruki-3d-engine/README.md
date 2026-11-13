@@ -6,7 +6,7 @@ chunks it loads. The kernel reads original game content supplied by the host (se
 asset CDN, `<asset root>/raw-bundles/<region>/android/` (with `master/characters/<id>.json` cut by the mirror sync), through
 `createMirrorContent(base, { masterLayout: "characters" })`; see `../../lib/costume-content.ts`.
 
-Built from Prsk-3D `cb0b02ce`.
+Built from Prsk-3D `dc0acc81`.
 
 Files:
 
