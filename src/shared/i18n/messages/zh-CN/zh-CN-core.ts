@@ -917,6 +917,32 @@ export default {
       "headExclusiveHint": "此角色专用",
       "headHairStyle": "发型",
       "headHairStyleHint": "只匹配单独发型",
+      "filters": {
+        "count": "{count} 件",
+        "source": "获取方式",
+        "sources": {
+          "card": "卡牌获取",
+          "shop": "商店制作",
+          "initial": "初始",
+          "gacha": "招募",
+          "pass": "通行证",
+          "pack": "服装礼包",
+          "event": "活动获取",
+          "other": "其他"
+        },
+        "cardSupply": "卡牌类型",
+        "cardSupplies": {
+          "all": "全部",
+          "normal": "常驻",
+          "limited": "限定"
+        },
+        "origin": "来源角色",
+        "year": "年份",
+        "unknownYear": "未知",
+        "regionExclusive": "区服限定",
+        "regionExclusiveHint": "本区服特有、日服没有的服装",
+        "regionBadgeHint": "区服特有：{regions}"
+      },
       "backgrounds": {
         "archive": "游戏背景",
         "transparent": "纯色背景"

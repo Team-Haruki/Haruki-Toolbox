@@ -965,6 +965,10 @@ var Dt = 1, Ot = class {
 		let t = this.masters.get(e);
 		return t || (t = Promise.resolve().then(() => this.content.provideMasterData(e)), this.masters.set(e, t), t.catch(() => this.masters.delete(e))), t;
 	}
+	async costumeSources(e) {
+		let t = await this.master(e);
+		return Array.isArray(t.costume3dSources) ? t.costume3dSources : [];
+	}
 	roleIndex(e, t) {
 		let n = `${e}:${t ?? ""}`, r = this.roleIndexes.get(n);
 		return r || (r = this.master(e).then((n) => {
@@ -998,7 +1002,7 @@ var Dt = 1, Ot = class {
 			contentId: this.id
 		};
 		if (typeof Worker > "u") {
-			this.inPlace ??= import("./originalPartWorker-CpaLansj.js").then((e) => (e.registerOriginalHost(this.id, this.host), e));
+			this.inPlace ??= import("./originalPartWorker-zVeqNO18.js").then((e) => (e.registerOriginalHost(this.id, this.host), e));
 			try {
 				return {
 					id: 0,

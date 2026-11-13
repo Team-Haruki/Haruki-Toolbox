@@ -10,7 +10,8 @@ import {
   type RuntimeCostumeOption,
 } from "../lib/costume-options"
 import { loadCostumeContent, loadCostumeEngine, resolveCostumeContentBaseUrl } from "../lib/costume-content"
-import type { HarukiMotionEntry } from "../vendor/haruki-3d-engine/haruki-3d-engine-costume-shop.js"
+import { indexCostumeSources, isCostumeReleased } from "../lib/costume-filters"
+import type { HarukiCostumeSource, HarukiMotionEntry } from "../vendor/haruki-3d-engine/haruki-3d-engine-costume-shop.js"
 
 export type CostumeRoleData = {
   options: Record<CostumeSlot, RuntimeCostumeOption[]>
@@ -25,6 +26,8 @@ export type CostumeRoleData = {
   motions: HarukiMotionEntry[]
   /** head costume3dId → the hair it brings (costume3dModelDefaultHairs of this unit). */
   defaultHairs: Map<number, number>
+  /** costume3dId → its source (the rack's filters); empty when the mirror's slices carry none. */
+  sourceById: Map<number, HarukiCostumeSource>
 }
 
 const roleDataCache = new Map<string, Promise<CostumeRoleData>>()
@@ -43,15 +46,19 @@ function fetchCostumeRoleData(
   const request = (async (): Promise<CostumeRoleData> => {
     const [engine, content] = await Promise.all([loadCostumeEngine(), loadCostumeContent(baseUrl)])
     // The parts the kernel builds this role from (master rows checked against the AssetBundleInfo).
-    const { role, parts, units, notAvailablePatterns, defaultHairs, motions } = await engine.listRoleParts(
+    const { role, parts, units, notAvailablePatterns, defaultHairs, motions, sources } = await engine.listRoleParts(
       content,
       `${characterId}:${unit}`,
     )
+    const sourceById = indexCostumeSources(sources)
+    // A costume the region has not released yet stays off the rack (and out of the counts) until its date.
+    const now = Date.now()
+    const released = (options: RuntimeCostumeOption[]) => options.filter((option) => isCostumeReleased(sourceById.get(option.id), now))
     return {
       options: {
-        body: listRuntimeCostumeOptions(parts, characterId, "body"),
-        hair: listRuntimeCostumeOptions(parts, characterId, "hair"),
-        head: listRuntimeCostumeOptions(parts, characterId, "head"),
+        body: released(listRuntimeCostumeOptions(parts, characterId, "body")),
+        hair: released(listRuntimeCostumeOptions(parts, characterId, "hair")),
+        head: released(listRuntimeCostumeOptions(parts, characterId, "head")),
       },
       defaults: resolveRoleDefaults([role], characterId, unit),
       nameById: buildRuntimeCostumeNameMap(parts, characterId),
@@ -59,6 +66,7 @@ function fetchCostumeRoleData(
       notAvailable: new Set(notAvailablePatterns.map((p) => `${p.headCostume3dId}|${p.hairCostume3dId}`)),
       motions,
       defaultHairs: new Map((defaultHairs ?? []).map((pair) => [pair.headCostume3dId, pair.hairCostume3dId])),
+      sourceById,
     }
   })()
   request.catch(() => {

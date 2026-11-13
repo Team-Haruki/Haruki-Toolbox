@@ -94,6 +94,25 @@ export type HarukiRoleParts = {
   defaultHairs: { headCostume3dId: number; hairCostume3dId: number }[]
   /** Every motion the content has, for any role: a recipe's motionRoleId / motionType. */
   motions: HarukiMotionEntry[]
+  /** The master data's costume3dSources rows of the character, as given (empty when the content has none). */
+  sources: HarukiCostumeSource[]
+}
+
+/** Where a costume comes from (the Haruki mirror's master slices; the kernel does not read it). */
+export type HarukiCostumeSource = {
+  costume3dId: number
+  /** The original source: "card", "initial", "shop", "gacha", "pass", "pack", "event" or "other". */
+  source: string
+  /** A card's supply: "normal" (permanent) or "limited". */
+  cardSupply?: "normal" | "limited"
+  /** The character whose card brings the costume's series, or the costume's own (initial costumes). */
+  originCharacterId?: number
+  /** The year the original came out (jp's, for a costume jp has too). */
+  year?: number
+  /** A region's exclusive costume (jp has none like it): the regions that have it. */
+  regions?: string[]
+  /** A costume the region has not released yet: when it does (ms). */
+  releaseAt?: number
 }
 
 export type HarukiMotionEntry = {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, shallowRef, watch } from "vue"
+import { computed, ref, shallowRef, useId, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { useRoute, useRouter } from "vue-router"
 import {
@@ -24,11 +24,17 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Skeleton } from "@/components/ui/skeleton"
 import { usePagedSlice } from "@/composables/usePagedSlice"
+import CatalogCharacterPicker from "@/shared/components/catalog/CatalogCharacterPicker.vue"
+import CatalogChipsField from "@/shared/components/catalog/CatalogChipsField.vue"
 import CatalogDownloadProgress from "@/shared/components/catalog/CatalogDownloadProgress.vue"
+import CatalogFilterPanel, { type CatalogActiveChip } from "@/shared/components/catalog/CatalogFilterPanel.vue"
+import type { CatalogFieldOption } from "@/shared/components/catalog/types"
 import CatalogErrorState from "@/shared/components/catalog/CatalogErrorState.vue"
 import CatalogPagination from "@/shared/components/catalog/CatalogPagination.vue"
 import CatalogRegionSelect from "@/shared/components/catalog/CatalogRegionSelect.vue"
@@ -48,6 +54,20 @@ import { COSTUME_SLOTS, pickDefaultOptionId, type CostumeSlot, type RuntimeCostu
 import { NONE_HEAD_COSTUME3D_IDS, orderBySeries, type SeriesContext, type WornPart } from "../lib/costume-series-order"
 import { hairForHead, headForHair, type HeadHairRules } from "../lib/costume-head-hair"
 import { MOTION_FOLLOW, motionValue, orderMotions, parseMotionValue } from "../lib/costume-motions"
+import {
+  CARD_SUPPLIES,
+  COSTUME_SOURCES,
+  costumeFilterCount,
+  costumeRegionBadge,
+  costumeYearOptions,
+  emptyCostumeFilters,
+  isCostumeReleased,
+  matchesCostumeFilters,
+  UNKNOWN_YEAR,
+  type CardSupplyFilter,
+  type CostumeFilters,
+  type CostumeSourceKind,
+} from "../lib/costume-filters"
 
 const { t, te } = useI18n()
 const route = useRoute()
@@ -283,9 +303,96 @@ function slotOptions(slot: CostumeSlot): RuntimeCostumeOption[] {
   return roleData.value?.options[slot] ?? []
 }
 
+// --- Filters: source, origin character, year, region exclusivity ---------
+// From the mirror's costume3dSources (jp's values for every costume jp has too); a mirror whose slices carry none
+// shows no filter panel.
+
+const filterId = useId()
+const filters = ref<CostumeFilters>(emptyCostumeFilters())
+const sourceById = computed(() => roleData.value?.sourceById ?? new Map())
+const hasSources = computed(() => sourceById.value.size > 0)
+/** jp is the reference: it has no exclusive costumes. */
+const exclusiveAvailable = computed(() => region.value !== "jp")
+const effectiveFilters = computed<CostumeFilters>(() =>
+  exclusiveAvailable.value ? filters.value : { ...filters.value, regionExclusive: false })
+const filterCount = computed(() => (hasSources.value ? costumeFilterCount(effectiveFilters.value) : 0))
+
+const sourceOptions = computed<CatalogFieldOption[]>(() =>
+  COSTUME_SOURCES.map((value) => ({ value, label: t(`costumes.dressup.filters.sources.${value}`) })))
+const yearOptions = computed<CatalogFieldOption[]>(() =>
+  // The years of the costumes on the rack (an unreleased one is held back, its year too).
+  costumeYearOptions([...sourceById.value.values()].filter((source) => isCostumeReleased(source, Date.now())))
+    .map((value) => ({ value, label: yearLabel(value) })))
+
+function yearLabel(year: string): string {
+  return year === UNKNOWN_YEAR ? t("costumes.dressup.filters.unknownYear") : year
+}
+
+function patchFilters(patch: Partial<CostumeFilters>) {
+  filters.value = { ...filters.value, ...patch }
+}
+
+function setSources(values: string[]) {
+  patchFilters({ sources: values.filter((value): value is CostumeSourceKind => (COSTUME_SOURCES as readonly string[]).includes(value)) })
+}
+
+function setCardSupply(value: AcceptableValue | AcceptableValue[] | undefined) {
+  // Deselecting the active chip goes back to all.
+  patchFilters({ cardSupply: (CARD_SUPPLIES as readonly unknown[]).includes(value) ? (value as CardSupplyFilter) : "all" })
+}
+
+function resetFilters() {
+  filters.value = emptyCostumeFilters()
+}
+
+/** The active filters as chips, shown while the panel is collapsed. */
+const filterChips = computed<CatalogActiveChip[]>(() => {
+  if (!hasSources.value) {
+    return []
+  }
+  const state = effectiveFilters.value
+  const chips: CatalogActiveChip[] = state.sources.map((source) => ({
+    key: `source:${source}`,
+    label: source === "card" && state.cardSupply !== "all"
+      ? `${t("costumes.dressup.filters.sources.card")} · ${t(`costumes.dressup.filters.cardSupplies.${state.cardSupply}`)}`
+      : t(`costumes.dressup.filters.sources.${source}`),
+  }))
+  for (const id of state.originCharacterIds) {
+    chips.push({ key: `origin:${id}`, label: characterMap.value.get(id)?.name ?? `#${id}` })
+  }
+  for (const year of state.years) {
+    chips.push({ key: `year:${year}`, label: yearLabel(year) })
+  }
+  if (state.regionExclusive) {
+    chips.push({ key: "exclusive", label: t("costumes.dressup.filters.regionExclusive") })
+  }
+  return chips
+})
+
+function removeFilterChip(key: string) {
+  const [kind, value = ""] = key.split(":")
+  const state = filters.value
+  if (kind === "source") {
+    patchFilters({ sources: state.sources.filter((source) => source !== value), ...(value === "card" ? { cardSupply: "all" } : {}) })
+  } else if (kind === "origin") {
+    patchFilters({ originCharacterIds: state.originCharacterIds.filter((id) => String(id) !== value) })
+  } else if (kind === "year") {
+    patchFilters({ years: state.years.filter((year) => year !== value) })
+  } else if (kind === "exclusive") {
+    patchFilters({ regionExclusive: false })
+  }
+}
+
+function regionBadge(option: RuntimeCostumeOption): string | null {
+  return costumeRegionBadge(sourceById.value.get(option.id))
+}
+
 const visibleOptions = computed<RuntimeCostumeOption[]>(() => {
   const needle = query.value.trim().toLowerCase()
-  const options = slotOptions(activeSlot.value)
+  const filtering = filterCount.value > 0
+  const options = filtering
+    ? slotOptions(activeSlot.value).filter((option) => matchesCostumeFilters(sourceById.value.get(option.id), effectiveFilters.value))
+    : slotOptions(activeSlot.value)
   if (!needle) {
     return options
   }
@@ -401,7 +508,7 @@ function isGroupSelected(group: RackGroup): boolean {
   return group.options.some((option) => option.id === selectedId.value)
 }
 
-watch(query, () => {
+watch([query, effectiveFilters], () => {
   page.value = 1
 })
 // After the stock-part watcher above has filled the selection of a new role.
@@ -801,6 +908,69 @@ watch(() => route.query, () => {
                 />
               </div>
 
+              <CatalogFilterPanel
+                v-if="hasSources"
+                :title="t('catalog.filters.title')"
+                :reset-label="t('catalog.filters.reset')"
+                :count-label="t('costumes.dressup.filters.count', { count: visibleGroups.length })"
+                page-key="costumes"
+                :active-count="filterCount"
+                :active-chips="filterChips"
+                content-class="flex flex-col gap-3"
+                @reset="resetFilters"
+                @remove-chip="removeFilterChip"
+              >
+                <CatalogChipsField
+                  :model-value="filters.sources"
+                  :label="t('costumes.dressup.filters.source')"
+                  :options="sourceOptions"
+                  compact
+                  @update:model-value="setSources"
+                />
+                <div v-if="filters.sources.includes('card')" class="flex flex-wrap items-center gap-1.5">
+                  <p :id="`${filterId}-supply`" class="mr-1 min-w-14 text-xs font-medium text-muted-foreground">
+                    {{ t("costumes.dressup.filters.cardSupply") }}
+                  </p>
+                  <ToggleGroup
+                    type="single"
+                    variant="chip"
+                    size="sm"
+                    :model-value="filters.cardSupply"
+                    :aria-labelledby="`${filterId}-supply`"
+                    @update:model-value="setCardSupply"
+                  >
+                    <ToggleGroupItem v-for="supply in CARD_SUPPLIES" :key="supply" :value="supply">
+                      {{ t(`costumes.dressup.filters.cardSupplies.${supply}`) }}
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
+                <CatalogChipsField
+                  :model-value="filters.years"
+                  :label="t('costumes.dressup.filters.year')"
+                  :options="yearOptions"
+                  compact
+                  @update:model-value="patchFilters({ years: $event })"
+                />
+                <div v-if="exclusiveAvailable" class="flex items-center gap-2">
+                  <Switch
+                    :id="`${filterId}-exclusive`"
+                    :model-value="filters.regionExclusive"
+                    @update:model-value="patchFilters({ regionExclusive: $event === true })"
+                  />
+                  <Label :for="`${filterId}-exclusive`" class="text-xs font-medium">
+                    {{ t("costumes.dressup.filters.regionExclusive") }}
+                  </Label>
+                  <span class="text-[11px] text-muted-foreground">{{ t("costumes.dressup.filters.regionExclusiveHint") }}</span>
+                </div>
+                <CatalogCharacterPicker
+                  :model-value="filters.originCharacterIds"
+                  :characters="characters"
+                  :label="t('costumes.dressup.filters.origin')"
+                  size="sm"
+                  @update:model-value="patchFilters({ originCharacterIds: $event })"
+                />
+              </CatalogFilterPanel>
+
               <p v-if="activeSlot === 'hair' && hairLocked" class="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
                 {{ t("costumes.dressup.hairLockedHint") }}
               </p>
@@ -850,6 +1020,13 @@ watch(() => route.query, () => {
                         >
                           {{ t("costumes.dressup.headHairStyle") }}
                         </span>
+                      </span>
+                      <span
+                        v-if="regionBadge(activeOption(group))"
+                        class="absolute bottom-1 left-1 rounded bg-background/85 px-1 font-mono text-[10px] leading-4 text-muted-foreground shadow-sm"
+                        :title="t('costumes.dressup.filters.regionBadgeHint', { regions: regionBadge(activeOption(group)) })"
+                      >
+                        {{ regionBadge(activeOption(group)) }}
                       </span>
                       <span
                         v-if="group.options.length > 1"

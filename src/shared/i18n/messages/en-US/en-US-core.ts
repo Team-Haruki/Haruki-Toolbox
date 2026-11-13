@@ -917,6 +917,32 @@ export default {
       "headExclusiveHint": "For this character only",
       "headHairStyle": "Hairstyle",
       "headHairStyleHint": "Only fits its own hairstyle",
+      "filters": {
+        "count": "{count} costumes",
+        "source": "Source",
+        "sources": {
+          "card": "Card",
+          "shop": "Costume shop",
+          "initial": "Initial",
+          "gacha": "Gacha",
+          "pass": "Mission pass",
+          "pack": "Costume pack",
+          "event": "Event",
+          "other": "Other"
+        },
+        "cardSupply": "Card type",
+        "cardSupplies": {
+          "all": "All",
+          "normal": "Permanent",
+          "limited": "Limited"
+        },
+        "origin": "Origin character",
+        "year": "Year",
+        "unknownYear": "Unknown",
+        "regionExclusive": "Server exclusive",
+        "regionExclusiveHint": "Costumes this server has and JP does not",
+        "regionBadgeHint": "Server exclusive: {regions}"
+      },
       "backgrounds": {
         "archive": "Game backdrop",
         "transparent": "Plain"
