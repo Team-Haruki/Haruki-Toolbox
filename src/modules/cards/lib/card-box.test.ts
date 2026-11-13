@@ -19,6 +19,7 @@ import {
   isCardTrained,
   normalizeUserCards,
   summarizeCollection,
+  resolveGroupPage,
 } from "./card-box"
 
 const NOW = Date.UTC(2026, 0, 1)
@@ -168,6 +169,29 @@ describe("groupCardsByCharacter", () => {
     const groups = groupCardsByCharacter(cards, staleOwned)
     expect(groups.reduce((sum, group) => sum + group.owned, 0)).toBe(0)
     expect(groups.reduce((sum, group) => sum + group.total, 0)).toBe(4)
+  })
+})
+
+describe("resolveGroupPage", () => {
+  it("shows a group that fits, or one that is not paged, whole", () => {
+    expect(resolveGroupPage(56, 60, 1)).toEqual({ page: 1, totalPages: 1, start: 0, end: 56 })
+    expect(resolveGroupPage(60, 60, 3)).toEqual({ page: 1, totalPages: 1, start: 0, end: 60 })
+    expect(resolveGroupPage(300, null, 2)).toEqual({ page: 1, totalPages: 1, start: 0, end: 300 })
+    expect(resolveGroupPage(300, 0, 2)).toEqual({ page: 1, totalPages: 1, start: 0, end: 300 })
+    expect(resolveGroupPage(0, 60, 1)).toEqual({ page: 1, totalPages: 1, start: 0, end: 0 })
+  })
+
+  it("cuts a larger group into pages, the last one shorter", () => {
+    expect(resolveGroupPage(67, 60, 1)).toEqual({ page: 1, totalPages: 2, start: 0, end: 60 })
+    expect(resolveGroupPage(67, 60, 2)).toEqual({ page: 2, totalPages: 2, start: 60, end: 67 })
+    expect(resolveGroupPage(300, 120, 2)).toEqual({ page: 2, totalPages: 3, start: 120, end: 240 })
+  })
+
+  it("brings a page outside the range back into it", () => {
+    expect(resolveGroupPage(67, 60, 9)).toMatchObject({ page: 2, start: 60, end: 67 })
+    expect(resolveGroupPage(67, 60, 0)).toMatchObject({ page: 1, start: 0 })
+    expect(resolveGroupPage(67, 60, Number.NaN)).toMatchObject({ page: 1, start: 0 })
+    expect(resolveGroupPage(67, 60, 1.9)).toMatchObject({ page: 1 })
   })
 })
 

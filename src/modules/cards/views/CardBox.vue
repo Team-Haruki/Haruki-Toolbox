@@ -126,17 +126,22 @@ const visibleCards = computed(() => sortCardBoxCards(filtered.value.visible, own
 
 // Phones page the (up to ~1,500) tiles instead of rendering a 24,000px
 // document; wide screens keep the single page and rely on content-visibility.
+// The ungrouped view pages the whole list. A grouped view lists every group
+// and each group pages its own cards (`sectionPageSize`): a cut through the
+// full list would leave a few of each character's cards on every page.
 const isNarrow = useMediaQuery("(max-width: 767px)")
-const totalPages = computed(() => isNarrow.value ? Math.max(1, Math.ceil(visibleCards.value.length / filters.size)) : 1)
+const pagesWholeList = computed(() => isNarrow.value && groupMode.value === "all")
+const totalPages = computed(() => pagesWholeList.value ? Math.max(1, Math.ceil(visibleCards.value.length / filters.size)) : 1)
 const currentPage = computed(() => Math.min(Math.max(1, filters.page), totalPages.value))
 const pagedCards = computed(() => {
-  if (!isNarrow.value) {
+  if (!pagesWholeList.value) {
     return visibleCards.value
   }
   const start = (currentPage.value - 1) * filters.size
   return visibleCards.value.slice(start, start + filters.size)
 })
-const showPagination = computed(() => isNarrow.value && visibleCards.value.length > filters.size)
+const showPagination = computed(() => pagesWholeList.value && visibleCards.value.length > filters.size)
+const sectionPageSize = computed(() => (isNarrow.value ? filters.size : null))
 
 const overall = computed(() => summarizeCollection(scopedCards.value, ownedMap.value))
 const characterDistribution = computed(() => buildCharacterDistribution(scopedCards.value, ownedMap.value))
@@ -197,7 +202,7 @@ function sectionKey(kind: "character" | "attr", key: number | string): string {
 
 const characterSections = computed(() => {
   const progressByCharacter = new Map(characterDistribution.value.map((row) => [row.characterId, row]))
-  return groupCardsByCharacter(pagedCards.value, ownedMap.value).map((group) => {
+  return groupCardsByCharacter(visibleCards.value, ownedMap.value).map((group) => {
     const character = characterMap.value.get(group.key) ?? null
     const progress = progressByCharacter.get(group.key) ?? null
     const unitColor = character?.unit != null ? unitColorMap.value.get(character.unit) ?? null : null
@@ -217,7 +222,7 @@ const characterSections = computed(() => {
 
 const attrSections = computed(() => {
   const progressByAttr = new Map(attrDistribution.value.map((row) => [row.attr, row]))
-  return groupCardsByAttr(pagedCards.value, ownedMap.value).map((group) => {
+  return groupCardsByAttr(visibleCards.value, ownedMap.value).map((group) => {
     const progress = progressByAttr.get(group.key) ?? null
     return {
       key: sectionKey("attr", group.key),
@@ -347,6 +352,19 @@ const allCollapsed = computed(() =>
   currentSectionKeys.value.length > 0 && currentSectionKeys.value.every((key) => collapsedKeys.value.has(key)),
 )
 
+// On a phone a grouped view opens as a list of its groups, each one tap from
+// its cards: 26 open characters would be the long document paging avoids.
+// Once per grouping; what the user opens or closes afterwards is theirs.
+const autoCollapsed = new Set<CardBoxGroupMode>()
+watch([isNarrow, groupMode, () => currentSectionKeys.value.join(",")], () => {
+  const mode = groupMode.value
+  if (!isNarrow.value || autoCollapsed.has(mode) || currentSectionKeys.value.length < 2) {
+    return
+  }
+  autoCollapsed.add(mode)
+  collapsedKeys.value = new Set([...collapsedKeys.value, ...currentSectionKeys.value])
+}, { immediate: true })
+
 function toggleSection(key: string) {
   const next = new Set(collapsedKeys.value)
   if (next.has(key)) {
@@ -384,31 +402,9 @@ function handleRosterSelect(characterId: number) {
   if (collapsedKeys.value.has(key)) {
     toggleSection(key)
   }
-  // The section is filtered away: widen the filter rather than scrolling
-  // nowhere. The page jump below goes into the same patch, because a
-  // filter change on its own resets the page to 1 (`pageKey` rule).
-  const widen = filters.characterIds.length > 0 && !filters.characterIds.includes(characterId)
-  const patch: Parameters<typeof query.patch>[0] = widen ? { characterIds: [] } : {}
-  if (isNarrow.value) {
-    // On a paged phone view the character may sit on another page. Look it
-    // up in the list the widened filter will show.
-    const cards = widen
-      ? sortCardBoxCards(
-        applyCardBoxFilters(releasedCards.value, ownedMap.value, { ...filters, characterIds: [] }, unitOf).visible,
-        ownedMap.value,
-        sort.value,
-      )
-      : visibleCards.value
-    const index = cards.findIndex((card) => card.characterId === characterId)
-    if (index >= 0) {
-      const targetPage = Math.floor(index / filters.size) + 1
-      if (targetPage !== currentPage.value) {
-        patch.page = targetPage
-      }
-    }
-  }
-  if (Object.keys(patch).length > 0) {
-    query.patch(patch)
+  // The section is filtered away: widen the filter rather than scrolling nowhere.
+  if (filters.characterIds.length > 0 && !filters.characterIds.includes(characterId)) {
+    query.patch({ characterIds: [] })
   }
   void nextTick(() => scrollToSection(key))
 }
@@ -643,6 +639,7 @@ const paginationAnchor = ref<HTMLElement | null>(null)
             :total="section.total"
             :percent="section.percent"
             :views="section.views"
+            :page-size="sectionPageSize"
             :collapsed="collapsedKeys.has(section.key)"
             @toggle="toggleSection(section.key)"
           />
@@ -661,6 +658,7 @@ const paginationAnchor = ref<HTMLElement | null>(null)
             :total="section.total"
             :percent="section.percent"
             :views="section.views"
+            :page-size="sectionPageSize"
             :collapsed="collapsedKeys.has(section.key)"
             @toggle="toggleSection(section.key)"
           />
