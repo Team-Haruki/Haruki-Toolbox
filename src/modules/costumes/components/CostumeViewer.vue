@@ -4,11 +4,11 @@ import { useI18n } from "vue-i18n"
 import { LucideLoaderCircle, LucideRefreshCcw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { resolvePjsk3dRuntimeBaseUrl, resolvePjsk3dRuntimeFallbackBaseUrl } from "@/shared/sekai/data-sources"
-import { shouldRetryAssetOnFallback } from "@/shared/sekai/asset-fallback"
+import { useSettingsStore } from "@/shared/stores/settings"
 import type { SekaiRegion } from "@/types"
-import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
-import type { Haruki3DKernel } from "../vendor/haruki-3d-engine/haruki-3d-engine.js"
+import type { Haruki3DKernel } from "../vendor/haruki-3d-engine/haruki-3d-engine-costume-shop.js"
+import { loadCostumeContent, loadCostumeEngine, resolveCostumeContentBaseUrl } from "../lib/costume-content"
+import type { CostumeMotionType } from "../lib/costume-motions"
 
 export type CostumeViewerRecipe = {
   characterId: number
@@ -16,11 +16,23 @@ export type CostumeViewerRecipe = {
   bodyCostume3dId: number
   headCostume3dId: number
   hairCostume3dId: number
+  /** Which motion plays: the role's CostumeShop motion when absent ("costume"). */
+  motionType?: CostumeMotionType
+  /** Whose motion (`<characterId>:<unit>`); absent: the role's own. */
+  motionRoleId?: string | null
+  /**
+   * Only the head accessory (`headCostume3dId`, a head_optional part of the role): the kernel reads its bundle alone,
+   * without the character, and frames it on its own.
+   */
+  accessoryOnly?: boolean
 }
+
+/** "archive": the game's backdrop (the character archive costume viewer's); "transparent": the frame's plain color. */
+export type CostumeViewerBackground = "archive" | "transparent"
+
 
 const props = withDefaults(defineProps<{
   region: SekaiRegion
-  preference: SekaiAssetEndpointPreference
   recipe: CostumeViewerRecipe | null
   /** Sizing lives with the caller; the default keeps the card-detail embed as it was. */
   class?: string
@@ -30,9 +42,11 @@ const props = withDefaults(defineProps<{
    * the exposed `zoomBy` keep working.
    */
   wheelZoom?: boolean
+  background?: CostumeViewerBackground
 }>(), {
   class: "aspect-[7/5]",
   wheelZoom: true,
+  background: "archive",
 })
 
 const { t } = useI18n()
@@ -42,15 +56,9 @@ const hostRef = ref<HTMLDivElement | null>(null)
 const status = ref<"idle" | "loading" | "ready" | "error">("idle")
 const errorMessage = ref<string | null>(null)
 
-const primaryBaseUrl = computed(() => resolvePjsk3dRuntimeBaseUrl(props.region, props.preference))
-const fallbackBaseUrl = computed(() => resolvePjsk3dRuntimeFallbackBaseUrl(props.region, props.preference))
-// After the chosen host fails a load (network, timeout, 5xx), this viewer
-// loads from the fallback host until the region or the asset route changes.
-const onFallback = ref(false)
-watch(primaryBaseUrl, () => {
-  onFallback.value = false
-}, { flush: "sync" })
-const assetBaseUrl = computed(() => (onFallback.value && fallbackBaseUrl.value) || primaryBaseUrl.value)
+const settingsStore = useSettingsStore()
+// The region's content on the Toolbox backend (AssetBundleInfo, original bundles, master rows).
+const contentBaseUrl = computed(() => resolveCostumeContentBaseUrl(settingsStore.currentEndpoint, props.region))
 
 let kernel: Haruki3DKernel | null = null
 let kernelBaseUrl: string | null = null
@@ -63,18 +71,19 @@ async function ensureKernel(): Promise<Haruki3DKernel | null> {
     return null
   }
 
-  if (kernel != null && kernelBaseUrl === assetBaseUrl.value) {
+  const baseUrl = contentBaseUrl.value
+  if (kernel != null && kernelBaseUrl === baseUrl) {
     return kernel
   }
 
   await disposeKernel()
-  // The engine bundle (~450 kB + wasm) is loaded on demand.
-  const engine = await import("../vendor/haruki-3d-engine/haruki-3d-engine.js")
-  kernel = engine.createHaruki3DKernel({
-    canvas,
-    assetBaseUrl: assetBaseUrl.value,
-  })
-  kernelBaseUrl = assetBaseUrl.value
+  const [engine, content] = await Promise.all([loadCostumeEngine(), loadCostumeContent(baseUrl)])
+  if (canvasRef.value !== canvas) {
+    return null
+  }
+  // The game's own backdrop (the character archive costume viewer's) unless the caller asks for the plain frame.
+  kernel = engine.createHaruki3DKernel({ canvas, content, background: props.background })
+  kernelBaseUrl = baseUrl
   applySize()
   return kernel
 }
@@ -119,12 +128,19 @@ async function loadRecipe() {
       return
     }
 
-    await activeKernel.load({
-      roleId: `${recipe.characterId}:${recipe.unit}`,
+    const roleId = `${recipe.characterId}:${recipe.unit}`
+    await activeKernel.load(recipe.accessoryOnly ? {
+      kind: "head_optional",
+      roleId,
+      headOptionalCostume3dId: recipe.headCostume3dId,
+    } : {
+      roleId,
       bodyCostume3dId: recipe.bodyCostume3dId,
       headCostume3dId: recipe.headCostume3dId,
       hairCostume3dId: recipe.hairCostume3dId,
       headOptionalCostume3dId: null,
+      motionType: recipe.motionType ?? "costume",
+      motionRoleId: recipe.motionRoleId ?? null,
     })
     if (generation !== loadGeneration) {
       return
@@ -136,11 +152,6 @@ async function loadRecipe() {
     status.value = "ready"
   } catch (loadError) {
     if (generation !== loadGeneration) {
-      return
-    }
-    if (!onFallback.value && fallbackBaseUrl.value && shouldRetryAssetOnFallback(loadError)) {
-      console.warn("3D load failed, retrying on the fallback host", loadError)
-      onFallback.value = true // assetBaseUrl changes and the watcher below reloads
       return
     }
     errorMessage.value = loadError instanceof Error ? loadError.message : String(loadError)
@@ -275,8 +286,13 @@ function handleVisibilityChange() {
   }
 }
 
-watch([() => props.recipe, assetBaseUrl], () => {
+watch([() => props.recipe, contentBaseUrl], () => {
   void loadRecipe()
+})
+
+// The backdrop changes in place; the model stays loaded.
+watch(() => props.background, (background) => {
+  kernel?.setBackground(background).catch((error) => console.error("3D background:", error))
 })
 
 onMounted(() => {

@@ -266,26 +266,6 @@ export function resolveRarityTrainingIconUrl(rarity: string): string {
   return resolveRareStarImageUrl(false)
 }
 
-/**
- * Browser runtime root of the Haruki 3D exporter output for one region,
- * served by both asset hosts under `/pjsk-3d-output/`.
- */
-export function resolvePjsk3dRuntimeBaseUrl(
-  region: SekaiRegion,
-  preference: SekaiAssetEndpointPreference = DEFAULT_SEKAI_ASSET_ENDPOINT,
-): string {
-  return `${resolveSekaiAssetRootUrl(preference)}/pjsk-3d-output/${region}/`
-}
-
-/** The 3D runtime root on the fallback host (see resolveSekaiAssetFallbackRootUrl), or null. */
-export function resolvePjsk3dRuntimeFallbackBaseUrl(
-  region: SekaiRegion,
-  preference: SekaiAssetEndpointPreference = DEFAULT_SEKAI_ASSET_ENDPOINT,
-): string | null {
-  const root = resolveSekaiAssetFallbackRootUrl(preference)
-  return root ? `${root}/pjsk-3d-output/${region}/` : null
-}
-
 export function resolveCardFrameImageUrl(rarity: string): string {
   return resolveToolboxStaticImageUrl(`static_images/card/frame_${rarity}.png`)
 }

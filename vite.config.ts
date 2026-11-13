@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
-import { defineConfig, loadEnv, type Plugin, type ProxyOptions } from 'vite'
+import { defineConfig, loadEnv, type Plugin, type ProxyOptions, type Rollup } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
@@ -124,15 +124,26 @@ function resolveLocalDevServer(command: string, mode: string) {
 // lets the running app warm them in the background, in parallel — including
 // the chunks of a *newer* deployment, so the reload after an update prompt
 // lands on an already-cached build.
+const costumeEngineDirectory = '/src/modules/costumes/vendor/haruki-3d-engine/'
+
+// Every chunk or asset built from the vendored 3D costume engine.
+function isCostumeEngineOutput(output: Rollup.OutputBundle[string]): boolean {
+    if (output.type === 'chunk') {
+        return output.moduleIds.some((id) => id.replaceAll('\\', '/').includes(costumeEngineDirectory))
+    }
+    return output.originalFileNames.some((name) => name.replaceAll('\\', '/').includes(costumeEngineDirectory.slice(1)))
+}
+
 function assetManifestPlugin(): Plugin {
     return {
         name: 'haruki-asset-manifest',
         generateBundle(_options, bundle) {
             const files = Object.entries(bundle)
                 .filter(([fileName]) => /^assets\/.+\.(?:js|css)$/.test(fileName))
-                // The 3D costume engine is a megabyte that most visitors never
-                // open; it stays a pay-on-use download.
-                .filter(([fileName]) => !fileName.includes('/haruki-3d-engine-'))
+                // The 3D costume engine (its chunks and official shader tables,
+                // several megabytes) is opened by few visitors; it stays a
+                // pay-on-use download.
+                .filter(([, output]) => !isCostumeEngineOutput(output))
                 .map(([fileName, output]) => ({
                     url: `${'/'}${fileName}`,
                     bytes: output.type === 'chunk'

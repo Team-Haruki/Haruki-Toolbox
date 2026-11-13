@@ -43,9 +43,9 @@ describe("buildCostumeThumbnailAssetbundleName", () => {
 const REGISTRY = {
   version: 1,
   entries: [
-    { costume3dId: 2, partType: "body", characterId: 1, unit: "light_sound", name: "制服", colorId: 1, colorName: "赤", costumeAssetbundleName: "body_seifuku_a", costume3dGroupId: 3, packagePath: "parts/body/a/" },
+    { costume3dId: 2, partType: "body", characterId: 1, unit: "light_sound", name: "制服", colorId: 1, colorName: "赤", thumbnailAssetbundleName: "body_seifuku_a", costume3dGroupId: 3, packagePath: "parts/body/a/" },
     // Duplicate id from a second package: options must dedupe.
-    { costume3dId: 2, partType: "body", characterId: 1, unit: "light_sound", name: "制服", colorId: 1, colorName: "赤", costumeAssetbundleName: "body_seifuku_a", costume3dGroupId: 3, packagePath: "parts/body/a-delta/" },
+    { costume3dId: 2, partType: "body", characterId: 1, unit: "light_sound", name: "制服", colorId: 1, colorName: "赤", thumbnailAssetbundleName: "body_seifuku_a", costume3dGroupId: 3, packagePath: "parts/body/a-delta/" },
     { costume3dId: 9, partType: "body", characterId: 2, unit: "light_sound", name: "别人的", packagePath: "parts/body/x/" },
     { costume3dId: 201, partType: "hair", characterId: 1, unit: "light_sound", name: "デフォルト", packagePath: "parts/hair/a/" },
     // head_and_hair head sources act as full heads.
@@ -84,7 +84,7 @@ describe("listRuntimeCostumeOptions", () => {
   it("derives head thumbnails for head_optional entries without a bundle name", () => {
     const options = listRuntimeCostumeOptions({
       entries: [
-        { costume3dId: 25005, partType: "head_optional", characterId: 1, unit: "light_sound", colorId: 3, costumeAssetbundleName: null, headCostume3dAssetbundleType: "head_only", packagePath: "parts/_sources/head_optional/x/" },
+        { costume3dId: 25005, partType: "head_optional", characterId: 1, unit: "light_sound", colorId: 3, thumbnailAssetbundleName: null, headCostume3dAssetbundleType: "head_only", packagePath: "parts/_sources/head_optional/x/" },
       ],
     }, 1, "head")
     expect(options.map((option) => option.thumbnailAssetbundleName)).toEqual(["cos0025_head_02"])

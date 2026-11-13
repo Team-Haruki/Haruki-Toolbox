@@ -904,7 +904,28 @@ export default {
       "linkCopyFailed": "Could not copy. Copy the address bar instead.",
       "loadError": "Failed to load costume data",
       "roleLoadError": "Failed to load the character's 3D part list",
-      "retry": "Retry"
+      "retry": "Retry",
+      "unit": "Unit version",
+      "motion": "Motion",
+      "motionSearch": "Search character, unit or motion…",
+      "motionEmpty": "No motion found",
+      "background": "Background",
+      "accessoryOnly": "Accessory only",
+      "accessoryOnlyHint": "Show the worn accessory on its own",
+      "accessoryOnlyUnavailable": "The current head piece is not a separate accessory",
+      "backgrounds": {
+        "archive": "Game backdrop",
+        "transparent": "Plain"
+      },
+      "motions": {
+        "costume": "Showcase",
+        "preview": "Generic",
+        "result": "Live result",
+        "follow": "Follow character",
+        "followHint": "The current character and unit's showcase motion",
+        "preview_ladies": "Generic · Female",
+        "preview_mens": "Generic · Male"
+      }
     },
     "viewer": {
       "loadError": "Failed to load the 3D model",

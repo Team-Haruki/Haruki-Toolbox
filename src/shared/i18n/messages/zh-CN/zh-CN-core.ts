@@ -904,7 +904,28 @@ export default {
       "linkCopyFailed": "复制失败，请手动复制地址栏",
       "loadError": "服装数据加载失败",
       "roleLoadError": "该角色的 3D 部件清单加载失败",
-      "retry": "重试"
+      "retry": "重试",
+      "unit": "组合版本",
+      "motion": "动作",
+      "motionSearch": "搜索角色、组合或动作…",
+      "motionEmpty": "没有找到动作",
+      "background": "背景",
+      "accessoryOnly": "仅头饰",
+      "accessoryOnlyHint": "单独查看当前头饰",
+      "accessoryOnlyUnavailable": "当前头饰不是独立配件",
+      "backgrounds": {
+        "archive": "游戏背景",
+        "transparent": "纯色背景"
+      },
+      "motions": {
+        "costume": "展示动作",
+        "preview": "通用动作",
+        "result": "结算动作",
+        "follow": "跟随角色",
+        "followHint": "当前角色与组合的展示动作",
+        "preview_ladies": "通用动作 · 女性",
+        "preview_mens": "通用动作 · 男性"
+      }
     },
     "viewer": {
       "loadError": "3D 模型加载失败",

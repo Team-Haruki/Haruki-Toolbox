@@ -4,7 +4,9 @@ import { useI18n } from "vue-i18n"
 import { useRoute, useRouter } from "vue-router"
 import {
   LucideCrown,
+  LucideImage,
   LucideLink,
+  LucidePersonStanding,
   LucideRefreshCcw,
   LucideRotateCcw,
   LucideRotateCw,
@@ -14,12 +16,15 @@ import {
   LucideSearch,
   LucideShirt,
   LucideUndo2,
+  LucideUsers,
 } from "lucide-vue-next"
 import type { AcceptableValue } from "reka-ui"
 import { toast } from "vue-sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Skeleton } from "@/components/ui/skeleton"
 import { usePagedSlice } from "@/composables/usePagedSlice"
@@ -27,7 +32,8 @@ import CatalogDownloadProgress from "@/shared/components/catalog/CatalogDownload
 import CatalogErrorState from "@/shared/components/catalog/CatalogErrorState.vue"
 import CatalogPagination from "@/shared/components/catalog/CatalogPagination.vue"
 import CatalogRegionSelect from "@/shared/components/catalog/CatalogRegionSelect.vue"
-import { buildCatalogCharacterMap, resolveSekaiCharacterColor, type CatalogCharacter } from "@/shared/sekai/catalog"
+import { buildCatalogCharacterMap, resolveSekaiCharacterColor, SEKAI_UNITS, type CatalogCharacter } from "@/shared/sekai/catalog"
+import { resolveSekaiUnitLabel } from "@/shared/sekai/labels"
 import { loadMasterFilesCacheFirst } from "@/shared/sekai/master-loader"
 import SekaiAssetImage from "@/shared/components/SekaiAssetImage.vue"
 import SekaiCharacterAvatar from "@/shared/components/SekaiCharacterAvatar.vue"
@@ -36,11 +42,13 @@ import { applyCatalogRegionQuery, useCatalogRegionQuerySync, useEffectiveCatalog
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { useSettingsStore } from "@/shared/stores/settings"
 import type { SekaiRegion } from "@/types"
-import CostumeViewer, { type CostumeViewerRecipe } from "../components/CostumeViewer.vue"
+import CostumeViewer, { type CostumeViewerBackground, type CostumeViewerRecipe } from "../components/CostumeViewer.vue"
 import { useCostumeRoleData } from "../composables/useCostumeRoleData"
 import { COSTUME_SLOTS, pickDefaultOptionId, type CostumeSlot, type RuntimeCostumeOption } from "../lib/costume-options"
+import { NONE_HEAD_COSTUME3D_IDS, orderBySeries, type SeriesContext, type WornPart } from "../lib/costume-series-order"
+import { MOTION_FOLLOW, motionValue, orderMotions, parseMotionValue } from "../lib/costume-motions"
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const settingsStore = useSettingsStore()
@@ -105,15 +113,60 @@ const bodyId = ref<number | null>(queryNumber("body"))
 const headId = ref<number | null>(queryNumber("head"))
 const hairId = ref<number | null>(queryNumber("hair"))
 
+function queryUnit(): string | null {
+  const raw = route.query.unit
+  const value = Array.isArray(raw) ? raw[0] : raw
+  return typeof value === "string" && (SEKAI_UNITS as readonly string[]).includes(value) ? value : null
+}
+
+function queryMotion(): string {
+  const raw = route.query.motion
+  const value = Array.isArray(raw) ? raw[0] : raw
+  return typeof value === "string" && parseMotionValue(value) != null ? value : MOTION_FOLLOW
+}
+
+/**
+ * A Virtual Singer's unit version (`?unit=`): each unit is a role of its own, with its own models of the same
+ * costumes, preset and CostumeShop motion. Null is the character's own unit.
+ */
+const unitOverride = ref<string | null>(queryUnit())
+/**
+ * The motion the stage plays (`?motion=<type>:<characterId>:<unit>`): any character's CostumeShop or Live result
+ * motion, or a preview loop; by default the current role's own CostumeShop motion.
+ */
+const motionChoice = ref<string>(queryMotion())
+
+const BACKGROUNDS = ["archive", "transparent"] as const satisfies readonly CostumeViewerBackground[]
+
+/** `?bg=plain`: the plain frame instead of the game's backdrop. */
+function queryBackground(): CostumeViewerBackground {
+  return route.query.bg === "plain" ? "transparent" : "archive"
+}
+
+const background = ref<CostumeViewerBackground>(queryBackground())
+
+/** `?part=accessory`: only the head accessory's model, loaded without the character. */
+const accessoryOnly = ref(route.query.part === "accessory")
+
+function setBackground(value: AcceptableValue) {
+  if (typeof value === "string" && (BACKGROUNDS as readonly string[]).includes(value)) {
+    background.value = value as CostumeViewerBackground
+  }
+}
+
+const defaultUnit = computed<string | null>(() => characterMap.value.get(characterId.value)?.unit ?? null)
 const roleCharacterId = computed<number | null>(() => characterId.value)
-const roleUnit = computed<string | null>(() => characterMap.value.get(characterId.value)?.unit ?? null)
+// Only a Virtual Singer (own unit piapro) has other unit versions.
+const roleUnit = computed<string | null>(() =>
+  defaultUnit.value === "piapro" && unitOverride.value != null ? unitOverride.value : defaultUnit.value,
+)
 
 const {
   data: roleData,
   loading: roleLoading,
   error: roleError,
   reload: reloadRole,
-} = useCostumeRoleData(region, assetEndpoint, roleCharacterId, roleUnit)
+} = useCostumeRoleData(region, roleCharacterId, roleUnit)
 
 /** Fill empty/foreign selections with the role's stock parts. */
 watch(roleData, (data) => {
@@ -146,6 +199,55 @@ function resetToDefaults() {
   headId.value = pickDefaultOptionId(data.options.head, data.defaults?.headCostume3dId)
   hairId.value = pickDefaultOptionId(data.options.hair, data.defaults?.hairCostume3dId)
 }
+
+/** The unit versions the stage offers: the character's units, when it has more than one. */
+const unitOptions = computed<string[]>(() => {
+  const units = roleData.value?.units ?? []
+  return units.length > 1 ? units : []
+})
+
+function setUnit(value: AcceptableValue) {
+  if (typeof value === "string") {
+    unitOverride.value = value === defaultUnit.value ? null : value
+  }
+}
+
+function setMotion(value: string | null) {
+  if (value != null && parseMotionValue(value) != null) {
+    motionChoice.value = value
+  }
+}
+
+/** Every motion of the content, each character's together, with the character's icon; the default first. */
+const motionOptions = computed<ComboboxOption[]>(() => {
+  const typeLabel = (type: string) => t(`costumes.dressup.motions.${type}`)
+  const options: ComboboxOption[] = [{
+    value: MOTION_FOLLOW,
+    label: t("costumes.dressup.motions.follow"),
+    description: t("costumes.dressup.motions.followHint"),
+  }]
+  for (const motion of orderMotions(roleData.value?.motions ?? [])) {
+    if (motion.characterId == null) {
+      options.push({
+        value: motionValue(motion),
+        label: t(`costumes.dressup.motions.preview_${motion.figure}`),
+      })
+      continue
+    }
+    const character = characterMap.value.get(motion.characterId)
+    const name = character?.name ?? `#${motion.characterId}`
+    // A Virtual Singer's motion in another unit names that unit.
+    const unitLabel = motion.unit != null && motion.unit !== character?.unit ? resolveSekaiUnitLabel({ t, te }, motion.unit) : null
+    // The type leads, so the closed picker still says which of the character's motions plays.
+    options.push({
+      value: motionValue(motion),
+      label: [typeLabel(motion.motionType), name, ...(unitLabel ? [unitLabel] : [])].join(" · "),
+      iconUrl: character?.iconUrl ?? null,
+      keywords: [typeLabel(motion.motionType), ...(motion.unit ? [resolveSekaiUnitLabel({ t, te }, motion.unit)] : [])],
+    })
+  }
+  return options
+})
 
 const characters = computed<CatalogCharacter[]>(() =>
   [...characterMap.value.values()].sort((a, b) => a.id - b.id),
@@ -191,10 +293,55 @@ const visibleOptions = computed<RuntimeCostumeOption[]>(() => {
  */
 type RackGroup = { key: string; name: string; options: RuntimeCostumeOption[] }
 
+function groupKey(option: RuntimeCostumeOption): string {
+  return option.costume3dGroupId != null ? `g:${option.costume3dGroupId}` : `id:${option.id}`
+}
+
+/**
+ * The game's list order (CostumeSelectSortOrder): the worn costume first, then the costumes of the same series as the
+ * other two worn parts. Taken when a list opens (slot, character or unit change), like the game, so picking within a
+ * list does not reshuffle it under the pointer.
+ */
+const seriesRank = shallowRef<Map<string, number>>(new Map())
+
+function wornPart(slot: CostumeSlot, id: number | null): WornPart {
+  if (id == null) {
+    return null
+  }
+  const option = roleData.value?.options[slot].find((candidate) => candidate.id === id)
+  return { id, costume3dGroupId: option?.costume3dGroupId ?? null }
+}
+
+function rankSeries() {
+  const data = roleData.value
+  if (data == null) {
+    seriesRank.value = new Map()
+    return
+  }
+  const slot = activeSlot.value
+  const cells = new Map<string, RuntimeCostumeOption[]>()
+  for (const option of data.options[slot]) {
+    const key = groupKey(option)
+    cells.set(key, [...(cells.get(key) ?? []), option])
+  }
+  const context: SeriesContext = {
+    body: wornPart("body", bodyId.value),
+    head: wornPart("head", headId.value),
+    hair: wornPart("hair", hairId.value),
+    notAvailable: data.notAvailable,
+  }
+  const ordered = orderBySeries([...cells.entries()], slot, context, ([, options]) => {
+    // The cell's default costume: its first colour.
+    const first = [...options].sort((a, b) => (a.colorId ?? 0) - (b.colorId ?? 0) || a.id - b.id)[0]!
+    return { representativeId: first.id, costume3dGroupId: first.costume3dGroupId, ids: options.map((option) => option.id) }
+  })
+  seriesRank.value = new Map(ordered.map(([key], index) => [key, index]))
+}
+
 const visibleGroups = computed<RackGroup[]>(() => {
   const groups = new Map<string, RackGroup>()
   for (const option of visibleOptions.value) {
-    const key = option.costume3dGroupId != null ? `g:${option.costume3dGroupId}` : `id:${option.id}`
+    const key = groupKey(option)
     const group = groups.get(key)
     if (group) {
       group.options.push(option)
@@ -205,7 +352,11 @@ const visibleGroups = computed<RackGroup[]>(() => {
   for (const group of groups.values()) {
     group.options.sort((a, b) => (a.colorId ?? 0) - (b.colorId ?? 0) || a.id - b.id)
   }
+  const rank = seriesRank.value
   return [...groups.values()]
+    .map((group, index) => ({ group, index, rank: rank.get(group.key) ?? Number.MAX_SAFE_INTEGER }))
+    .sort((a, b) => a.rank - b.rank || a.index - b.index)
+    .map((entry) => entry.group)
 })
 
 // The body and accessory slots hold every colour variant the runtime ships —
@@ -242,7 +393,9 @@ function isGroupSelected(group: RackGroup): boolean {
 watch(query, () => {
   page.value = 1
 })
-watch([activeSlot, () => roleData.value, selectedId], showSelectedPage, { immediate: true })
+// After the stock-part watcher above has filled the selection of a new role.
+watch([activeSlot, () => roleData.value], rankSeries, { immediate: true })
+watch([activeSlot, () => roleData.value, selectedId, seriesRank], showSelectedPage, { immediate: true })
 
 function selectOption(id: number) {
   switch (activeSlot.value) {
@@ -287,6 +440,7 @@ async function copyLink() {
 function selectCharacter(id: number) {
   if (id !== characterId.value && characterMap.value.has(id)) {
     characterId.value = id
+    unitOverride.value = null
     bodyId.value = null
     headId.value = null
     hairId.value = null
@@ -296,6 +450,14 @@ function selectCharacter(id: number) {
 
 // Full head sets ship their own hairstyle, so the hair slot has no effect
 // while one is selected (in-game behavior).
+/** The head slot holds an accessory of its own (not a full head with its hair, not the unset head). */
+const hasStandaloneAccessory = computed(() => {
+  const option = roleData.value?.options.head.find((candidate) => candidate.id === headId.value)
+  return option != null && !option.includesHair && !NONE_HEAD_COSTUME3D_IDS.has(option.id)
+})
+
+const showingAccessoryOnly = computed(() => accessoryOnly.value && hasStandaloneAccessory.value)
+
 const hairLocked = computed(() =>
   roleData.value?.options.head.find((option) => option.id === headId.value)?.includesHair === true,
 )
@@ -312,15 +474,21 @@ const recipe = computed<CostumeViewerRecipe | null>(() => {
     bodyCostume3dId: bodyId.value,
     headCostume3dId: headId.value,
     hairCostume3dId: hairId.value,
+    ...parseMotionValue(motionChoice.value),
+    accessoryOnly: showingAccessoryOnly.value,
   }
 })
 
 // Keep the URL shareable without polluting history.
-watch([characterId, bodyId, headId, hairId], ([nextCharacter, nextBody, nextHead, nextHair]) => {
+watch([characterId, bodyId, headId, hairId, unitOverride, motionChoice, background, accessoryOnly], ([nextCharacter, nextBody, nextHead, nextHair, nextUnit, nextMotion, nextBackground, nextAccessoryOnly]) => {
   void router.replace({
     query: {
       ...route.query,
       characterId: String(nextCharacter),
+      unit: nextUnit ?? undefined,
+      motion: nextMotion !== MOTION_FOLLOW ? nextMotion : undefined,
+      bg: nextBackground === "transparent" ? "plain" : undefined,
+      part: nextAccessoryOnly ? "accessory" : undefined,
       body: nextBody != null ? String(nextBody) : undefined,
       head: nextHead != null ? String(nextHead) : undefined,
       hair: nextHair != null ? String(nextHair) : undefined,
@@ -337,8 +505,24 @@ watch(() => route.query, () => {
   const nextBody = queryNumber("body")
   const nextHead = queryNumber("head")
   const nextHair = queryNumber("hair")
+  const nextUnit = queryUnit()
+  const nextMotion = queryMotion()
   if (characterId.value !== nextCharacter) {
     characterId.value = nextCharacter
+  }
+  if (unitOverride.value !== nextUnit) {
+    unitOverride.value = nextUnit
+  }
+  if (motionChoice.value !== nextMotion) {
+    motionChoice.value = nextMotion
+  }
+  const nextBackground = queryBackground()
+  if (background.value !== nextBackground) {
+    background.value = nextBackground
+  }
+  const nextAccessoryOnly = route.query.part === "accessory"
+  if (accessoryOnly.value !== nextAccessoryOnly) {
+    accessoryOnly.value = nextAccessoryOnly
   }
   if (bodyId.value !== nextBody) {
     bodyId.value = nextBody
@@ -418,8 +602,8 @@ watch(() => route.query, () => {
           <CostumeViewer
             ref="viewerRef"
             :region="region"
-            :preference="assetEndpoint"
             :recipe="recipe"
+            :background="background"
             class="aspect-[4/5] sm:aspect-[7/5] lg:aspect-auto lg:h-[calc(100vh-11rem)] lg:min-h-96"
           />
           <div class="flex flex-wrap items-center gap-1.5">
@@ -449,6 +633,58 @@ watch(() => route.query, () => {
             <Button variant="ghost" size="sm" class="text-muted-foreground" @click="resetToDefaults">
               <LucideRefreshCcw class="size-4" /> {{ t("costumes.dressup.reset") }}
             </Button>
+          </div>
+          <!-- What the stage shows: the unit version (Virtual Singers), the motion and the backdrop. -->
+          <div class="flex flex-wrap items-center gap-1.5">
+            <!-- A Virtual Singer's unit version: its own models of the same costumes, preset and motion. -->
+            <Select v-if="unitOptions.length > 0" :model-value="roleUnit ?? undefined" @update:model-value="setUnit">
+              <SelectTrigger size="sm" class="w-auto gap-1.5" :aria-label="t('costumes.dressup.unit')" :title="t('costumes.dressup.unit')">
+                <LucideUsers class="size-4" aria-hidden="true" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="unit in unitOptions" :key="unit" :value="unit">
+                  {{ resolveSekaiUnitLabel({ t, te }, unit) }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <span id="costume-motion-label" class="sr-only">{{ t("costumes.dressup.motion") }}</span>
+            <Combobox
+              :model-value="motionChoice"
+              :options="motionOptions"
+              :clearable="false"
+              :placeholder="t('costumes.dressup.motion')"
+              :search-placeholder="t('costumes.dressup.motionSearch')"
+              :empty-text="t('costumes.dressup.motionEmpty')"
+              :icon-component="LucidePersonStanding"
+              trigger-aria-labelledby="costume-motion-label"
+              trigger-class="h-8 w-auto max-w-72 px-3 font-normal"
+              content-class="w-72"
+              @update:model-value="setMotion"
+            />
+            <!-- The accessory's model alone; only for an accessory of its own (a full head carries the hair). -->
+            <Button
+              variant="outline"
+              size="sm"
+              :aria-pressed="showingAccessoryOnly"
+              :disabled="!hasStandaloneAccessory"
+              :title="hasStandaloneAccessory ? t('costumes.dressup.accessoryOnlyHint') : t('costumes.dressup.accessoryOnlyUnavailable')"
+              :class="showingAccessoryOnly ? 'bg-accent text-accent-foreground' : undefined"
+              @click="accessoryOnly = !accessoryOnly"
+            >
+              <LucideCrown class="size-4" /> {{ t("costumes.dressup.accessoryOnly") }}
+            </Button>
+            <Select :model-value="background" @update:model-value="setBackground">
+              <SelectTrigger size="sm" class="w-auto gap-1.5" :aria-label="t('costumes.dressup.background')" :title="t('costumes.dressup.background')">
+                <LucideImage class="size-4" aria-hidden="true" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="option in BACKGROUNDS" :key="option" :value="option">
+                  {{ t(`costumes.dressup.backgrounds.${option}`) }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <p v-if="currentCharacter && recipe" class="text-xs text-muted-foreground">
             <span class="font-medium text-foreground">{{ currentCharacter.name }}</span>

@@ -6,8 +6,6 @@ import {
   resolveCardAttrIconUrl,
   resolveCharacterIconUrl,
   resolveMySekaiCanvasIconUrl,
-  resolvePjsk3dRuntimeBaseUrl,
-  resolvePjsk3dRuntimeFallbackBaseUrl,
   resolveSekaiAssetFallbackRootUrl,
   SEKAI_ASSET_ENDPOINT_ROOTS,
   resolveRarityTrainingIconUrl,
@@ -169,18 +167,6 @@ describe("Sekai data source helpers", () => {
     )
   })
 
-  it("serves the 3D runtime from the selected endpoint", () => {
-    expect(resolvePjsk3dRuntimeBaseUrl("jp", "china_cdn")).toBe(
-      "https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com/pjsk-3d-output/jp/",
-    )
-    expect(resolvePjsk3dRuntimeBaseUrl("jp", "global")).toBe(
-      "https://sekai-assets-haruki.seiunx.net/pjsk-3d-output/jp/",
-    )
-    expect(resolvePjsk3dRuntimeBaseUrl("cn")).toBe(
-      "https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com/pjsk-3d-output/cn/",
-    )
-  })
-
   it("offers only the China CDN and the global route", () => {
     expect(Object.keys(SEKAI_ASSET_ENDPOINT_ROOTS).sort()).toEqual(["china_cdn", "global"])
     expect(Object.values(SEKAI_ASSET_ENDPOINT_ROOTS)).not.toContain("https://sekai-assets.haruki.seiunx.com")
@@ -189,9 +175,5 @@ describe("Sekai data source helpers", () => {
   it("falls back to the global route from the China CDN only", () => {
     expect(resolveSekaiAssetFallbackRootUrl("china_cdn")).toBe("https://sekai-assets-haruki.seiunx.net")
     expect(resolveSekaiAssetFallbackRootUrl("global")).toBeNull()
-    expect(resolvePjsk3dRuntimeFallbackBaseUrl("kr", "china_cdn")).toBe(
-      "https://sekai-assets-haruki.seiunx.net/pjsk-3d-output/kr/",
-    )
-    expect(resolvePjsk3dRuntimeFallbackBaseUrl("kr", "global")).toBeNull()
   })
 })

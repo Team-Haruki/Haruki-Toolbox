@@ -32,15 +32,14 @@ const props = defineProps<{
 const { t } = useI18n()
 
 const region = computed(() => props.region)
-const assetEndpoint = computed(() => props.assetEndpoint)
 const cardId = computed(() => props.cardId)
 const characterId = computed(() => props.characterId)
 const roleUnit = computed<string | null>(() => props.unit)
 
 const { groups, loading } = useCardCostumes(region, cardId)
-// Stock head/hair come from the 3D runtime role catalog — masterdata default
-// ids are not guaranteed to exist in the runtime.
-const { data: roleData } = useCostumeRoleData(region, assetEndpoint, characterId, roleUnit)
+// Stock head/hair come from the 3D kernel's role (its character3ds preset,
+// checked against the AssetBundleInfo).
+const { data: roleData } = useCostumeRoleData(region, characterId, roleUnit)
 
 // The costume master ships name/colorName blank on Nuverse regions (cn/tw/kr);
 // the runtime registry carries them, same source the dressup page uses.
@@ -192,7 +191,7 @@ function togglePreview(costume3dId: number) {
     </div>
 
     <div v-if="viewerRecipe" class="mx-auto w-full max-w-xl">
-      <CostumeViewer :region="region" :preference="assetEndpoint" :recipe="viewerRecipe" :wheel-zoom="false" />
+      <CostumeViewer :region="region" :recipe="viewerRecipe" :wheel-zoom="false" />
     </div>
   </CatalogDetailSection>
 </template>
