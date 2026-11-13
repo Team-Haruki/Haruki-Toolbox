@@ -184,7 +184,7 @@ function Ge(e, t) {
 		for (let e of l) {
 			if (e.characterId === c.characterId) continue;
 			let o = Ke(r.get(e.costume3dId), (i.get(e.costume3dId) ?? []).find((t) => (t.unit ?? null) === (e.unit ?? null)), c.characterId, n, t);
-			o.unit = e.unit ?? c.unit;
+			o.unit = e.unit ?? c.unit, o.presetAlias = !0;
 			let l = `${o.characterId}|${o.unit ?? ""}|${o.partType}|${o.costume3dId}`;
 			s.has(l) || (s.add(l), a.push(o));
 		}
@@ -998,7 +998,7 @@ var Dt = 1, Ot = class {
 			contentId: this.id
 		};
 		if (typeof Worker > "u") {
-			this.inPlace ??= import("./originalPartWorker-BygPTtHC.js").then((e) => (e.registerOriginalHost(this.id, this.host), e));
+			this.inPlace ??= import("./originalPartWorker-BcFgzrqK.js").then((e) => (e.registerOriginalHost(this.id, this.host), e));
 			try {
 				return {
 					id: 0,
@@ -1040,7 +1040,7 @@ var Dt = 1, Ot = class {
 	createWorker() {
 		let e = new Worker(new URL(
 			/* @vite-ignore */
-			"" + new URL("assets/originalPartWorker-C2fcRq50.js", import.meta.url).href,
+			"" + new URL("assets/originalPartWorker-DTJe20y4.js", import.meta.url).href,
 			"" + import.meta.url
 		), { type: "module" });
 		return e.onmessage = (t) => {

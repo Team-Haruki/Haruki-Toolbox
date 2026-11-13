@@ -891,7 +891,7 @@ export default {
       "partPlaceholder": "Select a part",
       "searchPlaceholder": "Search by name or ID...",
       "empty": "No matches found",
-      "hairLockedHint": "This accessory has a fixed hairstyle, so the hairstyle slot has no effect",
+      "hairLockedHint": "This head piece comes with its own hairstyle; choosing a hairstyle takes it off",
       "reset": "Reset to defaults",
       "rotateLeft": "Turn left",
       "rotateRight": "Turn right",

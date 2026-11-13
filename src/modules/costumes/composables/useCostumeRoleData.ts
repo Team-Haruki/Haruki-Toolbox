@@ -23,6 +23,8 @@ export type CostumeRoleData = {
   notAvailable: Set<string>
   /** Every motion the content has, for any role (the stage's motion picker). */
   motions: HarukiMotionEntry[]
+  /** head costume3dId → the hair it brings (costume3dModelDefaultHairs of this unit). */
+  defaultHairs: Map<number, number>
 }
 
 const roleDataCache = new Map<string, Promise<CostumeRoleData>>()
@@ -41,7 +43,10 @@ function fetchCostumeRoleData(
   const request = (async (): Promise<CostumeRoleData> => {
     const [engine, content] = await Promise.all([loadCostumeEngine(), loadCostumeContent(baseUrl)])
     // The parts the kernel builds this role from (master rows checked against the AssetBundleInfo).
-    const { role, parts, units, notAvailablePatterns, motions } = await engine.listRoleParts(content, `${characterId}:${unit}`)
+    const { role, parts, units, notAvailablePatterns, defaultHairs, motions } = await engine.listRoleParts(
+      content,
+      `${characterId}:${unit}`,
+    )
     return {
       options: {
         body: listRuntimeCostumeOptions(parts, characterId, "body"),
@@ -53,6 +58,7 @@ function fetchCostumeRoleData(
       units,
       notAvailable: new Set(notAvailablePatterns.map((p) => `${p.headCostume3dId}|${p.hairCostume3dId}`)),
       motions,
+      defaultHairs: new Map((defaultHairs ?? []).map((pair) => [pair.headCostume3dId, pair.hairCostume3dId])),
     }
   })()
   request.catch(() => {

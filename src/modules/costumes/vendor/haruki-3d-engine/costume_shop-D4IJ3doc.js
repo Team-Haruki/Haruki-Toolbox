@@ -1,4 +1,4 @@
-import { C as e } from "./mirrorContent-CQAS0PZS.js";
+import { C as e } from "./mirrorContent-BoiY5-sQ.js";
 //#region src/original/roleParts.ts
 async function t(t, n) {
 	let r = /^(\d+):(.+)$/.exec(String(n).trim());
@@ -12,7 +12,11 @@ async function t(t, n) {
 			headCostume3dId: e.headCostume3dId,
 			hairCostume3dId: e.hairCostume3dId
 		})),
-		parts: i.registry.map((e) => ({
+		defaultHairs: (i.compatibility.rules ?? []).filter((e) => e.state === "default_hint").map((e) => ({
+			headCostume3dId: e.headCostume3dId,
+			hairCostume3dId: e.hairCostume3dId
+		})),
+		parts: i.registry.filter((e) => !e.presetAlias).map((e) => ({
 			costume3dId: e.costume3dId,
 			characterId: e.characterId,
 			partType: String(e.partType),

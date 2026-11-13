@@ -891,7 +891,7 @@ export default {
       "partPlaceholder": "選擇部件",
       "searchPlaceholder": "搜尋名稱或 ID...",
       "empty": "沒有找到匹配項",
-      "hairLockedHint": "該頭飾固定髮型，髮型選項不生效",
+      "hairLockedHint": "該頭飾自帶髮型，切換髮型會取下頭飾",
       "reset": "恢復預設",
       "rotateLeft": "向左轉",
       "rotateRight": "向右轉",

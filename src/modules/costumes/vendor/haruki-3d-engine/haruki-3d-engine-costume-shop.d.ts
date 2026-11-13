@@ -86,9 +86,12 @@ export type HarukiRoleParts = {
   }
   /** The character's units (gameCharacterUnits order), each a role `<characterId>:<unit>`; a Virtual Singer has six. */
   units: string[]
+  /** The character's own costumes (another character's costume a preset reuses is not listed). */
   parts: HarukiRolePart[]
   /** Head / hair pairs of the role's unit that cannot be worn together (costume3dModelNotAvailablePatterns). */
   notAvailablePatterns: { headCostume3dId: number; hairCostume3dId: number }[]
+  /** The hair each head of the role's unit brings (costume3dModelDefaultHairs). */
+  defaultHairs: { headCostume3dId: number; hairCostume3dId: number }[]
   /** Every motion the content has, for any role: a recipe's motionRoleId / motionType. */
   motions: HarukiMotionEntry[]
 }

@@ -46,6 +46,7 @@ import CostumeViewer, { type CostumeViewerBackground, type CostumeViewerRecipe }
 import { useCostumeRoleData } from "../composables/useCostumeRoleData"
 import { COSTUME_SLOTS, pickDefaultOptionId, type CostumeSlot, type RuntimeCostumeOption } from "../lib/costume-options"
 import { NONE_HEAD_COSTUME3D_IDS, orderBySeries, type SeriesContext, type WornPart } from "../lib/costume-series-order"
+import { hairForHead, headForHair, type HeadHairRules } from "../lib/costume-head-hair"
 import { MOTION_FOLLOW, motionValue, orderMotions, parseMotionValue } from "../lib/costume-motions"
 
 const { t, te } = useI18n()
@@ -407,11 +408,37 @@ watch(query, () => {
 watch([activeSlot, () => roleData.value], rankSeries, { immediate: true })
 watch([activeSlot, () => roleData.value, selectedId, seriesRank], showSelectedPage, { immediate: true })
 
+function headHairRules(): HeadHairRules | null {
+  const data = roleData.value
+  return data ? { notAvailable: data.notAvailable, defaultHairs: data.defaultHairs } : null
+}
+
+/**
+ * Wearing a head that overrides the hair (a full head set, or one the hair cannot go with) also picks the hair it
+ * brings; picking a hair the worn head overrides takes the head off (the unset head, or the role's default).
+ */
 function selectOption(id: number) {
+  const rules = headHairRules()
+  const options = roleData.value?.options
   switch (activeSlot.value) {
-    case "body": bodyId.value = id; break
-    case "head": headId.value = id; break
-    default: if (!hairLocked.value) hairId.value = id
+    case "body":
+      bodyId.value = id
+      break
+    case "head": {
+      headId.value = id
+      const head = options?.head.find((option) => option.id === id)
+      if (rules && head && options) {
+        hairId.value = hairForHead(head, hairId.value, rules, new Set(options.hair.map((option) => option.id)))
+      }
+      break
+    }
+    default: {
+      hairId.value = id
+      if (rules && options) {
+        const head = options.head.find((option) => option.id === headId.value) ?? null
+        headId.value = headForHair(head, id, rules, options.head, roleData.value?.defaults?.headCostume3dId ?? null)
+      }
+    }
   }
 }
 
@@ -797,7 +824,6 @@ watch(() => route.query, () => {
                     type="button"
                     role="radio"
                     :aria-checked="isGroupSelected(group)"
-                    :disabled="activeSlot === 'hair' && hairLocked"
                     :title="activeOption(group).colorName ? `${group.name} · ${activeOption(group).colorName}` : group.name"
                     class="group flex min-w-0 flex-col gap-1 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                     @click="selectOption(activeOption(group).id)"
@@ -844,8 +870,7 @@ watch(() => route.query, () => {
                       type="button"
                       role="radio"
                       :aria-checked="option.id === selectedId"
-                      :disabled="activeSlot === 'hair' && hairLocked"
-                      :title="option.colorName || option.name"
+                        :title="option.colorName || option.name"
                       :class="[
                         'relative size-6 shrink-0 overflow-hidden rounded bg-muted/40 ring-2 transition disabled:cursor-not-allowed',
                         option.id === selectedId ? 'ring-primary' : 'ring-transparent hover:ring-border',
