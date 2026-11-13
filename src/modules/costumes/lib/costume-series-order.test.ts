@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test"
-import { costumeSeriesKey, costumeSeriesSortValue, orderBySeries, type SeriesContext } from "./costume-series-order"
+import { costumeSeriesKey, costumeSeriesSortValue, isSameSetCell, orderBySeries, type SeriesContext } from "./costume-series-order"
 
 const cell = (representativeId: number, costume3dGroupId: number | null, ids: number[] = [representativeId]) => ({
   representativeId,
@@ -53,6 +53,24 @@ describe("costumeSeriesSortValue", () => {
     expect(costumeSeriesSortValue("head", cell(84004, 84004), context())).toBe(2)
     expect(costumeSeriesSortValue("head", cell(90002, 90002), context({ hair: { id: 90161, costume3dGroupId: 90161 } }))).toBe(5)
     expect(costumeSeriesSortValue("head", cell(90002, 90002), context({ notAvailable: new Set(["90002|84161"]) }))).toBe(13)
+  })
+})
+
+describe("isSameSetCell", () => {
+  it("labels the cells of a series another worn part belongs to, not the worn cell", () => {
+    // Hair of series 90 worn: the series-90 body and accessory complete it.
+    const worn = context({ hair: { id: 90161, costume3dGroupId: 90161 } })
+    expect(isSameSetCell("body", cell(90001, 90001), worn)).toBe(true)
+    expect(isSameSetCell("head", cell(90002, 90002), worn)).toBe(true)
+    // The worn body (any colour of it) is not labelled; neither is a body of no worn series.
+    expect(isSameSetCell("body", cell(84003, 84003, [84003, 84001]), worn)).toBe(false)
+    expect(isSameSetCell("body", cell(77001, 77001), worn)).toBe(false)
+    // The series of the slot's own worn part does not count: only the other two parts.
+    expect(isSameSetCell("body", cell(84005, 84005), context({ head: null, hair: null }))).toBe(false)
+  })
+
+  it("never labels the unset head", () => {
+    expect(isSameSetCell("head", cell(41, 84001), context())).toBe(false)
   })
 })
 

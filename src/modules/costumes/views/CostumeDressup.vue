@@ -53,8 +53,8 @@ import type { SekaiRegion } from "@/types"
 import CostumeViewer, { type CostumeViewerBackground, type CostumeViewerRecipe } from "../components/CostumeViewer.vue"
 import { useCostumeRoleData } from "../composables/useCostumeRoleData"
 import { COSTUME_SLOTS, pickDefaultOptionId, type CostumeSlot, type RuntimeCostumeOption } from "../lib/costume-options"
-import { NONE_HEAD_COSTUME3D_IDS, orderBySeries, type SeriesContext, type WornPart } from "../lib/costume-series-order"
-import { hairForHead, headForHair, type HeadHairRules } from "../lib/costume-head-hair"
+import { isSameSetCell, NONE_HEAD_COSTUME3D_IDS, orderBySeries, type SeriesContext, type WornPart } from "../lib/costume-series-order"
+import { fitsWornHair, hairForHead, headForHair, type HeadHairRules } from "../lib/costume-head-hair"
 import { MOTION_FOLLOW, motionValue, orderMotions, parseMotionValue } from "../lib/costume-motions"
 import {
   CARD_SUPPLIES,
@@ -317,7 +317,11 @@ const hasSources = computed(() => sourceById.value.size > 0)
 const exclusiveAvailable = computed(() => region.value !== "jp")
 const effectiveFilters = computed<CostumeFilters>(() =>
   exclusiveAvailable.value ? filters.value : { ...filters.value, regionExclusive: false })
-const filterCount = computed(() => (hasSources.value ? costumeFilterCount(effectiveFilters.value) : 0))
+/** Head list only: the accessories that fit the hair worn now (not a full head set, not a pair the unit forbids). */
+const onlyFittingHair = ref(false)
+const hairFitActive = computed(() => onlyFittingHair.value && activeSlot.value === "head")
+const filterCount = computed(() =>
+  (hasSources.value ? costumeFilterCount(effectiveFilters.value) : 0) + Number(hairFitActive.value))
 
 const sourceOptions = computed<CatalogFieldOption[]>(() =>
   COSTUME_SOURCES.map((value) => ({ value, label: t(`costumes.dressup.filters.sources.${value}`) })))
@@ -345,14 +349,12 @@ function setCardSupply(value: AcceptableValue | AcceptableValue[] | undefined) {
 
 function resetFilters() {
   filters.value = emptyCostumeFilters()
+  onlyFittingHair.value = false
 }
 
 /** The active filters as chips, shown while the panel is collapsed. */
 const filterChips = computed<CatalogActiveChip[]>(() => {
-  if (!hasSources.value) {
-    return []
-  }
-  const state = effectiveFilters.value
+  const state = hasSources.value ? effectiveFilters.value : emptyCostumeFilters()
   const chips: CatalogActiveChip[] = state.sources.map((source) => ({
     key: `source:${source}`,
     label: source === "card" && state.cardSupply !== "all"
@@ -368,6 +370,9 @@ const filterChips = computed<CatalogActiveChip[]>(() => {
   if (state.regionExclusive) {
     chips.push({ key: "exclusive", label: t("costumes.dressup.filters.regionExclusive") })
   }
+  if (hairFitActive.value) {
+    chips.push({ key: "hair-fit", label: t("costumes.dressup.filters.fitsHair") })
+  }
   return chips
 })
 
@@ -382,6 +387,8 @@ function removeFilterChip(key: string) {
     patchFilters({ years: state.years.filter((year) => year !== value) })
   } else if (kind === "exclusive") {
     patchFilters({ regionExclusive: false })
+  } else if (kind === "hair-fit") {
+    onlyFittingHair.value = false
   }
 }
 
@@ -391,10 +398,11 @@ function regionBadge(option: RuntimeCostumeOption): string | null {
 
 const visibleOptions = computed<RuntimeCostumeOption[]>(() => {
   const needle = query.value.trim().toLowerCase()
-  const filtering = filterCount.value > 0
-  const options = filtering
-    ? slotOptions(activeSlot.value).filter((option) => matchesCostumeFilters(sourceById.value.get(option.id), effectiveFilters.value))
-    : slotOptions(activeSlot.value)
+  const filtering = hasSources.value && costumeFilterCount(effectiveFilters.value) > 0
+  const rules = headHairRules()
+  const options = slotOptions(activeSlot.value).filter((option) =>
+    (!filtering || matchesCostumeFilters(sourceById.value.get(option.id), effectiveFilters.value))
+    && (!hairFitActive.value || rules == null || fitsWornHair(option, hairId.value, rules)))
   if (!needle) {
     return options
   }
@@ -510,7 +518,7 @@ function isGroupSelected(group: RackGroup): boolean {
   return group.options.some((option) => option.id === selectedId.value)
 }
 
-watch([query, effectiveFilters], () => {
+watch([query, effectiveFilters, hairFitActive], () => {
   page.value = 1
 })
 // After the stock-part watcher above has filled the selection of a new role.
@@ -641,6 +649,42 @@ function isExclusiveHead(group: RackGroup): boolean {
  * The game's hairstyle label (CostumeSelectCell.labelHairStyle): this head cannot be worn with the hair worn now
  * (costume3dModelNotAvailablePatterns), so wearing it changes the hair.
  */
+/** SET: this costume is of the same series as one of the other two parts worn now (not the worn one itself). */
+function isSetGroup(group: RackGroup): boolean {
+  const data = roleData.value
+  if (data == null) {
+    return false
+  }
+  const first = group.options[0]!
+  return isSameSetCell(activeSlot.value, {
+    representativeId: first.id,
+    costume3dGroupId: first.costume3dGroupId,
+    ids: group.options.map((option) => option.id),
+  }, {
+    body: wornPart("body", bodyId.value),
+    head: wornPart("head", headId.value),
+    hair: wornPart("hair", hairId.value),
+    notAvailable: data.notAvailable,
+  })
+}
+
+type TileLabel = { key: string; text: string; hint: string; emphasis: boolean }
+
+/** The labels at a tile's top left, stacked: SET, then the head's Exclusive and Hairstyle; any of them may combine. */
+function tileLabels(group: RackGroup): TileLabel[] {
+  const labels: TileLabel[] = []
+  if (isSetGroup(group)) {
+    labels.push({ key: "set", text: t("costumes.dressup.setBadge"), hint: t("costumes.dressup.setBadgeHint"), emphasis: true })
+  }
+  if (activeSlot.value === "head" && isExclusiveHead(group)) {
+    labels.push({ key: "exclusive", text: t("costumes.dressup.headExclusive"), hint: t("costumes.dressup.headExclusiveHint"), emphasis: false })
+  }
+  if (activeSlot.value === "head" && isHairStyleHead(group)) {
+    labels.push({ key: "hairstyle", text: t("costumes.dressup.headHairStyle"), hint: t("costumes.dressup.headHairStyleHint"), emphasis: false })
+  }
+  return labels
+}
+
 function isHairStyleHead(group: RackGroup): boolean {
   const notAvailable = roleData.value?.notAvailable
   return notAvailable != null && hairId.value != null && notAvailable.has(`${activeOption(group).id}|${hairId.value}`)
@@ -936,7 +980,7 @@ watch(() => route.query, () => {
               </div>
 
               <CatalogFilterPanel
-                v-if="hasSources"
+                v-if="hasSources || activeSlot === 'head'"
                 :title="t('catalog.filters.title')"
                 :reset-label="t('catalog.filters.reset')"
                 :count-label="t('costumes.dressup.filters.count', { count: visibleGroups.length })"
@@ -947,14 +991,22 @@ watch(() => route.query, () => {
                 @reset="resetFilters"
                 @remove-chip="removeFilterChip"
               >
+                <div v-if="activeSlot === 'head'" class="flex items-center gap-2">
+                  <Switch :id="`${filterId}-hair-fit`" v-model="onlyFittingHair" />
+                  <Label :for="`${filterId}-hair-fit`" class="text-xs font-medium">
+                    {{ t("costumes.dressup.filters.fitsHair") }}
+                  </Label>
+                  <span class="text-[11px] text-muted-foreground">{{ t("costumes.dressup.filters.fitsHairHint") }}</span>
+                </div>
                 <CatalogChipsField
+                  v-if="hasSources"
                   :model-value="filters.sources"
                   :label="t('costumes.dressup.filters.source')"
                   :options="sourceOptions"
                   compact
                   @update:model-value="setSources"
                 />
-                <div v-if="filters.sources.includes('card')" class="flex flex-wrap items-center gap-1.5">
+                <div v-if="hasSources && filters.sources.includes('card')" class="flex flex-wrap items-center gap-1.5">
                   <p :id="`${filterId}-supply`" class="mr-1 min-w-14 text-xs font-medium text-muted-foreground">
                     {{ t("costumes.dressup.filters.cardSupply") }}
                   </p>
@@ -972,13 +1024,14 @@ watch(() => route.query, () => {
                   </ToggleGroup>
                 </div>
                 <CatalogChipsField
+                  v-if="hasSources"
                   :model-value="filters.years"
                   :label="t('costumes.dressup.filters.year')"
                   :options="yearOptions"
                   compact
                   @update:model-value="patchFilters({ years: $event })"
                 />
-                <div v-if="exclusiveAvailable" class="flex items-center gap-2">
+                <div v-if="hasSources && exclusiveAvailable" class="flex items-center gap-2">
                   <Switch
                     :id="`${filterId}-exclusive`"
                     :model-value="filters.regionExclusive"
@@ -990,6 +1043,7 @@ watch(() => route.query, () => {
                   <span class="text-[11px] text-muted-foreground">{{ t("costumes.dressup.filters.regionExclusiveHint") }}</span>
                 </div>
                 <CatalogCharacterPicker
+                  v-if="hasSources"
                   :model-value="filters.originCharacterIds"
                   :characters="characters"
                   :label="t('costumes.dressup.filters.origin')"
@@ -1032,20 +1086,17 @@ watch(() => route.query, () => {
                       ]"
                     >
                       <SekaiAssetImage :sources="thumbnailSources(activeOption(group))" :alt="group.name" fit="contain" placeholder-class="bg-transparent" />
-                      <span v-if="activeSlot === 'head' && (isExclusiveHead(group) || isHairStyleHead(group))" class="absolute top-1 left-1 flex flex-col items-start gap-0.5">
+                      <span v-if="tileLabels(group).length > 0" class="absolute top-1 left-1 flex flex-col items-start gap-0.5">
                         <span
-                          v-if="isExclusiveHead(group)"
-                          class="rounded bg-background/85 px-1 text-[10px] leading-4 text-muted-foreground shadow-sm"
-                          :title="t('costumes.dressup.headExclusiveHint')"
+                          v-for="label in tileLabels(group)"
+                          :key="label.key"
+                          :class="[
+                            'rounded px-1 text-[10px] leading-4 shadow-sm',
+                            label.emphasis ? 'bg-primary font-semibold tracking-wide text-primary-foreground' : 'bg-background/85 text-muted-foreground',
+                          ]"
+                          :title="label.hint"
                         >
-                          {{ t("costumes.dressup.headExclusive") }}
-                        </span>
-                        <span
-                          v-if="isHairStyleHead(group)"
-                          class="rounded bg-background/85 px-1 text-[10px] leading-4 text-muted-foreground shadow-sm"
-                          :title="t('costumes.dressup.headHairStyleHint')"
-                        >
-                          {{ t("costumes.dressup.headHairStyle") }}
+                          {{ label.text }}
                         </span>
                       </span>
                       <span

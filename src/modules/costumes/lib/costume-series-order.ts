@@ -94,6 +94,22 @@ export function costumeSeriesSortValue(
   return sameBody && sameHair ? 2 : sameBody ? (compatible ? 3 : 6) : sameHair ? 5 : compatible ? 12 : 13
 }
 
+/**
+ * The SET label: a list cell of the same series (the game's IsSameGroup, as the sort uses it) as one of the other two
+ * parts worn now, so it completes that costume. The worn cell itself and the unset head are not labelled.
+ */
+export function isSameSetCell(
+  slot: CostumeSlot,
+  cell: { representativeId: number; costume3dGroupId: number | null; ids: readonly number[] },
+  context: SeriesContext,
+): boolean {
+  const worn = context[slot]
+  if ((worn != null && cell.ids.includes(worn.id)) || (slot === "head" && NONE_HEAD_COSTUME3D_IDS.has(cell.representativeId))) {
+    return false
+  }
+  return (["body", "head", "hair"] as const).some((other) => other !== slot && sameSeries(cell.costume3dGroupId, slot, context[other], other))
+}
+
 /** The cells in the game's order (a stable sort: equal values keep their order). */
 export function orderBySeries<T>(
   cells: readonly T[],

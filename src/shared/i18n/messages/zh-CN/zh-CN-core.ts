@@ -919,6 +919,8 @@ export default {
       "headExclusiveHint": "此角色专用",
       "headHairStyle": "发型",
       "headHairStyleHint": "只匹配单独发型",
+      "setBadge": "SET",
+      "setBadgeHint": "和当前穿戴的同一套",
       "filters": {
         "count": "{count} 件",
         "source": "获取方式",
@@ -941,6 +943,8 @@ export default {
         "origin": "来源角色",
         "year": "年份",
         "unknownYear": "未知",
+        "fitsHair": "匹配当前发型",
+        "fitsHairHint": "只显示能和当前发型一起戴的饰品",
         "regionExclusive": "区服限定",
         "regionExclusiveHint": "本区服特有、日服没有的服装",
         "regionBadgeHint": "区服特有：{regions}"

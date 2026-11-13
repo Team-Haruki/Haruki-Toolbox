@@ -19,6 +19,14 @@ function overridesHair(head: HeadChoice, hairId: number | null, rules: HeadHairR
 }
 
 /**
+ * Whether a head can be worn with the hair worn now without changing it: not a full head set, not a pair the unit
+ * forbids. The unset head always can.
+ */
+export function fitsWornHair(head: HeadChoice, hairId: number | null, rules: HeadHairRules): boolean {
+  return !overridesHair(head, hairId, rules)
+}
+
+/**
  * The hair to show with a newly chosen head. A head that overrides the hair (a full head set with its own hairstyle,
  * or one the hair worn now cannot go with) brings its default hair, when the role has it; otherwise the hair stays.
  */

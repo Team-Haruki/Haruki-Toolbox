@@ -919,6 +919,8 @@ export default {
       "headExclusiveHint": "For this character only",
       "headHairStyle": "Hairstyle",
       "headHairStyleHint": "Only fits its own hairstyle",
+      "setBadge": "SET",
+      "setBadgeHint": "Same set as what is worn",
       "filters": {
         "count": "{count} costumes",
         "source": "Source",
@@ -941,6 +943,8 @@ export default {
         "origin": "Origin character",
         "year": "Year",
         "unknownYear": "Unknown",
+        "fitsHair": "Fits the current hair",
+        "fitsHairHint": "Only accessories that can be worn with the current hair",
         "regionExclusive": "Server exclusive",
         "regionExclusiveHint": "Costumes this server has and JP does not",
         "regionBadgeHint": "Server exclusive: {regions}"

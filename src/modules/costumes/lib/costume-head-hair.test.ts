@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test"
-import { hairForHead, headForHair, type HeadHairRules } from "./costume-head-hair"
+import { fitsWornHair, hairForHead, headForHair, type HeadHairRules } from "./costume-head-hair"
 
 // Miku piapro: the set 140129 (its own hairstyle) brings hair 140161; accessory 900 cannot go with hair 221.
 const rules: HeadHairRules = {
@@ -14,6 +14,17 @@ const set = { id: 140129, includesHair: true }
 const accessory = { id: 900, includesHair: false }
 const plain = { id: 1102, includesHair: false }
 const unset = { id: 41, includesHair: false }
+
+describe("fitsWornHair", () => {
+  it("keeps accessories the worn hair can go with, and the unset head", () => {
+    expect(fitsWornHair(plain, 221, rules)).toBe(true)
+    expect(fitsWornHair(unset, 221, rules)).toBe(true)
+    // A pair the unit forbids, and a full head set with its own hairstyle, do not fit.
+    expect(fitsWornHair(accessory, 221, rules)).toBe(false)
+    expect(fitsWornHair(accessory, 300, rules)).toBe(true)
+    expect(fitsWornHair(set, 221, rules)).toBe(false)
+  })
+})
 
 describe("hairForHead", () => {
   it("brings the default hair of a head that overrides the hair", () => {
