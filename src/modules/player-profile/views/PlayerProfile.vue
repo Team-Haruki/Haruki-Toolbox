@@ -497,7 +497,7 @@ function retry() {
 
 <template>
   <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4">
-    <PageHeader :title="t('playerProfile.title')" :description="t('playerProfile.description')">
+    <PageHeader :title="t('playerProfile.title')">
       <template #actions>
       <div class="flex flex-col items-start gap-1.5 sm:items-end">
         <div class="flex flex-wrap items-center gap-2">

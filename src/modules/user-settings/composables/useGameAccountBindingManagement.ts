@@ -177,9 +177,7 @@ export function useGameAccountBindingManagement() {
       const updatedData = unwrapUpdatedData(resp, t("userSettings.gameBinding.title"))
       const updated = updatedData.gameAccountBindings
       userStore.setUser({ gameAccountBindings: updated })
-      toast.success(t("userSettings.gameBinding.toast.deleteSuccessTitle"), {
-        description: t("userSettings.gameBinding.toast.deleteSuccessDescription"),
-      })
+      toast.success(t("userSettings.gameBinding.toast.deleteSuccessTitle"))
       deleteTarget.value = null
     } finally {
       isDeleting.value = false
@@ -258,9 +256,7 @@ export function useGameAccountBindingManagement() {
       const updated = updatedData.gameAccountBindings
       userStore.setUser({ gameAccountBindings: updated })
 
-      toast.success(t("userSettings.gameBinding.toast.saveSuccessTitle"), {
-        description: t("userSettings.gameBinding.toast.saveSuccessDescription"),
-      })
+      toast.success(t("userSettings.gameBinding.toast.saveSuccessTitle"))
       showEditDialog.value = false
     } catch (error: unknown) {
       toast.error(t("userSettings.gameBinding.toast.saveFailedTitle"), {
@@ -286,9 +282,7 @@ export function useGameAccountBindingManagement() {
 
       const updatedData = unwrapUpdatedData(resp, t("userSettings.gameBinding.title"))
       userStore.setUser({ gameAccountBindings: updatedData.gameAccountBindings })
-      toast.success(t("userSettings.gameBinding.toast.setDefaultSuccessTitle"), {
-        description: t("userSettings.gameBinding.toast.setDefaultSuccessDescription"),
-      })
+      toast.success(t("userSettings.gameBinding.toast.setDefaultSuccessTitle"))
     } catch (error: unknown) {
       toast.error(t("userSettings.gameBinding.toast.setDefaultFailedTitle"), {
         description: extractErrorMessage(error, t("userSettings.gameBinding.toast.setDefaultFailedFallback")),
@@ -353,9 +347,7 @@ export function useGameAccountBindingManagement() {
     }
 
     if (await copyTextToClipboard(generatedCode.value)) {
-      toast.success(t("userSettings.gameBinding.toast.copySuccessTitle"), {
-        description: t("userSettings.gameBinding.toast.copySuccessDescription"),
-      })
+      toast.success(t("userSettings.gameBinding.toast.copySuccessTitle"))
       return
     }
 

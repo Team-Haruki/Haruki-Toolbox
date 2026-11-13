@@ -182,9 +182,9 @@ test("an id, a reading and a character each lead where they should", async ({ pa
   await expect(search.rows).toHaveCount(1)
   await expect(search.rows.first()).toContainText("ロキ")
 
-  // Nothing found says so, with what else to try.
+  // Nothing found says so.
   await search.input.fill("zzzqqq")
-  await expect(page.getByTestId("global-search-empty")).toContainText("没有找到匹配的结果")
+  await expect(page.getByTestId("global-search-empty")).toContainText("没有匹配的结果")
 
   // A character opens the card list filtered to it; its cards are listed too.
   await search.input.fill("初音")

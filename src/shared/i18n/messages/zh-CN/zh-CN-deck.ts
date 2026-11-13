@@ -3,7 +3,6 @@
 export default {
   "deckRecommend": {
     "title": "组卡推荐",
-    "description": "选择账号、数据区服、模式与歌曲参数，获取（尽可能）最优活动卡组推荐。",
     "select": {
       "loading": "正在准备数据..."
     },
@@ -11,7 +10,7 @@ export default {
       "save": "保存配置",
       "clear": "清除配置",
       "clearDialogTitle": "确认清除配置",
-      "clearDialogDescription": "此操作会删除已保存的组卡推荐配置，并将当前页面恢复为默认值。确定要继续吗？",
+      "clearDialogDescription": "删除已保存的配置，并把本页恢复为默认值",
       "clearDialogCancel": "取消",
       "clearDialogConfirm": "确认清除"
     },
@@ -29,35 +28,33 @@ export default {
       "target": "组卡目标",
       "liveType": "Live 类型",
       "algorithm": "搜索算法",
-      "algorithmDefaultHint": "一般保持默认即可。",
-      "algorithmHint": "默认算法会随组卡场景自动选择：分数目标使用 DFS 精确搜索（可证明最优），World Bloom 等复杂场景使用 DFS-GA，烤森使用强化学习。手动勾选后将保持你的选择；同时启用多个算法可交叉验证结果，但整体耗时更长。",
+      "algorithmHint": "默认按场景选择：分数目标用 DFS（精确最优），连接世界等复杂场景用 DFS-GA，烤森用强化学习。多选可交叉验证结果，但更耗时。",
       "executionMode": "执行方式",
-      "executionModeLimitedHint": "当前设备内存有限，多个算法会逐个运行，结果不变，只是耗时更长。",
+      "executionModeLimitedHint": "设备内存有限，多个算法将逐个运行，耗时更长",
       "event": "活动",
       "eventPlaceholder": "请选择活动",
       "eventSearchPlaceholder": "搜索活动名、#ID、类型、拼音或罗马音...",
-      "eventEmpty": "没有找到活动。",
+      "eventEmpty": "没有找到活动",
       "character": "角色",
       "characterPlaceholder": "请选择角色",
       "bonusTargets": "目标加成",
       "bonusTargetsPlaceholder": "例如 100 120 130",
-      "bonusTargetsHint": "可输入多个整数目标，用空格或逗号分隔。",
-      "bonusTargetsInvalid": "目标加成需要填写正整数，可用空格或逗号分隔。",
+      "bonusTargetsInvalid": "目标加成需要填写正整数，可用空格或逗号分隔",
       "customBonusAttr": "自定义加成属性",
       "customBonusAttrNone": "不指定",
       "customBonusCharacters": "自定义加成角色",
       "customBonusCharactersPlaceholder": "例如 1 2 21",
       "customBonusSupportUnits": "VS 支援团体",
       "customBonusSelectedCount": "已选择 {count} 个角色",
-      "customBonusSupportUnitsEmpty": "选择 21-26 号 Virtual Singer 角色后可指定支援团体。",
+      "customBonusSupportUnitsEmpty": "先选择 Virtual Singer 角色（21-26）",
       "filterOtherUnit": "过滤其他团体",
-      "customBonusHint": "可按角色选择自定义混活加成；VS 角色可额外指定支援团体。",
-      "customBonusInvalid": "自定义加成条件格式不正确。",
-      "customBonusSupportUnitsTargetInvalid": "VS 支援团体的角色必须同时出现在自定义加成角色里。",
+      "customBonusHint": "可按角色选择自定义混活加成；VS 角色可额外指定支援团体",
+      "customBonusInvalid": "自定义加成条件格式不正确",
+      "customBonusSupportUnitsTargetInvalid": "VS 支援团体的角色必须同时出现在自定义加成角色里",
       "music": "歌曲",
       "musicPlaceholder": "请选择歌曲",
       "musicSearchPlaceholder": "搜索歌曲名、#ID、假名、拼音或罗马音...",
-      "musicEmpty": "没有找到歌曲。",
+      "musicEmpty": "没有找到歌曲",
       "difficultyPlaceholder": "请选择难度"
     },
     "picker": {
@@ -75,12 +72,11 @@ export default {
     },
     "layers": {
       "advanced": {
-        "title": "进阶配置",
-        "description": "调整卡牌养成、过滤条件、协力参数和卡组固定规则。"
+        "title": "进阶配置"
       },
       "expert": {
         "title": "专家配置",
-        "description": "调整技能策略、支援假设、引擎超时与单卡精细覆盖。"
+        "description": "技能策略、支援假设、数据覆盖、引擎参数与单卡养成"
       }
     },
     "groups": {
@@ -164,20 +160,17 @@ export default {
     },
     "options": {
       "eventCondition": {
-        "title": "活动条件",
-        "description": "默认选择当前正式活动，加成按该活动的官方数据计算；正式总集篇无需开启模拟。也可开启模拟活动，为其他团体或活动设置条件。"
+        "title": "活动条件"
       },
       "bonus": {
-        "title": "加成条件",
-        "description": "指定一个或多个目标加成，组卡会尝试生成对应加成的单人 Live 卡组。"
+        "title": "加成条件"
       },
       "eventSimulation": {
-        "memoryEventHint": "五属性基础加成均为 25%，本团原生角色合计 75%；人类团不包含团属虚拟歌手，Virtual Singer 按六位虚拟歌手计算。保留精通加成，不附加当期卡加成。",
+        "memoryEventHint": "五属性基础加成 25%，本团原生角色合计 75%（人类团不含虚拟歌手，Virtual Singer 按六位计算）；含精通加成，不含当期卡加成",
         "title": "模拟活动",
-        "description": "用自定义活动类型、属性和团体进行推荐，不依赖已发布活动。",
-        "unavailable": "当前模式不使用活动信息，模拟活动不可用。",
-        "realEventDisabled": "已开启模拟活动，真实活动选择不会参与推荐。",
-        "activeHint": "模拟活动会覆盖真实活动 ID，推荐会按当前模拟条件计算。",
+        "description": "用自定义活动类型、属性和团体进行推荐，不依赖已发布活动",
+        "unavailable": "当前模式不支持模拟活动",
+        "realEventDisabled": "模拟活动开启时不使用此活动",
         "type": "活动类型",
         "attr": "属性",
         "unit": "团体",
@@ -187,34 +180,31 @@ export default {
         "invalid": "请补全模拟活动参数。连接世界第 1/2 轮需要角色能推导出团体。",
         "customBonusUnit": "自定义加成角色",
         "customBonusTitle": "自定义加成角色",
-        "customBonusSummary": "已选择 {count} 个加成角色，符合角色加成的卡会获得 25% 加成。",
+        "customBonusSummary": "已选 {count} 个角色，匹配的卡 +25% 加成",
         "customBonusConfigure": "设置自定义加成角色",
-        "customBonusDescription": "选择参与模拟活动加成的角色；Virtual Singer 角色可指定 VS 支援团体，也可以过滤其他团体。",
+        "customBonusDescription": "Virtual Singer 角色可另外指定支援团体",
         "customBonusDone": "完成",
-        "customBonusInvalid": "请选择属性，并至少选择一个自定义加成角色。"
+        "customBonusInvalid": "请选择属性，并至少选择一个自定义加成角色"
       },
       "multiLive": {
         "title": "协力参数",
-        "description": "用于多人 Live。队友综合力和队友实效留空时，会按当前卡组近似队友。",
         "teammatePower": "队友综合力",
         "teammateScoreUp": "队友实效",
         "followSelfPlaceholder": "跟随当前卡组",
         "scoreUpLowerBound": "最低实效",
         "scoreUpLowerBoundPlaceholder": "不限制",
-        "disabled": "当前 Live 类型不会使用协力参数。",
-        "invalid": "协力参数需要填写大于等于 0 的数字。"
+        "disabled": "仅多人 Live 使用",
+        "invalid": "协力参数需要填写大于等于 0 的数字"
       },
       "filters": {
         "title": "高级过滤",
-        "description": "按角色、团体或属性限制可用卡牌。",
         "none": "不限制",
         "selectedCount": "已选 {count} 项",
         "unit": "团体过滤",
         "attr": "属性过滤",
         "character": "角色过滤",
         "characterSelectPlaceholder": "选择过滤角色",
-        "characterMinHint": "角色过滤会限制候选卡池；启用时至少选择 {count} 个角色，才能组成完整卡组。",
-        "characterMinInvalid": "角色过滤启用时至少需要选择 {count} 个角色。",
+        "characterMinHint": "至少选 {count} 个角色，才能组成完整卡组",
         "areaItemLevel": "区域道具等级",
         "areaItemLevelDefault": "沿用当前数据",
         "areaItemLevelOption": "Lv.{value}",
@@ -231,80 +221,70 @@ export default {
         "boost": "体力消耗",
         "boostOption": "{value}",
         "boostPlaceholder": "按体力消耗倍率计算 Pt",
-        "invalid": "体力消耗需要是 0-10 的整数；覆盖等级或加成需要是有效范围内的值。"
+        "invalid": "体力消耗需要是 0-10 的整数；覆盖等级或加成需要是有效范围内的值"
       },
       "dataOverrides": {
         "title": "临时数据覆盖",
-        "description": "只影响本次推荐传给引擎的数据，不会写回上传数据。",
-        "invalid": "覆盖等级或加成需要是有效范围内的值。"
+        "invalid": "覆盖等级或加成需要是有效范围内的值"
       },
       "runParameters": {
         "title": "计算参数",
-        "description": "调整本次推荐的基础计算参数。",
-        "invalid": "体力消耗需要是 0-10 的整数。"
+        "invalid": "体力消耗需要是 0-10 的整数"
       },
       "constraints": {
         "title": "卡组约束",
-        "description": "指定必须上场或排除的卡牌；当前主队、固定卡牌和固定角色互斥。",
         "fixedGroup": "固定上场",
-        "fixedGroupDescription": "固定卡牌最多 5 张且同一角色只能选 1 张；固定角色最多 5 个。",
-        "challengeFixedGroupDescription": "可固定所选挑战角色的多张卡牌，最多 5 张；请先选择挑战角色。",
+        "fixedGroupDescription": "固定卡牌每个角色限 1 张",
+        "challengeFixedGroupDescription": "仅限所选挑战角色的卡牌",
         "excludedGroup": "排除条件",
-        "excludedGroupDescription": "从候选卡池里排除任意数量的卡牌，不影响固定卡牌上限。",
         "fixedCards": "固定卡牌",
         "useCurrentDeck": "使用当前主队",
-        "useCurrentDeckDescription": "启用后把你游戏里当前的队伍作为固定卡组。优先从游戏实时读取，读取不到时用你上传的数据。",
+        "useCurrentDeckDescription": "优先实时读取游戏内队伍，读取不到时用上传数据",
         "fixedCharacters": "固定角色",
         "excludedCards": "排除卡牌",
         "cardSelectPlaceholder": "搜索并选择卡牌",
         "fixedCardSelectPlaceholder": "选择固定卡牌",
         "excludedCardSelectPlaceholder": "选择排除卡牌",
         "cardSearchPlaceholder": "搜索卡牌名、#ID、角色、团体、属性、稀有度或拼音...",
-        "cardEmpty": "没有找到卡牌。",
-        "noSelectedCards": "暂未选择卡牌。",
+        "cardEmpty": "没有找到卡牌",
+        "noSelectedCards": "暂未选择卡牌",
         "selectedCardsCount": "已选择 {count} 张卡牌",
         "selectedCardsLimitCount": "已选择 {count}/{max} 张卡牌",
         "removeCard": "移除卡牌",
         "characterSelectPlaceholder": "选择固定角色",
         "characterNone": "不指定角色",
-        "noSelectedCharacters": "暂未选择角色。",
+        "noSelectedCharacters": "暂未选择角色",
         "selectedCharactersCount": "已选择 {count}/{max} 个角色",
         "removeCharacter": "移除角色",
         "characterListPlaceholder": "例如 1 2 21",
-        "invalid": "角色 ID 需要填写正整数，可用空格或逗号分隔。",
-        "challengeHint": "挑战 Live 已经由角色选择决定目标角色，不能再固定角色。",
-        "currentDeckHint": "启用后把你游戏里当前的队伍作为固定卡组。优先从游戏实时读取，读取不到时用你上传的数据；使用当前队伍时固定上场和排除条件不会参与推荐。"
+        "invalid": "角色 ID 需要填写正整数，可用空格或逗号分隔",
+        "challengeHint": "挑战组卡不能固定角色",
+        "currentDeckHint": "此时固定上场和排除条件不生效"
       },
       "random": {
         "title": "技能与支援",
-        "description": "控制技能顺序、BFes 技能吸取方式，以及连接世界支援卡养成假设。",
         "skillGroup": "技能策略",
-        "skillGroupDescription": "调整技能触发顺序和 BFes 技能参考方式。",
         "skillOrder": "技能顺序",
         "specificSkillOrder": "特定技能顺序",
         "specificSkillOrderPlaceholder": "例如 12345",
-        "specificSkillOrderHint": "填写 1-5 的不重复顺序，1 表示队长位，常用于固定当前队伍。",
-        "specificSkillOrderInvalid": "特定技能顺序必须包含 1-5 且不能重复，例如 12345。",
+        "specificSkillOrderHint": "1-5 不重复，1 为队长位",
+        "specificSkillOrderInvalid": "特定技能顺序必须包含 1-5 且不能重复，例如 12345",
         "skillReference": "BFes 技能吸取",
         "keepAfterTrainingState": "双技能状态不变",
-        "keepAfterTrainingStateDescription": "保留卡牌特训前后的技能状态，不强制切换。",
+        "keepAfterTrainingStateDescription": "不强制切换特训前后的技能",
         "supportGroup": "连接世界支援",
-        "supportGroupDescription": "仅影响连接世界支援卡组的养成假设。",
         "supportMasterMax": "支援卡满突破",
-        "supportMasterMaxDescription": "计算支援卡时按满突破处理。",
-        "supportSkillMax": "支援卡满技能",
-        "supportSkillMaxDescription": "计算支援卡时按满技能处理。"
+        "supportSkillMax": "支援卡满技能"
       },
       "areaItemOverride": {
         "title": "区域道具覆盖",
-        "description": "按单个区域道具临时覆盖等级，默认不覆盖。",
-        "priorityHint": "单个道具覆盖优先于进阶配置里的区域道具等级。",
+        "priorityHint": "优先于进阶配置里的区域道具等级",
         "selectedCount": "已覆盖 {count} 个",
         "clear": "清空覆盖",
         "default": "不覆盖",
-        "empty": "当前数据还没有可覆盖的区域道具。",
+        "empty": "当前数据还没有可覆盖的区域道具",
         "searchPlaceholder": "搜索等级...",
-        "emptySearch": "没有找到等级。",
+        "emptySearch": "没有找到等级",
         "areaFallback": "区域 #{id}",
         "itemFallback": "道具 #{id}",
         "targetFallback": "目标 #{id}",
@@ -322,53 +302,48 @@ export default {
       },
       "characterRankOverride": {
         "title": "角色等级自定义",
-        "description": "按单个角色临时覆盖角色等级，默认不覆盖。",
-        "priorityHint": "单角色覆盖优先于进阶配置里的统一角色等级。",
+        "priorityHint": "优先于进阶配置里的统一角色等级",
         "selectedCount": "已覆盖 {count} 个",
         "clear": "清空覆盖",
         "default": "不覆盖",
-        "empty": "当前数据还没有可覆盖的角色等级。",
+        "empty": "当前数据还没有可覆盖的角色等级",
         "searchPlaceholder": "搜索等级...",
-        "emptySearch": "没有找到等级。",
+        "emptySearch": "没有找到等级",
         "maxRank": "最高 Rank {value}"
       },
       "mysekaiGateOverride": {
         "title": "烤森门自定义",
-        "description": "按单个烤森门临时覆盖等级，默认不覆盖。",
-        "priorityHint": "单门覆盖优先于进阶配置里的统一烤森门等级。",
+        "priorityHint": "优先于进阶配置里的统一烤森门等级",
         "selectedCount": "已覆盖 {count} 个",
         "clear": "清空覆盖",
         "default": "不覆盖",
-        "empty": "当前数据还没有可覆盖的烤森大门。",
+        "empty": "当前数据还没有可覆盖的烤森大门",
         "searchPlaceholder": "搜索等级...",
-        "emptySearch": "没有找到等级。",
+        "emptySearch": "没有找到等级",
         "maxLevel": "最高 Lv.{value}"
       },
       "mysekaiFixtureBonusOverride": {
         "title": "玩偶加成自定义",
-        "description": "按单个角色临时覆盖烤森玩偶综合力加成，默认不覆盖。",
-        "priorityHint": "单角色覆盖优先于进阶配置里的统一玩偶加成。",
+        "priorityHint": "优先于进阶配置里的统一玩偶加成",
         "selectedCount": "已覆盖 {count} 个",
         "clear": "清空覆盖",
         "default": "不覆盖",
-        "empty": "当前数据还没有可覆盖的角色。",
+        "empty": "当前数据还没有可覆盖的角色",
         "searchPlaceholder": "搜索加成...",
-        "emptySearch": "没有找到加成。",
+        "emptySearch": "没有找到加成",
         "maxRate": "最高 {value}"
       },
       "engine": {
         "title": "组卡引擎参数",
-        "description": "只调整结果数量和超时时间；搜索算法内部参数保持自动配置。",
         "resultLimit": "结果数量",
         "resultLimitPlaceholder": "默认 6",
         "timeoutMs": "超时时间（ms）",
         "timeoutMsPlaceholder": "默认 15000",
-        "invalid": "结果数量需要是 1-50 的整数；超时时间需要是 1000-300000 ms 的整数。"
+        "invalid": "结果数量需要是 1-50 的整数；超时时间需要是 1000-300000 ms 的整数"
       }
     },
     "training": {
       "title": "卡牌养成",
-      "description": "按稀有度设置推荐时采用的默认养成状态。",
       "rarity": "稀有度",
       "disabled": "禁用",
       "maxLevel": "满级",
@@ -386,13 +361,13 @@ export default {
     },
     "singleCard": {
       "title": "单卡养成覆盖",
-      "description": "对指定卡牌单独覆盖等级、技能、突破、剧情和画布设置；覆盖会优先于按稀有度设置。固定卡牌会按当前通用养成配置自动加入这里。",
+      "description": "优先于按稀有度的养成设置；固定卡牌会自动加入",
       "card": "卡牌",
       "cardPlaceholder": "选择卡牌",
       "cardSearchPlaceholder": "搜索卡牌名或 ID...",
-      "cardEmpty": "没有找到卡牌。",
+      "cardEmpty": "没有找到卡牌",
       "add": "添加",
-      "empty": "暂未添加单卡覆盖。",
+      "empty": "暂未添加单卡覆盖",
       "selectedCount": "已添加 {count} 张单卡覆盖",
       "inherit": "沿用通用配置",
       "level": "等级",
@@ -402,7 +377,7 @@ export default {
       "skillLevelOption": "技能 Lv.{value}",
       "masterRankOption": "突破 {value}",
       "numberSearchPlaceholder": "搜索数值...",
-      "numberEmpty": "没有可选数值。",
+      "numberEmpty": "没有可选数值",
       "episodes": "剧情",
       "remove": "移除单卡覆盖",
       "episodeStates": {
@@ -413,13 +388,13 @@ export default {
       }
     },
     "runner": {
-      "ready": "选择完整参数后即可开始推荐。",
+      "ready": "选择完整参数后即可开始推荐",
       "run": "开始推荐",
       "running": "推荐中...",
       "blocked": {
-        "noAccount": "还没有绑定游戏账号，绑定后才能开始推荐。",
-        "selectAccount": "请先选择一个游戏账号。",
-        "dataMissing": "所选账号还没有上传游戏数据，请先前往上传数据页上传。"
+        "noAccount": "还没有绑定游戏账号，绑定后才能开始推荐",
+        "selectAccount": "请先选择一个游戏账号",
+        "dataMissing": "所选账号还没有上传游戏数据，请先前往上传数据页上传"
       },
       "phases": {
         "preparing-data": "正在准备游戏数据…",
@@ -431,15 +406,14 @@ export default {
     },
     "result": {
       "title": "推荐结果",
-      "description": "推荐完成后会在这里显示卡组结果。",
-      "idlePlaceholder": "完成上方配置后点击「开始推荐」，推荐卡组会显示在这里。",
+      "idlePlaceholder": "点击「开始推荐」查看推荐卡组",
       "actions": {
         "compare": "对比",
         "compareTitle": "卡组对比",
         "compareBaseline": "基准",
         "copy": "复制卡组",
-        "copied": "卡组信息已复制到剪贴板。",
-        "copyFailed": "复制失败，请检查浏览器剪贴板权限。",
+        "copied": "卡组信息已复制到剪贴板",
+        "copyFailed": "复制失败，请检查浏览器剪贴板权限",
         "songRanking": "歌曲收益"
       },
       "elapsed": "组卡引擎合计用时 {seconds} 秒",
@@ -450,16 +424,16 @@ export default {
       "sequentialRecommendElapsed": "顺序执行推荐（实际等待）",
       "parallelRecommendElapsed": "并行执行推荐（实际等待）",
       "algorithmElapsed": "{algorithm} 搜索：{seconds} 秒",
-      "empty": "暂无推荐结果。",
+      "empty": "暂无推荐结果",
       "missingUserDataTitle": "还没有可用于组卡的游戏数据",
-      "missingUserDataDescription": "所选游戏账号尚未上传账号数据（Suite）。请先前往上传数据页上传，然后再回来重试。所有组卡模式都只需要 Suite：烤森组卡用到的烤森门、画布和玩偶加成也来自 Suite，不需要上传烤森数据（MySekai）。",
+      "missingUserDataDescription": "所选账号还未上传 Suite 数据。所有组卡模式都只需要 Suite，烤森组卡也无需上传 MySekai。",
       "uploadDataAction": "前往上传数据",
       "deckTitle": "卡组 #{index}",
       "score": "Live分数 {score}",
       "totalPower": "综合力 {value}",
       "totalPowerLimitWarning": "该活动的综合力上限限制到了 {value}",
-      "eventCardBonusLimitWarning": "该活动的当期活动加成仅计算 {count} 名成员。",
-      "eventSkillScoreUpLimitWarning": "该活动的卡牌技能分数加成最高限制为 {value}%。",
+      "eventCardBonusLimitWarning": "该活动的当期活动加成仅计算 {count} 名成员",
+      "eventSkillScoreUpLimitWarning": "该活动的卡牌技能分数加成最高限制为 {value}%",
       "summary": {
         "pt": "PT",
         "power": "综合力",
@@ -525,19 +499,19 @@ export default {
       "noCanvasBonus": "无画布"
     },
     "errors": {
-      "unknown": "推荐失败，请稍后重试；如果持续失败，请提交工单反馈。",
-      "notEnoughCards": "卡牌不足：当前筛选后只剩 {count} 张卡，至少需要 5 张，请放宽稀有度/属性筛选。",
-      "currentDeckIncomplete": "读取到的当前队伍不足 5 张卡，请关闭「使用当前队伍」或在游戏里编成完整队伍后重新上传数据。",
-      "musicRequired": "请先选择歌曲和难度。",
-      "bonusTargetsRequired": "请至少填写一个目标加成。",
-      "skillOrderRequired": "请填写完整的技能顺序，或改用自动技能顺序。",
-      "worldBloomConfigInvalid": "连接世界活动的章节或团体设置不完整，请重新选择章节角色。",
-      "eventConditionRequired": "模拟活动需要同时指定活动属性和团体。",
-      "algorithmRequired": "请至少勾选一个搜索算法。",
-      "accountRequired": "请先登录并选择一个游戏账号。",
-      "masterNotReady": "游戏数据还没有准备好，请等待数据下载完成后重试。",
-      "timeout": "计算超时，请减少启用的算法或在高级设置里延长引擎超时后重试。",
-      "engineFailed": "组卡引擎运行出错，请刷新页面后重试；如果持续失败，请提交工单反馈。"
+      "unknown": "推荐失败，请稍后重试；如果持续失败，请提交工单反馈",
+      "notEnoughCards": "卡牌不足：当前筛选后只剩 {count} 张卡，至少需要 5 张，请放宽稀有度/属性筛选",
+      "currentDeckIncomplete": "读取到的当前队伍不足 5 张卡，请关闭「使用当前队伍」或在游戏里编成完整队伍后重新上传数据",
+      "musicRequired": "请先选择歌曲和难度",
+      "bonusTargetsRequired": "请至少填写一个目标加成",
+      "skillOrderRequired": "请填写完整的技能顺序，或改用自动技能顺序",
+      "worldBloomConfigInvalid": "连接世界活动的章节或团体设置不完整，请重新选择章节角色",
+      "eventConditionRequired": "模拟活动需要同时指定活动属性和团体",
+      "algorithmRequired": "请至少勾选一个搜索算法",
+      "accountRequired": "请先登录并选择一个游戏账号",
+      "masterNotReady": "游戏数据还没有准备好，请等待数据下载完成后重试",
+      "timeout": "计算超时，请减少启用的算法或在高级设置里延长引擎超时后重试",
+      "engineFailed": "组卡引擎运行出错，请刷新页面后重试；如果持续失败，请提交工单反馈"
     },
     "toast": {
       "runSuccessTitle": "推荐完成",
@@ -560,14 +534,14 @@ export default {
   },
   "eventPlanner": {
     "title": "活动规划",
-    "description": "用时速笔刷在活动日历上安排每小时的打歌计划，并实时对照目标 PT。「笔刷」= 一套卡组+歌曲的每小时 Pt；把它涂在日历上就能算出总 Pt。",
+    "description": "笔刷 = 一套卡组+歌曲的时速，涂到日历上累计 PT",
     "form": {
       "targetPoint": "目标 PT",
       "targetPointPlaceholder": "例如 1000w、120万、1.5亿",
       "currentPoint": "当前 PT",
       "currentPointPlaceholder": "例如 25k，留空表示 0",
       "parsedValue": "解析为 {value}",
-      "invalidPoint": "无法解析该数值，请使用非负数字，可带 万/w、k、亿 后缀。"
+      "invalidPoint": "无法解析该数值，请使用非负数字，可带 万/w、k、亿 后缀"
     },
     "summary": {
       "targetPoint": "目标 PT",
@@ -581,17 +555,16 @@ export default {
     "progress": {
       "title": "规划进度",
       "targetMark": "目标",
-      "short": "按现在的规划还差 {remaining} PT。",
-      "over": "规划完成后预计 {projected} PT，比目标多 {surplus}。",
-      "exact": "规划刚好覆盖目标。",
+      "short": "按现在的规划还差 {remaining} PT",
+      "over": "规划完成后预计 {projected} PT，比目标多 {surplus}",
+      "exact": "规划刚好覆盖目标",
       "legendCurrent": "当前 PT",
       "legendPlanned": "已规划",
-      "noTarget": "填写目标 PT 后，这里会显示规划离目标还有多远。",
-      "pastNote": "活动进行中：已经过去的小时不再计入已规划 PT，因为当前 PT 已经包含了它们。"
+      "noTarget": "填写目标 PT 后显示进度",
+      "pastNote": "已过去的小时不计入已规划 PT（当前 PT 已包含）"
     },
     "brushes": {
       "title": "时速笔刷",
-      "description": "选中笔刷后在日历上单击或拖动填充；对同一笔刷的格子再次涂抹即可擦除。",
       "rest": "休息",
       "eraser": "橡皮擦",
       "add": "新建笔刷",
@@ -602,26 +575,25 @@ export default {
       "boostShort": "火",
       "usedHours": "已涂 {hours} 小时",
       "usage": "已涂 {hours} 小时，共 {points}",
-      "eraserHint": "清掉涂过的格子",
       "deleteConfirmTitle": "删除笔刷「{name}」？",
-      "deleteConfirmDescription": "日历上用它涂的 {hours} 小时会一起清掉。",
+      "deleteConfirmDescription": "日历上用它涂的 {hours} 小时会一起清掉",
       "boostTitle": "每局消耗的火数",
       "boostOption": "{count} 火 ×{multiplier}",
-      "empty": "还没有时速笔刷，点击「新建笔刷」组卡并选歌。"
+      "empty": "点击「新建笔刷」组卡并选歌"
     },
     "dialog": {
       "title": "新建时速笔刷",
-      "description": "根据所选活动直接组卡，然后从歌曲 PT 排行中挑选要刷的歌。",
+      "description": "组卡后从歌曲 PT 排行中选歌",
       "runDeck": "根据活动组卡",
       "useSavedConfig": "使用组卡页面的详细设定",
-      "savedConfigHint": "组卡参数（算法、队友、区域道具/角色等级覆盖、固定/排除卡、养成配置等）沿用组卡页面保存的设定；需要调整时在组卡页面修改后回来重新组卡即可。",
+      "savedConfigHint": "沿用组卡页的设定",
       "openDeckRecommend": "打开组卡页面调整",
       "running": "组卡中...",
       "deckTitle": "推荐卡组",
       "deckPower": "综合力",
       "deckBonus": "活动加成 {value}%",
       "rankingTitle": "歌曲 PT 排行",
-      "rankingHint": "基于该卡组对全部歌曲的引擎测算（多人 Live、不含火力），时速 = 单局 PT × 每小时局数。",
+      "rankingHint": "按多人 Live、不含火力估算；时速 = 单局 PT × 每小时局数",
       "rankingLoading": "正在测算歌曲排行...",
       "searchPlaceholder": "搜索歌曲名 / 别名 / ID...",
       "allDifficulties": "全部难度",
@@ -633,31 +605,31 @@ export default {
         "pointsPerHour": "时速"
       },
       "playsPerHour": "每小时局数",
-      "playsPerHourHint": "默认按歌曲时长 + 30 秒间隔估算，可按实际情况调整。",
-      "externalSettingsHint": "周回数与火数在笔刷列表上直接调整，时速会随之更新。",
+      "playsPerHourHint": "默认按歌曲时长 + 30 秒间隔估算，可按实际情况调整",
+      "externalSettingsHint": "周回数和火数在笔刷列表里调整",
       "brushName": "笔刷名称",
       "brushColor": "笔刷颜色",
       "pointsPerHour": "笔刷时速",
       "save": "保存笔刷",
-      "noDeck": "先组卡后才能生成歌曲排行。",
-      "rankingEmpty": "没有匹配的歌曲。",
+      "noDeck": "组卡后显示歌曲排行",
+      "rankingEmpty": "没有匹配的歌曲",
       "rankingAliasSearching": "正在匹配别名...",
-      "selectHint": "点击排行中的歌曲选择要刷的歌。"
+      "selectHint": "点击排行中的歌曲选择要刷的歌"
     },
     "calendar": {
       "title": "活动日历",
-      "noEvent": "选择带有开始/结算时间的活动后显示日历。",
+      "noEvent": "选择带有开始/结算时间的活动后显示日历",
       "clear": "清空规划",
       "clearConfirmTitle": "清空整个日历？",
-      "clearConfirmDescription": "所有涂过的小时都会清掉，笔刷会保留。",
+      "clearConfirmDescription": "所有涂过的小时都会清掉，笔刷会保留",
       "tool": "当前画笔",
       "toolValue": "画笔：{name}",
       "dayPoints": "当日 PT",
       "dayTotal": "日终累计",
       "reachesTarget": "达标",
       "hourLabel": "{hour} 时",
-      "dragHint": "单击填充一格，按住拖动可框选多天 × 多小时的时间段批量填充；用同一笔刷再次框选即为擦除。格内数字为每小时周回数。",
-      "touchHint": "轻点填充一格；长按后拖动可框选多天 × 多小时的时间段；横向滑动查看其他小时。用同一笔刷再次涂抹即为擦除。",
+      "dragHint": "拖动可框选多天 × 多小时；用同一笔刷再涂即擦除。格内数字为每小时周回数。",
+      "touchHint": "长按后拖动可框选多天 × 多小时；用同一笔刷再涂即擦除",
       "playsPerHour": "{count} 周/时"
     },
     "batch": {
@@ -668,7 +640,7 @@ export default {
       "toHour": "结束时刻",
       "brush": "笔刷",
       "apply": "填充",
-      "hint": "将所选日期范围内每天的该时间段（包含首尾小时）填充为所选笔刷；选择擦除可批量清除。"
+      "hint": "每天的该时段（含首尾小时）都会填充；选橡皮擦可批量清除"
     },
     "errors": {
       "noResult": "没有算出可用卡组，无法估算单局 PT。请确认该账号已上传数据，并在组卡页检查过滤条件。"

@@ -97,11 +97,7 @@ export function useOAuthAuthorizations() {
     isRevokingApp.value = true
     try {
       await revokeOAuthAuthorization(userStore.userId, target.clientId, { skipErrorToast: true })
-      toast.success(t("userSettings.oauthAuthorizations.toast.revokeSuccessTitle"), {
-        description: t("userSettings.oauthAuthorizations.toast.revokeSuccessDescription", {
-          clientName: target.clientName,
-        }),
-      })
+      toast.success(t("userSettings.oauthAuthorizations.toast.revokeSuccessTitle"))
       appRevokeTarget.value = null
       await fetchAuthorizations({ silent: true })
     } finally {
@@ -132,12 +128,9 @@ export function useOAuthAuthorizations() {
     const consentRequestId = target?.consentRequestId?.trim() ?? ""
     if (!target || !consentRequestId || !userStore.userId || isRevoking.value) return
     revokingDeviceId.value = consentRequestId
-    const name = deviceName(target)
     try {
       await revokeOAuthAuthorizationConsent(userStore.userId, target.clientId, consentRequestId, { skipErrorToast: true })
-      toast.success(t("userSettings.oauthAuthorizations.toast.deviceRevokeSuccessTitle"), {
-        description: t("userSettings.oauthAuthorizations.toast.deviceRevokeSuccessDescription", { label: name }),
-      })
+      toast.success(t("userSettings.oauthAuthorizations.toast.deviceRevokeSuccessTitle"))
       deviceRevokeTarget.value = null
       removeLocally(consentRequestId)
       await fetchAuthorizations({ silent: true })

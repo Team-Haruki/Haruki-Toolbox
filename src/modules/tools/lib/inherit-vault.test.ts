@@ -112,7 +112,9 @@ function inheritJobWithSteps(statuses: Partial<Record<(typeof INHERIT_JOB_STEPS)
 describe("inherit messages", () => {
   it("translates known codes, adds Retry-After, and falls back to the backend message", () => {
     expect(describeInheritApiError(t, { code: "password_invalid", message: "密码错误", status: 403 })).toBe("tools.uploadData.inheritErrors.password_invalid")
-    expect(describeInheritApiError(t, { code: "server_busy", message: "", status: 429, retryAfter: 30 })).toContain("retryAfter")
+    // Retry-After wraps the error text in one message (a parenthetical), not a second sentence.
+    expect(describeInheritApiError(t, { code: "server_busy", message: "", status: 429, retryAfter: 30 }))
+      .toBe(`tools.uploadData.inheritErrors.retryAfter ${JSON.stringify({ message: "tools.uploadData.inheritErrors.server_busy", seconds: 30 })}`)
     expect(describeInheritApiError(t, { code: "brand_new_code", message: "后端文案", status: 400 })).toBe("后端文案")
     expect(describeInheritApiError(t, { code: "", message: "Network Error", status: 0 })).toBe("tools.uploadData.inheritErrors.network")
   })

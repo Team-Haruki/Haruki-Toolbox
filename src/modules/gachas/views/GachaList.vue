@@ -130,7 +130,7 @@ function showUnreleased() {
 </script>
 
 <template>
-  <CatalogPageShell :title="t('gachas.list.title')" :description="t('gachas.list.description')">
+  <CatalogPageShell :title="t('gachas.list.title')">
     <template #toolbar>
       <CatalogSearchField
         v-model="state.q"
@@ -226,7 +226,7 @@ function showUnreleased() {
           </template>
         </CatalogEmptyState>
 
-        <CatalogEmptyState v-else :message="t('gachas.list.empty')" :hint="t('catalog.results.emptyHint')">
+        <CatalogEmptyState v-else :message="t('gachas.list.empty')">
           <template v-if="activeFilterCount > 0" #action>
             <Button variant="outline" size="sm" @click="reset()">{{ t("catalog.filters.clearAll") }}</Button>
           </template>

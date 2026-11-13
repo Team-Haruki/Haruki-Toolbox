@@ -1,24 +1,16 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, useTemplateRef } from "vue"
 import { useRoute } from "vue-router"
 import { useI18n } from "vue-i18n"
 import { toast } from "vue-sonner"
-import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Loader2, LogIn, LogOut, Mail, Lock, KeyRound, Info, CircleAlert } from "lucide-vue-next"
+import { CircleAlert, Loader2 } from "lucide-vue-next"
 import {
   isPasskeyAction,
   orderKratosActions,
   type KratosActionRole,
   type KratosActionVariant,
 } from "@/modules/auth/lib/action-hierarchy"
-import {
-  Card,
-  CardTitle,
-  CardHeader,
-  CardContent,
-  CardDescription
-} from "@/components/ui/card"
 import { useKratosBrowserFlow, type KratosFlowMessage } from "@/modules/auth/composables/useKratosBrowserFlow"
 import { useFlowReturnToGuard } from "@/modules/auth/composables/useFlowReturnToGuard"
 import { markLoginSuccessPending } from "@/modules/auth/lib/login-success"
@@ -33,8 +25,8 @@ import {
 import { runDiscoverablePasskeyLogin } from "@/modules/auth/lib/passkey-refresh-login"
 import { localizeKratosWebAuthnAlert } from "@/modules/auth/lib/kratos-webauthn-alerts"
 import { logoutInPlaceStrict } from "@/modules/auth/api/logout"
-import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue"
-import KratosFieldInput from "@/modules/auth/components/KratosFieldInput.vue"
+import AuthPageShell from "@/modules/auth/components/AuthPageShell.vue"
+import KratosAuthForm from "@/modules/auth/components/KratosAuthForm.vue"
 import { resolveLoginReason } from "@/modules/auth/lib/login-reason"
 
 const route = useRoute()
@@ -132,14 +124,7 @@ const orderedLoginActions = computed<LoginAction[]>(() => {
     .map(({ action, role, variant }) => ({ ...action, role, variant }))
 })
 
-function actionIcon(action: LoginAction) {
-  if (isPasskeyAction(action)) {
-    return KeyRound
-  }
-  return LogIn
-}
-
-// The subtitle names the step: email + password, the second factor, or a
+// The heading names the step: email + password, the second factor, or a
 // re-authentication. Kratos flags the latter on the flow itself; a passkey-only
 // account gets no password field there, so the fields alone cannot tell.
 const loginStep = computed<"password" | "mfa" | "refresh">(() => {
@@ -154,18 +139,22 @@ const loginStep = computed<"password" | "mfa" | "refresh">(() => {
   const hasPassword = names.some((name) => name.includes("password"))
   return hasPassword && !hasIdentifier ? "refresh" : "password"
 })
-const loginDescription = computed(() => {
+const loginTitle = computed(() => {
   switch (loginStep.value) {
     case "mfa":
-      return t("auth.login.descriptionMfa")
+      return t("auth.login.titleMfa")
     case "refresh":
-      return t("auth.login.descriptionRefresh")
+      return t("auth.login.titleRefresh")
     default:
-      return t("auth.login.description")
+      return t("auth.login.title")
   }
 })
+const alternativesLabel = computed(() =>
+  loginStep.value === "mfa" ? t("auth.login.otherFactors") : t("auth.login.otherMethods")
+)
+const hasPasswordField = computed(() => visibleFields.value.some((field) => field.name.toLowerCase().includes("password")))
 
-const formElement = ref<HTMLFormElement | null>(null)
+const authForm = useTemplateRef<{ form: HTMLFormElement | null }>("authForm")
 const passkeyChallenge = computed(
   () => hiddenFields.value.find((field) => field.name === "passkey_challenge")?.value ?? ""
 )
@@ -177,7 +166,7 @@ const passkeyBusy = ref(false)
 // passkey button therefore sends a discoverable request of our own instead
 // of calling Kratos' webauthn.js.
 async function runRefreshPasskeyLogin() {
-  const form = formElement.value
+  const form = authForm.value?.form
   if (!form) {
     return
   }
@@ -265,18 +254,6 @@ function handleSubmit(event: Event) {
   markLoginSuccessPending()
 }
 
-function iconForField(name: string) {
-  if (name === "identifier" || name.endsWith("email")) {
-    return Mail
-  }
-
-  if (name.toLowerCase().includes("password")) {
-    return Lock
-  }
-
-  return KeyRound
-}
-
 const isReady = computed(() => !loading.value && !loadError.value && action.value !== "")
 
 // Why the user landed here (route guard, expired session). The guard's toast
@@ -294,145 +271,86 @@ const loginReasonText = computed(() => {
       return ""
   }
 })
+
+// What the form draws: the reason line first, then what Kratos said, with the
+// refresh passkey failure taken out wherever it is replaced by the notice.
+const formMessages = computed<KratosFlowMessage[]>(() => {
+  const messages = withoutRefreshPasskeyMismatch(generalMessages.value)
+  if (!loginReasonText.value) {
+    return messages
+  }
+  return [{ key: "login-reason", id: null, text: loginReasonText.value, tone: "info" }, ...messages]
+})
+const formFields = computed(() =>
+  hasRefreshPasskeyMismatch.value
+    ? visibleFields.value.map((field) => ({ ...field, messages: withoutRefreshPasskeyMismatch(field.messages) }))
+    : visibleFields.value
+)
+const formActions = computed(() =>
+  hasRefreshPasskeyMismatch.value
+    ? orderedLoginActions.value.map((item) => ({ ...item, messages: withoutRefreshPasskeyMismatch(item.messages) }))
+    : orderedLoginActions.value
+)
+
+function setFieldValue(name: string, value: string) {
+  fieldValues[name] = value
+}
 </script>
 
 <template>
-  <div class="w-full flex-1 flex flex-col items-center justify-center gap-4 px-0 py-4">
-    <Card class="w-full max-w-md">
-      <CardHeader class="text-center">
-        <CardTitle class="text-xl flex items-center justify-center gap-2">
-          <LogIn class="h-6 w-6" />
-          {{ t("auth.login.title") }}
-        </CardTitle>
-        <CardDescription>
-          {{ loginDescription }}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div
-          v-if="loginReasonText"
-          class="mb-4 flex items-start gap-2 rounded-md border border-blue-300 border-l-4 border-l-blue-500 bg-blue-50 px-3 py-2 text-sm text-blue-700 dark:border-blue-900/40 dark:border-l-blue-400 dark:bg-blue-900/20 dark:text-blue-300"
-          role="status"
-        >
-          <Info class="mt-0.5 h-4 w-4 shrink-0" />
-          <span class="min-w-0 [overflow-wrap:anywhere]">{{ loginReasonText }}</span>
-        </div>
-        <div v-if="loading" class="flex items-center justify-center py-12 text-muted-foreground">
-          <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-          {{ t("auth.common.loadingFlow") }}
-        </div>
-        <div v-else-if="loadError" class="space-y-4">
-          <p class="text-sm text-destructive [overflow-wrap:anywhere]">{{ loadError }}</p>
-          <Button class="w-full" @click="restartFlow">
-            <LogIn class="mr-2 h-4 w-4" />
-            {{ t("auth.common.restartFlow") }}
-          </Button>
-        </div>
-        <form v-else ref="formElement" :action="action" :method="method" novalidate @submit="handleSubmit">
-          <div class="grid gap-6">
-            <input v-for="field in hiddenFields" :key="field.key" type="hidden" :name="field.name" :value="field.value" />
-
-            <KratosFlowMessages :messages="withoutRefreshPasskeyMismatch(generalMessages)" />
-
-            <div
-              v-if="hasRefreshPasskeyMismatch"
-              class="space-y-3 rounded-md border border-amber-300 border-l-4 border-l-amber-500 bg-amber-50 px-3 py-3 text-sm text-amber-800 dark:border-amber-900/40 dark:border-l-amber-400 dark:bg-amber-900/20 dark:text-amber-200"
-              role="alert"
-              data-testid="login-refresh-passkey-mismatch"
-            >
-              <div class="flex items-start gap-2">
-                <CircleAlert class="mt-0.5 h-4 w-4 shrink-0" />
-                <div class="space-y-1">
-                  <p class="font-medium">{{ t("auth.login.refreshPasskey.mismatchTitle") }}</p>
-                  <p>{{ t("auth.login.refreshPasskey.mismatchDescription") }}</p>
-                </div>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                class="w-full bg-background"
-                :disabled="reloginBusy"
-                @click="signOutAndSignInAgain"
-              >
-                <Loader2 v-if="reloginBusy" class="mr-2 h-4 w-4 animate-spin" />
-                <LogOut v-else class="mr-2 h-4 w-4" />
-                {{ t("auth.login.refreshPasskey.relogin") }}
-              </Button>
-            </div>
-
-            <div v-for="(field, index) in visibleFields" :key="field.key" class="grid gap-2">
-              <div class="flex items-center">
-                <Label :for="field.key">{{ field.label }}</Label>
-                <router-link
-                  v-if="field.name.toLowerCase().includes('password')"
-                  to="/user/recovery"
-                  class="ml-auto text-sm underline-offset-4 hover:underline"
-                >
-                  {{ t("auth.login.forgotPassword") }}
-                </router-link>
-              </div>
-              <Button
-                v-if="field.type === 'button'"
-                type="button"
-                variant="outline"
-                class="w-full justify-start"
-                :name="field.name"
-                :value="field.value || undefined"
-                :disabled="field.disabled"
-                @click="invokeVisibleFieldAction(field)"
-              >
-                <component :is="iconForField(field.name)" class="size-4 mr-2" />
-                {{ field.label }}
-              </Button>
-              <KratosFieldInput
-                v-else
-                :id="field.key"
-                v-model="fieldValues[field.name]"
-                :name="field.name"
-                :type="field.type"
-                :icon="iconForField(field.name)"
-                :autocomplete="field.autocomplete"
-                :required="field.required"
-                :disabled="field.disabled"
-                :placeholder="field.placeholder"
-                :error="fieldErrors[field.name]"
-                :autofocus="index === 0 && isReady"
-              />
-              <KratosFlowMessages :messages="withoutRefreshPasskeyMismatch(field.messages)" />
-            </div>
-
-            <div v-if="orderedLoginActions.length > 0" class="space-y-2">
-              <div v-for="actionItem in orderedLoginActions" :key="actionItem.key" class="space-y-1">
-                <Button
-                  :type="actionItem.kind === 'submit' ? 'submit' : 'button'"
-                  class="w-full"
-                  :variant="actionItem.variant"
-                  :data-kratos-role="actionItem.role"
-                  :name="actionItem.name || undefined"
-                  :value="actionItem.value || undefined"
-                  :data-kratos-submit="actionItem.kind === 'submit' ? actionItem.key : undefined"
-                  :disabled="!isReady || actionItem.disabled || passkeyBusy"
-                  @click="handleActionClick(actionItem)"
-                >
-                  <component :is="actionIcon(actionItem)" class="h-4 w-4 mr-2" />
-                  {{ actionItem.label }}
-                </Button>
-                <KratosFlowMessages :messages="withoutRefreshPasskeyMismatch(actionItem.messages)" />
-              </div>
-            </div>
-            <Button v-else type="submit" class="w-full" :disabled="!isReady">
-              <LogIn class="h-4 w-4 mr-2" />
-              {{ submitLabel || t("auth.login.submit") }}
-            </Button>
-            <div class="text-center text-sm">
-              {{ t("auth.login.noAccount") }}
-              <router-link :to="registerLink" class="underline underline-offset-4">
-                {{ t("auth.login.registerLink") }}
-              </router-link>
+  <AuthPageShell
+    :title="loginTitle"
+    :loading="loading"
+    :load-error="loadError"
+    @restart="restartFlow"
+  >
+    <KratosAuthForm
+      ref="authForm"
+      :action="action"
+      :method="method"
+      :hidden-fields="hiddenFields"
+      :messages="formMessages"
+      :fields="formFields"
+      :actions="formActions"
+      :values="fieldValues"
+      :errors="fieldErrors"
+      :ready="isReady"
+      :busy="passkeyBusy"
+      :promote-shortcut="!hasRefreshPasskeyMismatch"
+      :alternatives-label="alternativesLabel"
+      :fallback-submit-label="submitLabel || t('auth.login.submit')"
+      @submit="handleSubmit"
+      @trigger="handleActionClick"
+      @update:value="setFieldValue"
+    >
+      <template v-if="hasRefreshPasskeyMismatch" #notice>
+        <!-- The passkey could not confirm the account: say what happened and offer the way that works. -->
+        <div class="grid min-w-0 gap-3" role="alert" data-testid="login-refresh-passkey-mismatch">
+          <div class="flex min-w-0 items-start gap-2 text-sm">
+            <CircleAlert class="mt-0.5 size-4 shrink-0 text-amber-700 dark:text-amber-300" aria-hidden="true" />
+            <div class="grid min-w-0 gap-1">
+              <p class="font-medium text-amber-800 dark:text-amber-300">{{ t("auth.login.refreshPasskey.mismatchTitle") }}</p>
+              <p class="text-muted-foreground [overflow-wrap:anywhere]">{{ t("auth.login.refreshPasskey.mismatchDescription") }}</p>
             </div>
           </div>
-        </form>
-      </CardContent>
-    </Card>
-  </div>
+          <Button type="button" size="lg" class="w-full" :disabled="reloginBusy" @click="signOutAndSignInAgain">
+            <Loader2 v-if="reloginBusy" class="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+            {{ t("auth.login.refreshPasskey.relogin") }}
+          </Button>
+        </div>
+      </template>
+    </KratosAuthForm>
+
+    <template v-if="!loading && (loginStep === 'password' || hasPasswordField)" #footer>
+      <p v-if="loginStep === 'password'">
+        {{ t("auth.login.noAccount") }}
+        <router-link :to="registerLink" class="font-medium text-foreground underline-offset-4 hover:underline">
+          {{ t("auth.login.registerLink") }}
+        </router-link>
+      </p>
+      <router-link v-if="hasPasswordField" to="/user/recovery" class="underline-offset-4 hover:text-foreground hover:underline">
+        {{ t("auth.login.forgotPassword") }}
+      </router-link>
+    </template>
+  </AuthPageShell>
 </template>

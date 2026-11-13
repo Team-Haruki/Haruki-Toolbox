@@ -79,14 +79,12 @@ const description = computed(() => {
 
 <template>
   <div v-if="error || result.gachas.length > 0" class="@container flex min-w-0 flex-col gap-2" data-testid="event-related-gachas">
-    <div class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
-      <p class="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <LucideTicket class="size-4 shrink-0 self-center" aria-hidden="true" />
-        {{ t("eventCatalog.gachas.title") }}
-        <span v-if="!error" class="tabular-nums">{{ result.gachas.length }}</span>
-      </p>
-      <p v-if="description && !error" class="text-xs text-muted-foreground/80">{{ description }}</p>
-    </div>
+    <!-- How the list was matched is a tooltip: only the curious need it. -->
+    <p class="flex items-center gap-1.5 text-sm text-muted-foreground" :title="description && !error ? description : undefined">
+      <LucideTicket class="size-4 shrink-0 self-center" aria-hidden="true" />
+      {{ t("eventCatalog.gachas.title") }}
+      <span v-if="!error" class="tabular-nums">{{ result.gachas.length }}</span>
+    </p>
     <CatalogErrorState
       v-if="error"
       :message="t('catalog.detail.loadError')"

@@ -4,18 +4,14 @@ import { useRoute, useRouter } from "vue-router"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
-import { Loader2, LogOut } from "lucide-vue-next"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Loader2 } from "lucide-vue-next"
 import { extractErrorMessage } from "@/lib/error-utils"
 import { logout, logoutInPlace } from "@/modules/auth/api/logout"
 import { useUserStore } from "@/shared/stores/user"
+import OAuthAccountRow from "@/modules/user-settings/components/oauth/OAuthAccountRow.vue"
+import OAuthAppRow from "@/modules/user-settings/components/oauth/OAuthAppRow.vue"
+import OAuthFlowShell from "@/modules/user-settings/components/oauth/OAuthFlowShell.vue"
+import OAuthFlowState from "@/modules/user-settings/components/oauth/OAuthFlowState.vue"
 import {
   acceptOAuthLogoutChallenge,
   getOAuthLogoutChallenge,
@@ -46,6 +42,9 @@ const clientName = computed(() => {
   const client = logoutRequest.value?.client
   return client?.client_name?.trim() || client?.client_id?.trim() || ""
 })
+const accountName = computed(() => (userStore.isLoggedIn ? userStore.name || userStore.userId || "" : ""))
+// Which button carries the spinner while a request is in flight. Presentation only.
+const pendingChoice = ref<"confirm" | "cancel">("confirm")
 
 async function loadLogoutChallenge(challenge: string) {
   isLoading.value = true
@@ -134,88 +133,95 @@ async function cancelLogout() {
 </script>
 
 <template>
-  <div class="w-full flex-1 flex items-center justify-center px-0 py-4">
-    <Card class="w-full max-w-md" v-if="isLoading">
-      <CardHeader class="text-center">
-        <div class="mx-auto mb-2 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-          <Loader2 class="h-6 w-6 text-primary animate-spin" />
-        </div>
-        <CardTitle class="text-xl">{{ t("oauth.logout.loadingTitle") }}</CardTitle>
-      </CardHeader>
-    </Card>
-
-    <Card class="w-full max-w-md" v-else-if="isValid">
-      <CardHeader class="text-center">
-        <div class="mx-auto mb-2 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-          <LogOut class="h-6 w-6 text-primary" />
-        </div>
-        <CardTitle class="text-xl">{{ t("oauth.logout.title") }}</CardTitle>
-        <CardDescription v-if="clientName">
-          {{ t("oauth.logout.descriptionPrefix") }}
-          <strong class="text-foreground">{{ clientName }}</strong>
-          {{ t("oauth.logout.descriptionSuffix") }}
-        </CardDescription>
-        <CardDescription v-else>
-          {{ t("oauth.logout.genericDescription") }}
-        </CardDescription>
-      </CardHeader>
-      <CardContent class="pt-0 space-y-3">
-        <p class="text-center text-sm text-muted-foreground">{{ t("oauth.logout.confirmHint") }}</p>
-        <div v-if="actionError" class="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+  <OAuthFlowShell :title="t('oauth.logout.title')" :loading="isLoading" :loading-label="t('oauth.common.loading')">
+    <!-- An app asked for the sign-out (Hydra logout challenge). -->
+    <template v-if="isValid">
+      <dl v-if="clientName || accountName" class="divide-y divide-border/60">
+        <OAuthAppRow v-if="clientName" :name="clientName" />
+        <OAuthAccountRow v-if="accountName" :name="accountName" />
+      </dl>
+      <div class="grid min-w-0 gap-4 p-4">
+        <p class="text-sm text-muted-foreground">{{ t("oauth.logout.confirmHint") }}</p>
+        <p v-if="actionError" role="alert" class="text-sm whitespace-pre-line text-destructive [overflow-wrap:anywhere]">
           {{ actionError }}
+        </p>
+        <div class="flex flex-col gap-2 @min-[22rem]:flex-row-reverse">
+          <Button
+            size="lg"
+            class="w-full @min-[22rem]:flex-1"
+            :disabled="isSubmitting"
+            @click="pendingChoice = 'confirm'; confirmLogout()"
+          >
+            <Loader2
+              v-if="isSubmitting && pendingChoice === 'confirm'"
+              class="size-4 animate-spin motion-reduce:animate-none"
+              aria-hidden="true"
+            />
+            {{ isSubmitting && pendingChoice === "confirm" ? t("oauth.logout.loggingOut") : t("oauth.logout.confirm") }}
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            class="w-full @min-[22rem]:w-auto @min-[22rem]:min-w-28"
+            :disabled="isSubmitting"
+            @click="pendingChoice = 'cancel'; cancelLogout()"
+          >
+            <Loader2
+              v-if="isSubmitting && pendingChoice === 'cancel'"
+              class="size-4 animate-spin motion-reduce:animate-none"
+              aria-hidden="true"
+            />
+            {{ t("oauth.logout.cancel") }}
+          </Button>
         </div>
-      </CardContent>
-      <CardFooter class="flex gap-3">
-        <Button variant="outline" class="flex-1" :disabled="isSubmitting" @click="cancelLogout">
-          {{ t("oauth.logout.cancel") }}
-        </Button>
-        <Button class="flex-1" :disabled="isSubmitting" @click="confirmLogout">
-          <Loader2 v-if="isSubmitting" class="h-4 w-4 mr-2 animate-spin" />
-          <LogOut v-else class="h-4 w-4 mr-2" />
-          {{ isSubmitting ? t("oauth.logout.loggingOut") : t("oauth.logout.confirm") }}
-        </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </template>
 
-    <Card class="w-full max-w-md" v-else-if="isPlainLogout">
-      <CardHeader class="text-center">
-        <div class="mx-auto mb-2 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-          <LogOut class="h-6 w-6 text-primary" />
-        </div>
-        <CardTitle class="text-xl">{{ t("oauth.logout.title") }}</CardTitle>
-        <CardDescription>
-          {{ userStore.isLoggedIn ? t("oauth.logout.localDescription") : t("oauth.logout.localSignedOutDescription") }}
-        </CardDescription>
-      </CardHeader>
-      <CardContent v-if="actionError" class="pt-0">
-        <div class="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+    <!-- /logout opened by hand: an ordinary sign-out of this site. -->
+    <template v-else-if="isPlainLogout">
+      <dl v-if="accountName">
+        <OAuthAccountRow :name="accountName" />
+      </dl>
+      <div class="grid min-w-0 gap-4 p-4">
+        <p v-if="!userStore.isLoggedIn" class="text-sm text-muted-foreground">
+          {{ t("oauth.logout.localSignedOutDescription") }}
+        </p>
+        <p v-if="actionError" role="alert" class="text-sm whitespace-pre-line text-destructive [overflow-wrap:anywhere]">
           {{ actionError }}
+        </p>
+        <div class="flex flex-col gap-2 @min-[22rem]:flex-row-reverse">
+          <Button
+            v-if="userStore.isLoggedIn"
+            size="lg"
+            class="w-full @min-[22rem]:flex-1"
+            :disabled="isSubmitting"
+            @click="confirmPlainLogout"
+          >
+            <Loader2 v-if="isSubmitting" class="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+            {{ isSubmitting ? t("oauth.logout.loggingOut") : t("oauth.logout.confirm") }}
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            :class="userStore.isLoggedIn ? 'w-full @min-[22rem]:w-auto @min-[22rem]:min-w-28' : 'w-full'"
+            :disabled="isSubmitting"
+            @click="router.push({ name: 'home' })"
+          >
+            {{ userStore.isLoggedIn ? t("oauth.logout.cancel") : t("oauth.common.backHome") }}
+          </Button>
         </div>
-      </CardContent>
-      <CardFooter class="flex gap-3">
-        <Button variant="outline" class="flex-1" :disabled="isSubmitting" @click="router.push({ name: 'home' })">
-          {{ userStore.isLoggedIn ? t("oauth.logout.cancel") : t("oauth.logout.backHome") }}
-        </Button>
-        <Button v-if="userStore.isLoggedIn" class="flex-1" :disabled="isSubmitting" @click="confirmPlainLogout">
-          <Loader2 v-if="isSubmitting" class="h-4 w-4 mr-2 animate-spin" />
-          <LogOut v-else class="h-4 w-4 mr-2" />
-          {{ isSubmitting ? t("oauth.logout.loggingOut") : t("oauth.logout.confirm") }}
-        </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </template>
 
-    <Card class="w-full max-w-md" v-else>
-      <CardHeader class="text-center">
-        <CardTitle class="text-xl text-destructive">{{ t("oauth.logout.invalidTitle") }}</CardTitle>
-        <CardDescription>
-          {{ loadError || t("oauth.logout.invalidDescription") }}
-        </CardDescription>
-      </CardHeader>
-      <CardFooter class="justify-center">
-        <Button variant="outline" @click="router.push({ name: 'home' })">
-          {{ t("oauth.logout.backHome") }}
-        </Button>
-      </CardFooter>
-    </Card>
-  </div>
+    <OAuthFlowState
+      v-else
+      tone="error"
+      :title="t('oauth.logout.invalidTitle')"
+      :description="loadError || t('oauth.logout.invalidDescription')"
+    >
+      <Button variant="outline" @click="router.push({ name: 'home' })">
+        {{ t("oauth.common.backHome") }}
+      </Button>
+    </OAuthFlowState>
+  </OAuthFlowShell>
 </template>

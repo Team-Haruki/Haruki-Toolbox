@@ -149,7 +149,7 @@ function episodeLabel(episode: CardEpisodeRow): string {
       <p class="text-4xl leading-none font-bold tracking-tight tabular-nums" data-testid="card-power-total" aria-live="polite">
         {{ formatNumber(power.total) }}
       </p>
-      <p class="max-w-64 text-xs leading-relaxed text-muted-foreground sm:text-right">{{ t("cardCatalog.detail.power.hint") }}</p>
+      <p class="text-xs text-muted-foreground sm:text-right">{{ t("cardCatalog.detail.power.hint") }}</p>
     </div>
 
     <div class="divide-y divide-border/60 overflow-hidden rounded-xl border bg-muted/20" data-testid="card-power-sources">

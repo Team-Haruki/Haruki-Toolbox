@@ -295,8 +295,7 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
                 {{ option.label }}
               </ToggleGroupItem>
             </ToggleGroup>
-            <p class="text-xs text-muted-foreground">{{ t("deckRecommend.form.algorithmDefaultHint") }}</p>
-            <p v-if="executionModeLimitedHint" id="deck-execution-mode-hint" class="text-xs text-muted-foreground">
+            <p v-if="executionModeLimitedHint" class="text-xs text-muted-foreground">
               {{ executionModeLimitedHint }}
             </p>
           </div>
@@ -306,15 +305,10 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
     </div>
 
     <div v-if="showEventConditionSection" class="grid min-w-0 grid-cols-1 gap-3 border-t border-border/60 pt-4">
-      <div class="flex flex-col gap-2 @lg:flex-row @lg:items-start @lg:justify-between">
-        <div class="space-y-1">
-          <h2 class="text-sm font-semibold">
-            {{ t("deckRecommend.options.eventCondition.title") }}
-          </h2>
-          <p class="text-xs leading-5 text-muted-foreground">
-            {{ t("deckRecommend.options.eventCondition.description") }}
-          </p>
-        </div>
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-sm font-semibold">
+          {{ t("deckRecommend.options.eventCondition.title") }}
+        </h2>
         <label for="deck-event-simulation" class="flex shrink-0 items-center gap-2 text-sm">
           <span>{{ t("deckRecommend.options.eventSimulation.title") }}</span>
           <Switch
@@ -476,18 +470,15 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
       <p v-if="hasEventSimulationError" class="text-xs text-destructive">
         {{ eventSimulationErrorMessage }}
       </p>
-      <p v-else-if="isEventSimulationActive" class="text-xs text-muted-foreground">
-        {{ t(isMemoryEventSimulation ? "deckRecommend.options.eventSimulation.memoryEventHint" : "deckRecommend.options.eventSimulation.activeHint") }}
+      <p v-else-if="isEventSimulationActive && isMemoryEventSimulation" class="text-xs text-muted-foreground">
+        {{ t("deckRecommend.options.eventSimulation.memoryEventHint") }}
       </p>
     </div>
 
     <div v-if="showBonusTargetsInput" class="grid min-w-0 grid-cols-1 gap-3 border-t border-border/60 pt-4">
-      <div class="space-y-1">
-        <h2 class="text-sm font-semibold">
-          {{ t("deckRecommend.options.bonus.title") }}
-        </h2>
-        <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.bonus.description") }}</p>
-      </div>
+      <h2 class="text-sm font-semibold">
+        {{ t("deckRecommend.options.bonus.title") }}
+      </h2>
       <div class="grid min-w-0 grid-cols-1 gap-2 @lg:max-w-96">
         <Label for="deck-recommend-bonus-targets">{{ t("deckRecommend.form.bonusTargets") }}</Label>
         <Input
@@ -504,9 +495,6 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
         class="text-xs text-destructive"
       >
         {{ t("deckRecommend.form.bonusTargetsInvalid") }}
-      </p>
-      <p v-else class="text-xs text-muted-foreground">
-        {{ t("deckRecommend.form.bonusTargetsHint") }}
       </p>
     </div>
   </section>

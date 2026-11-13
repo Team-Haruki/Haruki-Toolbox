@@ -4,7 +4,7 @@ import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-d
 
 import { computed, onMounted, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
-import { CloudUpload, Eraser, Gamepad2, HardDrive, History, Info, Layers, RefreshCw } from "lucide-vue-next"
+import { CloudUpload, Eraser, Gamepad2, HardDrive, History, Layers, RefreshCw } from "lucide-vue-next"
 import { toast } from "vue-sonner"
 import { Button } from "@/components/ui/button"
 import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
@@ -310,7 +310,6 @@ const cacheFacts = computed<SettingsFact[]>(() => [
       <SettingsRow
         :icon="Gamepad2"
         :label="t('homeSettings.userData.account')"
-        :help="t('homeSettings.userData.accountHelp')"
         label-for="user-data-account"
         label-id="user-data-account-label"
         stack
@@ -350,7 +349,6 @@ const cacheFacts = computed<SettingsFact[]>(() => [
       <SettingsRow
         :icon="Layers"
         :label="t('homeSettings.userData.dataType')"
-        :help="t('homeSettings.userData.dataTypeHelp')"
         label-for="user-data-mode"
         label-id="user-data-mode-label"
         stack
@@ -379,7 +377,14 @@ const cacheFacts = computed<SettingsFact[]>(() => [
       />
 
       <template #footer>
-        <Button type="button" size="sm" variant="outline" :disabled="!canRefresh" @click="refreshUserData">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          :title="t('homeSettings.userData.refreshHint')"
+          :disabled="!canRefresh"
+          @click="refreshUserData"
+        >
           <RefreshCw class="size-3.5" :class="{ 'animate-spin': refreshing }" />
           {{ refreshing ? t("homeSettings.userData.refreshing") : t("homeSettings.userData.refresh") }}
         </Button>
@@ -405,10 +410,5 @@ const cacheFacts = computed<SettingsFact[]>(() => [
         />
       </template>
     </SettingsGroup>
-
-    <p class="flex items-start gap-2 px-1 text-xs text-muted-foreground">
-      <Info class="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-      <span>{{ t("homeSettings.userData.logoutCleanupHint") }}</span>
-    </p>
   </div>
 </template>

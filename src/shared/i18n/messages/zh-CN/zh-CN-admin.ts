@@ -39,19 +39,19 @@ export default {
         "system": "系统与集成"
       },
       "descriptions": {
-        "dashboard": "平台关键指标与上传趋势总览。",
-        "users": "查看、搜索与管理工具箱用户。",
-        "gameBindings": "查询与调整用户的游戏账号绑定。",
-        "risk": "维护风控规则并处置风险事件。",
-        "botSecurity": "查看 Haruki Cloud 上报的 Bot 客户端安全告警并标记处理结果。",
-        "tickets": "处理用户提交的工单与回复。",
-        "content": "维护友情链接与推荐群聊等站点内容。",
-        "sponsors": "管理赞助者名单的展示。",
-        "uploadLogs": "追踪玩家数据上传记录与失败原因。",
-        "logs": "查看系统运行日志。",
-        "oauthClients": "管理 OAuth 客户端、密钥与回调。",
-        "webhooks": "管理平台 Webhook 推送。",
-        "config": "调整系统级配置（仅超级管理员可见）。"
+        "dashboard": "平台关键指标与上传趋势总览",
+        "users": "查看、搜索与管理工具箱用户",
+        "gameBindings": "查询与调整用户的游戏账号绑定",
+        "risk": "维护风控规则并处置风险事件",
+        "botSecurity": "查看 Haruki Cloud 上报的 Bot 客户端安全告警并标记处理结果",
+        "tickets": "处理用户提交的工单与回复",
+        "content": "维护友情链接与推荐群聊等站点内容",
+        "sponsors": "管理赞助者名单的展示",
+        "uploadLogs": "追踪玩家数据上传记录与失败原因",
+        "logs": "查看系统运行日志",
+        "oauthClients": "管理 OAuth 客户端、密钥与回调",
+        "webhooks": "管理平台 Webhook 推送",
+        "config": "调整系统级配置（仅超级管理员可见）"
       },
       "dashboard": "仪表盘",
       "users": "用户管理",
@@ -85,10 +85,10 @@ export default {
       "title": "公共 API 允许的数据键",
       "help": "公共接口、OAuth2 游戏数据接口和本人账号数据接口只返回这里列出的顶层游戏数据键，私有 API 不受限制。保存后会清空游戏数据缓存。",
       "count": "{count} 个",
-      "empty": "列表为空：还没有允许任何数据键。",
+      "empty": "列表为空：还没有允许任何数据键",
       "addLabel": "添加数据键",
       "addPlaceholder": "userCards, userDecks",
-      "addHint": "可以一次输入多个，用逗号或空格分隔。",
+      "addHint": "可以一次输入多个，用逗号或空格分隔",
       "add": "添加",
       "remove": "移除 {key}",
       "restore": "恢复 {key}",
@@ -126,8 +126,8 @@ export default {
     },
     "runtimeSwitches": {
       "title": "运行时开关",
-      "description": "切换后约 1 秒内生效，无需重启后端。",
-      "dirtyHint": "下方运行时配置有未保存的修改，请先保存或刷新后再切换开关。",
+      "description": "切换后约 1 秒内生效，无需重启后端",
+      "dirtyHint": "下方运行时配置有未保存的修改，请先保存或刷新后再切换开关",
       "oauth2DeviceFlow": {
         "label": "OAuth2 设备授权",
         "description": "开启后，开通了设备码授权类型的客户端可以申请设备码，由用户在 /device 页批准。关闭后立即停止签发设备码和受理批准；已签发的令牌仍然有效，需要时按客户端撤销授权。后端没有返回该项时显示为关闭。",
@@ -148,7 +148,7 @@ export default {
       "saveFailedFallback": "保存失败",
       "deviceFlowEnabled": "OAuth2 设备授权已开启",
       "deviceFlowDisabled": "OAuth2 设备授权已关闭",
-      "switchNotApplied": "后端没有应用该开关（可能尚不支持），当前仍显示后端返回的值。"
+      "switchNotApplied": "后端没有应用该开关（可能尚不支持），当前仍显示后端返回的值"
     },
     "loadError": "加载配置失败",
     "unsavedChanges": "有未保存的更改",
@@ -229,7 +229,7 @@ export default {
       "title": "风控事件",
       "refresh": "刷新",
       "details": "查看详情",
-      "emptyHint": "{range}内没有符合条件的事件，可以换一个时间范围或筛选条件。",
+      "emptyHint": "{range}内没有符合条件的事件，可以换一个时间范围或筛选条件",
       "userShort": "用户 {userId}",
       "createButton": "创建事件",
       "createDialogTitle": "创建风控事件",
@@ -289,8 +289,8 @@ export default {
         "saved": "已保存"
       },
       "saveButton": "保存规则",
-      "superAdminOnly": "风控规则仅超级管理员可见。",
-      "loadError": "加载风控规则失败。",
+      "superAdminOnly": "风控规则仅超级管理员可见",
+      "loadError": "加载风控规则失败",
       "retry": "重试",
       "validation": {
         "invalidJson": "JSON 格式错误，请检查括号、引号和逗号",
@@ -302,8 +302,8 @@ export default {
       "preview": {
         "title": "规则预览",
         "count": "{count} 条",
-        "invalid": "修正 JSON 后会在这里显示解析结果。",
-        "empty": "规则数组为空，没有可保存的内容。",
+        "invalid": "修正 JSON 后会在这里显示解析结果",
+        "empty": "规则数组为空，没有可保存的内容",
         "added": "新增",
         "changed": "已修改",
         "updatedAt": "更新于 {time}",
@@ -445,7 +445,7 @@ export default {
     },
     "detail": {
       "title": "告警 #{id}",
-      "description": "以下内容来自 Bot 客户端或 Haruki Cloud，按原文显示。",
+      "description": "以下内容来自 Bot 客户端或 Haruki Cloud，按原文显示",
       "receivedAt": "接收时间",
       "botId": "Bot ID",
       "ownerQq": "所有者 QQ",
@@ -474,8 +474,8 @@ export default {
       "subjectWithBot": "告警 #{id} · {kind} · Bot {botId}",
       "noteLabel": "处理备注（可选）",
       "notePlaceholder": "记录处理方式或判断依据",
-      "noteHint": "不修改则保留原备注。",
-      "noteWillClear": "备注已清空，保存后将删除原备注。"
+      "noteHint": "不修改则保留原备注",
+      "noteWillClear": "备注已清空，保存后将删除原备注"
     },
     "toast": {
       "loadFailedTitle": "加载告警失败",
@@ -514,7 +514,7 @@ export default {
     },
     "linksTab": {
       "title": "友情链接管理",
-      "description": "按排序值从小到大展示，相同则按 ID。",
+      "description": "按排序值从小到大展示，相同则按 ID",
       "tagPanel": {
         "title": "标签分布",
         "description": "带有每个标签的链接数",
@@ -583,7 +583,7 @@ export default {
         "linkUrl": "链接URL",
         "tags": "标签（逗号分隔）",
         "sortOrder": "排序值",
-        "sortOrderHint": "数值越小越靠前，相同则按 ID 排序。"
+        "sortOrderHint": "数值越小越靠前，相同则按 ID 排序"
       },
       "placeholders": {
         "name": "站点名称",
@@ -686,24 +686,24 @@ export default {
       "postLogoutRedirectUrisHelp": "OIDC RP-Initiated Logout 后允许跳回的地址，精确匹配。仅登录类客户端需要，可留空。",
       "postLogoutRedirectUriPlaceholder": "https://example.com/logged-out",
       "grantTypesLabel": "授权类型 (Grant types)",
-      "grantTypesHelp": "授权码用于有浏览器回调的应用；设备码用于没有浏览器的程序（RFC 8628），由用户在 /device 页批准；刷新令牌须与其中之一同时选择，登记 offline_access 时必选。",
+      "grantTypesHelp": "授权码用于有浏览器回调的应用；设备码用于没有浏览器的程序（RFC 8628），由用户在 /device 页批准；刷新令牌须与其中之一同时选择，登记 offline_access 时必选",
       "grantType": {
         "authorizationCode": "授权码 (authorization_code)",
         "deviceCode": "设备码 (device_code)",
         "refreshToken": "刷新令牌 (refresh_token)"
       },
-      "redirectUrisOptionalHelp": "未选择授权码时不需要回调URI，仅设备码客户端可以留空。",
+      "redirectUrisOptionalHelp": "未选择授权码时不需要回调URI，仅设备码客户端可以留空",
       "writeScopeHint": "写入权限：允许客户端以用户身份提交或上传数据",
       "devicePolicy": {
         "title": "设备码策略",
         "firstParty": "官方客户端",
-        "firstPartyHelp": "在设备授权页上显示「官方」徽章。",
-        "firstPartyPublicHelp": "只对 Confidential 客户端生效，Public 客户端不显示「官方」徽章。",
+        "firstPartyHelp": "在设备授权页上显示「官方」徽章",
+        "firstPartyPublicHelp": "只对 Confidential 客户端生效，Public 客户端不显示「官方」徽章",
         "allowWrite": "允许经设备码申请 game-data:write",
-        "allowWriteHelp": "仅限登记了 game-data:write 的 Public 客户端。",
+        "allowWriteHelp": "仅限登记了 game-data:write 的 Public 客户端",
         "maxCodesPer10m": "每 10 分钟设备码上限",
-        "maxCodesPer10mHelp": "该客户端每 10 分钟最多可申请的设备码数量，范围 {min}–{max}，默认 {default}。",
-        "emailNeverGranted": "设备码授权永远不会授予 email，登记了也只对授权码生效。"
+        "maxCodesPer10mHelp": "该客户端每 10 分钟最多可申请的设备码数量，范围 {min}–{max}，默认 {default}",
+        "emailNeverGranted": "设备码授权永远不会授予 email，登记了也只对授权码生效"
       }
     },
     "list": {
@@ -740,7 +740,7 @@ export default {
       "publicCount": "Public {count}",
       "device": "设备码客户端",
       "shareOfClients": "占全部客户端的 {percent}",
-      "partialNote": "客户端超过一页：除总数外，以上数字只统计已加载的 {loaded} 个（共 {total} 个）。",
+      "partialNote": "客户端超过一页：除总数外，以上数字只统计已加载的 {loaded} 个（共 {total} 个）",
       "scopesTitle": "Scope 分布",
       "scopesHint": "登记了各 Scope 的客户端数",
       "grantTypesTitle": "授权类型",
@@ -832,7 +832,7 @@ export default {
       "audit": {
         "title": "管理操作",
         "description": "所选范围内以此客户端为目标的审计日志条目",
-        "loadFailed": "管理操作统计加载失败。",
+        "loadFailed": "管理操作统计加载失败",
         "empty": "所选范围内没有针对此客户端的管理操作",
         "total": "操作总数",
         "success": "成功",
@@ -866,8 +866,8 @@ export default {
     },
     "webhooks": {
       "title": "OAuth client Webhook",
-      "description": "管理客户端 {clientId} 的数据更新通知 endpoint。",
-      "placeholderHint": "Callback URL 支持 {'{server}'}、{'{data_type}'}、{'{user_id}'} 占位符。",
+      "description": "管理客户端 {clientId} 的数据更新通知 endpoint",
+      "placeholderHint": "Callback URL 支持 {'{server}'}、{'{data_type}'}、{'{user_id}'} 占位符",
       "summary": "共 {total} 个 endpoint，已启用 {enabled} 个",
       "actions": {
         "refresh": "刷新",
@@ -890,17 +890,17 @@ export default {
       "form": {
         "createTitle": "创建 Webhook endpoint",
         "editTitle": "编辑 Webhook endpoint",
-        "description": "Bearer 不会回显；留空表示不设置或保持当前值。",
+        "description": "Bearer 不会回显；留空表示不设置或保持当前值",
         "callbackUrl": "Callback URL",
         "callbackUrlPlaceholder": "https://example.com/oauth-webhook/{'{server}'}/{'{data_type}'}/{'{user_id}'}",
         "bearer": "Bearer token",
         "bearerPlaceholder": "可选",
         "bearerReplacePlaceholder": "留空保持当前 bearer",
-        "bearerHelp": "保存后前端只会显示是否已配置，不会显示明文。",
+        "bearerHelp": "保存后前端只会显示是否已配置，不会显示明文",
         "enabled": "启用 endpoint",
-        "enabledHelp": "禁用后后端不会向该 endpoint 发送回调。",
+        "enabledHelp": "禁用后后端不会向该 endpoint 发送回调",
         "clearBearer": "清除已配置 bearer",
-        "clearBearerHelp": "开启后保存会删除当前 bearer。"
+        "clearBearerHelp": "开启后保存会删除当前 bearer"
       },
       "validation": {
         "callbackUrlRequired": "请填写 Callback URL"
@@ -938,8 +938,8 @@ export default {
       "revokedAll": "已撤销所有授权",
       "disabledRevocationIncompleteTitle": "客户端已禁用，但部分授权未能撤销",
       "revokedPartiallyTitle": "授权仅部分撤销",
-      "revocationFailedSubjects": "有 {count} 个用户标识（subject）撤销失败，可执行「撤销全部授权」重试。",
-      "revocationIncomplete": "部分授权未能撤销，可执行「撤销全部授权」重试。",
+      "revocationFailedSubjects": "有 {count} 个用户标识（subject）撤销失败，可执行「撤销全部授权」重试",
+      "revocationIncomplete": "部分授权未能撤销，可执行「撤销全部授权」重试",
       "webhookSaved": "Webhook endpoint 已保存",
       "webhookDeleted": "Webhook endpoint 已删除",
       "copyFailedTitle": "复制失败",
@@ -987,19 +987,19 @@ export default {
     },
     "settings": {
       "title": "Webhook 设置",
-      "description": "管理全局 webhook 开关和 JWT 密钥配置。",
+      "description": "管理全局 webhook 开关和 JWT 密钥配置",
       "globalStatus": "全局投递状态",
-      "globalStatusHint": "只有全局开关和 endpoint 开关都开启时，才会真正发送回调。",
+      "globalStatusHint": "只有全局开关和 endpoint 开关都开启时，才会真正发送回调",
       "jwtSecretStatus": "JWT 密钥状态",
-      "jwtSecretStatusHint": "只有配置好 JWT 密钥后，后端才会返回可直接使用的 webhook token。",
+      "jwtSecretStatusHint": "只有配置好 JWT 密钥后，后端才会返回可直接使用的 webhook token",
       "secretAlertTitle": "JWT 密钥尚未配置",
-      "secretAlertDescription": "您仍然可以创建和编辑 endpoint，但在配置 JWT 密钥之前，后端不会返回可用的 webhook token。",
+      "secretAlertDescription": "您仍然可以创建和编辑 endpoint，但在配置 JWT 密钥之前，后端不会返回可用的 webhook token",
       "enableSwitchLabel": "全局启用 webhook 投递",
       "jwtSecretLabel": "Webhook JWT 密钥",
       "jwtSecretPlaceholder": "留空表示保持当前密钥不变",
-      "jwtSecretHelp": "只有在您想替换当前密钥时才需要填写新值。",
+      "jwtSecretHelp": "只有在您想替换当前密钥时才需要填写新值",
       "readOnlyNoticeTitle": "只读视图",
-      "readOnlyNoticeDescription": "你可以查看 Webhook 设置和端点，但修改需要超级管理员权限。",
+      "readOnlyNoticeDescription": "你可以查看 Webhook 设置和端点，但修改需要超级管理员权限",
       "noChanges": "没有需要保存的更改",
       "disableDialog": {
         "title": "关闭全局 webhook 投递？",
@@ -1009,7 +1009,7 @@ export default {
     },
     "list": {
       "title": "Webhook endpoints",
-      "description": "查看并管理已注册的 webhook 回调地址。",
+      "description": "查看并管理已注册的 webhook 回调地址",
       "generatedAt": "生成时间：{date}",
       "total": "共 {total} 个 endpoint"
     },
@@ -1036,25 +1036,25 @@ export default {
       "jwtSecret": "JWT 密钥",
       "withBearer": "{count} 个带 Bearer",
       "rankTitle": "订阅分布",
-      "rankHint": "订阅数最多的 endpoint 及其占全部订阅的比例，按上方列表统计。",
+      "rankHint": "订阅数最多的 endpoint 及其占全部订阅的比例，按上方列表统计",
       "rankEmpty": "还没有任何订阅",
       "rankRest": "其余 endpoint 共 {count} 个订阅"
     },
     "form": {
       "createTitle": "创建 webhook endpoint",
       "editTitle": "编辑 webhook endpoint",
-      "description": "配置回调地址、凭证、Bearer Token 和 endpoint 开关。",
+      "description": "配置回调地址、凭证、Bearer Token 和 endpoint 开关",
       "idLabel": "Endpoint ID",
       "idPlaceholder": "可选，留空则自动生成",
-      "idHelp": "如果留空，后端会自动生成下一个数字字符串 ID。",
+      "idHelp": "如果留空，后端会自动生成下一个数字字符串 ID",
       "callbackUrlLabel": "回调地址",
       "callbackUrlPlaceholder": "https://example.com/webhook",
       "credentialLabel": "凭证",
       "credentialPlaceholder": "可选，留空则自动生成",
-      "credentialHelp": "如果留空，后端会自动生成随机凭证。",
+      "credentialHelp": "如果留空，后端会自动生成随机凭证",
       "bearerLabel": "Bearer Token",
       "bearerPlaceholder": "可选，留空则不附带 Authorization 头",
-      "bearerHelp": "填写后，后端会在回调请求中附带 `Authorization: Bearer TOKEN`。",
+      "bearerHelp": "填写后，后端会在回调请求中附带 `Authorization: Bearer TOKEN`",
       "clearBearerLabel": "清空 Bearer Token",
       "enabledLabel": "启用当前 endpoint",
       "groups": {
@@ -1069,15 +1069,15 @@ export default {
     },
     "tokenDialog": {
       "title": "Webhook Token",
-      "description": "请保存 endpoint {id} 当前可用的 webhook token。",
+      "description": "请保存 endpoint {id} 当前可用的 webhook token",
       "headerNameLabel": "请求头名称",
       "tokenLabel": "Webhook Token",
-      "tokenHelp": "调用 webhook subscriber 接口时需要使用这个 token，请妥善保管。",
+      "tokenHelp": "调用 webhook subscriber 接口时需要使用这个 token，请妥善保管",
       "confirmSaved": "我已保存"
     },
     "subscribers": {
       "title": "{id} 的订阅者",
-      "description": "当全局开关和该 endpoint 开关都开启时，这些订阅关系会接收到回调。",
+      "description": "当全局开关和该 endpoint 开关都开启时，这些订阅关系会接收到回调",
       "generatedAt": "生成时间：{date}",
       "userId": "用户 ID",
       "server": "区服",
@@ -1102,7 +1102,7 @@ export default {
       "created": "Webhook endpoint 已创建",
       "saved": "Webhook endpoint 已保存",
       "deleted": "Webhook endpoint 已删除",
-      "savedWithoutToken": "Endpoint 已保存，但由于 JWT 密钥未配置，后端没有返回 token。",
+      "savedWithoutToken": "Endpoint 已保存，但由于 JWT 密钥未配置，后端没有返回 token",
       "copyFailedTitle": "复制 Token 失败",
       "copyFailedEmpty": "Token 为空",
       "copyFailedClipboardUnsupported": "当前环境不支持剪贴板操作",
@@ -1121,13 +1121,13 @@ export default {
       "title": "已认证工具箱用户",
       "description": "管理订单验证和人工认证的赞助资格。曾经赞助过即可永久使用头像框。",
       "add": "添加赞助用户",
-      "addDescription": "查找已有工具箱账号，确认赞助记录后为其手动认证。",
+      "addDescription": "查找已有工具箱账号，确认赞助记录后为其手动认证",
       "search": "查询用户",
       "searchHint": "工具箱 ID、昵称、邮箱或爱发电 ID",
       "findUser": "查找工具箱用户",
       "loading": "正在加载用户…",
-      "empty": "没有符合条件的认证用户。",
-      "noUser": "未找到可管理的用户，请检查 ID、昵称或邮箱。",
+      "empty": "没有符合条件的认证用户",
+      "noUser": "未找到可管理的用户，请检查 ID、昵称或邮箱",
       "manage": "管理赞助资格",
       "select": "选择用户",
       "eligible": "已认证",
@@ -1141,17 +1141,17 @@ export default {
       "userId": "工具箱 ID：{id}",
       "afdianId": "爱发电 ID：{id}",
       "updated": "{actor} · {date}",
-      "target": "为 {name}（{id}）设置赞助资格。",
+      "target": "为 {name}（{id}）设置赞助资格",
       "access": "资格设置",
       "grantedHelp": "确认该用户曾经赞助过，永久开放头像框。不需要绑定爱发电，也不会新增赞助墙条目。",
       "blockedHelp": "停用该用户的赞助头像框，重新验证订单也不会恢复。保留原有订单、绑定及头像框选择。",
-      "automaticHelp": "清除人工设置，重新按已绑定账号的历史赞助记录判断资格。",
+      "automaticHelp": "清除人工设置，重新按已绑定账号的历史赞助记录判断资格",
       "note": "操作备注（必填）",
-      "noteHint": "填写赞助来源、认证依据或调整原因，仅管理员可见。",
-      "noteRequired": "请填写操作备注，最多约 330 个汉字。",
+      "noteHint": "填写赞助来源、认证依据或调整原因，仅管理员可见",
+      "noteRequired": "请填写操作备注，最多约 330 个汉字",
       "save": "保存资格",
       "saved": "赞助资格已更新",
-      "loadFailed": "赞助用户加载失败，请重试。"
+      "loadFailed": "赞助用户加载失败，请重试"
     },
     "binding": {
       "title": "工具箱绑定",
@@ -1159,7 +1159,7 @@ export default {
       "unbound": "未绑定"
     },
     "title": "赞助者管理",
-    "description": "维护赞助者名单展示资料与赞助时长：爱发电时长由订单自动计算，其他渠道的赞助在这里手动录入。",
+    "description": "维护赞助者名单展示资料与赞助时长：爱发电时长由订单自动计算，其他渠道的赞助在这里手动录入",
     "generatedAt": "生成时间：{date}",
     "common": {
       "fallback": "—",
@@ -1234,7 +1234,7 @@ export default {
     },
     "list": {
       "title": "赞助者名单",
-      "description": "列表按后端返回顺序展示；分类与到期时间由后端根据爱发电订单和手动时长计算。",
+      "description": "列表按后端返回顺序展示；分类与到期时间由后端根据爱发电订单和手动时长计算",
       "total": "共 {total} 位",
       "filteredTotal": "{count} / {total} 位",
       "manualProfile": "{count} 位手动保护资料",
@@ -1269,8 +1269,8 @@ export default {
       "saveProfile": "保存资料",
       "message": "留言",
       "afdianSyncDisabled": "不从爱发电更新这个资料",
-      "afdianSyncHelp": "开启后，手动编辑的昵称、头像、档位和留言不会被后续爱发电同步覆盖；爱发电订单仍会计入时长。",
-      "manualProfileHint": "此处只保存展示用资料和同步策略；爱发电 API key 与 webhook 配置仍应只存在后端。"
+      "afdianSyncHelp": "开启后，手动编辑的昵称、头像、档位和留言不会被后续爱发电同步覆盖；爱发电订单仍会计入时长",
+      "manualProfileHint": "此处只保存展示用资料和同步策略；爱发电 API key 与 webhook 配置仍应只存在后端"
     },
     "syncDialog": {
       "title": "从爱发电同步？",
@@ -1278,15 +1278,15 @@ export default {
     },
     "afdianToggleDialog": {
       "disableTitle": "停止从爱发电更新？",
-      "disableDescription": "{name} 的昵称、头像、档位和留言将不再被爱发电同步覆盖；爱发电订单仍会计入时长。",
+      "disableDescription": "{name} 的昵称、头像、档位和留言将不再被爱发电同步覆盖；爱发电订单仍会计入时长",
       "confirmDisable": "停止更新",
       "enableTitle": "恢复从爱发电更新？",
-      "enableDescription": "下一次同步会用爱发电的资料覆盖 {name} 手动编辑过的昵称、头像、档位和留言。",
+      "enableDescription": "下一次同步会用爱发电的资料覆盖 {name} 手动编辑过的昵称、头像、档位和留言",
       "confirmEnable": "恢复更新"
     },
     "duration": {
       "title": "赞助时长",
-      "migrationPending": "这位赞助者还保留着旧版的单一到期时间，完成一次爱发电同步后才会拆分为爱发电时长和手动时长，届时才能录入手动时长。",
+      "migrationPending": "这位赞助者还保留着旧版的单一到期时间，完成一次爱发电同步后才会拆分为爱发电时长和手动时长，届时才能录入手动时长",
       "afdianPart": "爱发电时长到期",
       "afdianMonths": "共 {count} 个月",
       "manualPart": "手动时长",
@@ -1301,7 +1301,7 @@ export default {
       },
       "orders": {
         "title": "爱发电订单（只读）",
-        "empty": "没有爱发电订单。",
+        "empty": "没有爱发电订单",
         "paidAt": "时间",
         "plan": "方案",
         "kind": "时长",
@@ -1318,7 +1318,7 @@ export default {
         "add": "添加手动时长",
         "addDialogTitle": "添加手动时长",
         "editDialogTitle": "编辑手动时长",
-        "empty": "还没有手动时长。",
+        "empty": "还没有手动时长",
         "migrated": "迁移",
         "startsAt": "最早开始：{date}",
         "createdBy": "{user} 录入于 {date}",
@@ -1326,7 +1326,7 @@ export default {
         "edit": "编辑",
         "delete": "删除",
         "deleteTitle": "删除这条手动时长？",
-        "deleteDescription": "将删除 {amount} 的手动时长，实际到期时间会随之缩短。"
+        "deleteDescription": "将删除 {amount} 的手动时长，实际到期时间会随之缩短"
       },
       "form": {
         "amount": "数量",
@@ -1407,7 +1407,7 @@ export default {
       },
       "chart": {
         "title": "趋势",
-        "description": "上传、上传失败和新注册各占一张图，时间轴对齐；鼠标移到任意一张图上可同时查看三项。",
+        "description": "上传、上传失败和新注册各占一张图，时间轴对齐；鼠标移到任意一张图上可同时查看三项",
         "uploads": "上传",
         "registrations": "新注册",
         "failures": "上传失败",
@@ -1437,7 +1437,7 @@ export default {
       },
       "hourly": {
         "title": "近 24 小时上传",
-        "description": "每小时的上传次数，失败的部分叠在柱顶；最右一柱是还没过完的这一小时。",
+        "description": "每小时的上传次数，失败的部分叠在柱顶；最右一柱是还没过完的这一小时",
         "successRate": "成功率",
         "peakHour": "峰值时段",
         "hourlyAverage": "每小时平均",
@@ -1651,12 +1651,12 @@ export default {
       },
       "detail": {
         "title": "上传记录详情",
-        "description": "所属用户为数据归属方，实际上传者为发起本次上传的工具箱用户。",
+        "description": "所属用户为数据归属方，实际上传者为发起本次上传的工具箱用户",
         "gameUserId": "游戏 UID",
         "authMethod": "身份方式",
         "authorizationSource": "授权来源",
         "grantId": "授权 ID",
-        "grantIdHint": "审计快照，对应授权可能已不存在。",
+        "grantIdHint": "审计快照，对应授权可能已不存在",
         "actorKind": "上传者关系",
         "oauthClientId": "OAuth 客户端",
         "client": "客户端 / 版本",
@@ -1670,7 +1670,7 @@ export default {
       },
       "errorDialog": {
         "title": "上传失败详情",
-        "description": "查看这次上传失败时后端返回的错误信息。",
+        "description": "查看这次上传失败时后端返回的错误信息",
         "close": "关闭"
       },
       "summary": {
@@ -1828,16 +1828,16 @@ export default {
       },
       "batchDialog": {
         "title": "确认批量解绑",
-        "description": "将解绑选中的 {count} 条游戏账号绑定，此操作不可撤销。",
+        "description": "将解绑选中的 {count} 条游戏账号绑定，此操作不可撤销",
         "cancel": "取消",
         "confirm": "确认解绑"
       }
     },
     "editDialog": {
       "createTitle": "新增游戏绑定",
-      "createDescription": "为用户添加新的游戏账号绑定。",
+      "createDescription": "为用户添加新的游戏账号绑定",
       "editTitle": "编辑游戏绑定",
-      "editDescription": "修改游戏账号绑定的数据设置。",
+      "editDescription": "修改游戏账号绑定的数据设置",
       "toolboxUserId": "工具箱用户ID",
       "toolboxUserIdPlaceholder": "输入工具箱用户ID",
       "server": "服务器",
@@ -1847,28 +1847,28 @@ export default {
       "mysekaiSettingsTitle": "MySekai 数据设置",
       "accountTitle": "游戏账号",
       "owner": "所属用户 ID {userId}",
-      "identityLockedHint": "区服、游戏 ID 和所属用户不能在这里修改；要换绑到其他用户请使用「转移绑定」。",
-      "botsHint": "把这类数据同步给对应的 QQ 群 Bot。",
+      "identityLockedHint": "区服、游戏 ID 和所属用户不能在这里修改；要换绑到其他用户请使用「转移绑定」",
+      "botsHint": "把这类数据同步给对应的 QQ 群 Bot",
       "permissionHelp": {
         "suite": {
-          "allowPublicApi": "开启后，任何知道这个 UID 的人都能通过工具箱接口查看该用户上传的账号数据。"
+          "allowPublicApi": "开启后，任何知道这个 UID 的人都能通过工具箱接口查看该用户上传的账号数据"
         },
         "mysekai": {
-          "allowPublicApi": "开启后，任何知道这个 UID 的人都能通过工具箱接口查看该用户上传的烤森数据。",
-          "allowFixtureApi": "开启后，这个 UID 会出现在烤森家具互助列表，其他玩家可以来访。"
+          "allowPublicApi": "开启后，任何知道这个 UID 的人都能通过工具箱接口查看该用户上传的烤森数据",
+          "allowFixtureApi": "开启后，这个 UID 会出现在烤森家具互助列表，其他玩家可以来访"
         }
       }
     },
     "reassignDialog": {
       "title": "转移游戏账号",
-      "description": "将 {server} 游戏 ID {gameId} 从 {fromUser} 转移到目标用户。",
+      "description": "将 {server} 游戏 ID {gameId} 从 {fromUser} 转移到目标用户",
       "targetUserIdLabel": "目标用户ID",
       "targetUserIdPlaceholder": "请输入目标工具箱用户ID",
       "confirm": "确认转移"
     },
     "deleteDialog": {
       "title": "确认解绑",
-      "description": "此操作将解除 {server} 游戏账号 {gameUserId} 的绑定关系。",
+      "description": "此操作将解除 {server} 游戏账号 {gameUserId} 的绑定关系",
       "confirm": "确认解绑"
     },
     "toast": {
@@ -2010,7 +2010,7 @@ export default {
         "empty": "暂无用户数据",
         "loadError": "加载用户列表失败",
         "retry": "重试",
-        "emptyFiltered": "没有符合当前筛选条件的用户。",
+        "emptyFiltered": "没有符合当前筛选条件的用户",
         "selectPage": "全选本页",
         "selectUser": "选择 {name}",
         "viewDetail": "查看详情"
@@ -2037,7 +2037,7 @@ export default {
     },
     "detail": {
       "backToList": "返回用户列表",
-      "notFound": "用户不存在，可能已被删除或链接有误。",
+      "notFound": "用户不存在，可能已被删除或链接有误",
       "header": {
         "userId": "用户 ID",
         "banReason": "封禁原因"
@@ -2058,8 +2058,8 @@ export default {
       },
       "account": {
         "title": "账号设置",
-        "roleHelp": "新角色的权限立即生效。",
-        "iosHelp": "用户在 iOS 快捷指令中上传数据时使用。"
+        "roleHelp": "新角色的权限立即生效",
+        "iosHelp": "用户在 iOS 快捷指令中上传数据时使用"
       },
       "tabs": {
         "info": "基本信息",
@@ -2089,7 +2089,7 @@ export default {
         "deleteDialogTitle": "永久删除账号",
         "deleteDialogDescription": "将永久删除用户 {name}（{userId}）及其登录身份、社交和游戏绑定、数据授权、上传码与引继码保险库。此操作无法恢复；审计和上传历史会保留。",
         "deleteConfirmationLabel": "输入用户 ID {userId} 以确认",
-        "deleteConfirmationMismatch": "输入的用户 ID 不匹配。",
+        "deleteConfirmationMismatch": "输入的用户 ID 不匹配",
         "deleteDialogConfirm": "永久删除",
         "forceLogoutDialogTitle": "确认强制登出",
         "forceLogoutDialogDescription": "确定要强制登出用户 {name} 吗？该用户的所有活跃会话都将被注销，需要重新登录。",
@@ -2104,7 +2104,7 @@ export default {
       "activity": {
         "title": "活动记录",
         "uploadLogsTitle": "上传日志",
-        "uploadLogsDescription": "该用户最近的上传记录，包括失败时后端返回的错误详情。",
+        "uploadLogsDescription": "该用户最近的上传记录，包括失败时后端返回的错误详情",
         "viewAllUploads": "在上传日志中查看全部",
         "columns": {
           "action": "操作",
@@ -2154,7 +2154,7 @@ export default {
         "sharingSuite": "Suite 共享 {on}/{total}",
         "sharingMysekai": "MySekai 共享 {on}/{total}",
         "unbindDialogTitle": "确认解绑",
-        "unbindDialogDescription": "此操作将解绑游戏账号 {gameUserId}，之后可重新添加。"
+        "unbindDialogDescription": "此操作将解绑游戏账号 {gameUserId}，之后可重新添加"
       },
       "social": {
         "title": "社交平台绑定",
@@ -2193,15 +2193,15 @@ export default {
       "dialog": {
         "email": {
           "title": "修改邮箱",
-          "description": "修改用户 {name} 的邮箱地址。",
+          "description": "修改用户 {name} 的邮箱地址",
           "newEmail": "新邮箱地址",
           "placeholder": "请输入邮箱地址",
-          "invalid": "请输入有效的邮箱地址，例如 name@example.com",
+          "invalid": "请输入有效的邮箱地址，例如 name{'@'}example.com",
           "confirm": "确认修改"
         },
         "gameBinding": {
           "title": "添加游戏绑定",
-          "description": "为用户 {name} 添加或更新游戏账号绑定。",
+          "description": "为用户 {name} 添加或更新游戏账号绑定",
           "server": "服务器",
           "gameUserId": "游戏用户 ID",
           "gameUserIdPlaceholder": "输入游戏内用户 ID",
@@ -2211,7 +2211,7 @@ export default {
         "social": {
           "addTitle": "添加社交平台绑定",
           "editTitle": "编辑社交平台绑定",
-          "description": "管理用户 {name} 的社交平台主绑定信息。",
+          "description": "管理用户 {name} 的社交平台主绑定信息",
           "platform": "平台",
           "platformPlaceholder": "选择平台",
           "userId": "用户 ID",
@@ -2220,7 +2220,7 @@ export default {
         "authSocial": {
           "addTitle": "添加授权社交平台",
           "editTitle": "编辑授权社交平台",
-          "description": "管理用户 {name} 的授权社交平台账号。",
+          "description": "管理用户 {name} 的授权社交平台账号",
           "platform": "平台",
           "platformPlaceholder": "选择平台",
           "userId": "用户 ID",

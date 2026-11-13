@@ -1,20 +1,10 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Loader2, Lock, Mail, Check, KeyRound, RotateCcw } from "lucide-vue-next"
 import { useKratosActionList } from "@/modules/auth/composables/useKratosActionList"
-import {
-  Card,
-  CardTitle,
-  CardHeader,
-  CardContent,
-  CardDescription
-} from "@/components/ui/card"
 import { useKratosBrowserFlow } from "@/modules/auth/composables/useKratosBrowserFlow"
-import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue"
-import KratosFieldInput from "@/modules/auth/components/KratosFieldInput.vue"
+import AuthPageShell from "@/modules/auth/components/AuthPageShell.vue"
+import KratosAuthForm from "@/modules/auth/components/KratosAuthForm.vue"
 
 const {
   loading,
@@ -35,123 +25,50 @@ const {
 } = useKratosBrowserFlow("recovery")
 const { t } = useI18n()
 
-function iconForField(name: string) {
-  if (name.endsWith("email")) {
-    return Mail
-  }
-
-  if (name.toLowerCase().includes("password")) {
-    return Lock
-  }
-
-  return KeyRound
-}
-
 const isReady = computed(() => !loading.value && !loadError.value && action.value !== "")
 
 // "验证" is the one primary; "重新发送验证码" renders as a link under it.
 const orderedActions = useKratosActionList(submitFields, buttonFields)
-
-function actionIcon(role: string) {
-  return role === "resend" ? RotateCcw : Check
-}
 
 function handleSubmit(event: Event) {
   if (!validateVisibleFields(event)) {
     event.preventDefault()
   }
 }
+
+function setFieldValue(name: string, value: string) {
+  fieldValues[name] = value
+}
 </script>
 
 <template>
-  <div class="w-full flex-1 flex flex-col items-center justify-center gap-6 px-0 py-4">
-    <Card class="w-full max-w-md">
-      <CardHeader>
-        <CardTitle class="flex items-center gap-2">
-          <KeyRound class="h-6 w-6" />
-          {{ t("auth.resetPassword.title") }}
-        </CardTitle>
-        <CardDescription>{{ t("auth.resetPassword.description") }}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div v-if="loading" class="flex items-center justify-center py-12 text-muted-foreground">
-          <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-          {{ t("auth.common.loadingFlow") }}
-        </div>
-        <div v-else-if="loadError" class="space-y-4">
-          <p class="text-sm text-destructive [overflow-wrap:anywhere]">{{ loadError }}</p>
-          <Button class="w-full" @click="restartFlow">
-            <Check class="mr-2 h-4 w-4" />
-            {{ t("auth.common.restartFlow") }}
-          </Button>
-        </div>
-        <form v-else :action="action" :method="method" class="space-y-4" novalidate @submit="handleSubmit">
-          <input v-for="field in hiddenFields" :key="field.key" type="hidden" :name="field.name" :value="field.value" />
+  <AuthPageShell
+    :title="t('auth.resetPassword.title')"
+    :loading="loading"
+    :load-error="loadError"
+    @restart="restartFlow"
+  >
+    <KratosAuthForm
+      :action="action"
+      :method="method"
+      :hidden-fields="hiddenFields"
+      :messages="generalMessages"
+      :fields="visibleFields"
+      :actions="orderedActions"
+      :values="fieldValues"
+      :errors="fieldErrors"
+      :ready="isReady"
+      :alternatives-label="t('auth.common.otherMethods')"
+      :fallback-submit-label="submitLabel || t('auth.resetPassword.submit')"
+      @submit="handleSubmit"
+      @trigger="invokeVisibleFieldAction"
+      @update:value="setFieldValue"
+    />
 
-          <KratosFlowMessages :messages="generalMessages" />
-
-          <div v-for="(field, index) in visibleFields" :key="field.key" class="grid gap-2">
-            <Label :for="field.key">{{ field.label }}</Label>
-            <Button
-              v-if="field.type === 'button'"
-              type="button"
-              variant="outline"
-              class="w-full justify-start"
-              :name="field.name"
-              :value="field.value || undefined"
-              :disabled="field.disabled"
-              @click="invokeVisibleFieldAction(field)"
-            >
-              <component :is="iconForField(field.name)" class="size-4 mr-2" />
-              {{ field.label }}
-            </Button>
-            <KratosFieldInput
-              v-else
-              :id="field.key"
-              v-model="fieldValues[field.name]"
-              :name="field.name"
-              :type="field.type"
-              :icon="iconForField(field.name)"
-              :autocomplete="field.autocomplete"
-              :required="field.required"
-              :disabled="field.disabled"
-              :placeholder="field.placeholder"
-              :error="fieldErrors[field.name]"
-              :autofocus="index === 0 && isReady"
-            />
-            <KratosFlowMessages :messages="field.messages" />
-          </div>
-
-          <div v-if="orderedActions.length > 0" class="space-y-2">
-            <div v-for="item in orderedActions" :key="item.key" class="space-y-1">
-              <Button
-                :type="item.kind === 'submit' ? 'submit' : 'button'"
-                class="w-full"
-                :variant="item.variant"
-                :data-kratos-role="item.role"
-                :name="item.name || undefined"
-                :value="item.value || undefined"
-                :data-kratos-submit="item.kind === 'submit' ? item.key : undefined"
-                :disabled="!isReady || item.disabled"
-                @click="item.kind === 'trigger' ? invokeVisibleFieldAction(item) : undefined"
-              >
-                <component :is="actionIcon(item.role)" class="size-4" />
-                {{ item.label }}
-              </Button>
-              <KratosFlowMessages :messages="item.messages" />
-            </div>
-          </div>
-          <Button v-else type="submit" class="w-full" :disabled="!isReady">
-            <Check class="mr-2 h-4 w-4" />
-            {{ submitLabel || t("auth.resetPassword.submit") }}
-          </Button>
-          <div class="text-center text-sm">
-            <router-link to="/user/login" class="underline underline-offset-4">
-              {{ t("auth.register.goLogin") }}
-            </router-link>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
-  </div>
+    <template v-if="!loading" #footer>
+      <router-link to="/user/login" class="font-medium text-foreground underline-offset-4 hover:underline">
+        {{ t("auth.register.goLogin") }}
+      </router-link>
+    </template>
+  </AuthPageShell>
 </template>

@@ -11,7 +11,6 @@ const open = defineModel<boolean>("open", { required: true })
 
 const props = withDefaults(defineProps<{
   title: string
-  description: string
   selectedCount: number
   selectedCountLabel: string
   priorityHint: string
@@ -34,28 +33,23 @@ const emit = defineEmits<{
       <CollapsibleTrigger as-child>
         <button
           type="button"
-          class="flex min-w-0 items-start justify-between gap-3 text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          class="flex min-w-0 items-center justify-between gap-3 text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-10"
         >
-          <span class="min-w-0 space-y-1">
-            <span class="flex min-w-0 flex-wrap items-center gap-2 text-sm font-medium">
-              <span>{{ props.title }}</span>
-              <span
-                v-if="props.selectedCount > 0"
-                :class="[
-                  'rounded-md px-1.5 py-0.5 text-[11px] font-medium',
-                  props.badgeClass,
-                ]"
-              >
-                {{ props.selectedCountLabel }}
-              </span>
-            </span>
-            <span class="block text-xs leading-5 text-muted-foreground">
-              {{ props.description }}
+          <span class="flex min-w-0 flex-wrap items-center gap-2 text-sm font-medium">
+            <span>{{ props.title }}</span>
+            <span
+              v-if="props.selectedCount > 0"
+              :class="[
+                'rounded-md px-1.5 py-0.5 text-[11px] font-medium',
+                props.badgeClass,
+              ]"
+            >
+              {{ props.selectedCountLabel }}
             </span>
           </span>
           <LucideChevronDown
             :class="[
-              'mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-200',
+              'size-4 shrink-0 text-muted-foreground transition-transform duration-200',
               isOpen ? 'rotate-180' : '',
             ]"
           />

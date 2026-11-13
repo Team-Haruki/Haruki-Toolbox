@@ -23,16 +23,11 @@ const { t } = useI18n()
 
 <template>
   <div v-if="cards.length > 0" class="flex min-w-0 flex-col gap-2" data-testid="gacha-pickups">
-    <div class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
-      <p class="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <LucideSparkles class="size-4 shrink-0 self-center" aria-hidden="true" />
-        {{ t("gachas.detail.pickups") }}
-        <span class="tabular-nums">{{ cards.length }}</span>
-      </p>
-      <p v-if="wishSelectCount > 0" class="text-xs text-muted-foreground/80">
-        {{ t("gachaCatalog.pickups.wishHint", { count: wishSelectCount }) }}
-      </p>
-    </div>
+    <p class="flex items-center gap-1.5 text-sm text-muted-foreground">
+      <LucideSparkles class="size-4 shrink-0 self-center" aria-hidden="true" />
+      {{ t("gachas.detail.pickups") }}
+      <span class="tabular-nums">{{ cards.length }}</span>
+    </p>
     <div class="flex flex-wrap gap-3">
       <GachaCardTile
         v-for="entry in cards"

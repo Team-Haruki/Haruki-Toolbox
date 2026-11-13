@@ -25,8 +25,10 @@ test("oidc logout route renders the invalid-challenge fallback", async ({ page }
 
   await page.goto("/logout?logout_challenge=bad")
 
-  await expect(page.getByRole("heading", { name: /无效的退出请求|Invalid sign-out request/ })).toBeVisible()
-  await expect(page.getByText(/这个退出链接已失效或不完整|This sign-out link has expired or is incomplete/)).toBeVisible()
+  // The page keeps its "Sign out" heading; the panel under it says what is wrong.
+  await expect(page.getByRole("heading", { name: /^(退出登录|Sign out)$/ })).toBeVisible()
+  await expect(page.getByText(/无效的退出请求|Invalid sign-out request/)).toBeVisible()
+  await expect(page.getByText(/回到发起退出的应用重新操作|Go back to the app that started it and try again/)).toBeVisible()
   await expect(page.getByRole("button", { name: /^(退出登录|Sign out)$/ })).toHaveCount(0)
   await expect(page.getByRole("button", { name: /返回首页|Back to home/ })).toBeVisible()
 })
@@ -80,7 +82,8 @@ test("logout route without a challenge signs a local session out through Kratos"
   await page.goto("/logout")
 
   await expect(page.getByRole("heading", { name: /^(退出登录|Sign out)$/ })).toBeVisible()
-  await expect(page.getByText(/确认后将退出当前账号在本站的登录|Confirming signs the current account out of this site/)).toBeVisible()
+  // The panel names the account that is about to be signed out.
+  await expect(page.locator("[data-oauth-page]").getByText("Logout test", { exact: true })).toBeVisible()
   await expect(page.getByRole("button", { name: /^(取消|Cancel)$/ })).toBeVisible()
 
   await page.getByRole("button", { name: /^(退出登录|Sign out)$/ }).click()
@@ -366,7 +369,7 @@ test("verification page continues to the sign-up target once the code is accepte
   await page.goto("/user/verification?flow=e2e-verification-flow")
 
   // Kratos message 1080002 is rendered in the UI language, not as Kratos' English text.
-  await expect(page.getByText(/^(邮箱验证成功。|Your email address has been verified\.)$/)).toBeVisible()
+  await expect(page.getByText(/^(邮箱验证成功|Your email address is verified)$/)).toBeVisible()
   await expect(page.getByText("You successfully verified your email address.")).toHaveCount(0)
   const continueLink = page.getByRole("link", { name: /^(继续|Continue)$/ })
   await expect(continueLink).toBeVisible()

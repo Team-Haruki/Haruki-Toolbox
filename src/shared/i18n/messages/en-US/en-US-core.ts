@@ -63,12 +63,12 @@ export default {
     "granteeNotFound": "The user to grant access to was not found. Check their Toolbox user ID.",
     "grantToSelf": "You cannot grant access to yourself. Enter another user's Toolbox user ID.",
     "expiresAtNotFuture": "The expiry time must be in the future. Pick another time.",
-    "granteeBanned": "The user you are trying to grant access to is banned, so access cannot be granted.",
-    "accountDeletionConfirmationRequired": "Refresh the page and enter the target user ID to confirm permanent deletion.",
+    "granteeBanned": "The user you are trying to grant access to is banned, so access cannot be granted",
+    "accountDeletionConfirmationRequired": "Refresh the page and enter the target user ID to confirm permanent deletion",
     "accountDeletionBusy": "This account has a transfer job or deletion in progress. Wait for it to finish, then retry.",
     "accountDeletionUnavailable": "Deletion is not complete. Please try again shortly.",
     "qqBindingExists": "This QQ account is already linked to a Toolbox account. Unlink it from the original account before linking it here. Contact an administrator if you cannot sign in to the original account.",
-    "emailVerificationRequired": "Verify your email address before binding a social platform account.",
+    "emailVerificationRequired": "Verify your email address before binding a social platform account",
     "codeInvalidOrExpired": "The verification code is invalid or has expired. Request a new code and try again.",
     "codeTooManyAttempts": "Too many verification attempts. Request a new code and try again.",
     "ticketClosed": "This ticket is closed and cannot receive replies. Open a new ticket for a new issue.",
@@ -77,7 +77,7 @@ export default {
     "messageLength": "The message must be between 1 and 4000 characters. Adjust it and send again.",
     "captchaFailed": "The CAPTCHA check failed. Complete it again and retry.",
     "invalidVerificationCode": "The verification code is incorrect. Check it and enter it again.",
-    "reauthRequired": "Re-enter your password to continue.",
+    "reauthRequired": "Re-enter your password to continue",
     "consentChallengeExpired": "The authorization request has expired or is invalid. Go back to the app that started it and try again.",
     "loginChallengeRequired": "The authorization parameters are missing. Go back to the app that started it and try again.",
     "inheritFailed": "Transfer failed. Check that the transfer ID and password are correct, regenerate the transfer ID in the game and try again.",
@@ -94,10 +94,11 @@ export default {
   "auth": {
     "common": {
       "cancel": "Cancel",
-      "loadingFlow": "Loading sign-in page…",
+      "loadingFlow": "Loading…",
       "restartFlow": "Start again",
+      "otherMethods": "Other ways",
       "triggerUnavailable": "Passkeys are not available right now. Use another method to continue.",
-      "loadFlowFailed": "The {flow} has expired or cannot be reached right now. Use the button below to start again.",
+      "loadFlowFailed": "The {flow} has expired or cannot be reached. Start again.",
       "serviceUnavailable": "The sign-in service cannot be reached right now. Try again later (code {status}).",
       "flowNames": {
         "login": "sign-in page",
@@ -110,9 +111,8 @@ export default {
     "kratos": {
       "labels": {
         "code": "Verification code",
-        "codePlaceholder": "Enter the code from your email",
         "totpCode": "Authenticator code",
-        "totpCodePlaceholder": "Enter the 6-digit code from your authenticator",
+        "totpCodePlaceholder": "6-digit code",
         "lookupSecret": "Backup recovery code",
         "savePassword": "Save password",
         "continueWithCode": "Sign in with email code",
@@ -125,8 +125,8 @@ export default {
       "text": {
         "1010001": "Sign in",
         "1010002": "Sign in with {provider}",
-        "1010003": "Please confirm this action by verifying that it is you.",
-        "1010004": "Please complete the second authentication step.",
+        "1010003": "Please confirm this action by verifying that it is you",
+        "1010004": "Please complete the second authentication step",
         "1010005": "Verify",
         "1010006": "Authenticator code",
         "1010007": "Backup recovery code",
@@ -134,7 +134,7 @@ export default {
         "1010009": "Use authenticator app",
         "1010010": "Use a backup recovery code",
         "1010011": "Sign in with a security key",
-        "1010012": "Get your security key (USB key, fingerprint reader, …) ready and press Continue.",
+        "1010012": "Get your security key (USB key, fingerprint reader, …) ready and press Continue",
         "1010013": "Continue",
         "1010014": "A code was sent to the address you provided. If it doesn't arrive, check the address and try again.",
         "1010015": "Send sign-in code",
@@ -142,7 +142,7 @@ export default {
         "1010017": "Sign in and link",
         "1010018": "Confirm with {provider}",
         "1010019": "Request a code to continue",
-        "1010020": "We will send a code to your address.",
+        "1010020": "We will send a code to your address",
         "1010021": "Sign in with passkey",
         "1010022": "Sign in with password",
         "1010023": "Send code to {address}",
@@ -157,8 +157,8 @@ export default {
         "1040006": "Send sign-up code",
         "1040007": "Sign up with passkey",
         "1040008": "Back",
-        "1040009": "Choose how you want to sign in to this account.",
-        "1050001": "Your changes have been saved.",
+        "1040009": "Choose how you want to sign in to this account",
+        "1050001": "Your changes have been saved",
         "1050002": "Link {provider} account",
         "1050003": "Unlink {provider} account",
         "1050004": "Remove authenticator app",
@@ -179,12 +179,12 @@ export default {
         "1050019": "Add passkey",
         "1050020": "Remove passkey “{display_name}”",
         "1050023": "Your account is managed by your organization. To change these settings, contact your organization administrator.",
-        "1050024": "Please set up a second authentication factor to continue.",
+        "1050024": "Please set up a second authentication factor to continue",
         "1060001": "You recovered your account. Please change your password or set up another sign-in method now.",
         "1060002": "We sent a password recovery email to the address you entered. Open the link in it; if it doesn't arrive, check your spam folder and make sure you used the address you signed up with.",
         "1060003": "We sent a recovery code to the address you entered. Enter it below; if it doesn't arrive, check your spam folder and make sure you used the address you signed up with.",
         "1060004": "A recovery code was sent to {masked_address}. If it doesn't arrive, check the address and make sure it is the one you signed up with.",
-        "1060005": "Enter your full recovery address to recover access to your account.",
+        "1060005": "Enter your full recovery address to recover access to your account",
         "1060006": "How do you want to recover your account?",
         "1060007": "Back",
         "1070001": "Password",
@@ -201,18 +201,18 @@ export default {
         "1070012": "Registration code",
         "1070013": "Sign-in code",
         "1070014": "Sign in and link",
-        "1070015": "Please complete the captcha to continue.",
+        "1070015": "Please complete the captcha to continue",
         "1070016": "Recovery address",
         "1070017": "Phone number",
         "1070018": "Email or phone number",
         "1080001": "We sent a verification email to the address you entered. Open the link in it to finish; if it doesn't arrive, check your spam folder.",
-        "1080002": "Your email address is verified.",
+        "1080002": "Your email address is verified",
         "1080003": "We sent a verification code to the address you entered. Enter it below; if it doesn't arrive, check your spam folder.",
         "1080004": "We sent a verification code by text message to the number you entered. If it doesn't arrive, check the number.",
-        "1080005": "Your phone number is verified.",
+        "1080005": "Your phone number is verified",
         "4000001": "This value is not valid. Please check it and try again.",
-        "4000002": "Please fill in this field.",
-        "4000003": "Too short: enter at least {min_length} characters.",
+        "4000002": "Please fill in this field",
+        "4000003": "Too short: enter at least {min_length} characters",
         "4000004": "The format is not valid. Please check it and try again.",
         "4000005": "This password can't be used. Please choose a different one.",
         "4000006": "The email or password is incorrect. Check them and try again, or use “Forgot password?” to reset it.",
@@ -220,43 +220,43 @@ export default {
         "4000008": "The authentication code is incorrect. Enter the latest code from your authenticator.",
         "4000009": "No sign-in identifier was found. Enter your email and try again.",
         "4000010": "This account's email address is not verified yet. Please check your inbox and verify it first.",
-        "4000011": "This account has no authenticator app set up.",
+        "4000011": "This account has no authenticator app set up",
         "4000012": "This backup recovery code has already been used. Please use another one.",
-        "4000013": "This account has no security key set up.",
-        "4000014": "This account has no backup recovery codes set up.",
-        "4000015": "This account doesn't exist or has no security key set up.",
+        "4000013": "This account has no security key set up",
+        "4000014": "This account has no backup recovery codes set up",
+        "4000015": "This account doesn't exist or has no security key set up",
         "4000016": "The backup recovery code is not valid. Please check it and try again.",
-        "4000017": "Too long: enter at most {max_length} characters.",
-        "4000018": "The value must be at least {minimum}.",
-        "4000019": "The value must be greater than {minimum}.",
-        "4000020": "The value must be at most {maximum}.",
-        "4000021": "The value must be less than {maximum}.",
-        "4000022": "The value must be a multiple of {base}.",
-        "4000023": "Enter at most {max_items} items.",
-        "4000024": "Enter at least {min_items} items.",
-        "4000025": "Entries must not repeat.",
-        "4000026": "The value has the wrong type.",
+        "4000017": "Too long: enter at most {max_length} characters",
+        "4000018": "The value must be at least {minimum}",
+        "4000019": "The value must be greater than {minimum}",
+        "4000020": "The value must be at most {maximum}",
+        "4000021": "The value must be less than {maximum}",
+        "4000022": "The value must be a multiple of {base}",
+        "4000023": "Enter at most {max_items} items",
+        "4000024": "Enter at least {min_items} items",
+        "4000025": "Entries must not repeat",
+        "4000026": "The value has the wrong type",
         "4000027": "An account with this email already exists. Sign in to it first, then link your social account.",
         "4000028": "{identifier} is already used by another account.",
-        "4000029": "The value doesn't meet the requirements.",
-        "4000030": "The value doesn't meet the requirements.",
+        "4000029": "The value doesn't meet the requirements",
+        "4000030": "The value doesn't meet the requirements",
         "4000031": "The password is too similar to your email. Please choose a different one.",
-        "4000032": "The password is too short: use at least {min_length} characters.",
-        "4000033": "The password is too long: use at most {max_length} characters.",
+        "4000032": "The password is too short: use at least {min_length} characters",
+        "4000033": "The password is too long: use at most {max_length} characters",
         "4000034": "This password has appeared in a known data breach and can't be used. Please choose a different one.",
-        "4000035": "This account doesn't exist or hasn't turned on sign-in with a code.",
+        "4000035": "This account doesn't exist or hasn't turned on sign-in with a code",
         "4000036": "The details don't match what you entered before. Please start over.",
-        "4000037": "This account doesn't exist or has no sign-in method set up.",
+        "4000037": "This account doesn't exist or has no sign-in method set up",
         "4000038": "The captcha check failed. Please try again.",
-        "4000039": "The new password must be different from your current one.",
-        "4000040": "Enter a valid email address.",
-        "4000041": "Enter a valid phone number.",
-        "4000042": "This account has no device key set up.",
+        "4000039": "The new password must be different from your current one",
+        "4000040": "Enter a valid email address",
+        "4000041": "Enter a valid phone number",
+        "4000042": "This account has no device key set up",
         "4000043": "The security key check failed. Please try again.",
-        "4000044": "The device key signature is not valid.",
+        "4000044": "The device key signature is not valid",
         "4000045": "This device key can no longer be used. Please add it again.",
         "4000046": "This device key was added before user verification was supported and can no longer be used. Please add it again.",
-        "4000047": "You need to accept this to continue.",
+        "4000047": "You need to accept this to continue",
         "4010001": "The sign-in page was open too long and has been refreshed. Please sign in again.",
         "4010002": "This sign-in request couldn't be processed. Check what you entered and try again.",
         "4010003": "This sign-up request couldn't be processed. Check what you entered and try again.",
@@ -265,22 +265,22 @@ export default {
         "4010006": "This verification request couldn't be processed. Check what you entered and try again.",
         "4010007": "This sign-in has already been completed and can't be submitted again. Please reload the page.",
         "4010008": "The sign-in code is invalid or has already been used. Please request a new one.",
-        "4010009": "The linked sign-in methods don't match.",
-        "4010010": "The address you entered doesn't match any address on this account.",
+        "4010009": "The linked sign-in methods don't match",
+        "4010010": "The address you entered doesn't match any address on this account",
         "4010011": "This account has been disabled. Please contact the administrator.",
         "4040001": "The sign-up page was open too long and has been refreshed. Please fill it in again.",
-        "4040002": "This sign-up has already been completed and can't be submitted again.",
+        "4040002": "This sign-up has already been completed and can't be submitted again",
         "4040003": "The sign-up code is invalid or has already been used. Please request a new one.",
         "4050001": "The settings page was open too long and has been refreshed. Please try again.",
         "4050002": "You can only change one address at a time. Please update each address separately.",
-        "4060001": "This recovery has already been completed and can't be submitted again.",
+        "4060001": "This recovery has already been completed and can't be submitted again",
         "4060002": "Account recovery ran into a problem. Please start over.",
         "4060003": "The link is missing its recovery token. Please start account recovery again.",
         "4060004": "The recovery link is invalid or has already been used. Please start account recovery again.",
         "4060005": "The recovery page was open too long and has been refreshed. Please try again.",
         "4060006": "The code is invalid or has already been used. Check it and try again, or resend the code.",
         "4070001": "The verification link is invalid or has already been used. Please send a new verification email.",
-        "4070002": "This verification has already been completed and can't be submitted again.",
+        "4070002": "This verification has already been completed and can't be submitted again",
         "4070003": "Verification ran into a problem. Please start over.",
         "4070004": "The link is missing its verification token. Please send a new verification email.",
         "4070005": "The verification page was open too long and has been refreshed. Please try again.",
@@ -290,7 +290,7 @@ export default {
         "5000003": "Your organization requires single sign-on, but none is configured. Please contact the administrator."
       },
       "variants": {
-        "requiredField": "Please enter your {field}.",
+        "requiredField": "Please enter your {field}",
         "duplicateIdentifierUnknown": "This email",
         "duplicateMethods": "You can sign in with {methods}.",
         "duplicateProviders": "You can also sign in with: {providers}.",
@@ -329,25 +329,25 @@ export default {
         "webauthnFailed": "The response from your passkey or security key couldn't be read. Please try again.",
         "credentialMissing": "The key you tried to remove no longer exists. Please reload the page.",
         "lastCredential": "This is your only sign-in method and can't be removed. Add another sign-in method first.",
-        "noChanges": "There are no changes to save.",
-        "lookupRegenerateFirst": "Generate new backup recovery codes before confirming them.",
-        "lookupNone": "You don't have any backup recovery codes yet.",
+        "noChanges": "There are no changes to save",
+        "lookupRegenerateFirst": "Generate new backup recovery codes before confirming them",
+        "lookupNone": "You don't have any backup recovery codes yet",
         "addressNotVerified": "This account's email address is not verified yet. Please check your inbox and verify it first.",
-        "alreadySignedIn": "You are already signed in.",
-        "flowDisabled": "This feature is not available right now."
+        "alreadySignedIn": "You are already signed in",
+        "flowDisabled": "This feature is not available right now"
       },
       "errors": {
         "security_csrf_violation": "The security check failed, possibly because the page was open too long or used in several tabs at once. Please go back and start over; if it keeps happening, clear this site's cookies.",
         "security_identity_mismatch": "This request was started by a different account and was rejected. Please start over.",
-        "session_already_available": "You are already signed in.",
-        "session_aal_already_fulfilled": "You have already completed the required verification.",
-        "session_aal1_required": "Please sign in before the second authentication step.",
+        "session_already_available": "You are already signed in",
+        "session_aal_already_fulfilled": "You have already completed the required verification",
+        "session_aal1_required": "Please sign in before the second authentication step",
         "session_aal2_required": "This action needs the second authentication step. Please sign in again and complete it.",
         "session_inactive": "Your session has ended. Please sign in again.",
-        "session_refresh_required": "To keep your account safe, please verify it is you before changing these settings.",
+        "session_refresh_required": "To keep your account safe, please verify it is you before changing these settings",
         "session_verified_address_required": "Your email address is not verified yet. Please check your inbox and verify it first.",
         "self_service_flow_expired": "This page has expired. Please go back and start over.",
-        "self_service_flow_disabled": "This feature is not available right now.",
+        "self_service_flow_disabled": "This feature is not available right now",
         "self_service_flow_replaced": "This page was replaced by a newer request. Please go back and start over.",
         "self_service_flow_return_to_forbidden": "The redirect target is not allowed, so it was not followed. Please go back and start over.",
         "browser_location_change_required": "Your browser needs to open another page to continue. Please try again.",
@@ -362,14 +362,14 @@ export default {
         "500": "The sign-in service ran into an internal error. Please try again later."
       },
       "errorPage": {
-        "technicalDetails": "Technical details (include them when reporting a problem)",
+        "technicalDetails": "Technical details",
         "reasonLabel": "Reason"
       },
       "webauthn": {
         "unsupported": "This browser doesn't support passkeys or security keys. Please use a current version of Chrome, Edge, Safari or Firefox.",
         "notAllowed": "The request was cancelled or timed out. Please try again and confirm it in the system dialog.",
-        "invalidState": "This passkey or security key has already been added.",
-        "aborted": "The request was cancelled.",
+        "invalidState": "This passkey or security key has already been added",
+        "aborted": "The request was cancelled",
         "security": "Passkeys can't be used on this address. Make sure you are on the site's official address.",
         "failed": "The passkey or security key request failed. Please try again."
       }
@@ -388,27 +388,27 @@ export default {
     },
     "login": {
       "title": "Sign in to Haruki Toolbox",
-      "description": "Use your email and password to sign in",
-      "descriptionMfa": "Complete the second step to finish signing in",
-      "descriptionRefresh": "Verify it is you to continue",
+      "titleMfa": "Two-step verification",
+      "titleRefresh": "Confirm it’s you",
+      "otherMethods": "Other ways to sign in",
+      "otherFactors": "Other ways to verify",
       "emailLabel": "Email",
-      "emailPlaceholder": "Enter your email",
+      "emailPlaceholder": "name{'@'}example.com",
       "passwordLabel": "Password",
-      "passwordPlaceholder": "Enter your password",
       "forgotPassword": "Forgot password?",
       "submit": "Sign in",
       "noAccount": "No account yet?",
       "registerLink": "Register",
       "refreshPasskey": {
         "mismatchTitle": "Verification did not complete",
-        "mismatchDescription": "Your device did not return the account information during verification, so the sign-in service could not tell which account it was. Sign out and sign in again with your passkey to continue; no re-verification is needed for 15 minutes after signing in.",
+        "mismatchDescription": "Your device did not return the account information, so the account could not be confirmed. Sign out and sign in again with your passkey to continue; no re-verification is needed for 15 minutes afterwards.",
         "relogin": "Sign out and sign in again",
         "reloginFailed": "Sign-out failed. Please try again."
       },
       "reasons": {
-        "authRequired": "You need to sign in to view that page. You will be taken back to it after signing in.",
-        "adminRequired": "That page needs an administrator account. You will be taken back to it after signing in.",
-        "sessionExpired": "Your session has expired. Sign in again and you will be taken back to where you were."
+        "authRequired": "That page needs you to sign in. You return to it afterwards.",
+        "adminRequired": "That page needs an administrator account. You return to it after signing in.",
+        "sessionExpired": "Your session has expired. Sign in again to return to where you were."
       },
       "toast": {
         "enterEmail": "Please enter your email",
@@ -423,34 +423,29 @@ export default {
     },
     "register": {
       "title": "Register account",
-      "description": "Create a new Haruki Toolbox account",
       "usernameLabel": "Username",
-      "usernamePlaceholder": "Enter username",
       "emailLabel": "Email",
       "emailCodeLabel": "Email verification code",
       "emailCodePlaceholder": "Enter the code from your email",
       "passwordLabel": "Password",
-      "passwordPlaceholder": "Enter password",
       "sending": "Sending...",
       "countdown": "Retry in {seconds}s",
       "sendCode": "Send code",
       "submit": "Register",
       "hasAccount": "Already have an account?",
-      "goLogin": "Sign in"
+      "goLogin": "Sign in",
+      "otherMethods": "Other ways to sign up"
     },
     "resetPassword": {
       "title": "Reset password",
-      "description": "Reset your Haruki Toolbox account password",
       "emailLabel": "Email",
       "newPasswordLabel": "New password",
-      "newPasswordPlaceholder": "Enter new password",
       "confirmPasswordLabel": "Confirm password",
       "confirmPasswordPlaceholder": "Enter new password again",
       "submit": "Confirm reset"
     },
     "verification": {
       "title": "Verify email",
-      "description": "Complete the identity verification flow to activate your current email address.",
       "submit": "Submit verification",
       "continue": "Continue"
     },
@@ -463,15 +458,13 @@ export default {
     },
     "error": {
       "title": "Sign-in service problem",
-      "description": "The sign-in service returned an error. Go back to the sign-in page and start again; if it keeps happening, try again later.",
       "retry": "Reload",
       "backToLogin": "Back to sign in",
       "backToHome": "Back to home",
       "alreadySignedInTitle": "You are already signed in",
-      "alreadySignedInDescription": "This account is signed in already; there is nothing more to do here.",
-      "missingIdDescription": "The link has no error ID, so the cause cannot be looked up. Go back to the sign-in page and start again.",
+      "missingIdDescription": "The link is incomplete. Go back to the sign-in page and start again.",
       "loadFailedDescription": "The error details could not be loaded. Check your connection and try again.",
-      "fallbackDescription": "The sign-in service could not complete this step. Go back to the sign-in page and start again.",
+      "fallbackDescription": "This step did not complete. Go back to the sign-in page and start again.",
       "errorIdLabel": "Error ID",
       "statusCodeLabel": "Status code",
       "detailsLabel": "Details"
@@ -480,7 +473,7 @@ export default {
   "sidebar": {
     "toggle": "Toggle sidebar",
     "title": "Navigation menu",
-    "description": "Site navigation menu."
+    "description": "Site navigation menu"
   },
   "sidebarUser": {
     "guestInitial": "?",
@@ -520,7 +513,6 @@ export default {
     "live": {
       "title": "On now",
       "optInTitle": "See what is on in the game",
-      "optInHint": "Load the game data to show the current event, limited gachas and new songs here.",
       "load": "Load game data",
       "running": "Running",
       "upcoming": "Starting soon",
@@ -537,52 +529,27 @@ export default {
       "eventCards": "Event cards",
       "gachas": "Limited gachas",
       "newSongs": "New songs",
-      "none": "Nothing to show for this server right now.",
+      "none": "Nothing to show for this server right now",
       "error": "The game data failed to load. Try again later."
     },
     "trays": {
-      "event": {
-        "hint": "Decks, points and rankings during an event"
-      },
-      "player": {
-        "hint": "Your own account, once uploaded"
-      },
-      "catalog": {
-        "hint": "Reference for everything in the game"
-      },
       "community": {
-        "title": "Co-op and community",
-        "hint": "Find a room, a group, or us"
+        "title": "Co-op and community"
       }
     },
     "tools": {
-      "deckRecommend": "The best event deck from the cards you own",
-      "rankBorder": "Score lines and their pace for every rank tier",
-      "ptCalculator": "Split the pt you need into games, with the bonus, boost and score for each",
-      "eventPlanner": "Plan each hour of play on the event calendar",
-      "uploadData": "Sync your game account data to the toolbox",
-      "playerProfile": "Your in-game profile",
-      "cardBox": "Card collection progress",
+      "deckRecommend": "Best event deck from your cards",
+      "rankBorder": "Border lines and pace per tier",
+      "ptCalculator": "Bonus, boost and score per game for a target pt",
+      "eventPlanner": "Hour-by-hour play plan for the event",
       "musicProgress": "Song clears and rewards still available",
-      "eventRecords": "Events you played and how you placed",
-      "training": "Training progress per character",
-      "musicLibrary": "Songs, difficulties and release details",
-      "cards": "Cards, skills and artwork",
-      "events": "Past and current events with bonuses and rewards",
-      "gachas": "Gacha banners and the cards in them",
       "costumes": "Mix outfits, headwear and hair with a 3D preview",
-      "storyPlayer": "Read the game stories in your browser",
       "sekaiStation": "Live co-op room numbers for the CN server",
-      "friendGroups": "Player group chats",
-      "friendLinks": "Other useful SEKAI sites",
-      "tickets": "Report bugs, account issues or ideas",
-      "about": "About the project and the team",
-      "sponsors": "The people who keep the toolbox running"
+      "tickets": "Report bugs, account issues or ideas"
     },
     "aboutBanner": {
       "badge": "About & Support",
-      "title": "Your support is our motivation to keep going",
-      "desc": "Click to view about Project Haruki and how to sponsor our dev team"
+      "title": "Your support is our motivation to keep going"
     },
     "accountAndSettings": "Account & Settings",
     "register": "Register",
@@ -594,7 +561,7 @@ export default {
       "title": "My account",
       "dataUpdatedAt": "Data uploaded at {time}",
       "noUploadData": "This account has not uploaded any data yet",
-      "guestDescription": "Sign in and bind a game account to upload data, view your profile and unlock personalized features.",
+      "guestDescription": "Sign in and bind a game account to upload data, view your profile and unlock personalized features",
       "onboarding": {
         "title": "Three steps to start",
         "step1": "Register and sign in",
@@ -602,7 +569,7 @@ export default {
         "step2Link": "Game account management",
         "step3": "{link} your game data once with the iOS module / HarukiProxy",
         "step3Link": "Upload",
-        "outro": "After that you can browse your cards, event records, deck recommendations and more."
+        "outro": "After that you can browse your cards, event records, deck recommendations and more"
       }
     },
     "externalLinks": "External links",
@@ -613,10 +580,10 @@ export default {
     "termsOfService": "Terms of Service",
     "currentEvent": {
       "title": "Current event ({region})",
-      "optInHint": "Load the game database to show the ongoing event.",
+      "optInHint": "Load the game database to show the ongoing event",
       "load": "Load current event",
-      "none": "No event is currently running.",
-      "error": "Failed to load event info.",
+      "none": "No event is currently running",
+      "error": "Failed to load event info",
       "ended": "Ended",
       "remainingDays": "{days}d {hours}h remaining",
       "remainingHours": "{hours}h {minutes}m remaining",
@@ -643,14 +610,13 @@ export default {
   },
   "cardBox": {
     "title": "My cards",
-    "description": "View your game account's card collection progress",
     "entryLink": "My cards",
-    "noAccountHint": "Bind and select a game account to view your cards.",
+    "noAccountHint": "Select or bind a game account first",
     "refresh": "Refresh",
     "loadError": "Failed to load your card collection data",
     "retry": "Retry",
     "unknownCharacter": "Unknown character",
-    "empty": "No cards match the current view.",
+    "empty": "No cards match the current view",
     "total": "{total} cards",
     "summary": "{owned}/{total} collected · {percent}%",
     "nav": {
@@ -692,17 +658,16 @@ export default {
   },
   "eventRecords": {
     "title": "Event records",
-    "description": "View your game account's event participation records",
-    "idle": "Select a game account to view your event records.",
+    "idle": "Select or bind a game account first",
     "loading": "Loading uploaded data and event data…",
     "missingUserData": "No game data has been uploaded for this account yet. Upload it first to view event records.",
-    "missingGrantedData": "The account owner has not uploaded game data yet, so there is nothing to view for now.",
+    "missingGrantedData": "The account owner has not uploaded game data yet, so there is nothing to view for now",
     "uploadData": "Upload game data",
-    "noData": "Your uploaded data has no event records yet.",
-    "noMatches": "No event records match the current filters.",
+    "noData": "Your uploaded data has no event records yet",
+    "noMatches": "No event records match the current filters",
     "hiddenByTime": "No event records in the last year; {count} older records are hidden",
     "showAll": "Show all",
-    "loadFailed": "Failed to load event records.",
+    "loadFailed": "Failed to load event records",
     "retry": "Retry",
     "refresh": "Refresh",
     "summary": {
@@ -723,13 +688,13 @@ export default {
     },
     "trend": {
       "title": "Event PT trend",
-      "empty": "Not enough records to draw a trend yet.",
+      "empty": "Not enough records for a trend",
       "point": "Event PT",
       "rank": "Event rank",
       "showAll": "Show all",
       "rankPanel": "Event rank (higher on the chart is a better rank)",
-      "allHidden": "Both series are hidden. Use the legend above to show them again.",
-      "zoomHint": "Drag or resize the selection below to focus on a range of events"
+      "allHidden": "Use the legend above to show the data again",
+      "zoomHint": "Drag the selection to zoom into a range"
     },
     "sort": {
       "time": "Date",
@@ -756,11 +721,10 @@ export default {
   },
   "musicProgress": {
     "title": "Music progress",
-    "description": "View your game account's music play progress and claimable rewards",
     "rewards": {
       "title": "Obtainable rewards",
-      "hint": "Unclaimed song achievement rewards (score ranks + per-difficulty combo milestones); any live mode counts.",
-      "unavailable": "Your uploaded data has no song achievement claim records, so obtainable rewards cannot be counted. Upload a complete data set again and retry.",
+      "hint": "Unclaimed score-rank and combo achievement rewards; any live mode counts",
+      "unavailable": "Your upload has no achievement claim records; upload a complete data set to count rewards",
       "jewel": "Crystals",
       "coin": "Coins",
       "shard": "Shards",
@@ -769,9 +733,9 @@ export default {
     },
     "scoreRank": {
       "title": "Score rank rewards by song",
-      "description": "Score rank is progressive (C → B → A → S): each song has one current rank, and reaching a higher rank also pays the lower ones. Any live mode (solo, multi, ...) counts. The current rank follows the achievement records in your uploaded data.",
+      "description": "Ranks are progressive (C → B → A → S): a higher rank also pays the lower ones, in any live mode",
       "summary": "Obtained: {obtained} · Remaining: {remaining} · {complete} / {total} songs complete",
-      "totalHint": "This total counts every song in the library; the per-difficulty totals above count only songs that have that chart.",
+      "totalHint": "Counts every song; the difficulty totals above count only songs with that chart",
       "none": "none",
       "filter": {
         "label": "Show",
@@ -791,22 +755,22 @@ export default {
       "step": "Rank {rank}: {rewards}",
       "stepReached": "Rank {rank}: {rewards} (reached)",
       "complete": "Complete",
-      "empty": "No songs match.",
+      "empty": "No songs match",
       "showMore": "Show more ({count} left)"
     },
     "refresh": "Refresh",
     "retry": "Retry",
-    "noAccount": "Select or bind a game account to view your play progress.",
+    "noAccount": "Select or bind a game account first",
     "loading": "Loading uploaded data and music data…",
     "missingUserData": "No game data has been uploaded for this account yet. Upload it first to view music progress.",
-    "missingGrantedData": "The account owner has not uploaded game data yet, so there is nothing to view for now.",
+    "missingGrantedData": "The account owner has not uploaded game data yet, so there is nothing to view for now",
     "uploadData": "Upload game data",
-    "noResults": "Your uploaded data has no music play results yet; all songs are shown as unplayed.",
-    "suiteError": "Failed to load music progress.",
+    "noResults": "Your upload has no play results; every song shows as unplayed",
+    "suiteError": "Failed to load music progress",
     "downloading": "Downloading game database ({progress}%)...",
     "overallTitle": "All difficulties",
     "levelsTitle": "Progress by level",
-    "noSongs": "No songs exist for this difficulty on the selected server.",
+    "noSongs": "No songs exist for this difficulty on the selected server",
     "level": "Lv.{level}",
     "levelUnknown": "Lv.?",
     "songCount": "{count} songs",
@@ -822,7 +786,7 @@ export default {
       "expandAll": "Expand all"
     },
     "matchCount": "{count} / {total} songs",
-    "noMatches": "No songs match in this level.",
+    "noMatches": "No songs match in this level",
     "rewardsRemaining": "Remaining: {list}",
     "detailSummary": "{total} songs · {cleared} cleared · {fullCombo} FC · {allPerfect} AP",
     "legend": {
@@ -841,12 +805,11 @@ export default {
   "globalSearch": {
     "title": "Quick search",
     "description": "Search the game data and the site's pages",
-    "placeholder": "Search songs, cards, events, gachas, characters, stories, pages…",
+    "placeholder": "Search by name, romaji, pinyin or ID",
     "loading": "Loading game data…",
     "loadFailed": "Some game data failed to load",
     "retry": "Retry",
-    "empty": "No results found",
-    "emptyHint": "Try another keyword, romaji, pinyin or an ID.",
+    "empty": "No results",
     "groups": {
       "page": "Pages",
       "character": "Characters",
@@ -879,18 +842,12 @@ export default {
         "special": "Special story"
       }
     },
-    "hints": {
-      "navigate": "↑↓ to select",
-      "open": "Enter to open",
-      "scope": "Tab to switch scope"
-    },
-    "footerRegion": "Data region: {region}",
-    "footerHint": "{shortcut} to toggle search"
+    "scopeHint": "Tab to switch scope",
+    "footerRegion": "Data region: {region}"
   },
   "costumes": {
     "dressup": {
       "title": "Costume dressup",
-      "description": "Mix and match character costumes, accessories and hairstyles in 3D",
       "region": "Server",
       "character": "Character",
       "characterPlaceholder": "Select a character",
@@ -899,8 +856,8 @@ export default {
       "hair": "Hairstyle",
       "partPlaceholder": "Select a part",
       "searchPlaceholder": "Search by name or ID...",
-      "empty": "No matches found.",
-      "hairLockedHint": "This accessory has a fixed hairstyle, so the hairstyle slot has no effect.",
+      "empty": "No matches found",
+      "hairLockedHint": "This accessory has a fixed hairstyle, so the hairstyle slot has no effect",
       "reset": "Reset to defaults",
       "rotateLeft": "Turn left",
       "rotateRight": "Turn right",
@@ -911,14 +868,14 @@ export default {
       "linkCopied": "Link copied",
       "colorCount": "{count} colors",
       "linkCopyFailed": "Could not copy. Copy the address bar instead.",
-      "loadError": "Failed to load costume data.",
-      "roleLoadError": "Failed to load the character's 3D part list.",
+      "loadError": "Failed to load costume data",
+      "roleLoadError": "Failed to load the character's 3D part list",
       "retry": "Retry"
     },
     "viewer": {
-      "loadError": "Failed to load the 3D model.",
+      "loadError": "Failed to load the 3D model",
       "retry": "Retry",
-      "idle": "Select a costume to preview."
+      "idle": "Select a costume to preview"
     }
   },
   "gachas": {
@@ -939,7 +896,6 @@ export default {
     },
     "list": {
       "title": "Gacha catalog",
-      "description": "Browse Project Sekai gacha banners and rates",
       "searchPlaceholder": "Search by name or ID...",
       "typeLabel": "Type",
       "allTypes": "All types",
@@ -950,7 +906,7 @@ export default {
       "cardLabel": "Featuring card",
       "allCards": "All cards",
       "cardSearchPlaceholder": "Search by card name or ID...",
-      "cardEmpty": "No cards found.",
+      "cardEmpty": "No cards found",
       "removeCardFilter": "Remove card filter",
       "sortLabel": "Sort",
       "filtersTitle": "Filters",
@@ -960,7 +916,7 @@ export default {
     },
     "detail": {
       "back": "Back to gachas",
-      "notFound": "This gacha (#{gachaId}) is not in the current server's data. Try another server.",
+      "notFound": "This gacha (#{gachaId}) is not on the current server; try another server",
       "pickups": "Pickup members",
       "poolCards": "All cards in pool",
       "rates": "Rates",
@@ -968,7 +924,7 @@ export default {
       "cardCount": "Cards",
       "baseRate": "Base rate",
       "guaranteedRate": "Guaranteed slot",
-      "guaranteedNote": "The 10th pull of a 10-pull guarantees a {rarity} or higher member.",
+      "guaranteedNote": "The 10th pull of a 10-pull guarantees {rarity} or higher",
       "behaviors": "Pull options",
       "behaviorType": "Type",
       "spinCount": "Pulls",
@@ -1001,13 +957,12 @@ export default {
   },
   "playerProfile": {
     "title": "My profile",
-    "description": "View your game account's profile",
     "source": {
       "realtime": "Live data",
       "snapshot": "Uploaded data"
     },
-    "noAccountHint": "Bind and select a game account to view your profile.",
-    "loadError": "Failed to load profile data.",
+    "noAccountHint": "Bind and select a game account to view your profile",
+    "loadError": "Failed to load profile data",
     "retry": "Retry",
     "refresh": "Refresh",
     "realtimeAsOf": "Live data updated at {time}",
@@ -1077,13 +1032,12 @@ export default {
     },
     "partialUpload": {
       "title": "These sections need uploaded game data",
-      "description": "Card collection, challenge live and the event point trend come from your uploaded account data (Suite). Upload it once on the Upload Data page and these sections fill in."
+      "description": "Card collection, challenge live and the event point trend come from your uploaded account data (Suite)"
     }
   },
   "training": {
     "layout": {
       "title": "Character training",
-      "description": "View your game account's training progress",
       "refresh": "Refresh"
     },
     "tabs": {
@@ -1096,9 +1050,8 @@ export default {
     },
     "challenge": {
       "title": "Challenge Live",
-      "description": "Challenge Live ranks and best scores per character",
-      "noAccountHint": "Bind and select a game account to view challenge live info.",
-      "loadError": "Failed to load challenge live data.",
+      "noAccountHint": "Bind and select a game account to view challenge live info",
+      "loadError": "Failed to load challenge live data",
       "retry": "Retry",
       "refresh": "Refresh",
       "unknownCharacter": "Unknown character",
@@ -1116,16 +1069,15 @@ export default {
     },
     "power": {
       "title": "Power bonuses",
-      "description": "The account's power bonus breakdown",
-      "noAccountHint": "Bind and select a game account to view power bonuses.",
-      "loadError": "Failed to load power bonus data.",
+      "noAccountHint": "Bind and select a game account to view power bonuses",
+      "loadError": "Failed to load power bonus data",
       "retry": "Retry",
       "refresh": "Refresh",
       "unknownCharacter": "Unknown character",
       "sharedAreaTitle": "Area items for all characters",
       "allCharacterBonus": "All-character base bonus",
       "multiUnitBonus": "Conditional multi-unit bonus",
-      "sharedAreaHint": "The base bonus is included in the character bonuses below. The multi-unit bonus is listed separately; its activation and stacking with unit bonuses depend on the actual deck.",
+      "sharedAreaHint": "The all-character bonus is already in each character below; whether the multi-unit bonus applies depends on the deck",
       "charactersTitle": "Character Bonuses",
       "unitsTitle": "Unit Bonuses",
       "attrsTitle": "Attribute Bonuses",
@@ -1137,7 +1089,7 @@ export default {
       "characterColumn": "Character",
       "unitColumn": "Unit",
       "attrColumn": "Attribute",
-      "gateHint": "The VIRTUAL SINGER gate bonus assumes no support unit and uses the highest owned gate level. Cards with a support unit use that unit’s gate.",
+      "gateHint": "VIRTUAL SINGER uses your highest owned gate; cards with a support unit use that unit’s gate",
       "units": {
         "light_sound": "Leo/need",
         "idol": "MORE MORE JUMP!",
@@ -1156,9 +1108,8 @@ export default {
     },
     "bonds": {
       "title": "Bonds",
-      "description": "The account's character bonds",
-      "noAccountHint": "Bind and select a game account to view bonds.",
-      "loadError": "Failed to load bond data.",
+      "noAccountHint": "Bind and select a game account to view bonds",
+      "loadError": "Failed to load bond data",
       "retry": "Retry",
       "refresh": "Refresh",
       "unknownCharacter": "Unknown character",
@@ -1187,7 +1138,7 @@ export default {
     },
     "area": {
       "title": "Area Items",
-      "description": "Area item level progress and upgrade materials",
+      "description": "Bonus and materials per level",
       "refresh": "Refresh",
       "retry": "Retry",
       "loadError": "Failed to load area item data",
@@ -1219,7 +1170,6 @@ export default {
     },
     "leader": {
       "title": "Leader counts",
-      "description": "Cumulative leader play counts per character",
       "refresh": "Refresh",
       "retry": "Retry",
       "loadError": "Failed to load leader statistics",
@@ -1234,7 +1184,6 @@ export default {
     },
     "missions": {
       "title": "Character Missions",
-      "description": "Character mission progress and projected character levels",
       "refresh": "Refresh",
       "retry": "Retry",
       "loadError": "Failed to load character mission data",
@@ -1332,7 +1281,6 @@ export default {
     },
     "notFound": {
       "title": "Page not found",
-      "description": "The address you visited doesn't exist or has been moved. Please check that the link is correct.",
       "backHome": "Back to home",
       "backPrevious": "Go back"
     }
@@ -1355,8 +1303,8 @@ export default {
       "privacyPolicy": "Privacy Policy",
       "termsOfService": "Terms of Service",
       "legalLinks": "Legal links",
-      "unofficialNotice": "Haruki Toolbox is not affiliated with, authorized by, endorsed by, or officially partnered with SEGA / Colorful Palette.",
-      "assetCopyright": "Related game assets are copyright SEGA / Colorful Palette.",
+      "unofficialNotice": "Haruki Toolbox is not affiliated with, authorized by, endorsed by, or officially partnered with SEGA / Colorful Palette",
+      "assetCopyright": "Related game assets are copyright SEGA / Colorful Palette",
       "appVersion": "App version",
       "version": "Version",
       "gitCommit": "Git commit",
@@ -1471,7 +1419,6 @@ export default {
     },
     "list": {
       "title": "Music library",
-      "description": "Browse the PJSK music catalog: search, filter by difficulty, level, note count, unit and year.",
       "filters": {
         "region": "Server",
         "search": "Search",
@@ -1559,7 +1506,7 @@ export default {
     },
     "detail": {
       "back": "Back to list",
-      "notFound": "This song (#{musicId}) is not in the current server's data. Try another server.",
+      "notFound": "This song (#{musicId}) is not on the current server; try another server",
       "loadError": "Failed to load music data: {message}",
       "unknownCharacter": "Unknown",
       "aliases": {
@@ -1583,20 +1530,20 @@ export default {
         "noteCount": "Notes"
       },
       "vocalsTitle": "Vocal versions",
-      "vocalsEmpty": "No vocal versions available.",
+      "vocalsEmpty": "No vocal versions available",
       "play": "Play",
       "pause": "Pause",
       "chartPreview": {
         "title": "Chart Preview",
         "modeDynamic": "Dynamic",
         "modeStatic": "Static",
-        "loadError": "Failed to load the chart.",
+        "loadError": "Failed to load the chart",
         "retry": "Retry",
         "seek": "Playback position",
         "speed": "Note speed",
         "zoomFit": "Fit height",
         "zoom": "Zoom level",
-        "silent": "No audio found — the preview plays silently."
+        "silent": "No audio found; playing silently"
       },
       "eventsTitle": "Related events"
     }
@@ -1609,7 +1556,6 @@ export default {
     },
     "list": {
       "title": "Card catalog",
-      "description": "Browse cards by character, unit, attribute, rarity and supply type",
       "searchPlaceholder": "Search card title…",
       "sortLabel": "Sort",
       "total": "{total} cards",
@@ -1664,7 +1610,7 @@ export default {
     },
     "detail": {
       "back": "Back to catalog",
-      "notFound": "This card (#{cardId}) is not in the current server's data. Try another server.",
+      "notFound": "This card (#{cardId}) is not on the current server; try another server",
       "artNormal": "Before training",
       "artTrained": "After training",
       "artLoadFailed": "Failed to load card art",
@@ -1685,12 +1631,12 @@ export default {
       "skillAfterTraining": "After training",
       "noSkill": "No skill data",
       "relatedEvents": "Related events",
-      "relatedEventsEmpty": "No related events.",
+      "relatedEventsEmpty": "No related events",
       "relatedGachas": "Related gachas",
-      "relatedGachasEmpty": "No related gachas.",
+      "relatedGachasEmpty": "No related gachas",
       "costumes": "Costumes",
       "costumeDressup": "Costume dressup",
-      "costumePreviewHint": "Click a costume thumbnail for a 3D preview.",
+      "costumePreviewHint": "3D preview",
       "costumeSlot": {
         "body": "Outfit",
         "hair": "Hairstyle",
@@ -1719,7 +1665,6 @@ export default {
     },
     "list": {
       "title": "Event catalog",
-      "description": "Browse Project SEKAI events, bonuses, and event cards.",
       "regionLabel": "Server",
       "searchLabel": "Search",
       "searchPlaceholder": "Search by event name or ID",
@@ -1732,15 +1677,15 @@ export default {
       "filtersTitle": "Filters",
       "resultsCount": "{count} events",
       "resetFilters": "Reset filters",
-      "loadFailed": "Failed to load event data.",
+      "loadFailed": "Failed to load event data",
       "retry": "Retry",
       "empty": "No events match the current filters"
     },
     "detail": {
       "back": "Back to event catalog",
-      "loadFailed": "Failed to load event data.",
+      "loadFailed": "Failed to load event data",
       "retry": "Retry",
-      "notFound": "This event (#{eventId}) is not in the current server's data. Try another server.",
+      "notFound": "This event (#{eventId}) is not on the current server; try another server",
       "timelineTitle": "Timeline",
       "timeline": {
         "start": "Starts",
@@ -1751,13 +1696,13 @@ export default {
       "countdownToAggregate": "Aggregates in",
       "countdownValue": "{days}d {hours}h {minutes}m {seconds}s",
       "bonusTitle": "Event bonus",
-      "bonusEmpty": "No bonus data for this event.",
+      "bonusEmpty": "No bonus data for this event",
       "bonusAttrOnly": "All {attr} cards",
       "chaptersTitle": "World Link chapters",
       "chapterLabel": "Chapter {no}",
       "chapterFinale": "Finale",
       "cardsTitle": "Event cards",
-      "cardsEmpty": "No cards for this event.",
+      "cardsEmpty": "No cards for this event",
       "links": {
         "rankBorder": "View rank border",
         "deckRecommend": "View deck recommendation",
@@ -1784,7 +1729,7 @@ export default {
   },
   "homeSettings": {
     "title": "Haruki Toolbox Settings",
-    "description": "Configure the server route, asset route, appearance, language, and performance preferences",
+    "description": "Routes, appearance, language and data caches",
     "trigger": "Settings",
     "tabs": {
       "preferences": "Preferences",
@@ -1794,16 +1739,16 @@ export default {
     },
     "resetDialog": {
       "title": "Reset preferences?",
-      "description": "This restores the server route, asset route, appearance, language, low effects mode, privacy and music playback preferences to their defaults.",
+      "description": "Routes, appearance, language, low effects, privacy and playback preferences go back to their defaults",
       "confirm": "Reset preferences"
     },
     "endpoint": {
       "label": "Server route",
-      "help": "Direct is default. If international access is unstable, try CDN.",
+      "help": "Try CDN if access from abroad is unstable",
       "placeholder": "Select a route",
       "direct": "Direct",
       "cdn": "CDN",
-      "unavailable": "No server routes are configured in this environment.",
+      "unavailable": "No server routes are configured in this environment",
       "checking": "Checking",
       "unknown": "Not checked",
       "failed": "Unreachable",
@@ -1812,7 +1757,7 @@ export default {
     },
     "assetEndpoint": {
       "label": "Asset route",
-      "help": "Used for game assets such as card art and audio. The first visit picks the lower-latency route, and opening settings re-checks them.",
+      "help": "Where card art and audio load from; the fastest is picked on your first visit",
       "placeholder": "Select a route",
       "global": "Overseas",
       "chinaCdn": "Mainland China (Tencent Cloud)",
@@ -1823,7 +1768,6 @@ export default {
     },
     "theme": {
       "label": "Appearance",
-      "help": "Choose your preferred theme",
       "placeholder": "Select theme",
       "light": "Light",
       "dark": "Dark",
@@ -1831,7 +1775,6 @@ export default {
     },
     "locale": {
       "label": "Language",
-      "help": "Language changes apply immediately",
       "placeholder": "Select language",
       "zhCN": "简体中文",
       "enUS": "English",
@@ -1839,46 +1782,41 @@ export default {
     },
     "visualEffects": {
       "label": "Low effects mode",
-      "help": "Turns off glass blur, heavy shadows, and other costly visual effects. Useful on mobile or low-power devices."
+      "help": "Turns off glass blur and shadows to save power"
     },
     "privacy": {
       "hideGameUserIdLabel": "Hide game UID",
-      "hideGameUserIdHelp": "When enabled, account selectors for deck recommendation and uploads keep the first 2 and last 4 UID digits, replacing the middle with asterisks."
+      "hideGameUserIdHelp": "Shows only the first 2 and last 4 digits"
     },
     "unreleased": {
       "showLabel": "Show unreleased content",
-      "showHelp": "When enabled, catalogs (cards, events, music, gachas) include content not yet released on the current server.",
-      "blurLabel": "Spoiler blur for unreleased content",
-      "blurHelp": "When unreleased content is shown, blur its card art, covers, and banners to avoid spoilers."
+      "blurLabel": "Spoiler blur for unreleased content"
     },
     "appUpdate": {
       "title": "App update",
       "installedTitle": "Installed version",
-      "description": "Check for Haruki Toolbox version updates.",
       "current": "Current",
       "available": "Update available",
       "remoteVersion": "Remote version",
       "remoteCommit": "Remote Git commit",
       "remoteBuildTime": "Remote build time",
       "checkedAt": "Last checked: {time}",
-      "lastError": "The last update check failed. Please try again later.",
-      "notCheckedYet": "Updates have not been checked yet.",
+      "lastError": "Check failed. Try again later.",
+      "notCheckedYet": "Not checked yet",
       "check": "Check for updates",
       "checking": "Checking...",
       "update": "Update app",
       "updating": "Updating..."
     },
     "userData": {
-      "description": "These are this browser's copies of the data your game accounts have uploaded. “Refresh” checks the server for a newer upload; “Profile” fetches the latest information straight from the game server.",
+      "refreshHint": "Checks the server for a newer upload; a profile is fetched live from the game server",
       "groups": {
         "source": "Data to manage",
         "cache": "Cache status"
       },
       "account": "Account",
-      "accountHelp": "The game account whose data you want to check or clear",
-      "dataTypeHelp": "Which kind of data from that account",
       "accountPlaceholder": "Select a bound account",
-      "noAccount": "No game account is bound to the current Toolbox account.",
+      "noAccount": "No game account bound yet",
       "dataType": "Data type",
       "types": {
         "suite": "Account data (Suite)",
@@ -1897,10 +1835,9 @@ export default {
       "clear": "Clear user data cache",
       "clearDialog": {
         "title": "Clear user data cache?",
-        "description": "This clears user data cached in this browser for the current Toolbox account. Data will need to be checked or downloaded again.",
+        "description": "Clears this account's user data cached in this browser. It will need to be downloaded again.",
         "confirm": "Clear cache"
       },
-      "logoutCleanupHint": "Signing out automatically clears user data cached in this browser for the current Toolbox account.",
       "toast": {
         "alreadyCurrent": "User data is already current",
         "refreshed": "User data refreshed",
@@ -1911,10 +1848,6 @@ export default {
     },
     "toast": {
       "reset": "Settings reset to defaults"
-    },
-    "sections": {
-      "preferences": "Appearance, language, network, and privacy preferences. Changes apply immediately.",
-      "sekaiData": "Manage per-region game database caches and background update jobs shared by pickers, recommendations, and other features."
     },
     "groups": {
       "appearance": "Appearance",
@@ -1929,7 +1862,6 @@ export default {
     "music": {
       "preferredVocal": {
         "label": "Preferred vocal version",
-        "help": "Which version a play button on a jacket or in the list starts with. A song without it plays its first version.",
         "options": {
           "sekai": "SEKAI version",
           "original": "Original song"
@@ -1965,16 +1897,15 @@ export default {
     },
     "loadError": {
       "title": "Failed to load",
-      "description": "Check your connection and try again. If it keeps failing, the service may be temporarily unavailable.",
+      "description": "Check your connection and try again",
       "retry": "Retry"
     },
     "sync": {
       "successTitle": "Settings synced",
-      "successDescription": "Cloud settings are synced for current account",
       "failedTitle": "Settings sync unavailable",
       "failedDescription": "Cloud settings could not be synced. Try again later.",
       "missingUpdatedDataDescription": "The cloud settings response was incomplete. Refresh the page and try again.",
-      "unexpectedStatusDescription": "Cloud settings request returned an unexpected status ({status})."
+      "unexpectedStatusDescription": "Cloud settings request returned an unexpected status ({status})"
     },
     "suitePrefetch": {
       "progressTitle": "Fetching game data",
@@ -1987,8 +1918,8 @@ export default {
     },
     "unsupportedBrowser": {
       "title": "Open in your browser",
-      "descriptionApp": "You opened Haruki Toolbox inside {app}. The web view built into {app} is limited, so the toolbox does not work there. Open the page in your browser instead.",
-      "descriptionGeneric": "You opened Haruki Toolbox inside an app’s built-in web view. That view is limited, so the toolbox does not work there. Open the page in your browser instead.",
+      "descriptionApp": "The toolbox does not work in the web view built into {app}. Open it in your browser instead.",
+      "descriptionGeneric": "The toolbox does not work in an app’s built-in web view. Open it in your browser instead.",
       "stepsTitle": "How to switch to your browser",
       "stepMenu": "Tap the {icon} button in the top-right corner",
       "stepMenuAnywhere": "Find the page’s menu or share button, usually shown as {icon}",
@@ -2010,7 +1941,7 @@ export default {
       "copyLink": "Copy link",
       "copied": "Copied. Paste it into your browser to open.",
       "copyFailed": "Could not copy. Press and hold the link above to copy it.",
-      "deviceHint": "To authorize a device, open this link in your browser, then type the code shown on your device.",
+      "deviceHint": "To authorize a device, open this link in your browser, then type the code shown on your device",
       "apps": {
         "wechat": "WeChat",
         "qq": "QQ",
@@ -2023,20 +1954,17 @@ export default {
     },
     "pwa": {
       "updateAvailableTitle": "New version available",
-      "updateAvailableDescription": "A new app build is ready. You can update now.",
-      "updateAvailableDescriptionWithVersion": "New version {version} is ready to install.",
+      "updateAvailableDescriptionWithVersion": "Version {version}",
       "updateAction": "Update app",
       "laterAction": "Later",
       "applyingTitle": "Updating app",
-      "applyingDescription": "The page will refresh after the update is applied.",
+      "applyingDescription": "The page reloads when it is done",
       "currentTitle": "App is up to date",
-      "currentDescription": "The current app version is up to date.",
       "checkFailedTitle": "Update check failed",
-      "checkFailedDescription": "Remote build information could not be loaded. Please try again later.",
+      "checkFailedDescription": "Try again later",
       "offlineReadyTitle": "Offline cache ready",
-      "offlineReadyDescription": "Common pages are cached, so the app opens faster next time.",
       "devTitle": "Development mode",
-      "devDescription": "PWA updates are not registered in development mode.",
+      "devDescription": "PWA updates are not registered in development mode",
       "forcedUpdateTitle": "This version is no longer supported",
       "forcedUpdateDescription": "Updating to version {version}…",
       "forcedUpdateWithInputDescription": "The page reloads in a minute to update to version {version}. Copy anything you typed that you want to keep.",
@@ -2058,17 +1986,16 @@ export default {
       "reset": "Reset filters",
       "clearAll": "Clear all",
       "done": "Done",
-      "sheetDescription": "Adjust the filters; the results update immediately.",
+      "sheetDescription": "Adjust the filters; the results update immediately",
     },
     "results": {
       "count": "{count} results",
-      "empty": "Nothing matches the current filters.",
-      "emptyHint": "Try loosening the filters or switching server.",
+      "empty": "Nothing matches the current filters",
       "loadError": "Failed to load data",
       "retry": "Retry",
       "downloading": "Downloading game data… {progress}%",
       "offline": "Offline data",
-      "offlineHint": "Showing the locally cached game database; the latest content may not be synced yet"
+      "offlineHint": "Locally cached game data; may not be the latest"
     },
     "sort": {
       "label": "Sort",
@@ -2097,7 +2024,7 @@ export default {
       "upcoming": "Upcoming",
       "ongoing": "Ongoing",
       "ended": "Ended",
-      "upcomingHidden": "Upcoming content is hidden. Enable “show unreleased content” to see it.",
+      "upcomingHidden": "Upcoming content is hidden",
       "showUnreleased": "Show unreleased content",
       "endsIn": "{time} left",
       "startsIn": "Starts in {time}",
@@ -2117,7 +2044,7 @@ export default {
     "detail": {
       "backToList": "Back to {list}",
       "breadcrumb": "Breadcrumb",
-      "notFound": "This entry is not in the current server's data. Try another server.",
+      "notFound": "Not on the current server; try another server",
       "loadError": "Failed to load details",
       "assetName": "Internal name",
       "copyAssetName": "Copy internal name",
@@ -2126,8 +2053,7 @@ export default {
       "viewAllCount": "View all ({count})",
       "zoom": "View full size",
       "showMore": "Show more",
-      "showLess": "Show less",
-      "tryOtherRegion": "It may exist on another server; switching reloads the data."
+      "showLess": "Show less"
     },
     "lightbox": {
       "description": "Image viewer",
@@ -2159,8 +2085,8 @@ export default {
       "localTime": "Your time: {time}",
       "switchLabel": "Time zone for these times",
       "serverTime": "{region} server time: {time}",
-      "hint": "Times are shown in your time zone ({zone}); where it differs, the {region} server time ({serverZone}) is noted next to each.",
-      "sameZone": "Your time zone ({zone}) matches the {region} server."
+      "hint": "Shown in your time zone ({zone}); {region} server time is {serverZone}",
+      "sameZone": "Your time zone ({zone}) matches the {region} server"
     },
     "character": {
       "label": "Characters",

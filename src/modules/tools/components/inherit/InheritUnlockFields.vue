@@ -51,11 +51,8 @@ const secretWhich = computed(() => {
   return t("tools.uploadData.inheritJob.confirm.passwordHelp")
 })
 
-/** Why it is needed. */
-const secretWhy = computed(() => {
-  if (isPin.value) return props.state.creating ? t("tools.uploadData.inheritJob.confirm.pinCreateWhy") : ""
-  return props.state.initialized ? t("tools.uploadData.inheritJob.confirm.passwordWhy") : t("tools.uploadData.inheritJob.confirm.passwordFirstUse")
-})
+/** What a new PIN is for and how long it must be. */
+const secretWhy = computed(() => (isPin.value && props.state.creating ? t("tools.uploadData.inheritJob.confirm.pinCreateWhy") : ""))
 
 const passwordSettingsRoute = { name: "user.identityPasswordSettings" } as const
 

@@ -303,13 +303,8 @@ function formatPercentValue(value: number) {
       <header class="flex flex-col gap-1.5">
         <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h2 class="text-base font-semibold">{{ t("deckRecommend.result.title") }}</h2>
-          <p class="text-xs tabular-nums text-muted-foreground">
-            <template v-if="runner.elapsedMs.value != null">
-              {{ t("deckRecommend.result.totalElapsed", { seconds: formatElapsedSeconds(runner.elapsedMs.value) }) }}
-            </template>
-            <template v-else>
-              {{ t("deckRecommend.result.description") }}
-            </template>
+          <p v-if="runner.elapsedMs.value != null" class="text-xs tabular-nums text-muted-foreground">
+            {{ t("deckRecommend.result.totalElapsed", { seconds: formatElapsedSeconds(runner.elapsedMs.value) }) }}
           </p>
         </div>
         <p

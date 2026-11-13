@@ -135,7 +135,7 @@ const offline = computed(() => list.eventsIndex.warning.value != null)
 </script>
 
 <template>
-  <CatalogPageShell :title="t('events.list.title')" :description="t('events.list.description')">
+  <CatalogPageShell :title="t('events.list.title')">
     <template #toolbar>
       <div class="flex w-full items-center gap-2">
         <CatalogSearchField
@@ -234,7 +234,6 @@ const offline = computed(() => list.eventsIndex.warning.value != null)
       <CatalogEmptyState
         v-else-if="pageItems.length === 0"
         :message="t('events.list.empty')"
-        :hint="t('catalog.results.emptyHint')"
       >
         <template v-if="activeFilterCount > 0" #action>
           <Button variant="outline" size="sm" @click="reset()">{{ t("catalog.filters.clearAll") }}</Button>

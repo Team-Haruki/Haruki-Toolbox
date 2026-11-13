@@ -88,13 +88,12 @@ export function useIOSModuleGenerator() {
   // binding — hidden entirely (and deselected) without one.
   const hasVerifiedQQ = computed(() => isVerifiedQQBinding(userStore.socialPlatformInfo))
 
-  const dataTypeOptionsWithDesc = computed(() =>
+  const dataTypeOptions = computed(() =>
     IOS_DATA_TYPE_OPTIONS
       .filter((option) => hasVerifiedQQ.value || !isMySekaiUploadType(option.value))
       .map((option) => ({
         value: option.value,
         label: t(`tools.iosModules.dataTypes.${option.value}.label`),
-        desc: t(`tools.iosModules.dataTypes.${option.value}.description`),
       }))
   )
 
@@ -338,7 +337,7 @@ export function useIOSModuleGenerator() {
     endpointOptions,
     modeOptions,
     regionOptions,
-    dataTypeOptionsWithDesc,
+    dataTypeOptions,
     hasUploadCode,
     isCnRestricted,
     moduleUrl,

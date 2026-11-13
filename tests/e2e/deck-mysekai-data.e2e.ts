@@ -74,7 +74,7 @@ test("mysekai deck mode reads only the Suite upload", async ({ page }) => {
   await expect(run).toBeEnabled({ timeout: 20_000 })
   await run.click()
   await expect(page.getByText("还没有可用于组卡的游戏数据")).toBeVisible({ timeout: 20_000 })
-  await expect(page.getByText(/不需要上传烤森数据（MySekai）/)).toBeVisible()
+  await expect(page.getByText(/烤森组卡也无需上传 MySekai/)).toBeVisible()
   expect(gameAccountReads).toContain("suite")
   expect(gameAccountReads).not.toContain("mysekai")
 })

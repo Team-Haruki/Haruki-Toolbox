@@ -96,7 +96,6 @@ function formatDate(iso: string): string {
     >
       <KeyRound class="size-8 text-muted-foreground/60" />
       <p class="text-sm font-medium">{{ t("userSettings.oauthAuthorizations.emptyTitle") }}</p>
-      <p class="max-w-sm text-xs text-muted-foreground">{{ t("userSettings.oauthAuthorizations.emptyDescription") }}</p>
     </div>
 
     <!-- One block per app: the app and its "revoke everything" on the first

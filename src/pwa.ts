@@ -159,9 +159,7 @@ function handleControllerChange() {
   if (!hadController) {
     hadController = true
     appUpdateState.offlineReady = true
-    toast.success(translate("core.pwa.offlineReadyTitle"), {
-      description: translate("core.pwa.offlineReadyDescription"),
-    })
+    toast.success(translate("core.pwa.offlineReadyTitle"))
     return
   }
 
@@ -310,9 +308,7 @@ export async function checkForAppUpdate(options: { silent?: boolean, hiddenForMs
         appUpdateState.updateAvailable = false
         updatePromptCommit = null
         if (!options.silent) {
-          toast.success(translate("core.pwa.currentTitle"), {
-            description: translate("core.pwa.currentDescription"),
-          })
+          toast.success(translate("core.pwa.currentTitle"))
         }
     }
 
@@ -499,7 +495,7 @@ function showAppUpdatePrompt(remote: AppBuildInfo | null) {
     id: UPDATE_TOAST_ID,
     description: remote?.version
       ? translate("core.pwa.updateAvailableDescriptionWithVersion", { version: remote.version })
-      : translate("core.pwa.updateAvailableDescription"),
+      : undefined,
     duration: Number.POSITIVE_INFINITY,
     closeButton: true,
     position: isNarrowViewport() ? "bottom-center" : undefined,

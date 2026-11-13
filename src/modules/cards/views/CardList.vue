@@ -142,7 +142,7 @@ function setArtMode(value: AcceptableValue | AcceptableValue[] | undefined) {
 </script>
 
 <template>
-  <CatalogPageShell :title="t('cards.list.title')" :description="t('cards.list.description')">
+  <CatalogPageShell :title="t('cards.list.title')">
     <template #actions>
       <Button as-child variant="outline" size="sm" class="gap-1.5">
         <RouterLink :to="{ name: 'cards.box' }">
@@ -240,7 +240,6 @@ function setArtMode(value: AcceptableValue | AcceptableValue[] | undefined) {
       <CatalogEmptyState
         v-else-if="tiles.length === 0"
         :message="t('cards.list.empty')"
-        :hint="t('catalog.results.emptyHint')"
       >
         <template v-if="activeFilterCount > 0" #action>
           <Button variant="outline" size="sm" @click="reset()">{{ t("catalog.filters.clearAll") }}</Button>

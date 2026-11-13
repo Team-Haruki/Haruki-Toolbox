@@ -36,6 +36,9 @@ defineProps<{
   /** Score-rank rewards left (difficulty-independent), already formatted. */
   scoreRankText: string | null
   scoreRankHasRemaining: boolean
+  /** What the totals count; a tooltip on them. */
+  totalsHint: string | null
+  /** A visible note, only when the totals cannot be counted. */
   hint: string | null
 }>()
 
@@ -51,7 +54,7 @@ const { t } = useI18n()
     <CardHeader class="pb-2">
       <CardTitle class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-base">
         <span>{{ t("musicProgress.overallTitle") }}</span>
-        <span v-if="totalsText" class="text-xs font-normal tabular-nums text-muted-foreground">{{ totalsText }}</span>
+        <span v-if="totalsText" class="text-xs font-normal tabular-nums text-muted-foreground" :title="totalsHint ?? undefined">{{ totalsText }}</span>
       </CardTitle>
       <CardDescription v-if="hint" class="text-xs">{{ hint }}</CardDescription>
     </CardHeader>

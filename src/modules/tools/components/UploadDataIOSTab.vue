@@ -40,7 +40,7 @@ const {
   endpointOptions,
   modeOptions,
   regionOptions,
-  dataTypeOptionsWithDesc,
+  dataTypeOptions,
   hasUploadCode,
   isCnRestricted,
   moduleUrl,
@@ -123,7 +123,7 @@ function handleCopyScriptUrl() {
     </CardHeader>
 
     <CardContent class="@container space-y-6">
-      <UploadStep :step="1" :title="t('tools.iosModules.steps.configure.title')" :description="t('tools.iosModules.steps.configure.description')">
+      <UploadStep :step="1" :title="t('tools.iosModules.steps.configure.title')">
         <div class="space-y-1.5">
           <p class="text-sm font-medium">{{ t("tools.iosModules.sections.software.title") }}</p>
           <ChoiceCards
@@ -212,10 +212,9 @@ function handleCopyScriptUrl() {
 
       <Separator />
 
-      <UploadStep :step="2" :title="t('tools.iosModules.steps.scope.title')" :description="t('tools.iosModules.steps.scope.description')">
+      <UploadStep :step="2" :title="t('tools.iosModules.steps.scope.title')">
         <div class="flex flex-col gap-1.5">
           <p class="text-sm font-medium">{{ t("tools.iosModules.sections.regions.title") }}</p>
-          <p class="text-xs text-muted-foreground">{{ t("tools.iosModules.sections.regions.description") }}</p>
           <div class="flex flex-wrap gap-2 pt-1" role="group" :aria-label="t('tools.iosModules.sections.regions.title')">
             <button
               v-for="opt in regionOptions"
@@ -240,28 +239,24 @@ function handleCopyScriptUrl() {
 
         <div class="flex flex-col gap-1.5">
           <p class="text-sm font-medium">{{ t("tools.iosModules.sections.dataTypes.title") }}</p>
-          <p class="text-xs text-muted-foreground">{{ t("tools.iosModules.sections.dataTypes.description") }}</p>
           <div class="grid gap-2 pt-1 sm:grid-cols-2" role="group" :aria-label="t('tools.iosModules.sections.dataTypes.title')">
             <button
-              v-for="opt in dataTypeOptionsWithDesc"
+              v-for="opt in dataTypeOptions"
               :key="opt.value"
               type="button"
-              class="flex cursor-pointer flex-col rounded-md border p-3 text-left transition-colors"
+              class="flex cursor-pointer items-center gap-2 rounded-md border p-3 text-left transition-colors"
               :class="selectedDataTypes.includes(opt.value) ? 'border-primary bg-primary/5' : 'bg-muted/20 hover:bg-muted/50'"
               :aria-pressed="selectedDataTypes.includes(opt.value)"
               @click="toggleDataType(opt.value)"
             >
-              <span class="flex items-center gap-2">
-                <span
-                  aria-hidden="true"
-                  class="flex size-4 shrink-0 items-center justify-center rounded-[4px] border shadow-xs transition-colors"
-                  :class="selectedDataTypes.includes(opt.value) ? 'border-primary bg-primary text-primary-foreground' : 'border-input'"
-                >
-                  <Check v-if="selectedDataTypes.includes(opt.value)" class="size-3.5" />
-                </span>
-                <span class="text-sm font-medium">{{ opt.label }}</span>
+              <span
+                aria-hidden="true"
+                class="flex size-4 shrink-0 items-center justify-center rounded-[4px] border shadow-xs transition-colors"
+                :class="selectedDataTypes.includes(opt.value) ? 'border-primary bg-primary text-primary-foreground' : 'border-input'"
+              >
+                <Check v-if="selectedDataTypes.includes(opt.value)" class="size-3.5" />
               </span>
-              <span class="ml-6 mt-1 text-xs text-muted-foreground">{{ opt.desc }}</span>
+              <span class="min-w-0 text-sm font-medium">{{ opt.label }}</span>
             </button>
           </div>
         </div>
@@ -332,15 +327,12 @@ function handleCopyScriptUrl() {
 
       <Separator />
 
-      <UploadStep :step="4" :title="t('tools.iosModules.steps.install.title')" :description="t('tools.iosModules.steps.install.description')">
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+      <UploadStep :step="4" :title="t('tools.iosModules.steps.install.title')">
+        <div>
           <Button :disabled="!canInstall" @click="installModule">
             <PackageCheck class="size-4" />
             {{ t("tools.iosModules.installButton") }}
           </Button>
-          <p class="min-w-0 flex-1 basis-48 text-xs text-muted-foreground">
-            {{ t("tools.iosModules.installHint") }}
-          </p>
         </div>
 
         <div v-if="moduleUrl" class="flex flex-col gap-1.5">

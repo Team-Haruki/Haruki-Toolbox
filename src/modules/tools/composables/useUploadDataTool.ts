@@ -147,9 +147,7 @@ export function useUploadDataTool() {
       if (fileInputElement.value) {
         fileInputElement.value.value = ""
       }
-      toast.success(t("tools.uploadData.toast.uploadSuccessTitle"), {
-        description: t("tools.uploadData.toast.uploadSuccessFileFallback"),
-      })
+      toast.success(t("tools.uploadData.toast.uploadSuccessTitle"))
     } catch (error: unknown) {
       // A stuck bar at 100% after a 403 reads as "uploaded"; reset it.
       uploadProgress.value = 0

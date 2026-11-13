@@ -42,7 +42,7 @@ for (const width of [1280, 390]) {
     const browse = page.getByRole("button", { name: /选择固定卡牌/ })
     await expect(browse).toBeEnabled({ timeout: 20_000 })
     await expect(browse).toContainText("2/5")
-    await expect(page.getByText("可固定所选挑战角色的多张卡牌，最多 5 张；请先选择挑战角色。")).toBeVisible()
+    await expect(page.getByText("仅限所选挑战角色的卡牌", { exact: true })).toBeVisible()
 
     await browse.click()
     const picker = page.getByRole("dialog", { name: "浏览卡牌", exact: true })

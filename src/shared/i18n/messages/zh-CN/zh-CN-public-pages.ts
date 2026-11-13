@@ -4,20 +4,18 @@ export default {
   "navigationPages": {
     "friendGroups": {
       "title": "推荐群聊",
-      "description": "一些与pjsk相关的群聊推荐",
       "loading": "载入中...",
       "empty": "暂无推荐群聊",
       "count": "{count} 个群",
       "copyNumber": "复制群号 {number}",
       "copied": "已复制群号 {number}",
-      "copyFailed": "复制失败，请手动复制群号。",
+      "copyFailed": "复制失败，请手动复制群号",
       "toast": {
         "loadFailedTitle": "加载推荐群聊失败"
       }
     },
     "friendLinks": {
       "title": "友情链接",
-      "description": "一些与Haruki项目友好的网站推荐",
       "loading": "载入中...",
       "empty": "暂无友情链接",
       "toast": {
@@ -185,7 +183,7 @@ export default {
     "hero": {
       "badge": "爱发电赞助",
       "title": "支持 Project Haruki",
-      "description": "每一份赞助都会帮助 HarukiBot NEO、Haruki 工具箱以及公共服务基础设施继续稳定运行。",
+      "description": "你的赞助让 HarukiBot NEO 和 Haruki 工具箱持续运行",
       "cta": "前往爱发电赞助",
       "aboutCta": "关于 Project Haruki"
     },
@@ -199,11 +197,11 @@ export default {
       "planCount": "{count} 人",
       "current": {
         "title": "当前赞助",
-        "empty": "暂无正在赞助的赞助者。"
+        "empty": "暂无正在赞助的赞助者"
       },
       "former": {
         "title": "曾经赞助",
-        "empty": "暂无赞助时长已到期的赞助者。"
+        "empty": "暂无赞助时长已到期的赞助者"
       }
     },
     "supporter": {
@@ -218,9 +216,8 @@ export default {
     },
     "empty": {
       "title": "暂无赞助数据",
-      "description": "后端发布赞助记录后，名单会显示在这里。",
       "unavailableTitle": "赞助名单暂不可用",
-      "unavailableDescription": "赞助名单暂时无法加载，请稍后再来看看。"
+      "unavailableDescription": "请稍后再来看看"
     }
   },
   "legal": {

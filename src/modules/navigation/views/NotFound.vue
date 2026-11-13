@@ -24,7 +24,6 @@ function goBack() {
     <div class="space-y-2">
       <p class="text-sm font-bold tracking-widest text-primary">404</p>
       <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">{{ t("navigation.notFound.title") }}</h1>
-      <p class="mx-auto max-w-md text-sm text-muted-foreground">{{ t("navigation.notFound.description") }}</p>
     </div>
     <div class="flex flex-wrap items-center justify-center gap-3">
       <Button as-child>

@@ -1775,7 +1775,7 @@ provideDeckRecommendFormContext({
 <template>
   <div class="flex min-w-0 w-full flex-1 flex-col py-1 sm:px-2 sm:py-4">
     <div class="mx-auto min-w-0 w-full max-w-[100rem] space-y-3 sm:space-y-4">
-      <PageHeader :title="t('deckRecommend.title')" :description="t('deckRecommend.description')" class="px-3 sm:px-0" />
+      <PageHeader :title="t('deckRecommend.title')" class="px-3 sm:px-0" />
       <!-- Wide screens: config pane on the left stays put while the results scroll on the right. -->
       <div class="grid min-w-0 grid-cols-1 gap-3 sm:gap-4 xl:grid-cols-[24rem_minmax(0,1fr)] xl:items-start">
         <div class="min-w-0 xl:sticky xl:top-16 xl:max-h-[calc(100dvh-5rem)] xl:overflow-y-auto xl:overscroll-contain xl:rounded-xl">

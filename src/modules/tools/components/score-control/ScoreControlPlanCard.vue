@@ -86,17 +86,14 @@ const steps = computed(() => {
 
         <div class="order-4 col-start-2 flex min-w-0 flex-col @min-[42rem]:order-none @min-[42rem]:col-start-auto">
           <template v-if="step.idle">
-            <p class="text-sm">{{ t("tools.pointCalculator.result.step.idle") }}</p>
+            <p class="text-sm" :title="t('tools.pointCalculator.result.step.idleHint')">{{ t("tools.pointCalculator.result.step.idle") }}</p>
             <p class="text-[11px] tabular-nums text-muted-foreground">
               {{ t("tools.pointCalculator.result.step.idleDetail", { score: formatNumberCN(step.outcome.scoreMax + 1) }) }}
             </p>
           </template>
-          <template v-else>
-            <p class="text-sm font-medium tabular-nums text-amber-700 dark:text-amber-300">
-              {{ formatNumberCN(step.outcome.scoreMin) }} ~ {{ formatNumberCN(step.outcome.scoreMax) }}
-            </p>
-            <p class="text-[11px] text-muted-foreground">{{ t("tools.pointCalculator.result.step.scoreDetail") }}</p>
-          </template>
+          <p v-else class="text-sm font-medium tabular-nums text-amber-700 dark:text-amber-300">
+            {{ formatNumberCN(step.outcome.scoreMin) }} ~ {{ formatNumberCN(step.outcome.scoreMax) }}
+          </p>
         </div>
 
         <div class="order-3 flex flex-col items-end tabular-nums @min-[42rem]:order-none">

@@ -1,50 +1,35 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue"
+import { computed, onMounted, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { RouterLink } from "vue-router"
-import { Input } from "@/components/ui/input"
+import { CircleCheck, DoorClosed, Loader2, TriangleAlert } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardTitle,
-  CardHeader,
-  CardContent,
-  CardDescription,
-} from "@/components/ui/card"
-import {
-  Alert,
-  AlertTitle,
-  AlertDescription,
-} from "@/components/ui/alert"
-import {
-  Bot,
-  Loader2,
-  Send,
-  ShieldCheck,
-  User,
-  Key,
-  Copy,
-  ArrowLeft,
-  AlertTriangle,
-  CheckCircle,
-  FileSliders,
-  RotateCcw,
-} from "lucide-vue-next"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
+import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
+import EmptyState from "@/shared/components/EmptyState.vue"
+import FieldError from "@/shared/components/FieldError.vue"
+import PageHeader from "@/shared/components/PageHeader.vue"
+import BotNeoStepStrip from "@/modules/haruki-bot-neo/components/BotNeoStepStrip.vue"
 import {
   BOT_NEO_CODE_INPUT_ID,
   BOT_NEO_QQ_INPUT_ID,
   useBotNeoRegistration,
 } from "@/modules/haruki-bot-neo/composables/useBotNeoRegistration"
+import { BOT_NEO_QQ_GROUP, buildConfigGeneratorLocation } from "@/modules/haruki-bot-neo/lib/registration"
 
 const { t } = useI18n()
 const {
   statusLoading,
   registrationEnabled,
+  statusCheckFailed,
   step,
   qqNumber,
   verificationCode,
   qqError,
   codeError,
+  formError,
   sending,
   registering,
   result,
@@ -61,250 +46,232 @@ const {
 } = useBotNeoRegistration()
 
 const QQ_ERROR_ID = "bot-neo-qq-error"
+const QQ_HINT_ID = "bot-neo-qq-hint"
 const CODE_ERROR_ID = "bot-neo-code-error"
 
-const configGeneratorRoute = computed(() => {
-  const data = result.value
-  const ownerId = normalizeRouteValue(data?.owner_id ?? data?.ownerId ?? qqNumber.value)
+// The credential is shown once: leaving the result asks first.
+const leaveResultOpen = ref(false)
 
-  return {
-    path: "/client-config-generator",
-    query: {
-      ownerId,
-      botId: data?.bot_id ?? "",
-      credential: data?.credential ?? "",
-    },
-  }
+const mailAddress = computed(() => `${qqNumber.value.trim() || t("botNeo.input.hintQqPlaceholder")}@qq.com`)
+const configGeneratorRoute = computed(() => buildConfigGeneratorLocation(result.value, qqNumber.value))
+const resultFields = computed(() => {
+  const data = result.value
+  if (!data) return []
+  return [
+    { key: "bot-id", label: t("botNeo.result.botIdLabel"), value: data.bot_id },
+    { key: "credential", label: t("botNeo.result.credentialLabel"), value: data.credential },
+  ]
 })
 
 onMounted(() => {
   checkStatus()
 })
-
-function normalizeRouteValue(value: unknown): string {
-  if (value === null || value === undefined) {
-    return ""
-  }
-
-  return String(value).trim()
-}
 </script>
 
 <template>
-  <div class="w-full flex-1 flex items-center justify-center px-0 py-4">
-    <Card class="w-full max-w-md">
-      <CardHeader>
-        <CardTitle as="h1" class="flex items-center gap-2">
-          <Bot class="h-6 w-6" />
-          {{ t("botNeo.title") }}
-        </CardTitle>
-        <CardDescription>{{ t("botNeo.description") }}</CardDescription>
-      </CardHeader>
+  <div class="flex w-full flex-1 flex-col items-center px-1 py-2 sm:px-0 sm:py-4">
+    <div class="mx-auto grid w-full max-w-2xl gap-4">
+      <PageHeader :title="t('botNeo.title')" :description="t('botNeo.lead')" />
 
-      <CardContent>
-        <div v-if="statusLoading" class="flex items-center justify-center py-8">
-          <Loader2 class="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-        <div v-else-if="registrationEnabled === false" class="space-y-4">
-          <Alert variant="destructive">
-            <AlertTriangle class="h-4 w-4" />
-            <AlertTitle>{{ t("botNeo.disabled.title") }}</AlertTitle>
-            <AlertDescription>{{ t("botNeo.disabled.description") }}</AlertDescription>
-          </Alert>
-          <Button class="w-full" variant="outline" @click="checkStatus">
-            <RotateCcw class="mr-2 h-4 w-4" />
-            {{ t("botNeo.disabled.retryButton") }}
-          </Button>
-        </div>
-        <div v-else-if="step === 'input'" class="space-y-4">
-          <Alert variant="destructive">
-            <AlertTriangle class="h-4 w-4" />
-            <AlertTitle>{{ t("botNeo.input.warningTitle") }}</AlertTitle>
-            <AlertDescription>
-              {{ t("botNeo.input.warningDescription") }}
-              <br />
-              {{ t("botNeo.input.warningGroup") }}
-            </AlertDescription>
-          </Alert>
+      <div v-if="statusLoading" class="grid gap-3 rounded-xl border bg-card p-4" aria-busy="true" data-testid="bot-neo-loading">
+        <Skeleton class="h-5 w-2/3" />
+        <Skeleton class="h-11" />
+        <Skeleton class="h-9 w-32 justify-self-end" />
+      </div>
 
-          <div class="flex flex-col gap-2">
-            <label :for="BOT_NEO_QQ_INPUT_ID" class="text-sm font-medium">{{ t("botNeo.input.qqLabel") }}</label>
-            <div class="relative w-full items-center">
-              <Input
-                :id="BOT_NEO_QQ_INPUT_ID"
-                v-model="qqNumber"
-                :placeholder="t('botNeo.input.qqPlaceholder')"
-                class="pl-10"
-                inputmode="numeric"
-                :aria-invalid="qqError ? 'true' : undefined"
-                :aria-describedby="qqError ? QQ_ERROR_ID : undefined"
-                @input="clearQQError"
-                @keydown.enter="handleSendCode"
-              />
-              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                <User class="size-4 text-muted-foreground" />
-              </span>
-            </div>
-            <p v-if="qqError" :id="QQ_ERROR_ID" role="alert" class="text-xs text-destructive">{{ qqError }}</p>
+      <div v-else-if="registrationEnabled === false" class="rounded-xl border bg-card px-4" data-testid="bot-neo-closed">
+        <EmptyState :icon="DoorClosed" :title="t('botNeo.disabled.title')">
+          <template #action>
+            <Button variant="outline" size="sm" @click="checkStatus">{{ t("botNeo.disabled.recheck") }}</Button>
+          </template>
+        </EmptyState>
+      </div>
+
+      <section
+        v-else
+        class="@container overflow-hidden rounded-xl border bg-card"
+        :aria-label="t('botNeo.title')"
+        :data-step="step"
+        data-testid="bot-neo-panel"
+      >
+        <BotNeoStepStrip :current="step" class="border-b border-border/60" />
+
+        <!-- The status check failed: the form still works, so it stays; this only says what is unknown. -->
+        <div
+          v-if="statusCheckFailed"
+          class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border/60 px-4 py-2.5"
+          role="status"
+          data-testid="bot-neo-status-unknown"
+        >
+          <p class="flex min-w-0 flex-1 basis-56 items-start gap-2 text-xs text-amber-700 dark:text-amber-300">
+            <TriangleAlert class="mt-px size-4 shrink-0" aria-hidden="true" />
+            {{ t("botNeo.status.unknown") }}
+          </p>
+          <Button variant="outline" size="sm" @click="checkStatus">{{ t("botNeo.status.recheck") }}</Button>
+        </div>
+
+        <!-- Step 1: whose bot this is -->
+        <form v-if="step === 'input'" class="grid gap-4 p-4" novalidate data-testid="bot-neo-input-form" @submit.prevent="handleSendCode">
+          <div class="grid gap-1.5">
+            <Label :for="BOT_NEO_QQ_INPUT_ID">{{ t("botNeo.input.ownerLabel") }}</Label>
+            <Input
+              :id="BOT_NEO_QQ_INPUT_ID"
+              v-model="qqNumber"
+              class="h-11 text-base font-medium tabular-nums md:text-base"
+              inputmode="numeric"
+              autocomplete="off"
+              :placeholder="t('botNeo.input.ownerPlaceholder')"
+              :aria-invalid="qqError ? 'true' : undefined"
+              :aria-describedby="qqError ? QQ_ERROR_ID : QQ_HINT_ID"
+              @input="clearQQError"
+            />
+            <FieldError v-if="qqError" :id="QQ_ERROR_ID" :message="qqError" />
+            <p v-else :id="QQ_HINT_ID" class="text-xs text-muted-foreground [overflow-wrap:anywhere]">
+              {{ t("botNeo.input.mailHint", { mail: mailAddress }) }}
+            </p>
           </div>
 
-          <p class="text-xs text-muted-foreground">
-            {{ t("botNeo.input.hint", { qq: qqNumber.trim() || t("botNeo.input.hintQqPlaceholder") }) }}
+          <p class="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300">
+            <TriangleAlert class="mt-px size-4 shrink-0" aria-hidden="true" />
+            {{ t("botNeo.input.ownerNote") }}
           </p>
 
-          <Button
-            class="w-full"
-            :disabled="sending || isCooldown || !qqNumber.trim()"
-            @click="handleSendCode"
-          >
-            <Loader2 v-if="sending" class="mr-2 h-4 w-4 animate-spin" />
-            <template v-else>
-              <Send class="mr-2 h-4 w-4" />
-              <span v-if="isCooldown">
-                {{ t("botNeo.input.cooldownButton", { seconds: cooldownSeconds }) }}
-              </span>
-              <span v-else>{{ t("botNeo.input.sendButton") }}</span>
-            </template>
-          </Button>
-        </div>
-        <div v-else-if="step === 'verify'" class="space-y-4">
-          <div
-            class="rounded-md border border-blue-300 bg-blue-50 px-3 py-2 text-sm text-blue-700 dark:border-blue-700/60 dark:bg-blue-900/20 dark:text-blue-300"
-          >
-            {{ t("botNeo.verify.codeSentHint", { qq: qqNumber.trim() }) }}
-          </div>
+          <FieldError :message="formError" />
 
-          <div class="flex flex-col gap-2">
-            <label :for="BOT_NEO_CODE_INPUT_ID" class="text-sm font-medium">{{ t("botNeo.verify.codeLabel") }}</label>
-            <div class="relative w-full items-center">
-              <Input
-                :id="BOT_NEO_CODE_INPUT_ID"
-                v-model="verificationCode"
-                :placeholder="t('botNeo.verify.codePlaceholder')"
-                class="pl-10"
-                maxlength="6"
-                inputmode="numeric"
-                autocomplete="one-time-code"
-                :aria-invalid="codeError ? 'true' : undefined"
-                :aria-describedby="codeError ? CODE_ERROR_ID : undefined"
-                @input="clearCodeError"
-                @keydown.enter="handleRegister"
-              />
-              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                <Key class="size-4 text-muted-foreground" />
-              </span>
-            </div>
-            <p v-if="codeError" :id="CODE_ERROR_ID" role="alert" class="text-xs text-destructive">{{ codeError }}</p>
-          </div>
-
-          <div class="flex gap-2">
-            <Button
-              variant="outline"
-              class="flex-1"
-              @click="handleBackToInput"
-            >
-              <ArrowLeft class="mr-2 h-4 w-4" />
-              {{ t("botNeo.verify.backButton") }}
-            </Button>
-            <Button
-              class="flex-1"
-              :disabled="registering || isCooldown || !verificationCode.trim()"
-              @click="handleRegister"
-            >
-              <Loader2 v-if="registering" class="mr-2 h-4 w-4 animate-spin" />
-              <template v-else>
-                <ShieldCheck class="mr-2 h-4 w-4" />
-                {{ t("botNeo.verify.registerButton") }}
-              </template>
+          <div class="flex justify-end">
+            <Button type="submit" class="w-full @min-[24rem]:w-auto" :disabled="sending || isCooldown">
+              <Loader2 v-if="sending" class="size-4 animate-spin" aria-hidden="true" />
+              <template v-if="isCooldown">{{ t("botNeo.input.cooldownButton", { seconds: cooldownSeconds }) }}</template>
+              <template v-else>{{ t("botNeo.input.sendButton") }}</template>
             </Button>
           </div>
+        </form>
 
-          <Button
-            variant="ghost"
-            class="w-full"
-            :disabled="sending || isCooldown"
-            @click="handleSendCode"
-          >
-            <Loader2 v-if="sending" class="mr-2 h-4 w-4 animate-spin" />
-            <template v-else>
-              <span v-if="isCooldown">
-                {{ t("botNeo.verify.resendCooldown", { seconds: cooldownSeconds }) }}
-              </span>
-              <span v-else>{{ t("botNeo.verify.resendButton") }}</span>
-            </template>
-          </Button>
-        </div>
-        <div v-else-if="step === 'result' && result" class="space-y-4">
-          <Alert>
-            <CheckCircle class="h-4 w-4" />
-            <AlertTitle>{{ t("botNeo.result.successTitle") }}</AlertTitle>
-            <AlertDescription>{{ t("botNeo.result.successDescription") }}</AlertDescription>
-          </Alert>
+        <!-- Step 2: the mailed code -->
+        <form v-else-if="step === 'verify'" class="grid gap-4 p-4" novalidate data-testid="bot-neo-verify-form" @submit.prevent="handleRegister">
+          <p class="text-sm text-muted-foreground [overflow-wrap:anywhere]" data-testid="bot-neo-code-sent">
+            {{ t("botNeo.verify.sentTo", { mail: mailAddress }) }}
+          </p>
 
-          <div class="space-y-3">
-            <div class="flex flex-col gap-1">
-              <span class="text-sm font-medium">{{ t("botNeo.result.botIdLabel") }}</span>
-              <div class="flex items-center gap-2">
-                <code class="flex-1 rounded-md bg-muted px-3 py-2 text-sm font-mono break-all">
-                  {{ result.bot_id }}
-                </code>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  :title="t('botNeo.result.copyAction', { label: t('botNeo.result.botIdLabel') })"
-                  :aria-label="t('botNeo.result.copyAction', { label: t('botNeo.result.botIdLabel') })"
-                  @click="handleCopy(result!.bot_id, t('botNeo.result.botIdLabel'))"
-                >
-                  <Copy class="h-4 w-4" aria-hidden="true" />
-                </Button>
-              </div>
-            </div>
-
-            <div class="flex flex-col gap-1">
-              <span class="text-sm font-medium">{{ t("botNeo.result.credentialLabel") }}</span>
-              <div class="flex items-start gap-2">
-                <code class="flex-1 rounded-md bg-muted px-3 py-2 text-xs font-mono break-all max-h-32 overflow-y-auto">
-                  {{ result.credential }}
-                </code>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  class="flex-shrink-0"
-                  :title="t('botNeo.result.copyAction', { label: t('botNeo.result.credentialLabel') })"
-                  :aria-label="t('botNeo.result.copyAction', { label: t('botNeo.result.credentialLabel') })"
-                  @click="handleCopy(result!.credential, t('botNeo.result.credentialLabel'))"
-                >
-                  <Copy class="h-4 w-4" aria-hidden="true" />
-                </Button>
-              </div>
-            </div>
+          <div class="grid gap-1.5">
+            <Label :for="BOT_NEO_CODE_INPUT_ID">{{ t("botNeo.verify.codeFieldLabel") }}</Label>
+            <Input
+              :id="BOT_NEO_CODE_INPUT_ID"
+              v-model="verificationCode"
+              class="h-11 text-base font-medium tracking-[0.3em] tabular-nums placeholder:tracking-normal md:text-base"
+              maxlength="6"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              :placeholder="t('botNeo.verify.codeFieldPlaceholder')"
+              :aria-invalid="codeError ? 'true' : undefined"
+              :aria-describedby="codeError ? CODE_ERROR_ID : undefined"
+              @input="clearCodeError"
+            />
+            <FieldError :id="CODE_ERROR_ID" :message="codeError" />
           </div>
 
-          <div
-            class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:border-amber-700/60 dark:bg-amber-900/20 dark:text-amber-300"
-          >
-            {{ t("botNeo.result.saveWarning") }}
+          <FieldError :message="formError" />
+
+          <div class="flex flex-col-reverse gap-2 @min-[30rem]:flex-row @min-[30rem]:items-center @min-[30rem]:justify-between">
+            <div class="flex flex-wrap gap-1 @min-[30rem]:-ml-3">
+              <Button type="button" variant="ghost" class="flex-1 @min-[30rem]:flex-none" @click="handleBackToInput">
+                {{ t("botNeo.verify.changeNumber") }}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                class="flex-1 @min-[30rem]:flex-none"
+                :disabled="sending || isCooldown"
+                data-testid="bot-neo-resend"
+                @click="handleSendCode"
+              >
+                <Loader2 v-if="sending" class="size-4 animate-spin" aria-hidden="true" />
+                <span v-if="isCooldown" class="tabular-nums">{{ t("botNeo.verify.resendCooldown", { seconds: cooldownSeconds }) }}</span>
+                <template v-else>{{ t("botNeo.verify.resend") }}</template>
+              </Button>
+            </div>
+            <Button type="submit" :disabled="registering || isCooldown">
+              <Loader2 v-if="registering" class="size-4 animate-spin" aria-hidden="true" />
+              {{ t("botNeo.verify.submit") }}
+            </Button>
+          </div>
+        </form>
+
+        <!-- Step 3: the bot's id and its shown-once credential -->
+        <div v-else-if="step === 'result' && result" data-testid="bot-neo-result">
+          <div class="flex items-center gap-2 p-4">
+            <CircleCheck class="size-5 shrink-0 text-primary" aria-hidden="true" />
+            <h2 class="min-w-0 text-sm font-semibold">{{ t("botNeo.result.successTitle") }}</h2>
           </div>
 
-          <div class="rounded-md border bg-muted/30 px-3 py-3 text-sm">
-            <div class="font-medium">{{ t("botNeo.result.configGeneratorTitle") }}</div>
-            <p class="mt-1 text-muted-foreground">
-              {{ t("botNeo.result.configGeneratorDescription") }}
+          <dl class="divide-y divide-border/60 border-t border-border/60">
+            <div v-for="field in resultFields" :key="field.key" class="flex items-start gap-3 px-4 py-3">
+              <div class="min-w-0 flex-1">
+                <dt class="text-[11px] text-muted-foreground">{{ field.label }}</dt>
+                <dd
+                  class="mt-0.5 max-h-40 overflow-y-auto font-mono text-sm leading-relaxed break-all select-all [overflow-wrap:anywhere]"
+                  :data-testid="`bot-neo-${field.key}`"
+                >
+                  {{ field.value }}
+                </dd>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                class="shrink-0"
+                :aria-label="t('botNeo.result.copyAction', { label: field.label })"
+                @click="handleCopy(field.value, field.label)"
+              >
+                {{ t("botNeo.result.copyButton") }}
+              </Button>
+            </div>
+          </dl>
+
+          <div class="grid gap-3 border-t border-border/60 p-4">
+            <p class="flex items-start gap-2 text-sm font-medium text-amber-700 dark:text-amber-300">
+              <TriangleAlert class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              {{ t("botNeo.result.shownOnce") }}
             </p>
-            <Button as-child class="mt-3 w-full">
-              <RouterLink :to="configGeneratorRoute">
-                <FileSliders class="mr-2 h-4 w-4" />
-                {{ t("botNeo.result.configGeneratorButton") }}
-              </RouterLink>
-            </Button>
+            <div class="flex flex-col-reverse gap-2 @min-[30rem]:flex-row @min-[30rem]:justify-end">
+              <Button type="button" variant="outline" @click="leaveResultOpen = true">
+                {{ t("botNeo.result.registerAnotherButton") }}
+              </Button>
+              <Button as-child>
+                <RouterLink :to="configGeneratorRoute" data-testid="bot-neo-open-generator">
+                  {{ t("botNeo.result.openGenerator") }}
+                </RouterLink>
+              </Button>
+            </div>
           </div>
+        </div>
 
-          <Button variant="outline" class="w-full" @click="handleReset">
-            <RotateCcw class="mr-2 h-4 w-4" />
-            {{ t("botNeo.result.registerAnotherButton") }}
+        <!-- Where a registered owner goes next, whichever step is showing. -->
+        <div class="flex items-center gap-3 border-t border-border/60 px-4 py-3">
+          <dl class="min-w-0 flex-1">
+            <dt class="text-[11px] text-muted-foreground">{{ t("botNeo.group.label") }}</dt>
+            <dd class="text-sm font-medium tabular-nums" data-testid="bot-neo-group">{{ BOT_NEO_QQ_GROUP }}</dd>
+          </dl>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            class="shrink-0"
+            :aria-label="t('botNeo.result.copyAction', { label: t('botNeo.group.number') })"
+            @click="handleCopy(BOT_NEO_QQ_GROUP, t('botNeo.group.number'))"
+          >
+            {{ t("botNeo.result.copyButton") }}
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </section>
+    </div>
+
+    <ConfirmDialog
+      v-model:open="leaveResultOpen"
+      :title="t('botNeo.result.leave.title')"
+      :description="t('botNeo.result.leave.description')"
+      :confirm-label="t('botNeo.result.leave.confirm')"
+      :on-confirm="handleReset"
+    />
   </div>
 </template>

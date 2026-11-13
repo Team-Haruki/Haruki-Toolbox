@@ -62,14 +62,12 @@ const hasActions = computed(() => status.value != null && (
             <TabsTrigger value="oauth2" :disabled="busy">{{ t("userSettings.afdian.oauthTab") }}</TabsTrigger>
             <TabsTrigger value="order" :disabled="busy">{{ t("userSettings.afdian.order.tab") }}</TabsTrigger>
           </TabsList>
-          <TabsContent v-if="status.oauthEnabled" value="oauth2" class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-            <p class="min-w-0 flex-1 basis-56 text-sm text-muted-foreground">{{ t("userSettings.afdian.oauthDescription") }}</p>
-            <Button class="shrink-0" :disabled="busy || !status.oauthEnabled" @click="bind">
+          <TabsContent v-if="status.oauthEnabled" value="oauth2">
+            <Button :disabled="busy || !status.oauthEnabled" @click="bind">
               <Loader2 v-if="busy" class="size-4 animate-spin" />{{ t("userSettings.afdian.bind") }}<ArrowUpRight class="size-4" />
             </Button>
           </TabsContent>
           <TabsContent value="order" class="space-y-2">
-            <p class="text-sm text-muted-foreground">{{ t("userSettings.afdian.order.description") }}</p>
             <p v-if="!status.orderVerificationEnabled" class="text-sm text-muted-foreground">{{ t("userSettings.afdian.order.unavailable") }}</p>
             <form class="space-y-2" @submit.prevent="verifyOrder">
               <Label for="afdian-order-number">{{ t("userSettings.afdian.order.label") }}</Label>

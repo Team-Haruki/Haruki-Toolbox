@@ -203,7 +203,7 @@ function handleViewUpdate(value: string) {
 </script>
 
 <template>
-  <CatalogPageShell :title="t('musicLibrary.list.title')" :description="t('musicLibrary.list.description')" class="py-4">
+  <CatalogPageShell :title="t('musicLibrary.list.title')" class="py-4">
     <template #toolbar>
       <div class="flex min-w-0 flex-1 flex-col gap-1">
         <CatalogSearchField
@@ -277,7 +277,7 @@ function handleViewUpdate(value: string) {
           :skeleton="showSkeleton"
           :blur="blurUnreleased"
         />
-        <CatalogEmptyState v-else :message="emptyMessage" :hint="t('catalog.results.emptyHint')">
+        <CatalogEmptyState v-else :message="emptyMessage">
           <template v-if="activeFilterCount > 0 && !aliasPending" #action>
             <Button variant="outline" size="sm" @click="reset()">{{ t("catalog.filters.clearAll") }}</Button>
           </template>

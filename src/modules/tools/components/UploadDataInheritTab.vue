@@ -238,10 +238,10 @@ watch(
 
       <Card>
         <CardHeader>
-          <UploadPanelHeader :icon="KeyRound" :title="t('tools.uploadData.inheritTab.title')" :description="t('tools.uploadData.inheritTab.description')" />
+          <UploadPanelHeader :icon="KeyRound" :title="t('tools.uploadData.inheritTab.title')" />
         </CardHeader>
         <CardContent class="@container space-y-6">
-          <UploadStep :step="1" :title="t('tools.uploadData.inheritTab.steps.prep.title')" :description="t('tools.uploadData.inheritTab.steps.prep.description')">
+          <UploadStep :step="1" :title="t('tools.uploadData.inheritTab.steps.prep.title')">
             <ul class="space-y-2 rounded-lg border bg-muted/20 p-3 text-xs text-muted-foreground" data-testid="inherit-prep-notes">
               <li class="flex items-start gap-2">
                 <Link2 class="mt-px size-3.5 shrink-0" aria-hidden="true" />
@@ -262,7 +262,7 @@ watch(
           <Separator />
 
           <form id="upload-data-inherit-form" class="space-y-6" novalidate @submit.prevent="submit">
-            <UploadStep :step="2" :title="t('tools.uploadData.inheritTab.steps.target.title')" :description="t('tools.uploadData.inheritTab.steps.target.description')">
+            <UploadStep :step="2" :title="t('tools.uploadData.inheritTab.steps.target.title')">
               <div class="grid min-w-0 grid-cols-1 gap-4 @min-[30rem]:grid-cols-2">
                 <div class="flex min-w-0 flex-col space-y-1.5">
                   <Label for="inherit-server-select">{{ t("tools.uploadData.inheritTab.fields.server") }}</Label>
@@ -393,13 +393,14 @@ watch(
 
             <Separator />
 
-            <UploadStep :step="4" :title="t('tools.uploadData.inheritTab.steps.newPassword.title')" :description="t('tools.uploadData.inheritTab.steps.newPassword.description')">
+            <UploadStep :step="4" :title="t('tools.uploadData.inheritTab.steps.newPassword.title')">
                 <fieldset class="min-w-0 space-y-2" data-testid="inherit-new-password-mode">
                   <legend class="sr-only">{{ t("tools.uploadData.inheritTab.newPassword.label") }}</legend>
                   <div class="grid gap-2 @min-[30rem]:grid-cols-2">
                     <label
                       v-for="mode in PASSWORD_MODES"
                       :key="mode.value"
+                      :title="mode.value === 'random' ? t('tools.uploadData.inheritTab.newPassword.randomHint') : undefined"
                       :class="[
                         'flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 transition-colors has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/50',
                         form.newPasswordMode.value === mode.value ? 'border-primary bg-primary/5' : 'bg-muted/20 hover:bg-muted/50',
@@ -413,12 +414,9 @@ watch(
                         class="mt-0.5 size-4 shrink-0 accent-primary"
                         @change="form.clearFieldError(form.usesPastedText.value ? 'inheritText' : 'inheritPassword')"
                       >
-                      <span class="min-w-0 space-y-0.5">
-                        <span class="flex items-center gap-1.5 text-sm font-medium">
-                          <component :is="mode.icon" class="size-4 text-muted-foreground" />
-                          {{ t(`tools.uploadData.inheritTab.newPassword.${mode.value}`) }}
-                        </span>
-                        <span class="block text-xs text-muted-foreground">{{ t(`tools.uploadData.inheritTab.newPassword.${mode.value}Hint`) }}</span>
+                      <span class="flex min-w-0 items-center gap-1.5 text-sm font-medium">
+                        <component :is="mode.icon" class="size-4 text-muted-foreground" />
+                        {{ t(`tools.uploadData.inheritTab.newPassword.${mode.value}`) }}
                       </span>
                     </label>
                   </div>

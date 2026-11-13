@@ -100,7 +100,7 @@ function formerTitle(sponsor: SponsorSupporter) {
       </div>
 
       <div v-else-if="supporters.length === 0" class="rounded-xl border bg-card px-4">
-        <EmptyState :icon="Heart" :title="t('sponsor.empty.title')" :description="t('sponsor.empty.description')" />
+        <EmptyState :icon="Heart" :title="t('sponsor.empty.title')" />
       </div>
 
       <template v-else>

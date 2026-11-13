@@ -27,6 +27,8 @@ const ROUTES: SearchRouteRecord[] = [
   { path: "/user/error", meta: { titleKey: "route.error" } },
   { path: "/rank-border/detail", meta: { titleKey: "route.rankBorderDetail" } },
   { path: "/user/settings", meta: { titleKey: "route.userSettings" } },
+  // The router's own record for `alias: "/deck_recommend"`.
+  { path: "/deck_recommend", aliasOf: { path: "/deck-recommend" }, meta: { titleKey: "route.deckRecommend" } },
   { path: "/untitled" },
   { path: "/unknown-title", meta: { titleKey: "route.missing" } },
   { path: "/admin", meta: { titleKey: "route.admin.layout", requiresAdmin: true } },

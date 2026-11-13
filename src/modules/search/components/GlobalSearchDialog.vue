@@ -59,9 +59,7 @@ const {
 const isOpen = ref(false)
 const activeIndex = ref(0)
 
-const isMac = typeof navigator !== "undefined" && /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent)
-const shortcutLabel = isMac ? "⌘K" : "Ctrl+K"
-// Keyboard hints are noise on touch devices: no ⌘ or Tab to press.
+// A keyboard hint is noise on touch devices: no Tab to press.
 const hasFinePointer = useMediaQuery("(pointer: fine)")
 const regionLabel = computed(() => resolveSekaiRegionLabel(region.value, t))
 const assetEndpoint = computed(() => settingsStore.currentAssetEndpoint)
@@ -363,13 +361,8 @@ function isEntryUnreleased(entry: SearchResultEntry) {
 
         <!-- Nothing to list: say why, and what would work. -->
         <div v-if="rows.length === 0" class="px-4 py-10 text-center" data-testid="global-search-empty">
-          <template v-if="loading">
-            <p class="text-sm text-muted-foreground">{{ t("globalSearch.loading") }}</p>
-          </template>
-          <template v-else>
-            <p class="text-sm font-medium">{{ t("globalSearch.empty") }}</p>
-            <p class="mt-1 text-xs text-muted-foreground">{{ t("globalSearch.emptyHint") }}</p>
-          </template>
+          <p v-if="loading" class="text-sm text-muted-foreground">{{ t("globalSearch.loading") }}</p>
+          <p v-else class="text-sm text-muted-foreground">{{ t("globalSearch.empty") }}</p>
         </div>
       </div>
 
@@ -384,12 +377,8 @@ function isEntryUnreleased(entry: SearchResultEntry) {
           </span>
           <span v-else-if="loading && rows.length > 0" aria-live="polite">{{ t("globalSearch.loading") }}</span>
         </span>
-        <span v-if="hasFinePointer" class="flex flex-wrap items-center gap-x-3">
-          <span>{{ t("globalSearch.hints.navigate") }}</span>
-          <span>{{ t("globalSearch.hints.open") }}</span>
-          <span>{{ t("globalSearch.hints.scope") }}</span>
-          <span>{{ t("globalSearch.footerHint", { shortcut: shortcutLabel }) }}</span>
-        </span>
+        <!-- Arrows and Enter are what anyone tries; Tab walking the scopes is the one key worth naming. -->
+        <span v-if="hasFinePointer">{{ t("globalSearch.scopeHint") }}</span>
       </div>
     </DialogContent>
   </Dialog>

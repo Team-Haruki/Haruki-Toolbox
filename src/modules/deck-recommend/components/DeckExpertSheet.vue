@@ -4,7 +4,6 @@ import {
   Dialog,
   DialogBody,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -80,25 +79,17 @@ const {
               <!-- Phones: the whole screen, since this is a page's worth of settings. -->
               <DialogContent
                 class="top-0 left-0 h-dvh max-h-none max-w-none translate-x-0 translate-y-0 rounded-none border-0 sm:top-[50%] sm:left-[50%] sm:h-auto sm:max-h-[85dvh] sm:max-w-2xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-xl sm:border lg:max-w-4xl xl:max-w-5xl"
+                :description="t('deckRecommend.layers.expert.description')"
               >
                 <DialogHeader>
                   <DialogTitle>{{ t("deckRecommend.layers.expert.title") }}</DialogTitle>
-                  <DialogDescription>{{ t("deckRecommend.layers.expert.description") }}</DialogDescription>
                 </DialogHeader>
                 <DialogBody class="@container min-w-0 gap-0 divide-y divide-border/60 py-0">
                     <section class="grid min-w-0 grid-cols-1 gap-3 py-4">
-                      <div class="space-y-1">
-                        <h3 class="text-sm font-medium">{{ t("deckRecommend.options.random.title") }}</h3>
-                        <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.random.description") }}</p>
-                      </div>
+                      <h3 class="text-sm font-medium">{{ t("deckRecommend.options.random.title") }}</h3>
                       <div class="grid min-w-0 grid-cols-1 gap-3 @3xl:grid-cols-[minmax(0,1fr)_minmax(280px,0.75fr)]">
                         <div class="@container grid min-w-0 grid-cols-1 content-start gap-3">
-                          <div class="space-y-1">
-                            <h4 class="text-sm font-medium">{{ t("deckRecommend.options.random.skillGroup") }}</h4>
-                            <p class="text-xs leading-5 text-muted-foreground">
-                              {{ t("deckRecommend.options.random.skillGroupDescription") }}
-                            </p>
-                          </div>
+                          <h4 class="text-sm font-medium">{{ t("deckRecommend.options.random.skillGroup") }}</h4>
                           <div class="grid min-w-0 grid-cols-1 gap-3 @md:grid-cols-2">
                             <div class="grid min-w-0 grid-cols-1 gap-2">
                               <Label id="deck-skill-order-label" for="deck-skill-order">
@@ -160,28 +151,13 @@ const {
                         </div>
 
                         <div class="grid min-w-0 grid-cols-1 content-start gap-3">
-                          <div class="space-y-1">
-                            <h4 class="text-sm font-medium">{{ t("deckRecommend.options.random.supportGroup") }}</h4>
-                            <p class="text-xs leading-5 text-muted-foreground">
-                              {{ t("deckRecommend.options.random.supportGroupDescription") }}
-                            </p>
-                          </div>
-                          <label for="deck-support-master-max" class="flex items-center justify-between gap-3 text-sm">
-                            <span class="min-w-0 space-y-1">
-                              <span class="block font-medium">{{ t("deckRecommend.options.random.supportMasterMax") }}</span>
-                              <span class="block text-xs leading-5 text-muted-foreground">
-                                {{ t("deckRecommend.options.random.supportMasterMaxDescription") }}
-                              </span>
-                            </span>
+                          <h4 class="text-sm font-medium">{{ t("deckRecommend.options.random.supportGroup") }}</h4>
+                          <label for="deck-support-master-max" class="flex min-h-9 items-center justify-between gap-3 text-sm">
+                            <span class="min-w-0 font-medium">{{ t("deckRecommend.options.random.supportMasterMax") }}</span>
                             <Switch id="deck-support-master-max" v-model="supportMasterMax" :disabled="running" />
                           </label>
-                          <label for="deck-support-skill-max" class="flex items-center justify-between gap-3 text-sm">
-                            <span class="min-w-0 space-y-1">
-                              <span class="block font-medium">{{ t("deckRecommend.options.random.supportSkillMax") }}</span>
-                              <span class="block text-xs leading-5 text-muted-foreground">
-                                {{ t("deckRecommend.options.random.supportSkillMaxDescription") }}
-                              </span>
-                            </span>
+                          <label for="deck-support-skill-max" class="flex min-h-9 items-center justify-between gap-3 text-sm">
+                            <span class="min-w-0 font-medium">{{ t("deckRecommend.options.random.supportSkillMax") }}</span>
                             <Switch id="deck-support-skill-max" v-model="supportSkillMax" :disabled="running" />
                           </label>
                         </div>
@@ -191,7 +167,6 @@ const {
                     <TemporaryOverridePanel
                       v-model:open="areaItemOverrideOpen"
                       :title="t('deckRecommend.options.areaItemOverride.title')"
-                      :description="t('deckRecommend.options.areaItemOverride.description')"
                       :selected-count="areaItemLevelOverrides.length"
                       :selected-count-label="t('deckRecommend.options.areaItemOverride.selectedCount', { count: areaItemLevelOverrides.length })"
                       :priority-hint="t('deckRecommend.options.areaItemOverride.priorityHint')"
@@ -209,7 +184,6 @@ const {
                     <TemporaryOverridePanel
                       v-model:open="characterRankOverrideOpen"
                       :title="t('deckRecommend.options.characterRankOverride.title')"
-                      :description="t('deckRecommend.options.characterRankOverride.description')"
                       :selected-count="characterRankOverrides.length"
                       :selected-count-label="t('deckRecommend.options.characterRankOverride.selectedCount', { count: characterRankOverrides.length })"
                       :priority-hint="t('deckRecommend.options.characterRankOverride.priorityHint')"
@@ -227,7 +201,6 @@ const {
                     <TemporaryOverridePanel
                       v-model:open="mysekaiGateOverrideOpen"
                       :title="t('deckRecommend.options.mysekaiGateOverride.title')"
-                      :description="t('deckRecommend.options.mysekaiGateOverride.description')"
                       :selected-count="mysekaiGateLevelOverrides.length"
                       :selected-count-label="t('deckRecommend.options.mysekaiGateOverride.selectedCount', { count: mysekaiGateLevelOverrides.length })"
                       :priority-hint="t('deckRecommend.options.mysekaiGateOverride.priorityHint')"
@@ -245,7 +218,6 @@ const {
                     <TemporaryOverridePanel
                       v-model:open="mysekaiFixtureBonusOverrideOpen"
                       :title="t('deckRecommend.options.mysekaiFixtureBonusOverride.title')"
-                      :description="t('deckRecommend.options.mysekaiFixtureBonusOverride.description')"
                       :selected-count="mysekaiFixtureBonusRateOverrides.length"
                       :selected-count-label="t('deckRecommend.options.mysekaiFixtureBonusOverride.selectedCount', { count: mysekaiFixtureBonusRateOverrides.length })"
                       :priority-hint="t('deckRecommend.options.mysekaiFixtureBonusOverride.priorityHint')"
@@ -263,10 +235,7 @@ const {
                     </TemporaryOverridePanel>
 
                     <section class="grid min-w-0 grid-cols-1 gap-3 py-4">
-                      <div class="space-y-1">
-                        <h3 class="text-sm font-medium">{{ t("deckRecommend.options.engine.title") }}</h3>
-                        <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.engine.description") }}</p>
-                      </div>
+                      <h3 class="text-sm font-medium">{{ t("deckRecommend.options.engine.title") }}</h3>
                       <div class="grid min-w-0 grid-cols-1 gap-3 @md:grid-cols-2">
                         <div class="grid min-w-0 grid-cols-1 gap-2">
                           <Label for="deck-recommend-result-limit">{{ t("deckRecommend.options.engine.resultLimit") }}</Label>

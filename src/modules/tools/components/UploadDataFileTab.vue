@@ -223,10 +223,6 @@ function accountOptionTitle(account: UploadTargetAccount): string | undefined {
               >
                 {{ isDragOver ? t("tools.uploadData.fileTab.fields.dropActive") : (selectedFileName || t("tools.uploadData.fileTab.fields.noFile")) }}
               </span>
-              <!-- Only pointer devices can drag a file in; touch screens never see the hint. -->
-              <span v-if="!isDragOver && !controlsDisabled" class="hidden text-xs text-muted-foreground pointer-fine:inline">
-                {{ t("tools.uploadData.fileTab.fields.dropHint") }}
-              </span>
               <input
                 :id="FILE_INPUT_ID"
                 ref="fileInput"
@@ -237,7 +233,6 @@ function accountOptionTitle(account: UploadTargetAccount): string | undefined {
                 @change="emit('fileChange', $event)"
               />
             </div>
-            <p class="text-xs text-muted-foreground">{{ t("tools.uploadData.fileTab.fields.fileHint") }}</p>
           </div>
           <div class="flex min-w-0 flex-col space-y-1.5">
             <div class="flex min-h-7 flex-wrap items-center justify-between gap-2 pointer-coarse:min-h-10">

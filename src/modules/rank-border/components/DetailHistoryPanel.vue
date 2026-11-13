@@ -296,9 +296,7 @@ const { edgeClass: updateLogEdgeClass } = useScrollEdges(updateLogScroller)
     <section class="rank-border-heatmap-section grid min-w-0 content-start gap-2 rounded-xl border bg-card px-4 py-3">
       <div class="flex flex-wrap items-baseline justify-between gap-2">
         <h2 class="text-sm font-semibold">{{ t("rankBorder.result.heatmapTitle") }}</h2>
-        <span class="text-right text-xs text-muted-foreground">
-          {{ t("rankBorder.result.dailyHours") }} · {{ t("rankBorder.result.heatmapHint") }}
-        </span>
+        <span class="text-right text-xs text-muted-foreground">{{ t("rankBorder.result.dailyHours") }}</span>
       </div>
       <div v-if="hasHeatmap" class="rank-border-heatmap-panel" :style="{ '--rank-border-heatmap-days': heatmapDays.length }">
         <div class="rank-border-heatmap-row rank-border-heatmap-row--header" aria-hidden="true">

@@ -4,17 +4,13 @@ import { RouterLink, useRoute, useRouter } from "vue-router"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
-import { Loader2, LogIn, ShieldCheck, ShieldX } from "lucide-vue-next"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Loader2 } from "lucide-vue-next"
 import { extractErrorMessage } from "@/lib/error-utils"
 import { useUserStore } from "@/shared/stores/user"
+import OAuthAccountRow from "@/modules/user-settings/components/oauth/OAuthAccountRow.vue"
+import OAuthAppRow from "@/modules/user-settings/components/oauth/OAuthAppRow.vue"
+import OAuthFlowShell from "@/modules/user-settings/components/oauth/OAuthFlowShell.vue"
+import OAuthFlowState from "@/modules/user-settings/components/oauth/OAuthFlowState.vue"
 import {
   acceptOAuthLoginChallenge,
   getOAuthLoginChallenge,
@@ -44,6 +40,10 @@ const clientName = computed(() => {
   const client = loginRequest.value?.client
   return client?.client_name?.trim() || client?.client_id?.trim() || t("oauth.login.unknownApp")
 })
+const accountName = computed(() => userStore.name || userStore.userId || "")
+// Which button carries the spinner while a request is in flight; the page's
+// own automatic attempt counts as "continue". Presentation only.
+const pendingChoice = ref<"continue" | "cancel">("continue")
 
 async function loadLoginChallenge(challenge: string) {
   isLoading.value = true
@@ -169,96 +169,75 @@ async function rejectAuthorization() {
 </script>
 
 <template>
-  <div class="w-full flex-1 flex items-center justify-center px-0 py-4">
-    <Card class="w-full max-w-md" v-if="isLoading">
-      <CardHeader class="text-center">
-        <div class="mx-auto mb-2 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-          <Loader2 class="h-6 w-6 text-primary animate-spin" />
-        </div>
-        <CardTitle class="text-xl">{{ t("oauth.login.continuingTitle") }}</CardTitle>
-        <CardDescription>
-          {{ t("oauth.login.continuingDescriptionPrefix") }}
-          <strong class="text-foreground">{{ clientName }}</strong>
-          {{ t("oauth.login.continuingDescriptionSuffix") }}
-        </CardDescription>
-      </CardHeader>
-    </Card>
-
-    <Card class="w-full max-w-md" v-else-if="isValid && !isLoggedIn">
-      <CardHeader class="text-center">
-        <div class="mx-auto mb-2 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-          <LogIn class="h-6 w-6 text-primary" />
-        </div>
-        <CardTitle class="text-xl">{{ t("oauth.login.title") }}</CardTitle>
-        <CardDescription>
-          {{ t("oauth.login.signInDescriptionPrefix") }}
-          <strong class="text-foreground">{{ clientName }}</strong>
-          {{ t("oauth.login.signInDescriptionSuffix") }}
-        </CardDescription>
-      </CardHeader>
-      <CardFooter class="flex gap-3">
-        <Button as-child class="flex-1">
+  <OAuthFlowShell :title="t('oauth.login.title')" :loading="isLoading" :loading-label="t('oauth.common.loading')">
+    <!-- Signed out: one decision, sign in to go on. -->
+    <template v-if="isValid && !isLoggedIn">
+      <dl>
+        <OAuthAppRow :name="clientName" />
+      </dl>
+      <div class="grid min-w-0 gap-2 p-4">
+        <Button as-child size="lg" class="w-full">
           <RouterLink :to="loginRoute" data-testid="oauth-login-sign-in">
-            <LogIn class="h-4 w-4 mr-2" />
             {{ t("oauth.login.signInButton") }}
           </RouterLink>
         </Button>
-        <Button variant="outline" class="flex-1" @click="router.push({ name: 'home' })">
-          {{ t("oauth.login.backHome") }}
+        <Button variant="outline" size="lg" class="w-full" @click="router.push({ name: 'home' })">
+          {{ t("oauth.common.backHome") }}
         </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </template>
 
-    <Card class="w-full max-w-md" v-else-if="isValid">
-      <CardHeader class="text-center">
-        <div class="mx-auto mb-2 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-          <ShieldCheck class="h-6 w-6 text-primary" />
-        </div>
-        <CardTitle class="text-xl">{{ t("oauth.login.title") }}</CardTitle>
-        <CardDescription>
-          {{ t("oauth.login.readyDescriptionPrefix") }}
-          <strong class="text-foreground">{{ clientName }}</strong>
-          {{ t("oauth.login.readyDescriptionSuffix") }}
-        </CardDescription>
-      </CardHeader>
-      <CardContent v-if="actionError" class="pt-0">
-        <div role="alert" class="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+    <!-- Signed in: the page continues by itself; this is what stays when that failed. -->
+    <template v-else-if="isValid">
+      <dl class="divide-y divide-border/60">
+        <OAuthAppRow :name="clientName" />
+        <OAuthAccountRow v-if="accountName" :name="accountName" />
+      </dl>
+      <div class="grid min-w-0 gap-4 p-4">
+        <p v-if="actionError" role="alert" class="text-sm whitespace-pre-line text-destructive [overflow-wrap:anywhere]">
           {{ actionError }}
+        </p>
+        <div class="flex flex-col gap-2 @min-[22rem]:flex-row-reverse">
+          <Button
+            size="lg"
+            class="w-full @min-[22rem]:flex-1"
+            :disabled="isSubmitting"
+            @click="pendingChoice = 'continue'; continueAuthorization()"
+          >
+            <Loader2
+              v-if="isSubmitting && pendingChoice === 'continue'"
+              class="size-4 animate-spin motion-reduce:animate-none"
+              aria-hidden="true"
+            />
+            {{ t("oauth.login.continueButton") }}
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            class="w-full @min-[22rem]:w-auto @min-[22rem]:min-w-28"
+            :disabled="isSubmitting"
+            @click="pendingChoice = 'cancel'; rejectAuthorization()"
+          >
+            <Loader2
+              v-if="isSubmitting && pendingChoice === 'cancel'"
+              class="size-4 animate-spin motion-reduce:animate-none"
+              aria-hidden="true"
+            />
+            {{ t("oauth.login.cancel") }}
+          </Button>
         </div>
-      </CardContent>
-      <CardFooter class="flex gap-3">
-        <Button
-          variant="outline"
-          class="flex-1"
-          :disabled="isSubmitting"
-          @click="rejectAuthorization"
-        >
-          <ShieldX class="h-4 w-4 mr-2" />
-          {{ t("oauth.login.cancel") }}
-        </Button>
-        <Button
-          class="flex-1"
-          :disabled="isSubmitting"
-          @click="continueAuthorization"
-        >
-          <ShieldCheck class="h-4 w-4 mr-2" />
-          {{ t("oauth.login.continueButton") }}
-        </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </template>
 
-    <Card class="w-full max-w-md" v-else>
-      <CardHeader class="text-center">
-        <CardTitle class="text-xl text-destructive">{{ t("oauth.login.invalidTitle") }}</CardTitle>
-        <CardDescription>
-          {{ loadError || t("oauth.login.invalidDescription") }}
-        </CardDescription>
-      </CardHeader>
-      <CardFooter class="justify-center">
-        <Button variant="outline" @click="router.push({ name: 'home' })">
-          {{ t("oauth.login.backHome") }}
-        </Button>
-      </CardFooter>
-    </Card>
-  </div>
+    <OAuthFlowState
+      v-else
+      tone="error"
+      :title="t('oauth.login.invalidTitle')"
+      :description="loadError || t('oauth.login.invalidDescription')"
+    >
+      <Button variant="outline" @click="router.push({ name: 'home' })">
+        {{ t("oauth.common.backHome") }}
+      </Button>
+    </OAuthFlowState>
+  </OAuthFlowShell>
 </template>

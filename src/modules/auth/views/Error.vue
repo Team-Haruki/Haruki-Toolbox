@@ -2,15 +2,9 @@
 import { computed, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
-import { AlertTriangle, CheckCircle2, Home, Loader2, LogIn, RefreshCw } from "lucide-vue-next"
+import { ChevronRight, CircleAlert, CircleX } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardTitle,
-  CardHeader,
-  CardContent,
-  CardDescription,
-} from "@/components/ui/card"
+import AuthPageShell from "@/modules/auth/components/AuthPageShell.vue"
 import { fetchKratosFlowError, type KratosFlowError } from "@/modules/auth/lib/kratos"
 import { describeKratosError, describeKratosFlowError } from "@/modules/auth/lib/kratos-messages"
 
@@ -101,105 +95,92 @@ watch(
   },
   { immediate: true }
 )
+
+// The facts a bug report needs, label over value.
+const technicalFacts = computed(() => {
+  const facts: Array<{ key: string; label: string; value: string }> = [
+    { key: "id", label: t("auth.error.errorIdLabel"), value: flowError.value?.id || errorId.value },
+  ]
+  if (flowError.value?.code !== undefined) {
+    facts.push({ key: "code", label: t("auth.error.statusCodeLabel"), value: String(flowError.value.code) })
+  }
+  if (rawReason.value) {
+    facts.push({ key: "reason", label: t("auth.kratos.errorPage.reasonLabel"), value: rawReason.value })
+  }
+  return facts
+})
 </script>
 
 <template>
-  <div class="w-full flex-1 flex items-center justify-center px-0 py-4">
-    <Card class="w-full max-w-2xl">
-      <CardHeader>
-        <CardTitle class="flex items-center gap-2">
-          <CheckCircle2 v-if="alreadySignedIn" class="h-6 w-6 text-primary" />
-          <AlertTriangle v-else class="h-6 w-6" />
-          {{ alreadySignedIn ? t("auth.error.alreadySignedInTitle") : t("auth.error.title") }}
-        </CardTitle>
-        <CardDescription>
-          {{ alreadySignedIn ? t("auth.error.alreadySignedInDescription") : t("auth.error.description") }}
-        </CardDescription>
-      </CardHeader>
-      <CardContent class="space-y-4">
-        <div v-if="loading" class="flex items-center justify-center py-8 text-muted-foreground">
-          <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-          {{ t("auth.common.loadingFlow") }}
+  <AuthPageShell
+    :title="alreadySignedIn ? t('auth.error.alreadySignedInTitle') : t('auth.error.title')"
+    :loading="loading"
+    :load-error="loadError"
+    :retry-label="t('auth.error.retry')"
+    @restart="retryLoad"
+  >
+    <div v-if="showMissingId" class="grid min-w-0 gap-4 p-4">
+      <p class="flex min-w-0 items-start gap-2 text-sm text-amber-800 dark:text-amber-300" role="alert">
+        <CircleAlert class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <span class="min-w-0 [overflow-wrap:anywhere]">{{ t("auth.error.missingIdDescription") }}</span>
+      </p>
+      <Button size="lg" class="w-full" @click="goLogin">{{ t("auth.error.backToLogin") }}</Button>
+    </div>
+
+    <div v-else-if="showResolvedError" class="divide-y divide-border/60">
+      <div class="grid min-w-0 gap-4 p-4">
+        <!-- An already signed-in visitor has nothing to fix: the heading says so and one button leads on. -->
+        <p
+          v-if="!alreadySignedIn"
+          class="flex min-w-0 items-start gap-2 text-sm text-destructive"
+          role="alert"
+        >
+          <CircleX class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <span class="min-w-0 [overflow-wrap:anywhere]" data-testid="kratos-error-explanation">{{ explanation }}</span>
+        </p>
+        <Button v-if="alreadySignedIn" size="lg" class="w-full" @click="goHome">{{ t("auth.error.backToHome") }}</Button>
+        <div v-else class="grid gap-2">
+          <Button size="lg" class="w-full" @click="goLogin">{{ t("auth.error.backToLogin") }}</Button>
+          <Button size="lg" variant="outline" class="w-full" @click="retryLoad">{{ t("auth.error.retry") }}</Button>
         </div>
+      </div>
 
-        <div v-else-if="loadError" class="space-y-4">
-          <div class="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-            {{ loadError }}
+      <details class="group min-w-0 text-sm">
+        <summary
+          class="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-muted-foreground outline-none transition-colors select-none hover:text-foreground focus-visible:bg-muted/50 [&::-webkit-details-marker]:hidden"
+        >
+          <ChevronRight class="size-4 shrink-0 transition-transform group-open:rotate-90 motion-reduce:transition-none" aria-hidden="true" />
+          <span class="min-w-0">{{ t("auth.kratos.errorPage.technicalDetails") }}</span>
+        </summary>
+        <!-- Grid items do not shrink below their content by default: a long
+             reason or a wide details dump would push the block past the
+             panel on a phone, so every item may shrink (`min-w-0`). -->
+        <dl class="grid gap-3 px-4 pb-4 [&>*]:min-w-0">
+          <div v-for="fact in technicalFacts" :key="fact.key">
+            <dt class="text-[11px] text-muted-foreground">{{ fact.label }}</dt>
+            <dd class="text-sm tabular-nums [overflow-wrap:anywhere]">{{ fact.value }}</dd>
           </div>
-          <div class="flex flex-col gap-2 sm:flex-row">
-            <Button class="flex-1" @click="retryLoad">
-              <RefreshCw class="mr-2 h-4 w-4" />
-              {{ t("auth.error.retry") }}
-            </Button>
-            <Button variant="outline" class="flex-1" @click="goLogin">
-              <LogIn class="mr-2 h-4 w-4" />
-              {{ t("auth.error.backToLogin") }}
-            </Button>
+          <div v-if="detailsText">
+            <dt class="text-[11px] text-muted-foreground">{{ t("auth.error.detailsLabel") }}</dt>
+            <dd>
+              <pre class="font-mono text-xs whitespace-pre-wrap [overflow-wrap:anywhere]">{{ detailsText }}</pre>
+            </dd>
           </div>
-        </div>
+        </dl>
+      </details>
+    </div>
 
-        <div v-else-if="showMissingId" class="space-y-4">
-          <div class="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300">
-            {{ t("auth.error.missingIdDescription") }}
-          </div>
-          <Button class="w-full" @click="goLogin">
-            <LogIn class="mr-2 h-4 w-4" />
-            {{ t("auth.error.backToLogin") }}
-          </Button>
-        </div>
-
-        <div v-else-if="showResolvedError" class="space-y-4">
-          <div
-            :class="alreadySignedIn
-              ? 'rounded-md border border-blue-300 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-300'
-              : 'rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive'"
-            :role="alreadySignedIn ? 'status' : 'alert'"
-          >
-            <p class="[overflow-wrap:anywhere]" data-testid="kratos-error-explanation">{{ explanation }}</p>
-          </div>
-
-          <details class="group rounded-md border px-4 py-3 text-sm text-muted-foreground">
-            <summary class="cursor-pointer select-none font-medium text-foreground/80">
-              {{ t("auth.kratos.errorPage.technicalDetails") }}
-            </summary>
-            <!-- Grid items do not shrink below their content by default: a long
-                 reason or a wide details dump would push the block past the
-                 card on a phone, so every item may shrink (`min-w-0`). -->
-            <div class="mt-3 grid gap-2 [&>*]:min-w-0">
-              <div class="break-all">
-                {{ t("auth.error.errorIdLabel") }}: {{ flowError?.id || errorId }}
-              </div>
-              <div v-if="flowError?.code !== undefined">
-                {{ t("auth.error.statusCodeLabel") }}: {{ flowError.code }}
-              </div>
-              <div v-if="rawReason" class="[overflow-wrap:anywhere]">
-                {{ t("auth.kratos.errorPage.reasonLabel") }}: {{ rawReason }}
-              </div>
-              <div v-if="detailsText" class="space-y-2">
-                <div class="font-medium">{{ t("auth.error.detailsLabel") }}</div>
-                <pre class="max-h-80 overflow-auto rounded-md border bg-muted p-3 text-xs">{{ detailsText }}</pre>
-              </div>
-            </div>
-          </details>
-
-          <div v-if="alreadySignedIn" class="flex flex-col gap-2 sm:flex-row">
-            <Button class="flex-1" @click="goHome">
-              <Home class="mr-2 h-4 w-4" />
-              {{ t("auth.error.backToHome") }}
-            </Button>
-          </div>
-          <div v-else class="flex flex-col gap-2 sm:flex-row">
-            <Button class="flex-1" @click="goLogin">
-              <LogIn class="mr-2 h-4 w-4" />
-              {{ t("auth.error.backToLogin") }}
-            </Button>
-            <Button variant="outline" class="flex-1" @click="retryLoad">
-              <RefreshCw class="mr-2 h-4 w-4" />
-              {{ t("auth.error.retry") }}
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  </div>
+    <template v-if="!loading && !alreadySignedIn && (loadError || showResolvedError)" #footer>
+      <router-link
+        v-if="loadError"
+        :to="{ name: 'user.login' }"
+        class="font-medium text-foreground underline-offset-4 hover:underline"
+      >
+        {{ t("auth.error.backToLogin") }}
+      </router-link>
+      <router-link to="/" class="underline-offset-4 hover:text-foreground hover:underline">
+        {{ t("auth.error.backToHome") }}
+      </router-link>
+    </template>
+  </AuthPageShell>
 </template>

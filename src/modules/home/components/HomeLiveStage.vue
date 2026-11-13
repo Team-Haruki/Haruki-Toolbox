@@ -86,10 +86,7 @@ function songDate(publishedAt: number): string {
       class="home-live-invite relative isolate flex min-h-52 flex-1 flex-col items-start justify-center gap-3 overflow-hidden rounded-2xl border p-5 sm:p-7"
       data-testid="home-live-opt-in"
     >
-      <div>
-        <p class="text-base font-semibold">{{ t("home.live.optInTitle") }}</p>
-        <p class="mt-1 max-w-md text-sm text-muted-foreground">{{ t("home.live.optInHint") }}</p>
-      </div>
+      <p class="text-base font-semibold">{{ t("home.live.optInTitle") }}</p>
       <Button size="sm" @click="$emit('load')">{{ t("home.live.load") }}</Button>
     </div>
 

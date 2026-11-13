@@ -26,11 +26,11 @@ export default {
       "closed": "Closed"
     },
     "userStatusHint": {
-      "waitingAdmin": "We have received your ticket and it is waiting for an admin response.",
-      "waitingAdminAssigned": "An admin has picked up your ticket. Their reply will appear in the conversation below.",
-      "waitingUser": "An admin has replied. Please add more details or confirm the next step.",
-      "resolved": "This ticket has been marked resolved. Reply if the issue is still there, or close the ticket once it is handled.",
-      "closed": "This ticket is closed. Create a new ticket if you have another issue."
+      "waitingAdmin": "Received, waiting for an admin",
+      "waitingAdminAssigned": "An admin has picked it up; replies appear in the conversation",
+      "waitingUser": "An admin has replied; add details or confirm",
+      "resolved": "Close the ticket once it is handled",
+      "closed": "Create a new ticket for another issue"
     },
     "time": {
       "justNow": "Just now"
@@ -55,14 +55,12 @@ export default {
     },
     "list": {
       "title": "My tickets",
-      "description": "Check progress and add details when needed.",
       "createButton": "Create ticket",
       "filterLabel": "Filter by status",
       "waitingCount": "{count} ticket awaiting your reply | {count} tickets awaiting your reply",
       "refresh": "Refresh",
       "loading": "Loading tickets…",
       "empty": "No tickets yet",
-      "emptyDescription": "Create a ticket to reach an admin about a bug, an account issue or an idea.",
       "emptyFiltered": "No tickets with the status “{status}”",
       "showAll": "Show all tickets",
       "total": "{total} ticket in total | {total} tickets in total",
@@ -83,13 +81,12 @@ export default {
       },
       "toast": {
         "loadFailedTitle": "Failed to load tickets",
-        "loadFailedFallback": "Check your connection and retry; if it keeps failing the service may be temporarily unavailable."
+        "loadFailedFallback": "Check your connection and try again"
       }
     },
     "create": {
       "backButton": "Back to ticket list",
       "title": "Create ticket",
-      "description": "Tickets are for reporting bugs, sorting out Toolbox account issues and suggesting ideas, not for how-to guidance. Clear details help admins decide the next step faster.",
       "submit": "Submit ticket",
       "submitting": "Submitting...",
       "typeTitle": "Type of issue",
@@ -97,29 +94,25 @@ export default {
       "count": "{count} / {max}",
       "fields": {
         "subject": "Subject",
-        "subjectPlaceholder": "The issue in one sentence",
-        "subjectHint": "For example: upload failed, cannot bind account, cannot authorize a third-party app.",
+        "subjectPlaceholder": "The issue in one sentence, e.g. upload failed",
         "category": "Category",
-        "categoryHint": "Pick the closest category. Use Other when unsure.",
         "priority": "Priority",
-        "priorityHint": "Use urgent for sign-in, data, or core feature issues.",
+        "priorityHint": "Urgent is only for sign-in, data or core feature issues",
         "message": "Description",
         "messagePlaceholder": "Describe the issue in detail…"
       },
       "guide": {
-        "upload": "Include the server, how you uploaded (module, packet capture or transfer code), when it happened and the error shown on the page.",
-        "account": "Include the affected account ID, the server, when it happened and the error shown on the page.",
-        "bug": "Include the steps to reproduce, what you expected, what happened instead, and your device and browser.",
-        "feature": "Describe what you are trying to do, how you do it today and what gets in the way.",
-        "other": "Include when it happened, the steps, error messages or related links."
+        "upload": "Include the server, how you uploaded (module, packet capture or transfer code), when it happened and the error",
+        "account": "Include the affected account ID, the server, when it happened and the error",
+        "bug": "Include the steps, what you expected and what happened, and your device and browser",
+        "feature": "Describe what you are trying to do and what gets in the way",
+        "other": "Include when it happened, the steps, error messages or related links"
       },
       "tips": {
         "title": "Before you submit",
         "usage": "For how-to and usage questions, ask in the {link} instead.",
         "usageLink": "recommended groups",
-        "secrets": "Never put passwords, transfer codes or other secrets in a ticket. Admins will not ask for them.",
-        "oneIssue": "Keep one issue per ticket so it is easy to follow up.",
-        "followUp": "You can add details in the ticket after submitting. When an admin replies, “My tickets” in the sidebar shows a reminder."
+        "secrets": "Never put passwords, transfer codes or other secrets in a ticket. Admins will not ask for them."
       },
       "toast": {
         "subjectRequired": "Please enter ticket subject",
@@ -129,7 +122,7 @@ export default {
         "loginRequired": "Please sign in first",
         "createSuccess": "Ticket created",
         "createFailedTitle": "Failed to create ticket",
-        "createFailedFallback": "The ticket was not created. Check the subject and description and retry; if it keeps failing, try again later."
+        "createFailedFallback": "The ticket was not created. Try again later."
       }
     },
     "detail": {
@@ -158,34 +151,34 @@ export default {
       "replyLabel": "Reply",
       "inputPlaceholder": "Reply to the admin…",
       "composeHint": "Enter to send, Shift+Enter for a new line",
-      "reopenHint": "Replying reopens the ticket for an admin to pick up again.",
+      "reopenHint": "Replying reopens the ticket",
       "replyTooLong": "A reply can be at most {max} characters",
       "sentState": "Sent",
       "sendButton": "Send",
-      "closedHint": "This ticket is closed and can no longer receive replies.",
+      "closedHint": "This ticket is closed and can no longer receive replies",
       "newTicket": "Create a new ticket",
       "closeButton": "Close ticket",
       "closeDialog": {
         "title": "Confirm close ticket",
-        "description": "After closing, you cannot send messages anymore. Continue?",
+        "description": "You cannot reply after closing it",
         "cancel": "Cancel",
         "confirm": "Confirm close"
       },
       "notFound": "Ticket not found",
-      "notFoundDescription": "This ticket may have been deleted, or it belongs to another account.",
+      "notFoundDescription": "It may have been deleted, or it belongs to another account",
       "toast": {
         "loadFailedTitle": "Failed to load ticket detail",
-        "loadFailedFallback": "Check your connection and retry; if it keeps failing the service may be temporarily unavailable.",
+        "loadFailedFallback": "Check your connection and try again",
         "sendFailedTitle": "Send failed",
-        "sendFailedFallback": "The message was not sent. Your text is kept; check your connection and press Send again.",
+        "sendFailedFallback": "Not sent; your text is kept. Try again.",
         "closeSuccess": "Ticket closed",
         "closeFailedTitle": "Close failed",
-        "closeFailedFallback": "The ticket was not closed. Try again later; you can also leave it open if the issue is handled."
+        "closeFailedFallback": "The ticket was not closed. Try again later."
       }
     },
     "adminList": {
       "title": "Ticket management",
-      "description": "Filter pending, unassigned, and high-priority tickets quickly.",
+      "description": "Filter pending, unassigned, and high-priority tickets quickly",
       "searchPlaceholder": "Search tickets…",
       "refreshButton": "Refresh",
       "unassigned": "Unassigned",
@@ -207,7 +200,7 @@ export default {
         "share": "{count} · {percent}%",
         "empty": "No data",
         "loadFailed": "Could not load the statistics",
-        "partialFailed": "Not all statistics could be loaded."
+        "partialFailed": "Not all statistics could be loaded"
       },
       "quickFilters": {
         "all": "All tickets",
@@ -318,7 +311,7 @@ export default {
         "assigneeCleared": "Unassigned (was {from})"
       },
       "actionsTitle": "Ticket actions",
-      "actionsDescription": "Update status or assign an admin owner.",
+      "actionsDescription": "Update status or assign an admin owner",
       "statusChangeLabel": "Change status",
       "assigneeLabel": "Assignee",
       "assigneePlaceholder": "Select assignee",
@@ -343,7 +336,7 @@ export default {
       "noteButton": "Note",
       "sendButton": "Send",
       "internalSwitchLabel": "Internal note (admins only)",
-      "notFound": "Ticket not found; it may have been deleted or the link is wrong.",
+      "notFound": "Ticket not found; it may have been deleted or the link is wrong",
       "toast": {
         "loadFailedTitle": "Failed to load ticket detail",
         "loadFailedFallback": "Load failed",

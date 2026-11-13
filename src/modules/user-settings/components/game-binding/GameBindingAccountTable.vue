@@ -70,11 +70,8 @@ function sharingCount(settings: object | null | undefined): string | null {
             />
           </div>
           <!-- Indented under the server name, past the region badge. -->
-          <p v-if="!account.verified" class="mt-1 pl-8 text-xs text-muted-foreground">
-            {{ t("userSettings.gameBinding.unverifiedHint") }}
-          </p>
           <p
-            v-else-if="sharingCount(account.suite) != null || sharingCount(account.mysekai) != null"
+            v-if="account.verified && (sharingCount(account.suite) != null || sharingCount(account.mysekai) != null)"
             class="mt-1 flex flex-wrap gap-x-3 pl-8 text-xs tabular-nums text-muted-foreground"
           >
             <span>{{ t("userSettings.gameBinding.sharing.label") }}</span>
@@ -89,6 +86,7 @@ function sharingCount(settings: object | null | undefined): string | null {
             variant="outline"
             size="sm"
             class="mr-1"
+            :title="t('userSettings.gameBinding.unverifiedHint')"
             @click="emit('edit', account)"
           >
             {{ t("userSettings.gameBinding.editDialog.verifyButton") }}
@@ -142,7 +140,6 @@ function sharingCount(settings: object | null | undefined): string | null {
     <div v-else class="flex flex-col items-center justify-center gap-2 px-4 py-10 text-center">
       <Gamepad2 class="size-8 text-muted-foreground/60" />
       <p class="text-sm font-medium">{{ t("userSettings.gameBinding.emptyTitle") }}</p>
-      <p class="max-w-sm text-xs text-muted-foreground">{{ t("userSettings.gameBinding.emptyHint") }}</p>
       <Button size="sm" class="mt-1" @click="emit('add')">
         <Plus class="size-4" />
         {{ t("userSettings.gameBinding.addButton") }}

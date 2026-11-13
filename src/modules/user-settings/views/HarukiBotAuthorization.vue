@@ -17,7 +17,6 @@ const { t } = useI18n()
     <PageHeader
       size="compact"
       :title="t('userSettings.sections.harukiBotTitle')"
-      :description="t('userSettings.sections.harukiBotDescription')"
     />
 
     <!-- Your own QQ first. The official-bot guide sits right above the list

@@ -40,7 +40,6 @@ const MESSAGE_ID = TICKET_CREATE_FIELD_IDS.message
   <div class="@container mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 py-1 sm:py-2" data-testid="ticket-create">
     <PageHeader
       :title="t('tickets.create.title')"
-      :description="t('tickets.create.description')"
       :back="{ name: 'tickets.list' }"
       :back-label="t('tickets.create.backButton')"
     />
@@ -65,7 +64,6 @@ const MESSAGE_ID = TICKET_CREATE_FIELD_IDS.message
                 {{ option.label }}
               </ToggleGroupItem>
             </ToggleGroup>
-            <p class="text-xs text-muted-foreground">{{ t("tickets.create.fields.categoryHint") }}</p>
           </div>
           <div class="grid gap-1.5">
             <p class="text-xs text-muted-foreground">{{ t("tickets.create.fields.priority") }}</p>
@@ -107,14 +105,11 @@ const MESSAGE_ID = TICKET_CREATE_FIELD_IDS.message
               class="scroll-mt-24"
               :placeholder="t('tickets.create.fields.subjectPlaceholder')"
               :aria-invalid="fieldErrors.subject ? 'true' : undefined"
-              :aria-describedby="fieldErrors.subject ? `${SUBJECT_ID}-error` : `${SUBJECT_ID}-hint`"
+              :aria-describedby="fieldErrors.subject ? `${SUBJECT_ID}-error` : undefined"
               @input="handleFieldInput('subject')"
               @blur="handleFieldBlur('subject')"
             />
             <FieldError :id="`${SUBJECT_ID}-error`" :message="fieldErrors.subject" />
-            <p v-if="!fieldErrors.subject" :id="`${SUBJECT_ID}-hint`" class="text-xs text-muted-foreground">
-              {{ t("tickets.create.fields.subjectHint") }}
-            </p>
           </div>
 
           <div class="grid gap-1.5">
@@ -170,8 +165,6 @@ const MESSAGE_ID = TICKET_CREATE_FIELD_IDS.message
             </i18n-t>
           </li>
           <li>{{ t("tickets.create.tips.secrets") }}</li>
-          <li>{{ t("tickets.create.tips.oneIssue") }}</li>
-          <li>{{ t("tickets.create.tips.followUp") }}</li>
         </ul>
       </aside>
     </div>

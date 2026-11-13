@@ -113,7 +113,6 @@ const showContent = computed(() => !props.loading && !props.error && !props.notF
     <CatalogEmptyState
       v-else-if="notFound || title == null"
       :message="notFoundMessage ?? t('catalog.detail.notFound')"
-      :hint="t('catalog.detail.tryOtherRegion')"
     >
       <template #action>
         <div class="flex flex-wrap items-center justify-center gap-2">

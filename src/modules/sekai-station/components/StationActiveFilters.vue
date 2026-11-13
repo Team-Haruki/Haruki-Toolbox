@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { ref } from "vue"
 import { useI18n } from "vue-i18n"
-import { LucideFilter, LucideX } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
+import StationFilterChip from "@/modules/sekai-station/components/StationFilterChip.vue"
 import { captureFocusHandOff } from "@/modules/sekai-station/lib/focus-hand-off"
 import { useSekaiStationPrefsStore } from "@/modules/sekai-station/stores/sekai-station-prefs"
 
 /**
- * The filters in effect, above the room list so a quiet feed is never
- * mistaken for a dead one; each chip removes its own term. Sticky from sm
- * up only: wrapped chips would cover too much of a phone screen.
+ * The filters in effect, as the first row of the room list so a quiet feed is
+ * never mistaken for a dead one; each chip removes its own term. Shown while
+ * the filter column is folded into a dialog (below 56rem): beside the list
+ * that column already says the same. Sticky from 28rem up only: wrapped chips
+ * would cover too much of a phone screen. The hairline under the bar (::after)
+ * sits on the next row's top border, so it only shows once the bar is stuck.
  */
 const { t } = useI18n()
 const prefs = useSekaiStationPrefsStore()
@@ -31,8 +34,6 @@ function removeChip(event: MouseEvent, remove: () => void) {
 function clearAll(event: MouseEvent) {
   removeKeepingFocus(event.currentTarget as HTMLElement | null, prefs.clearFilters)
 }
-
-const chipClass = "inline-flex h-7 max-w-full items-center gap-1 rounded-full border bg-background pr-2 pl-2.5 text-xs transition-colors outline-none hover:bg-muted focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:bg-input/30"
 </script>
 
 <template>
@@ -41,36 +42,27 @@ const chipClass = "inline-flex h-7 max-w-full items-center gap-1 rounded-full bo
     ref="bar"
     role="group"
     :aria-label="t('sekaiStation.settings.filter')"
-    class="flex items-start gap-2 rounded-md border bg-background/90 px-2 py-1.5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/75 sm:sticky sm:top-13 sm:z-10"
+    class="relative flex items-start gap-2 border-t border-border/60 bg-card py-1.5 pr-2 pl-4 after:pointer-events-none after:absolute after:inset-x-0 after:top-full after:h-px after:bg-border/60 @min-[28rem]/station:sticky @min-[28rem]/station:top-13 @min-[28rem]/station:z-10 pointer-coarse:py-0.5 @min-[56rem]/station:hidden"
     data-slot="station-active-filters"
   >
-    <span class="inline-flex h-7 shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground">
-      <LucideFilter class="size-3.5" aria-hidden="true" />
+    <span class="inline-flex h-7 shrink-0 items-center text-xs text-muted-foreground pointer-coarse:h-10">
       {{ prefs.filterMode === "whitelist" ? t("sekaiStation.settings.whitelist") : t("sekaiStation.settings.blacklist") }}
     </span>
 
-    <ul class="m-0 flex min-w-0 flex-1 list-none flex-wrap items-center gap-1.5 p-0">
+    <ul role="list" class="m-0 flex min-w-0 flex-1 list-none flex-wrap items-center gap-x-1.5 gap-y-1 p-0 pointer-coarse:gap-y-0">
       <li v-for="tag in prefs.activeTags" :key="`tag:${tag}`" class="flex max-w-full min-w-0">
-        <button
-          type="button"
-          :class="chipClass"
-          :aria-label="t('sekaiStation.settings.removeFilter', { name: tag })"
-          @click="removeChip($event, () => prefs.toggleTag(tag))"
-        >
-          <span class="truncate">{{ tag }}</span>
-          <LucideX class="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-        </button>
+        <StationFilterChip
+          :label="tag"
+          :remove-label="t('sekaiStation.settings.removeFilter', { name: tag })"
+          @remove="removeChip($event, () => prefs.toggleTag(tag))"
+        />
       </li>
       <li v-for="keyword in prefs.filterKeywords" :key="`keyword:${keyword}`" class="flex max-w-full min-w-0">
-        <button
-          type="button"
-          :class="chipClass"
-          :aria-label="t('sekaiStation.settings.removeFilter', { name: keyword })"
-          @click="removeChip($event, () => prefs.removeKeyword(keyword))"
-        >
-          <span class="truncate">{{ keyword }}</span>
-          <LucideX class="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-        </button>
+        <StationFilterChip
+          :label="keyword"
+          :remove-label="t('sekaiStation.settings.removeFilter', { name: keyword })"
+          @remove="removeChip($event, () => prefs.removeKeyword(keyword))"
+        />
       </li>
     </ul>
 

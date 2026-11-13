@@ -51,7 +51,7 @@ const firstLoad = computed(() => loading.value && tickets.value.length === 0 && 
 
 <template>
   <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 py-1 sm:py-2" data-testid="ticket-list">
-    <PageHeader :title="t('tickets.list.title')" :description="t('tickets.list.description')">
+    <PageHeader :title="t('tickets.list.title')">
       <template #actions>
         <Button as-child>
           <RouterLink :to="{ name: 'tickets.create' }">
@@ -156,7 +156,6 @@ const firstLoad = computed(() => loading.value && tickets.value.length === 0 && 
           v-if="statusFilter === 'all'"
           :icon="LucideTicket"
           :title="t('tickets.list.empty')"
-          :description="t('tickets.list.emptyDescription')"
         >
           <template #action>
             <Button as-child variant="outline" size="sm">

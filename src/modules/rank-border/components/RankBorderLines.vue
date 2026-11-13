@@ -130,7 +130,6 @@ function openLine(row: LineView) {
   <section class="@container flex min-w-0 flex-col overflow-hidden rounded-xl border bg-card" data-testid="rank-border-lines">
     <header class="border-b border-border/60 px-4 py-3">
       <h2 class="text-sm font-semibold">{{ t("rankBorder.overview.lines.title") }}</h2>
-      <p class="mt-0.5 text-xs text-muted-foreground">{{ t("rankBorder.overview.lines.description", { interval: intervalLabel }) }}</p>
     </header>
 
     <EmptyState
@@ -216,7 +215,7 @@ function openLine(row: LineView) {
               <span v-if="row.growthLabel" class="@min-[44rem]:hidden">
                 {{ t("rankBorder.overview.lines.growthShort") }} <span class="text-emerald-600 dark:text-emerald-400">{{ row.growthLabel }}</span>
               </span>
-              <span v-if="row.projectedShort" :title="`${t('rankBorder.overview.lines.projected')} ${row.projectedLabel}`">
+              <span v-if="row.projectedShort" :title="`${t('rankBorder.overview.lines.projected')} ${row.projectedLabel}\n${t('rankBorder.overview.lines.projectedHint')}`">
                 {{ t("rankBorder.overview.lines.projectedShort") }} {{ row.projectedShort }}
               </span>
               <span class="ml-auto @min-[44rem]:hidden"><RelativeTime :timestamp="row.timestamp" /></span>
@@ -224,10 +223,6 @@ function openLine(row: LineView) {
           </button>
         </li>
       </ul>
-
-      <p v-if="hasProjection" class="border-t border-border/60 px-4 py-2 text-[11px] text-muted-foreground">
-        {{ t("rankBorder.overview.lines.projectedHint") }}
-      </p>
     </template>
   </section>
 </template>

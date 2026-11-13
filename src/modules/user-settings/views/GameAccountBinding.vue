@@ -86,7 +86,6 @@ const {
     <PageHeader
       size="compact"
       :title="t('userSettings.gameBinding.title')"
-      :description="t('userSettings.gameBinding.description')"
     >
       <template #actions>
         <Button @click="startAdd">
@@ -118,7 +117,6 @@ const {
       <SettingsLinkRow
         :icon="LucideInbox"
         :label="t('userSettings.gameBinding.actions.receivedGrants')"
-        :help="t('userSettings.gameBinding.grants.receivedDescription')"
         @click="openReceivedGrantManager"
       />
       <SettingsLinkRow

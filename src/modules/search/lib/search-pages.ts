@@ -4,6 +4,8 @@ import type { SearchPageSource } from "./search-index"
 export type SearchRouteRecord = {
   path: string
   redirect?: unknown
+  /** Set on the extra record the router keeps for each `alias` of a route. */
+  aliasOf?: unknown
   meta?: {
     titleKey?: unknown
     guestOnly?: unknown
@@ -37,7 +39,9 @@ const EXCLUDED_PATHS = [
 
 /**
  * Every page a viewer can open by name, from the router's own records: one
- * with a title, no parameter in its path, and not a redirect. Admin pages are
+ * with a title, no parameter in its path, and neither a redirect nor another
+ * route's alias (the router lists an alias as a record of its own, so the
+ * page would appear twice). Admin pages are
  * listed for admins only. A page added to the router is searchable without
  * touching this file.
  */
@@ -53,6 +57,7 @@ export function buildSearchPageSources(
     if (
       !titleKey
       || route.redirect !== undefined
+      || route.aliasOf != null
       || /[:*]/.test(route.path)
       || meta.guestOnly === true
       || seen.has(route.path)

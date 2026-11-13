@@ -12,7 +12,6 @@ const { t } = useI18n()
     <PageHeader
       size="compact"
       :title="t('userSettings.oauthAuthorizations.title')"
-      :description="t('userSettings.oauthAuthorizations.description')"
     />
 
     <OAuth2Authorizations />

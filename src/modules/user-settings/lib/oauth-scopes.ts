@@ -12,13 +12,12 @@ const scopeLabelKeys: Record<string, string> = {
     "offline_access": "oauth.scope.offlineAccess",
 }
 
-// Scopes whose consequences deserve a second line on the consent page.
-// read and write are explained separately: granting one never implies the other.
+// Scopes whose name does not say everything: one short second line on the
+// consent page. Scopes whose label already says what is granted have none.
 const scopeDescriptionKeys: Record<string, string> = {
     "game-data:read": "oauth.scopeDescription.gameDataRead",
     "game-data:write": "oauth.scopeDescription.gameDataWrite",
     "station:room:write": "oauth.scopeDescription.stationRoomWrite",
-    "offline_access": "oauth.scopeDescription.offlineAccess",
 }
 
 export type OAuthScopeGroup = "read" | "write" | "other"

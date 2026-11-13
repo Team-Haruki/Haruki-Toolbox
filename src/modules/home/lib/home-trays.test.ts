@@ -31,7 +31,7 @@ describe("home trays", () => {
 
   it("drops a tool that has no name anywhere", () => {
     const resolved = resolveHomeTrays([
-      { id: "event", titleKey: "t", hintKey: "h", emphasis: "feature", tools: [{ url: "/nowhere", descriptionKey: "d" }] },
+      { id: "event", titleKey: "t", emphasis: "feature", tools: [{ url: "/nowhere", descriptionKey: "d" }] },
     ])
     expect(resolved[0]?.tools).toEqual([])
   })

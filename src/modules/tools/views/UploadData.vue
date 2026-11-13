@@ -147,7 +147,6 @@ const QQ_GROUPS = [
                 <Badge :variant="TAG_VARIANT[method.tag]" size="sm">{{ t(`tools.uploadData.methods.tags.${method.tag}`) }}</Badge>
               </span>
               <span class="mt-0.5 block text-xs text-muted-foreground">{{ t(`tools.uploadData.methods.${method.value}.platform`) }}</span>
-              <span class="mt-1 hidden text-xs leading-relaxed text-muted-foreground lg:block">{{ t(`tools.uploadData.methods.${method.value}.note`) }}</span>
             </span>
           </TabsTrigger>
         </TabsList>

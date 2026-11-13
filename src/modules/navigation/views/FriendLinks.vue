@@ -22,7 +22,7 @@ const links = computed(() => friendLinks.value.map((friend) => ({ ...friend, hos
 
 <template>
   <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-0 py-4">
-    <PageHeader :title="t('navigationPages.friendLinks.title')" :description="t('navigationPages.friendLinks.description')" />
+    <PageHeader :title="t('navigationPages.friendLinks.title')" />
 
     <div v-if="loading" class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3" role="status" :aria-label="t('navigationPages.friendLinks.loading')">
       <Skeleton v-for="index in 6" :key="index" class="h-24 w-full rounded-xl" />

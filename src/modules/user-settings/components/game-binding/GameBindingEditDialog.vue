@@ -8,7 +8,6 @@ import {
   DialogBody,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -118,7 +117,7 @@ const showMysekaiSettings = computed(() => {
 
 // --- Permission groups ---------------------------------------------------------
 // Each upload gets a group: the switches that need explaining as a line each,
-// the bot switches together on one line (same meaning, one shared hint).
+// the bot switches together on one line (same meaning).
 
 type PermissionRowView = { key: string; icon: Component; title: string; description: string; value: boolean; unsafe: boolean }
 type PermissionBotView = { key: string; name: string; title: string; value: boolean }
@@ -199,14 +198,11 @@ const permissionGroups = computed<PermissionGroupView[]>(() => {
 
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent>
+    <DialogContent :description="t('userSettings.gameBinding.editDialog.subtitle')">
       <DialogHeader>
         <DialogTitle>
           {{ isCreating ? t("userSettings.gameBinding.editDialog.createTitle") : t("userSettings.gameBinding.editDialog.editTitle") }}
         </DialogTitle>
-        <DialogDescription>
-          {{ t("userSettings.gameBinding.editDialog.subtitle") }}
-        </DialogDescription>
       </DialogHeader>
 
       <DialogBody class="gap-5">
@@ -291,8 +287,7 @@ const permissionGroups = computed<PermissionGroupView[]>(() => {
         </SettingsGroup>
 
         <!-- One group per upload. Switches with something to explain get a
-             line each; the bots share one line and one hint, with a compact
-             switch per bot. -->
+             line each; the bots share one line, with a compact switch per bot. -->
         <SettingsGroup
           v-for="group in permissionGroups"
           :key="group.key"
@@ -326,7 +321,6 @@ const permissionGroups = computed<PermissionGroupView[]>(() => {
             v-if="group.bots.length > 0"
             :icon="Bot"
             :label="t('userSettings.gameBinding.permissions.botsTitle')"
-            :help="t('userSettings.gameBinding.permissions.sharedHint')"
           >
             <template #below>
               <!-- On a phone the tiles take the row's full width (the slot is

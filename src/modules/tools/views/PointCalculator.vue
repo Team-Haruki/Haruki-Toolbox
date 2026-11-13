@@ -567,7 +567,6 @@ function goToDeckRecommend(range: ScoreControlRange) {
                 <p v-if="settings.boosts.length === 0" class="text-xs text-destructive" role="alert">
                   {{ t("tools.pointCalculator.conditions.boostsNone") }}
                 </p>
-                <p v-else class="text-xs text-muted-foreground">{{ t("tools.pointCalculator.conditions.boostsHelp") }}</p>
               </div>
 
               <div class="flex items-center justify-between gap-3">
@@ -590,11 +589,7 @@ function goToDeckRecommend(range: ScoreControlRange) {
         <!-- Results -->
         <div class="grid min-w-0 gap-4" aria-live="polite" data-testid="score-control-results">
           <div v-if="!planResult" class="rounded-xl border bg-card px-4">
-            <EmptyState
-              :icon="Target"
-              :title="t('tools.pointCalculator.result.empty')"
-              :description="t('tools.pointCalculator.result.emptyHint')"
-            />
+            <EmptyState :icon="Target" :title="t('tools.pointCalculator.result.empty')" />
           </div>
 
           <template v-else>
@@ -639,7 +634,6 @@ function goToDeckRecommend(range: ScoreControlRange) {
 
       <ul class="grid list-disc gap-1 pl-5 text-xs leading-5 text-muted-foreground">
         <li>{{ t("tools.pointCalculator.tips.boost") }}</li>
-        <li>{{ t("tools.pointCalculator.tips.idle") }}</li>
         <li>{{ t("tools.pointCalculator.tips.beta") }}</li>
       </ul>
     </div>

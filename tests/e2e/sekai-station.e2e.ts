@@ -126,6 +126,15 @@ function roomIdButton(page: Page, id: string) {
   return page.getByRole("button", { name: new RegExp(`^(复制房间号|Copy room number) ${id}$`) })
 }
 
+const KEYWORD_BOX = /^(关键词|Keywords)$/
+
+/** Hides a room number for 10 minutes through its row's ⋯ menu */
+async function hideFromMenu(page: Page, id: string) {
+  const row = page.getByRole("listitem").filter({ has: roomIdButton(page, id) })
+  await row.getByRole("button", { name: /^(更多操作|More actions)$/ }).click()
+  await page.getByRole("menuitem", { name: /^(屏蔽 10 分钟|Hide for 10 min)$/ }).click()
+}
+
 test.describe("sekai station", () => {
   let stationRequests: string[] = []
 
@@ -180,26 +189,121 @@ test.describe("sekai station", () => {
     await expect(ids).toHaveText(["55555", "11111", "22222", "33333", "44444"])
   })
 
-  test("a blacklist keyword hides matching rooms until its chip is removed", async ({ page }) => {
+  test("a hide keyword in the side column hides matching rooms until it is removed", async ({ page }) => {
     await page.goto("/sekai-station")
     await expect(roomIdButton(page, "22222")).toBeVisible()
 
-    await page.locator('[data-slot="station-toolbar"]').getByRole("button", { name: /^(筛选与显示|Filter & display)$/ }).click()
-    const keyword = page.getByRole("textbox", { name: /^(添加关键词|Add keyword)$/ })
+    // On a wide screen the controls sit beside the list: nothing to open
+    const side = page.locator('[data-slot="station-side"]')
+    await expect(side).toBeVisible()
+    await expect(page.locator('[data-slot="station-controls-button"]')).toBeHidden()
+
+    const keyword = side.getByRole("textbox", { name: KEYWORD_BOX })
     await keyword.fill("veteran")
     await keyword.press("Enter")
-    await keyword.press("Escape")
 
     await expect(roomIdButton(page, "22222")).toHaveCount(0)
     await expect(roomIdButton(page, "11111")).toBeVisible()
+    await expect(keyword).toHaveValue("")
+    // The side column already shows the filter, so the list does not repeat it
+    await expect(page.locator('[data-slot="station-active-filters"]')).toBeHidden()
 
-    const filterBar = page.locator('[data-slot="station-active-filters"]')
-    const chip = filterBar.getByRole("button", { name: /veteran/ })
-    await expect(chip).toBeVisible()
-    await chip.click()
+    // The same keyword again is refused in place
+    await keyword.fill("veteran")
+    await keyword.press("Enter")
+    await expect(side.getByRole("alert")).toHaveText(/已经添加过|Already in the list/)
+    await expect(keyword).toHaveAttribute("aria-invalid", "true")
 
+    await side.getByRole("button", { name: /veteran/ }).click()
     await expect(roomIdButton(page, "22222")).toBeVisible()
-    await expect(filterBar).toHaveCount(0)
+  })
+
+  test("show only keeps the matching rooms, and an empty result offers to clear the filter", async ({ page }) => {
+    await page.goto("/sekai-station")
+    await expect(roomIdButton(page, "22222")).toBeVisible()
+
+    const side = page.locator('[data-slot="station-side"]')
+    await side.getByRole("button", { name: /^(只显示|Show only)$/ }).click()
+    const keyword = side.getByRole("textbox", { name: KEYWORD_BOX })
+    await keyword.fill("veteran")
+    await keyword.press("Enter")
+    await expect(page.getByRole("button", { name: ROOM_ID_BUTTON })).toHaveText(["22222"])
+    await expect(page.locator("mark")).toHaveText("veteran")
+
+    await side.getByRole("button", { name: /veteran/ }).click()
+    await keyword.fill("no such room")
+    await keyword.press("Enter")
+    const list = page.locator('[data-slot="station-room-list"]')
+    await expect(list.getByText(/没有符合筛选条件的房间|No rooms match your filter/)).toBeVisible()
+
+    await list.getByRole("button", { name: /^(清空筛选|Clear filter)$/ }).click()
+    await expect(page.getByRole("button", { name: ROOM_ID_BUTTON })).toHaveText(["11111", "22222", "33333", "44444"])
+  })
+
+  test("the side column lists a hidden number and brings it back", async ({ page }) => {
+    await page.goto("/sekai-station")
+    await expect(roomIdButton(page, "33333")).toBeVisible()
+
+    await hideFromMenu(page, "33333")
+    await expect(roomIdButton(page, "33333")).toHaveCount(0)
+
+    const hidden = page.locator('[data-slot="station-side"] [data-slot="station-blocked-list"]')
+    await expect(hidden).toContainText("33333")
+    await hidden.getByRole("button", { name: /^(取消屏蔽|Unhide) 33333$/ }).click()
+
+    await expect(roomIdButton(page, "33333")).toBeVisible()
+    await expect(hidden).not.toContainText("33333")
+  })
+
+  test.describe("on a phone", () => {
+    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true })
+
+    test("the filter folds into a dialog and the filters in effect head the list", async ({ page }) => {
+      await page.goto("/sekai-station")
+      await expect(roomIdButton(page, "22222")).toBeVisible()
+      await expect(page.locator('[data-slot="station-side"]')).toBeHidden()
+
+      const openControls = page.locator('[data-slot="station-controls-button"]')
+      await openControls.click()
+      const dialog = page.getByRole("dialog", { name: /^(筛选与显示|Filter & display)$/ })
+      const keyword = dialog.getByRole("textbox", { name: KEYWORD_BOX })
+      await keyword.fill("veteran")
+      await keyword.press("Enter")
+      await dialog.getByRole("button", { name: /^(完成|Done)$/ }).click()
+      await expect(dialog).toBeHidden()
+
+      await expect(roomIdButton(page, "22222")).toHaveCount(0)
+      await expect(roomIdButton(page, "11111")).toBeVisible()
+      await expect(openControls).toContainText("1")
+
+      const filterBar = page.locator('[data-slot="station-active-filters"]')
+      const chip = filterBar.getByRole("button", { name: /veteran/ })
+      await expect(chip).toBeVisible()
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+      await chip.click()
+
+      await expect(roomIdButton(page, "22222")).toBeVisible()
+      await expect(filterBar).toHaveCount(0)
+    })
+
+    test("a hidden number is one tap away from the status line", async ({ page }) => {
+      await page.goto("/sekai-station")
+      await expect(roomIdButton(page, "33333")).toBeVisible()
+      const hiddenCount = page.locator('[data-slot="station-blocked-button"]')
+      await expect(hiddenCount).toHaveCount(0)
+
+      await hideFromMenu(page, "33333")
+      await expect(roomIdButton(page, "33333")).toHaveCount(0)
+      await expect(hiddenCount).toHaveText(/^(已屏蔽 1|1 hidden)$/)
+
+      await hiddenCount.click()
+      const dialog = page.getByRole("dialog", { name: /^(筛选与显示|Filter & display)$/ })
+      await dialog.getByRole("button", { name: /^(取消屏蔽|Unhide) 33333$/ }).click()
+      await dialog.getByRole("button", { name: /^(完成|Done)$/ }).click()
+
+      await expect(roomIdButton(page, "33333")).toBeVisible()
+      await expect(hiddenCount).toHaveCount(0)
+    })
   })
 
   test("clicking a room number copies it", async ({ page, context }) => {

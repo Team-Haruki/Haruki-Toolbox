@@ -104,7 +104,6 @@ onMounted(() => {
     <PageHeader
       size="compact"
       :title="t('userSettings.sections.accountTitle')"
-      :description="t('userSettings.sections.accountDescription')"
     />
 
     <!-- Who you are, how you sign in, then the sponsor binding. -->

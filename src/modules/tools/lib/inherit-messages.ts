@@ -26,7 +26,9 @@ export function describeInheritApiError(t: Translate, error: InheritErrorLike): 
   if (error.code && isKnownApiErrorCode(error.code)) {
     const text = t(`tools.uploadData.inheritErrors.${error.code}`)
     if (error.retryAfter && error.retryAfter > 0) {
-      return `${text} ${t("tools.uploadData.inheritErrors.retryAfter", { seconds: error.retryAfter })}`
+      // The wait is a parenthetical on the error, not a second sentence: the
+      // error copy ends without a period.
+      return t("tools.uploadData.inheritErrors.retryAfter", { message: text, seconds: error.retryAfter })
     }
     return text
   }

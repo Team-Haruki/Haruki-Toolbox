@@ -39,19 +39,19 @@ export default {
         "system": "System & Integrations"
       },
       "descriptions": {
-        "dashboard": "Key platform metrics and upload trends at a glance.",
-        "users": "Browse, search and manage toolbox users.",
-        "gameBindings": "Query and adjust user game-account bindings.",
-        "risk": "Maintain risk rules and handle risk events.",
-        "botSecurity": "Review bot-client security alerts reported by Haruki Cloud and record how they were handled.",
-        "tickets": "Handle user tickets and replies.",
-        "content": "Maintain friend links, recommended groups and other site content.",
-        "sponsors": "Manage how the sponsor list is displayed.",
-        "uploadLogs": "Track player data uploads and failure causes.",
-        "logs": "Inspect system logs.",
-        "oauthClients": "Manage OAuth clients, secrets and callbacks.",
-        "webhooks": "Manage platform webhook deliveries.",
-        "config": "Adjust system-level configuration (super admins only)."
+        "dashboard": "Key platform metrics and upload trends at a glance",
+        "users": "Browse, search and manage toolbox users",
+        "gameBindings": "Query and adjust user game-account bindings",
+        "risk": "Maintain risk rules and handle risk events",
+        "botSecurity": "Review bot-client security alerts reported by Haruki Cloud and record how they were handled",
+        "tickets": "Handle user tickets and replies",
+        "content": "Maintain friend links, recommended groups and other site content",
+        "sponsors": "Manage how the sponsor list is displayed",
+        "uploadLogs": "Track player data uploads and failure causes",
+        "logs": "Inspect system logs",
+        "oauthClients": "Manage OAuth clients, secrets and callbacks",
+        "webhooks": "Manage platform webhook deliveries",
+        "config": "Adjust system-level configuration (super admins only)"
       },
       "dashboard": "Dashboard",
       "users": "Users",
@@ -85,10 +85,10 @@ export default {
       "title": "Data keys the public API may serve",
       "help": "The public endpoints, the OAuth2 game-data endpoint and the owned-account endpoint return only the top-level game-data keys listed here; the private API is not limited. Saving clears the game-data cache.",
       "count": "{count}",
-      "empty": "The list is empty: no data key is allowed yet.",
+      "empty": "The list is empty: no data key is allowed yet",
       "addLabel": "Add data keys",
       "addPlaceholder": "userCards, userDecks",
-      "addHint": "Add several at once, separated by commas or spaces.",
+      "addHint": "Add several at once, separated by commas or spaces",
       "add": "Add",
       "remove": "Remove {key}",
       "restore": "Restore {key}",
@@ -126,7 +126,7 @@ export default {
     },
     "runtimeSwitches": {
       "title": "Runtime switches",
-      "description": "Takes effect within about a second, without restarting the backend.",
+      "description": "Takes effect within about a second, without restarting the backend",
       "dirtyHint": "The runtime configuration below has unsaved changes. Save or reload it before using a switch.",
       "oauth2DeviceFlow": {
         "label": "OAuth2 device authorization",
@@ -148,7 +148,7 @@ export default {
       "saveFailedFallback": "Save failed",
       "deviceFlowEnabled": "OAuth2 device authorization turned on",
       "deviceFlowDisabled": "OAuth2 device authorization turned off",
-      "switchNotApplied": "The backend did not apply the switch (it may not support it yet); the value it reports is shown."
+      "switchNotApplied": "The backend did not apply the switch (it may not support it yet); the value it reports is shown"
     },
     "loadError": "Failed to load configuration",
     "unsavedChanges": "Unsaved changes",
@@ -277,7 +277,7 @@ export default {
     },
     "rules": {
       "title": "Risk rules",
-      "description": "View and edit risk rules (super admins only).",
+      "description": "View and edit risk rules (super admins only)",
       "editorLabel": "Rules JSON",
       "editorHint": "Each rule has a key (1–64 characters), a description and a config. Saving only adds or updates the rules listed.",
       "formatButton": "Tidy JSON",
@@ -289,8 +289,8 @@ export default {
         "saved": "Saved"
       },
       "saveButton": "Save rules",
-      "superAdminOnly": "Risk rules are only available to super admins.",
-      "loadError": "Failed to load risk rules.",
+      "superAdminOnly": "Risk rules are only available to super admins",
+      "loadError": "Failed to load risk rules",
       "retry": "Retry",
       "validation": {
         "invalidJson": "Invalid JSON: check brackets, quotes and commas",
@@ -302,8 +302,8 @@ export default {
       "preview": {
         "title": "Rules preview",
         "count": "{count} rules",
-        "invalid": "Fix the JSON to see the parsed rules here.",
-        "empty": "The rule array is empty; there is nothing to save.",
+        "invalid": "Fix the JSON to see the parsed rules here",
+        "empty": "The rule array is empty; there is nothing to save",
         "added": "New",
         "changed": "Changed",
         "updatedAt": "Updated {time}",
@@ -445,7 +445,7 @@ export default {
     },
     "detail": {
       "title": "Alert #{id}",
-      "description": "Values come from the bot client or Haruki Cloud and are shown as received.",
+      "description": "Values come from the bot client or Haruki Cloud and are shown as received",
       "receivedAt": "Received at",
       "botId": "Bot ID",
       "ownerQq": "Owner QQ",
@@ -474,8 +474,8 @@ export default {
       "subjectWithBot": "Alert #{id} · {kind} · bot {botId}",
       "noteLabel": "Note (optional)",
       "notePlaceholder": "How it was handled, or why",
-      "noteHint": "Leave it unchanged to keep the current note.",
-      "noteWillClear": "The note is empty; saving removes the current note."
+      "noteHint": "Leave it unchanged to keep the current note",
+      "noteWillClear": "The note is empty; saving removes the current note"
     },
     "toast": {
       "loadFailedTitle": "Failed to load alerts",
@@ -514,7 +514,7 @@ export default {
     },
     "linksTab": {
       "title": "Friend links",
-      "description": "Shown in ascending order; ties go by ID.",
+      "description": "Shown in ascending order; ties go by ID",
       "tagPanel": {
         "title": "Tags",
         "description": "Links carrying each tag",
@@ -583,7 +583,7 @@ export default {
         "linkUrl": "Link URL",
         "tags": "Tags (comma separated)",
         "sortOrder": "Sort order",
-        "sortOrderHint": "Lower values appear first; ties break by ID."
+        "sortOrderHint": "Lower values appear first; ties break by ID"
       },
       "placeholders": {
         "name": "Site name",
@@ -692,18 +692,18 @@ export default {
         "deviceCode": "Device code (device_code)",
         "refreshToken": "Refresh token (refresh_token)"
       },
-      "redirectUrisOptionalHelp": "Without authorization code no redirect URI is needed; device-only clients can leave this empty.",
+      "redirectUrisOptionalHelp": "Without authorization code no redirect URI is needed; device-only clients can leave this empty",
       "writeScopeHint": "Write permission: lets the client submit or upload data as the user",
       "devicePolicy": {
         "title": "Device code policy",
         "firstParty": "First-party client",
-        "firstPartyHelp": "Shows an “Official” badge on the device authorization page.",
-        "firstPartyPublicHelp": "Only applies to confidential clients; public clients never show the “Official” badge.",
+        "firstPartyHelp": "Shows an “Official” badge on the device authorization page",
+        "firstPartyPublicHelp": "Only applies to confidential clients; public clients never show the “Official” badge",
         "allowWrite": "Allow game-data:write over device code",
-        "allowWriteHelp": "Only for public clients that register game-data:write.",
+        "allowWriteHelp": "Only for public clients that register game-data:write",
         "maxCodesPer10m": "Device codes per 10 minutes",
-        "maxCodesPer10mHelp": "How many device codes this client may request every 10 minutes: {min}–{max}, default {default}.",
-        "emailNeverGranted": "The device code grant never grants email; registering it only affects authorization code."
+        "maxCodesPer10mHelp": "How many device codes this client may request every 10 minutes: {min}–{max}, default {default}",
+        "emailNeverGranted": "The device code grant never grants email; registering it only affects authorization code"
       }
     },
     "list": {
@@ -740,7 +740,7 @@ export default {
       "publicCount": "{count} public",
       "device": "Device code clients",
       "shareOfClients": "{percent} of all clients",
-      "partialNote": "The clients span more than one page: apart from the total, these figures count only the {loaded} clients loaded (of {total}).",
+      "partialNote": "The clients span more than one page: apart from the total, these figures count only the {loaded} clients loaded (of {total})",
       "scopesTitle": "Scopes",
       "scopesHint": "Clients that register each scope",
       "grantTypesTitle": "Grant types",
@@ -832,7 +832,7 @@ export default {
       "audit": {
         "title": "Admin activity",
         "description": "Audit log entries that target this client in the selected range",
-        "loadFailed": "The admin activity summary failed to load.",
+        "loadFailed": "The admin activity summary failed to load",
         "empty": "No admin activity on this client in the selected range",
         "total": "Actions",
         "success": "Succeeded",
@@ -866,8 +866,8 @@ export default {
     },
     "webhooks": {
       "title": "OAuth client webhooks",
-      "description": "Manage data update notification endpoints for client {clientId}.",
-      "placeholderHint": "Callback URLs support {'{server}'}, {'{data_type}'}, and {'{user_id}'} placeholders.",
+      "description": "Manage data update notification endpoints for client {clientId}",
+      "placeholderHint": "Callback URLs support {'{server}'}, {'{data_type}'}, and {'{user_id}'} placeholders",
       "summary": "{total} endpoints, {enabled} enabled",
       "actions": {
         "refresh": "Refresh",
@@ -890,17 +890,17 @@ export default {
       "form": {
         "createTitle": "Create webhook endpoint",
         "editTitle": "Edit webhook endpoint",
-        "description": "Bearer values are not shown again; leave empty to keep the current value.",
+        "description": "Bearer values are not shown again; leave empty to keep the current value",
         "callbackUrl": "Callback URL",
         "callbackUrlPlaceholder": "https://example.com/oauth-webhook/{'{server}'}/{'{data_type}'}/{'{user_id}'}",
         "bearer": "Bearer token",
         "bearerPlaceholder": "Optional",
         "bearerReplacePlaceholder": "Leave empty to keep current bearer",
-        "bearerHelp": "After saving, the frontend only shows whether a bearer is configured.",
+        "bearerHelp": "After saving, the frontend only shows whether a bearer is configured",
         "enabled": "Enable endpoint",
-        "enabledHelp": "Disabled endpoints will not receive callbacks.",
+        "enabledHelp": "Disabled endpoints will not receive callbacks",
         "clearBearer": "Clear configured bearer",
-        "clearBearerHelp": "When enabled, saving removes the current bearer."
+        "clearBearerHelp": "When enabled, saving removes the current bearer"
       },
       "validation": {
         "callbackUrlRequired": "Callback URL is required"
@@ -987,19 +987,19 @@ export default {
     },
     "settings": {
       "title": "Webhook settings",
-      "description": "Manage global webhook delivery and JWT secret configuration.",
+      "description": "Manage global webhook delivery and JWT secret configuration",
       "globalStatus": "Global delivery status",
-      "globalStatusHint": "Both the global switch and endpoint switch must be enabled before callbacks are sent.",
+      "globalStatusHint": "Both the global switch and endpoint switch must be enabled before callbacks are sent",
       "jwtSecretStatus": "JWT secret status",
-      "jwtSecretStatusHint": "Webhook subscription tokens are available only after the secret is configured.",
+      "jwtSecretStatusHint": "Webhook subscription tokens are available only after the secret is configured",
       "secretAlertTitle": "JWT secret is not configured",
-      "secretAlertDescription": "You can still create and edit endpoints, but the backend will not return a usable webhook token until a JWT secret is configured.",
+      "secretAlertDescription": "You can still create and edit endpoints, but the backend will not return a usable webhook token until a JWT secret is configured",
       "enableSwitchLabel": "Enable webhook delivery globally",
       "jwtSecretLabel": "Webhook JWT secret",
       "jwtSecretPlaceholder": "Leave empty to keep the current secret",
-      "jwtSecretHelp": "Only enter a value when you want to replace the current JWT secret.",
+      "jwtSecretHelp": "Only enter a value when you want to replace the current JWT secret",
       "readOnlyNoticeTitle": "Read-only view",
-      "readOnlyNoticeDescription": "You can view webhook settings and endpoints, but modifying them requires super-admin permission.",
+      "readOnlyNoticeDescription": "You can view webhook settings and endpoints, but modifying them requires super-admin permission",
       "noChanges": "No changes to save",
       "disableDialog": {
         "title": "Disable global webhook delivery?",
@@ -1009,7 +1009,7 @@ export default {
     },
     "list": {
       "title": "Webhook endpoints",
-      "description": "View and manage registered webhook callback endpoints.",
+      "description": "View and manage registered webhook callback endpoints",
       "generatedAt": "Generated at {date}",
       "total": "{total} endpoints"
     },
@@ -1036,25 +1036,25 @@ export default {
       "jwtSecret": "JWT secret",
       "withBearer": "{count} with a bearer token",
       "rankTitle": "Subscriptions by endpoint",
-      "rankHint": "The most subscribed endpoints and their share of all subscriptions, counted from the list above.",
+      "rankHint": "The most subscribed endpoints and their share of all subscriptions, counted from the list above",
       "rankEmpty": "No subscriptions yet",
       "rankRest": "{count} subscriptions on the other endpoints"
     },
     "form": {
       "createTitle": "Create webhook endpoint",
       "editTitle": "Edit webhook endpoint",
-      "description": "Configure callback address, credential, bearer token, and endpoint status.",
+      "description": "Configure callback address, credential, bearer token, and endpoint status",
       "idLabel": "Endpoint ID",
-      "idPlaceholder": "Optional. Leave empty to auto-generate",
-      "idHelp": "If left empty, the backend will generate the next numeric ID automatically.",
+      "idPlaceholder": "Optional; leave empty to auto-generate",
+      "idHelp": "If left empty, the backend will generate the next numeric ID automatically",
       "callbackUrlLabel": "Callback URL",
       "callbackUrlPlaceholder": "https://example.com/webhook",
       "credentialLabel": "Credential",
-      "credentialPlaceholder": "Optional. Leave empty to auto-generate",
-      "credentialHelp": "If left empty, the backend will generate a random credential.",
+      "credentialPlaceholder": "Optional; leave empty to auto-generate",
+      "credentialHelp": "If left empty, the backend will generate a random credential",
       "bearerLabel": "Bearer token",
-      "bearerPlaceholder": "Optional. Leave empty for no Authorization header",
-      "bearerHelp": "When set, the backend will send `Authorization: Bearer TOKEN` on callback requests.",
+      "bearerPlaceholder": "Optional; leave empty for no Authorization header",
+      "bearerHelp": "When set, the backend will send `Authorization: Bearer TOKEN` on callback requests",
       "clearBearerLabel": "Clear bearer token",
       "enabledLabel": "Enable this endpoint",
       "groups": {
@@ -1069,7 +1069,7 @@ export default {
     },
     "tokenDialog": {
       "title": "Webhook token",
-      "description": "Save the current webhook token for endpoint {id}.",
+      "description": "Save the current webhook token for endpoint {id}",
       "headerNameLabel": "Header name",
       "tokenLabel": "Webhook token",
       "tokenHelp": "This token is used when calling webhook subscriber APIs. Store it securely.",
@@ -1077,7 +1077,7 @@ export default {
     },
     "subscribers": {
       "title": "Subscribers for {id}",
-      "description": "These subscriber bindings will receive callbacks from this endpoint when both switches are enabled.",
+      "description": "These subscriber bindings will receive callbacks from this endpoint when both switches are enabled",
       "generatedAt": "Generated at {date}",
       "userId": "User ID",
       "server": "Server",
@@ -1121,12 +1121,12 @@ export default {
       "title": "Verified Toolbox sponsors",
       "description": "Manage order verification and manual sponsorship. Anyone who has sponsored can use frames permanently.",
       "add": "Add sponsor user",
-      "addDescription": "Find an existing Toolbox account and confirm their previous sponsorship.",
+      "addDescription": "Find an existing Toolbox account and confirm their previous sponsorship",
       "search": "Search users",
       "searchHint": "Toolbox ID, name, email or Afdian ID",
       "findUser": "Find Toolbox user",
       "loading": "Loading users…",
-      "empty": "No matching verified users.",
+      "empty": "No matching verified users",
       "noUser": "No manageable users found. Check the ID, name or email.",
       "manage": "Manage sponsor access",
       "select": "Select user",
@@ -1141,14 +1141,14 @@ export default {
       "userId": "Toolbox ID: {id}",
       "afdianId": "Afdian ID: {id}",
       "updated": "{actor} · {date}",
-      "target": "Set sponsor access for {name} ({id}).",
+      "target": "Set sponsor access for {name} ({id})",
       "access": "Access setting",
       "grantedHelp": "Confirm past sponsorship and grant permanent frames. No Afdian link is required; this does not add a public sponsor wall entry.",
       "blockedHelp": "Disables sponsor frames even if another order is verified later. Orders, identity links and frame choices are kept.",
-      "automaticHelp": "Clear the manual override and use sponsorship records for the linked Afdian account.",
+      "automaticHelp": "Clear the manual override and use sponsorship records for the linked Afdian account",
       "note": "Administrative note (required)",
       "noteHint": "Record the sponsorship source, evidence or reason for this change. Only admins can see it.",
-      "noteRequired": "Enter a note of up to 1000 characters.",
+      "noteRequired": "Enter a note of up to 1000 characters",
       "save": "Save access",
       "saved": "Sponsor access updated",
       "loadFailed": "Could not load sponsor users. Please retry."
@@ -1159,7 +1159,7 @@ export default {
       "unbound": "Not linked"
     },
     "title": "Sponsor management",
-    "description": "Maintain sponsor profiles and sponsorship time: Afdian time is computed from orders, support received through other channels is recorded here by hand.",
+    "description": "Maintain sponsor profiles and sponsorship time: Afdian time is computed from orders, support received through other channels is recorded here by hand",
     "generatedAt": "Generated at {date}",
     "common": {
       "fallback": "—",
@@ -1269,7 +1269,7 @@ export default {
       "saveProfile": "Save profile",
       "message": "Message",
       "afdianSyncDisabled": "Do not update this profile from Afdian",
-      "afdianSyncHelp": "When enabled, the manually edited name, avatar, tier and message are not overwritten by later Afdian syncs; Afdian orders still count toward the time.",
+      "afdianSyncHelp": "When enabled, the manually edited name, avatar, tier and message are not overwritten by later Afdian syncs; Afdian orders still count toward the time",
       "manualProfileHint": "This only saves display profile data and sync policy. Afdian API keys and webhook configuration should remain backend-only."
     },
     "syncDialog": {
@@ -1278,10 +1278,10 @@ export default {
     },
     "afdianToggleDialog": {
       "disableTitle": "Stop updating from Afdian?",
-      "disableDescription": "Afdian syncs will no longer overwrite the name, avatar, tier and message of {name}; Afdian orders still count towards their time.",
+      "disableDescription": "Afdian syncs will no longer overwrite the name, avatar, tier and message of {name}; Afdian orders still count towards their time",
       "confirmDisable": "Stop updating",
       "enableTitle": "Resume updating from Afdian?",
-      "enableDescription": "The next sync will overwrite the manually edited name, avatar, tier and message of {name} with Afdian's data.",
+      "enableDescription": "The next sync will overwrite the manually edited name, avatar, tier and message of {name} with Afdian's data",
       "confirmEnable": "Resume updating"
     },
     "duration": {
@@ -1301,7 +1301,7 @@ export default {
       },
       "orders": {
         "title": "Afdian orders (read-only)",
-        "empty": "No Afdian orders.",
+        "empty": "No Afdian orders",
         "paidAt": "Time",
         "plan": "Plan",
         "kind": "Time",
@@ -1318,7 +1318,7 @@ export default {
         "add": "Add manual time",
         "addDialogTitle": "Add manual time",
         "editDialogTitle": "Edit manual time",
-        "empty": "No manual time yet.",
+        "empty": "No manual time yet",
         "migrated": "Migrated",
         "startsAt": "Earliest start: {date}",
         "createdBy": "Added by {user} on {date}",
@@ -1326,7 +1326,7 @@ export default {
         "edit": "Edit",
         "delete": "Delete",
         "deleteTitle": "Delete this manual time?",
-        "deleteDescription": "{amount} of manual time will be removed and the effective expiry moves earlier accordingly."
+        "deleteDescription": "{amount} of manual time will be removed and the effective expiry moves earlier accordingly"
       },
       "form": {
         "amount": "Amount",
@@ -1407,7 +1407,7 @@ export default {
       },
       "chart": {
         "title": "Trends",
-        "description": "Uploads, failed uploads and new sign-ups each get their own chart on one time axis; point at any chart to read all three.",
+        "description": "Uploads, failed uploads and new sign-ups each get their own chart on one time axis; point at any chart to read all three",
         "uploads": "Uploads",
         "registrations": "New sign-ups",
         "failures": "Failed uploads",
@@ -1437,7 +1437,7 @@ export default {
       },
       "hourly": {
         "title": "Uploads in the last 24 hours",
-        "description": "Uploads per hour with the failed ones stacked on top; the last column is the hour still in progress.",
+        "description": "Uploads per hour with the failed ones stacked on top; the last column is the hour still in progress",
         "successRate": "Success rate",
         "peakHour": "Busiest hour",
         "hourlyAverage": "Hourly average",
@@ -1651,12 +1651,12 @@ export default {
       },
       "detail": {
         "title": "Upload record details",
-        "description": "Data owner is who the data belongs to; uploaded by is the toolbox user who performed this upload.",
+        "description": "Data owner is who the data belongs to; uploaded by is the toolbox user who performed this upload",
         "gameUserId": "Game UID",
         "authMethod": "Auth method",
         "authorizationSource": "Authorization source",
         "grantId": "Grant ID",
-        "grantIdHint": "Audit snapshot; the grant may no longer exist.",
+        "grantIdHint": "Audit snapshot; the grant may no longer exist",
         "actorKind": "Uploader relation",
         "oauthClientId": "OAuth client",
         "client": "Client / version",
@@ -1670,7 +1670,7 @@ export default {
       },
       "errorDialog": {
         "title": "Upload failure detail",
-        "description": "Review the backend error message returned for this failed upload.",
+        "description": "Review the backend error message returned for this failed upload",
         "close": "Close"
       },
       "summary": {
@@ -1835,9 +1835,9 @@ export default {
     },
     "editDialog": {
       "createTitle": "Add game binding",
-      "createDescription": "Add a new game account binding for this user.",
+      "createDescription": "Add a new game account binding for this user",
       "editTitle": "Edit game binding",
-      "editDescription": "Update privacy settings for this game account binding.",
+      "editDescription": "Update privacy settings for this game account binding",
       "toolboxUserId": "Toolbox user ID",
       "toolboxUserIdPlaceholder": "Enter toolbox user ID",
       "server": "Server",
@@ -1847,28 +1847,28 @@ export default {
       "mysekaiSettingsTitle": "MySekai settings",
       "accountTitle": "Game account",
       "owner": "Owner: user ID {userId}",
-      "identityLockedHint": "The server, game ID and owner cannot be changed here; use “Reassign” to move the binding to another user.",
-      "botsHint": "Sync this data to the matching QQ group bot.",
+      "identityLockedHint": "The server, game ID and owner cannot be changed here; use “Reassign” to move the binding to another user",
+      "botsHint": "Sync this data to the matching QQ group bot",
       "permissionHelp": {
         "suite": {
-          "allowPublicApi": "When on, anyone who knows this UID can read the account data this user uploaded through the Toolbox API."
+          "allowPublicApi": "When on, anyone who knows this UID can read the account data this user uploaded through the Toolbox API"
         },
         "mysekai": {
-          "allowPublicApi": "When on, anyone who knows this UID can read the MySekai data this user uploaded through the Toolbox API.",
-          "allowFixtureApi": "When on, this UID is listed for MySekai furniture sharing and other players can visit."
+          "allowPublicApi": "When on, anyone who knows this UID can read the MySekai data this user uploaded through the Toolbox API",
+          "allowFixtureApi": "When on, this UID is listed for MySekai furniture sharing and other players can visit"
         }
       }
     },
     "reassignDialog": {
       "title": "Reassign game account",
-      "description": "Move {server} game ID {gameId} from {fromUser} to the target user.",
+      "description": "Move {server} game ID {gameId} from {fromUser} to the target user",
       "targetUserIdLabel": "Target user ID",
       "targetUserIdPlaceholder": "Enter target toolbox user ID",
       "confirm": "Confirm reassign"
     },
     "deleteDialog": {
       "title": "Confirm unbind",
-      "description": "This will unbind game account {gameUserId} on {server}.",
+      "description": "This will unbind game account {gameUserId} on {server}",
       "confirm": "Confirm unbind"
     },
     "toast": {
@@ -2010,7 +2010,7 @@ export default {
         "empty": "No users found",
         "loadError": "Failed to load user list",
         "retry": "Retry",
-        "emptyFiltered": "No user matches the current filters.",
+        "emptyFiltered": "No user matches the current filters",
         "selectPage": "Select this page",
         "selectUser": "Select {name}",
         "viewDetail": "View details"
@@ -2037,7 +2037,7 @@ export default {
     },
     "detail": {
       "backToList": "Back to user list",
-      "notFound": "User not found; they may have been deleted or the link is wrong.",
+      "notFound": "User not found; they may have been deleted or the link is wrong",
       "header": {
         "userId": "User ID",
         "banReason": "Ban reason"
@@ -2058,8 +2058,8 @@ export default {
       },
       "account": {
         "title": "Account settings",
-        "roleHelp": "The new role's permissions apply immediately.",
-        "iosHelp": "Used by the user's iOS Shortcut to upload data."
+        "roleHelp": "The new role's permissions apply immediately",
+        "iosHelp": "Used by the user's iOS Shortcut to upload data"
       },
       "tabs": {
         "info": "Basic info",
@@ -2089,7 +2089,7 @@ export default {
         "deleteDialogTitle": "Permanently delete account",
         "deleteDialogDescription": "Permanently delete {name} ({userId}), including their login identity, social and game bindings, data grants, upload code and transfer-code vault. This cannot be undone. Audit and upload history will be retained.",
         "deleteConfirmationLabel": "Enter user ID {userId} to confirm",
-        "deleteConfirmationMismatch": "The user ID does not match.",
+        "deleteConfirmationMismatch": "The user ID does not match",
         "deleteDialogConfirm": "Permanently delete",
         "forceLogoutDialogTitle": "Confirm force logout",
         "forceLogoutDialogDescription": "Force logout for user {name}? All of their active sessions will be invalidated and they will need to sign in again.",
@@ -2104,7 +2104,7 @@ export default {
       "activity": {
         "title": "Activity logs",
         "uploadLogsTitle": "Upload logs",
-        "uploadLogsDescription": "Recent upload attempts for this user, including backend failure details.",
+        "uploadLogsDescription": "Recent upload attempts for this user, including backend failure details",
         "viewAllUploads": "View all in upload logs",
         "columns": {
           "action": "Action",
@@ -2193,15 +2193,15 @@ export default {
       "dialog": {
         "email": {
           "title": "Change email",
-          "description": "Update email address for user {name}.",
+          "description": "Update email address for user {name}",
           "newEmail": "New email address",
           "placeholder": "Enter email address",
-          "invalid": "Enter a valid email address, e.g. name@example.com",
+          "invalid": "Enter a valid email address, e.g. name{'@'}example.com",
           "confirm": "Confirm"
         },
         "gameBinding": {
           "title": "Add game binding",
-          "description": "Add or update game account binding for user {name}.",
+          "description": "Add or update game account binding for user {name}",
           "server": "Server",
           "gameUserId": "Game user ID",
           "gameUserIdPlaceholder": "Enter in-game user ID",
@@ -2211,7 +2211,7 @@ export default {
         "social": {
           "addTitle": "Add social binding",
           "editTitle": "Edit social binding",
-          "description": "Manage primary social binding for user {name}.",
+          "description": "Manage primary social binding for user {name}",
           "platform": "Platform",
           "platformPlaceholder": "Select platform",
           "userId": "User ID",
@@ -2220,7 +2220,7 @@ export default {
         "authSocial": {
           "addTitle": "Add authorized social platform",
           "editTitle": "Edit authorized social platform",
-          "description": "Manage authorized social accounts for user {name}.",
+          "description": "Manage authorized social accounts for user {name}",
           "platform": "Platform",
           "platformPlaceholder": "Select platform",
           "userId": "User ID",
