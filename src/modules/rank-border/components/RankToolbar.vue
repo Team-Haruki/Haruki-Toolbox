@@ -2,7 +2,8 @@
 import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { RouterLink } from "vue-router"
-import { Activity, LogIn, RefreshCcw, Trophy, UserSearch } from "lucide-vue-next"
+import { toast } from "vue-sonner"
+import { Activity, Download, LogIn, RefreshCcw, Trophy, UserSearch } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Combobox } from "@/components/ui/combobox"
@@ -22,9 +23,11 @@ import {
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import GameAccountOption from "@/shared/components/GameAccountOption.vue"
+import { downloadFile } from "@/lib/download-file"
 import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
 import { useUserStore } from "@/shared/stores/user"
 import { useRankBorderContext } from "../composables/rank-border-context"
+import { buildRankBorderStandingsCsv, rankBorderStandingsFileName } from "../lib/export"
 import TrackerFreshness from "./TrackerFreshness.vue"
 
 const { t } = useI18n()
@@ -48,6 +51,7 @@ const {
   selectedAccountKey,
   selectedAccount,
   selectedEventIdNumber,
+  selectedWorldBloomCharacterIdNumber,
   updateRegion,
   updateMode,
   updateInterval,
@@ -63,8 +67,49 @@ const {
   trackerStaleWarning,
   tracker,
   refreshData,
+  top100Rows,
+  segmentRows,
+  hasTop100Data,
+  hasSegmentData,
+  latestTrackerTimestamp,
 } = live
-const { openDetailPage } = ui
+const { openDetailPage, isPlaybackLive, playbackDisplayAt, nowSecond } = ui
+
+const canExport = computed(() => hasTop100Data.value || hasSegmentData.value)
+
+// What is on screen, replay included: the file is named by the time it shows.
+function exportStandings() {
+  const interval = intervalOptions.value.find((option) => option.value === intervalSeconds.value)?.label ?? ""
+  const csv = buildRankBorderStandingsCsv({
+    headers: {
+      rank: t("rankBorder.table.rank"),
+      score: t("rankBorder.table.score"),
+      player: t("rankBorder.export.player"),
+      userId: t("rankBorder.export.userId"),
+      time: t("rankBorder.table.latest"),
+      timestamp: t("rankBorder.export.timestamp"),
+      holderGrowth: t("rankBorder.export.holderGrowth", { interval }),
+      seatGrowth: t("rankBorder.export.seatGrowth", { interval }),
+    },
+    top100Rows: top100Rows.value,
+    segmentRows: segmentRows.value,
+  })
+  if (!csv) {
+    return
+  }
+  const asOf = isPlaybackLive.value ? latestTrackerTimestamp.value ?? nowSecond.value : playbackDisplayAt.value
+  downloadFile(
+    rankBorderStandingsFileName({
+      region: selectedRegion.value,
+      eventId: selectedEventIdNumber.value,
+      mode: mode.value,
+      worldBloomCharacterId: selectedWorldBloomCharacterIdNumber.value || null,
+    }, asOf),
+    csv,
+    "text/csv;charset=utf-8",
+  )
+  toast.success(t("rankBorder.export.done"))
+}
 
 const locateOpen = ref(false)
 const locating = ref(false)
@@ -162,18 +207,31 @@ function waitForEventSelection(timeoutMs = 12_000): Promise<boolean> {
           </span>
           <TrackerFreshness :status-timestamp="tracker.status.value?.timestamp ?? null" :as-of="tracker.asOf.value" />
         </div>
-        <!-- The label is visually hidden on phones, so the button names itself for assistive tech. -->
-        <Button
-          type="button"
-          size="sm"
-          class="order-1 ml-auto shrink-0 sm:order-none sm:ml-0"
-          :disabled="!canRefresh || liveRefreshing"
-          :aria-label="liveRefreshing ? t('rankBorder.actions.refreshing') : t('rankBorder.actions.refresh')"
-          @click="refreshData()"
-        >
-          <RefreshCcw :class="['size-4', liveRefreshing ? 'animate-spin' : '']" />
-          <span class="hidden sm:inline">{{ liveRefreshing ? t("rankBorder.actions.refreshing") : t("rankBorder.actions.refresh") }}</span>
-        </Button>
+        <!-- The labels are visually hidden on phones, so the buttons name themselves for assistive tech. -->
+        <div class="order-1 ml-auto flex shrink-0 items-center gap-2 sm:order-none sm:ml-0">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            :disabled="!canExport"
+            :aria-label="t('rankBorder.actions.export')"
+            data-testid="rank-border-export"
+            @click="exportStandings"
+          >
+            <Download class="size-4" />
+            <span class="hidden sm:inline">{{ t("rankBorder.actions.export") }}</span>
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            :disabled="!canRefresh || liveRefreshing"
+            :aria-label="liveRefreshing ? t('rankBorder.actions.refreshing') : t('rankBorder.actions.refresh')"
+            @click="refreshData()"
+          >
+            <RefreshCcw :class="['size-4', liveRefreshing ? 'animate-spin' : '']" />
+            <span class="hidden sm:inline">{{ liveRefreshing ? t("rankBorder.actions.refreshing") : t("rankBorder.actions.refresh") }}</span>
+          </Button>
+        </div>
       </div>
 
       <p

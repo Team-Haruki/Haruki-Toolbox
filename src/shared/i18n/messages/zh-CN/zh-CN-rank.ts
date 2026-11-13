@@ -63,7 +63,16 @@ export default {
       "copyLink": "复制链接",
       "linkCopied": "详情链接已复制",
       "expandChart": "放大查看",
-      "login": "去登录"
+      "login": "去登录",
+      "export": "导出数据"
+    },
+    "export": {
+      "player": "玩家",
+      "userId": "玩家 ID",
+      "timestamp": "时间戳",
+      "holderGrowth": "玩家增长（{interval}）",
+      "seatGrowth": "位线增长（{interval}）",
+      "done": "数据已导出"
     },
     "sections": {
       "query": "查询条件",
