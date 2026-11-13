@@ -167,6 +167,11 @@ describe("the fallback host", () => {
       `${ROOT}/ondemand/sound/scenario/bgm/01_an_02/01_an_02.mp3`,
       `${ROOT}/startapp/sound/scenario/bgm/01_an_02/01_an_02.mp3`,
     ])
+    // the block sequence of interactive music sits beside the flat track
+    expect(r.bgmSequence?.("bgm90013", eventCtx)).toEqual([
+      `${ROOT}/ondemand/sound/scenario/bgm/bgm90013/bgm90013.sequence/sequence.json`,
+      `${ROOT}/startapp/sound/scenario/bgm/bgm90013/bgm90013.sequence/sequence.json`,
+    ])
     expect(r.se("se_door", eventCtx)).toEqual([`${ROOT}/startapp/sound/scenario/se/se/se_door.mp3`])
     expect(r.se("se_event_only", ctx({ index, kind: "unit" }))).toEqual([])
     expect(r.voice("areatalk02_007", "areatalk_2_007_001", ctx({ index, kind: "area" }), {})).toHaveLength(4)
