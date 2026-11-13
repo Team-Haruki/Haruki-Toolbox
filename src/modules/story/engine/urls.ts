@@ -189,6 +189,13 @@ export function createStoryResolver(options: StoryResolverOptions = {}): AssetRe
     physics: (entry) => modelOf(entry).physics ?? null,
     motion: (entry, kind, name, ctx) => storyClipUrl(episodeOf(ctx).index, modelOf(entry), kind, name),
     bgm: (id) => [jp(`ondemand/sound/scenario/bgm/${id}/${id}.mp3`), jp(`startapp/sound/scenario/bgm/${id}/${id}.mp3`)],
+    // Interactive music (an intro, looping sections, transitions) also has a
+    // block sequence beside its flat track. Most cues have none: a 404 here
+    // is the usual answer, and the cue plays its flat track.
+    bgmSequence: (id) => [
+      jp(`ondemand/sound/scenario/bgm/${id}/${id}.sequence/sequence.json`),
+      jp(`startapp/sound/scenario/bgm/${id}/${id}.sequence/sequence.json`),
+    ],
     // shared SEs by name; a name the shared packs lack is an event-only SE
     se: (id, ctx) => {
       const ep = episodeOf(ctx)
