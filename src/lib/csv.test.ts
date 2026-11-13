@@ -18,6 +18,12 @@ describe("toCsv", () => {
     )
   })
 
+  it("keeps an id longer than a spreadsheet's 15 digits as text", () => {
+    expect(toCsv([["123456789012345678", "123456789012345", "1234567890123456a"]])).toBe(
+      '\uFEFF"123456789012345678\t",123456789012345,1234567890123456a\r\n',
+    )
+  })
+
   it("keeps numbers as numbers, negative ones included, and empties what has no value", () => {
     expect(toCsv([[-42, 0, null, undefined, Number.NaN, Number.POSITIVE_INFINITY]])).toBe("﻿-42,0,,,,\r\n")
   })

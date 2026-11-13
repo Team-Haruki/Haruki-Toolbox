@@ -181,6 +181,7 @@ const {
   traceSource,
   canSwitchTraceSource,
   borderTraceLoading,
+  hasBorderTrace,
   setTraceSource,
   overview,
   comparisons,
@@ -931,7 +932,10 @@ function exportTrace() {
     return
   }
   const latest = trace.reduce((newest, point) => Math.max(newest, point.timestamp), 0)
-  downloadFile(rankBorderTraceFileName(detail, detail.target, seatView.value, latest), csv, "text/csv;charset=utf-8")
+  // Until the seat's trace has loaded the page still shows the player's, and
+  // the file is named for what it holds.
+  const seat = traceSource.value === "border" && hasBorderTrace.value
+  downloadFile(rankBorderTraceFileName(detail, detail.target, seat, latest), csv, "text/csv;charset=utf-8")
   toast.success(t("rankBorder.export.done"))
 }
 

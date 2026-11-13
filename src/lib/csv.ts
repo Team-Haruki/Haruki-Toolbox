@@ -9,6 +9,13 @@ const UTF8_BOM = "﻿"
  */
 const FORMULA_START = /^[=+\-@\t\r]/
 
+/**
+ * A spreadsheet reads a cell of digits as a number and keeps 15 of them, so a
+ * longer id comes back changed. A tab after it keeps the cell text; it shows
+ * nowhere, and a script reading the file trims it.
+ */
+const LONG_DIGITS = /^\d{16,}$/
+
 function formatCell(value: CsvCell): string {
   if (value == null) {
     return ""
@@ -16,8 +23,15 @@ function formatCell(value: CsvCell): string {
   if (typeof value === "number") {
     return Number.isFinite(value) ? String(value) : ""
   }
-  const text = FORMULA_START.test(value) ? `'${value}` : value
+  const text = keepAsText(value)
   return /[",\r\n]|^\s|\s$/.test(text) ? `"${text.replaceAll('"', '""')}"` : text
+}
+
+function keepAsText(value: string): string {
+  if (FORMULA_START.test(value)) {
+    return `'${value}`
+  }
+  return LONG_DIGITS.test(value) ? `${value}\t` : value
 }
 
 /** Rows as the text of a CSV file that Excel, Numbers and Sheets open as UTF-8. */
