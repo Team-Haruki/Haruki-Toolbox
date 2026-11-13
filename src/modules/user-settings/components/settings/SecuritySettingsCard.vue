@@ -13,7 +13,8 @@ type SecurityRow = {
   key: string
   icon: Component
   titleKey: string
-  descriptionKey: string
+  /** Only where the title does not say what is behind the row. */
+  descriptionKey?: string
   onClick: () => void
 }
 
@@ -29,7 +30,6 @@ const rows: SecurityRow[] = [
     key: "password",
     icon: KeyRound,
     titleKey: "userSettings.password.title",
-    descriptionKey: "userSettings.password.kratosManagedDescription",
     onClick: () => openIdentitySection("user.identityPasswordSettings"),
   },
   {
@@ -43,14 +43,12 @@ const rows: SecurityRow[] = [
     key: "social",
     icon: Link2,
     titleKey: "userSettings.social.title",
-    descriptionKey: "userSettings.social.description",
     onClick: () => openIdentitySection("user.identitySocialSettings"),
   },
   {
     key: "sessions",
     icon: Laptop2,
     titleKey: "userSettings.sessions.title",
-    descriptionKey: "userSettings.sessions.description",
     onClick: () => {
       void router.push({ name: "user.identitySessionSettings" })
     },
@@ -65,7 +63,7 @@ const rows: SecurityRow[] = [
       :key="row.key"
       :icon="row.icon"
       :label="t(row.titleKey)"
-      :help="t(row.descriptionKey)"
+      :help="row.descriptionKey ? t(row.descriptionKey) : undefined"
       :data-row="row.key"
       @click="row.onClick"
     />

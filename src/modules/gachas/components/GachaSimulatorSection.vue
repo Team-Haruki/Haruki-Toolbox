@@ -68,18 +68,12 @@ const results = computed(() => simulator.lastBatch.value.map((draw) => {
     unreleased: card ? isUnreleasedContent(card.releaseAt, props.nowMs) : false,
   }
 }))
-
-const guaranteeNote = computed(() => {
-  const rarity = props.model?.ten?.guaranteeRarity
-  return rarity ? t("gachas.detail.guaranteedNote", { rarity: resolveGachaRarityLabel(ctx, rarity) }) : null
-})
 </script>
 
 <template>
   <CatalogDetailSection
     :title="t('gachaCatalog.simulator.title')"
     :icon="LucideDices"
-    :description="t('gachaCatalog.simulator.description')"
     :loading="loading"
     :empty="!simulator.canPull.value"
     :empty-message="t('gachaCatalog.simulator.unavailable')"
@@ -107,7 +101,6 @@ const guaranteeNote = computed(() => {
         <span class="text-sm font-semibold">{{ t("gachaCatalog.simulator.pullTen") }}</span>
         <span class="text-[11px] font-normal opacity-80 tabular-nums">{{ costLabel(model?.ten ?? null) }}</span>
       </Button>
-      <p v-if="guaranteeNote" class="basis-full text-xs text-muted-foreground sm:basis-auto sm:pl-2">{{ guaranteeNote }}</p>
     </div>
 
     <div
@@ -158,7 +151,6 @@ const guaranteeNote = computed(() => {
         </template>
       </CatalogEntityGrid>
     </div>
-    <p v-else class="text-sm text-muted-foreground">{{ t("gachaCatalog.simulator.idle") }}</p>
 
     <p class="text-xs text-muted-foreground/80">{{ t("gachaCatalog.simulator.disclaimer") }}</p>
   </CatalogDetailSection>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
-import { LucideCalendarClock, LucideExpand, LucideInfinity } from "lucide-vue-next"
+import { LucideCalendarClock, LucideExpand } from "lucide-vue-next"
 import type { SekaiRegion } from "@/types"
 import { isCatalogPlaceholderDate, type CatalogStatus } from "@/shared/components/catalog/types"
 import CatalogStatusBadge from "@/shared/components/catalog/CatalogStatusBadge.vue"
@@ -47,7 +47,7 @@ const lightboxItems = computed<ImageLightboxItem[]>(() => [
   { label: t("gachaCatalog.detail.lightbox.logo"), sources: props.logoSources, alt: props.name },
 ])
 
-/** Permanent pools (end in 2099, whatever the status): no end date or countdown, a "permanent" line instead. */
+/** Permanent pools (end in 2099, whatever the status): no end date or countdown, "permanent" as the end instead. */
 const permanent = computed(() => isCatalogPlaceholderDate(props.endAt, Date.now()))
 /** An undecided start (2099 sentinel on unreleased pools): "TBD", and nothing to count down to. */
 const startUndecided = computed(() => isCatalogPlaceholderDate(props.startAt, Date.now()))
@@ -143,10 +143,6 @@ function openLightbox() {
               <CatalogZonedTime v-else :value="endAt" :region="region" :fallback="t('gachas.common.dateFallback')" />
             </dd>
           </dl>
-          <p v-if="permanent" class="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <LucideInfinity class="size-4 shrink-0" aria-hidden="true" />
-            {{ t("gachaCatalog.detail.permanentHint") }}
-          </p>
         </div>
       </div>
     </div>

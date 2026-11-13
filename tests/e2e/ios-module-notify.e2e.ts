@@ -82,7 +82,7 @@ test.describe("iOS module upload notifications", () => {
     await setup(page)
     await openModulePage(page)
     await expect(notifySwitch(page)).toBeVisible({ timeout: 30_000 })
-    await expect(page.getByText("模块参数里随时开关")).toBeVisible()
+    await expect(page.getByText("模块参数里开关")).toBeVisible()
     await chooseSoftware(page, "Quantumult X")
     await expect(page.getByText("Quantumult X 没有模块参数")).toBeVisible()
   })

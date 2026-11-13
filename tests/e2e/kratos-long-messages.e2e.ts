@@ -5,8 +5,8 @@ import { expect, test } from "@playwright/test"
 
 // A Kratos message can carry one long unbreakable token: the spec URL in a
 // WebAuthn error, a request id. Such a message used to push the whole form
-// wider than its card, off the side of a phone. Every auth card must keep
-// its content inside the card at 320 px.
+// wider than its panel, off the side of a phone. Every sign-in family page
+// must keep its content inside its column (`data-kratos-page`) at 320 px.
 const FIXTURE_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures", "kratos")
 const KRATOS_HOST = "127.0.0.1:9"
 const LONG_MESSAGE = "NotAllowedError: The operation either timed out or was not allowed. See: "
@@ -53,14 +53,14 @@ for (const state of CASES) {
     })
     await page.goto(state.path)
 
-    const card = page.locator("[data-slot='card']").first()
+    const card = page.locator("[data-kratos-page]").first()
     await expect(card.getByText(/request_id=0123456789abcdef/).first()).toBeVisible()
 
     const layout = await page.evaluate(() => {
       const viewport = document.documentElement.clientWidth
-      const cardBox = document.querySelector("[data-slot='card']")!.getBoundingClientRect()
+      const cardBox = document.querySelector("[data-kratos-page]")!.getBoundingClientRect()
       let widest = 0
-      for (const element of Array.from(document.querySelectorAll("[data-slot='card'] *"))) {
+      for (const element of Array.from(document.querySelectorAll("[data-kratos-page] *"))) {
         const box = element.getBoundingClientRect()
         if (box.width > 0) widest = Math.max(widest, box.right)
       }

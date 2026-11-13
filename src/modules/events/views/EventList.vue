@@ -234,7 +234,6 @@ const offline = computed(() => list.eventsIndex.warning.value != null)
       <CatalogEmptyState
         v-else-if="pageItems.length === 0"
         :message="t('events.list.empty')"
-        :hint="t('catalog.results.emptyHint')"
       >
         <template v-if="activeFilterCount > 0" #action>
           <Button variant="outline" size="sm" @click="reset()">{{ t("catalog.filters.clearAll") }}</Button>

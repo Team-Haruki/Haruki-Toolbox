@@ -78,7 +78,7 @@ function getPlatformIcon(platform: SocialPlatform) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-1.5">
+  <div>
     <SettingsGroup
       :title="tableData.length > 0 ? `${t('userSettings.imAuthorization.title')} · ${tableData.length}` : t('userSettings.imAuthorization.title')"
       surface="card"
@@ -144,10 +144,8 @@ function getPlatformIcon(platform: SocialPlatform) {
       <div v-else class="flex flex-col items-center justify-center gap-2 px-4 py-8 text-center">
         <Inbox class="size-8 text-muted-foreground/60" />
         <p class="text-sm font-medium">{{ t("userSettings.imAuthorization.emptyTitle") }}</p>
-        <p class="max-w-sm text-xs text-muted-foreground">{{ t("userSettings.imAuthorization.emptyDescription") }}</p>
       </div>
     </SettingsGroup>
-    <p class="px-1 text-xs text-muted-foreground">{{ t("userSettings.imAuthorization.description") }}</p>
   </div>
 
   <Dialog v-model:open="showEditDialog">
@@ -156,11 +154,14 @@ function getPlatformIcon(platform: SocialPlatform) {
         <DialogTitle>
           {{ isCreateMode ? t("userSettings.imAuthorization.dialog.createTitle") : t("userSettings.imAuthorization.dialog.editTitle") }}
         </DialogTitle>
-        <DialogDescription>
-          {{ isCreateMode ? t("userSettings.imAuthorization.dialog.createDescription") : t("userSettings.imAuthorization.dialog.editDescription") }}
-          <!-- Only when the person's own QQ is not yet bound and verified. -->
-          <template v-if="!hasVerifiedOwnBinding">
-            <br>{{ t("userSettings.imAuthorization.dialog.bindFirstHint") }}
+        <!-- Visible only when the person's own QQ is not yet bound and
+             verified; otherwise a screen-reader-only summary. -->
+        <DialogDescription :class="hasVerifiedOwnBinding ? 'sr-only' : undefined">
+          <template v-if="hasVerifiedOwnBinding">
+            {{ isCreateMode ? t("userSettings.imAuthorization.dialog.createDescription") : t("userSettings.imAuthorization.dialog.editDescription") }}
+          </template>
+          <template v-else>
+            {{ t("userSettings.imAuthorization.dialog.bindFirstHint") }}
           </template>
         </DialogDescription>
       </DialogHeader>

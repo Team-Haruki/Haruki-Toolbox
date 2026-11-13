@@ -1,17 +1,24 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
+import { computed } from "vue"
 import { useI18n } from "vue-i18n"
-import { useIntervalFn } from "@vueuse/core"
-import { LucideFilterX, LucideInbox, LucideInfo, LucideRefreshCcw, LucideWifiOff } from "lucide-vue-next"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { LucideFilterX, LucideInbox, LucideUnplug } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import StationActiveFilters from "@/modules/sekai-station/components/StationActiveFilters.vue"
 import StationRoomItem from "@/modules/sekai-station/components/StationRoomItem.vue"
+import StationStatus from "@/modules/sekai-station/components/StationStatus.vue"
 import { useSekaiStationFeedStore } from "@/modules/sekai-station/stores/sekai-station-feed"
 import { useSekaiStationPrefsStore } from "@/modules/sekai-station/stores/sekai-station-prefs"
+import EmptyState from "@/shared/components/EmptyState.vue"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 
+/**
+ * The page's one surface: the stream's status on top, then the filters in
+ * effect, then the rooms (or why there are none), each block under a
+ * hairline. The `actions` slot is the right end of the status line. The
+ * section is focusable so keyboard focus has somewhere to go when the last
+ * room it was on is removed.
+ */
 const { t } = useI18n()
 const feed = useSekaiStationFeedStore()
 const prefs = useSekaiStationPrefsStore()
@@ -20,129 +27,84 @@ const prefs = useSekaiStationPrefsStore()
 const waiting = computed(() => !feed.ready && feed.displayItems.length === 0)
 // Nothing has ever loaded and the connection is not coming up
 const failed = computed(() => waiting.value && feed.connectFailed)
-// Lost the stream after rooms were shown: say so until it is back
+// Lost the stream after rooms were shown: the status line offers the retry
 const lost = computed(() => !waiting.value && feed.connectFailed && feed.connectionState !== "open")
 const empty = computed(() => feed.ready && feed.displayItems.length === 0)
-
-// Ticks faster than the countdown's 1 s steps so the number is never a second
-// stale, and only while a countdown is on screen
-const now = ref(Date.now())
-const ticker = useIntervalFn(() => {
-  now.value = Date.now()
-}, 200, { immediate: false, immediateCallback: true })
-const counting = computed(() => (failed.value || lost.value) && feed.retryAt !== null)
-watch(counting, (on) => {
-  if (on) {
-    ticker.resume()
-  } else {
-    ticker.pause()
-  }
-}, { immediate: true })
-
-// "Retrying in N s" while waiting out the backoff, "Reconnecting…" during an attempt
-const retryText = computed(() => {
-  const at = feed.retryAt
-  if (at === null) {
-    return t("sekaiStation.connection.reconnecting")
-  }
-  return t("sekaiStation.connection.retryIn", { n: Math.max(1, Math.ceil((at - now.value) / 1000)) })
-})
 </script>
 
 <template>
-  <!-- Focusable so keyboard focus has somewhere to go when the last room it was on is removed -->
   <section
     :aria-label="t('sekaiStation.rooms.list')"
     :aria-busy="waiting && !failed ? 'true' : undefined"
     tabindex="-1"
-    class="flex min-w-0 flex-col gap-3 outline-none"
+    class="@container/rooms min-w-0 rounded-xl border bg-card outline-none"
+    data-slot="station-room-list"
   >
-    <Alert v-if="!feed.configured">
-      <LucideInfo aria-hidden="true" />
-      <AlertDescription>{{ t("sekaiStation.notConfigured") }}</AlertDescription>
-    </Alert>
+    <div v-if="!feed.configured" class="px-4">
+      <EmptyState :icon="LucideUnplug" :title="t('sekaiStation.notConfigured')" />
+    </div>
 
     <template v-else>
+      <header class="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 py-1.5 pr-2 pl-4" data-slot="station-toolbar">
+        <StationStatus class="flex-1" :retry="lost" />
+        <slot name="actions" />
+      </header>
+
       <StationActiveFilters />
 
-      <!-- Could not connect and nothing to show yet. Only the failure is announced:
-           the countdown changes every second, so it stays out of the live region. -->
-      <Card v-if="failed">
-        <CardContent class="flex flex-col items-center gap-2 py-10 text-center">
-          <LucideWifiOff class="size-8 text-destructive/70" aria-hidden="true" />
-          <p class="text-sm text-muted-foreground" role="alert">{{ t("sekaiStation.connection.failed") }}</p>
-          <p class="text-xs text-muted-foreground tabular-nums">{{ retryText }}</p>
-          <!-- Manual retry skips the remaining backoff instead of making the user wait it out. -->
-          <Button variant="outline" size="sm" class="mt-1" :disabled="feed.retryAt === null" @click="feed.retryImmediately()">
-            <LucideRefreshCcw class="size-4" aria-hidden="true" />
-            {{ t("sekaiStation.connection.retryNow") }}
-          </Button>
-        </CardContent>
-      </Card>
+      <!-- Could not connect and nothing to show yet; the status line above counts down to the next attempt -->
+      <div v-if="failed" class="border-t border-border/60 px-4">
+        <LoadErrorState
+          :title="t('sekaiStation.connection.failed')"
+          :description="t('sekaiStation.connection.failedHint')"
+          :retry-label="t('sekaiStation.connection.retryNow')"
+          :retrying="feed.retryAt === null"
+          @retry="feed.retryImmediately()"
+        />
+      </div>
 
-      <!-- First connection in progress -->
-      <div v-else-if="waiting" class="flex flex-col gap-2">
+      <!-- First connection in progress: the same boxes as a room row, so nothing jumps when the rooms arrive -->
+      <template v-else-if="waiting">
         <div
           v-for="index in 3"
           :key="index"
-          class="flex items-start gap-3 rounded-lg border bg-card px-3 py-2.5 sm:px-4"
+          class="flex items-start gap-3 border-t border-border/60 px-4 py-2.5"
           aria-hidden="true"
         >
-          <!-- Same box as StationRoomCard, so nothing jumps when the rooms arrive -->
           <Skeleton class="h-7 w-16 shrink-0" />
-          <div class="flex min-w-0 flex-1 flex-col gap-2">
+          <div class="flex min-w-0 flex-1 flex-col gap-2 py-1.5">
             <div class="flex items-center gap-2">
               <Skeleton class="h-4 w-24" />
               <Skeleton class="ml-auto h-3 w-10" />
             </div>
-            <Skeleton class="h-4 w-full" />
             <Skeleton class="h-4 w-2/3" />
           </div>
         </div>
-        <p class="py-1 text-center text-xs text-muted-foreground" role="status">{{ t("sekaiStation.rooms.loading") }}</p>
-      </div>
+        <p class="sr-only" role="status">{{ t("sekaiStation.rooms.loading") }}</p>
+      </template>
 
       <template v-else>
-        <!-- Connection lost after rooms were shown; as above, the countdown is not announced -->
-        <div
-          v-if="lost"
-          class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
-        >
-          <LucideWifiOff class="size-3.5 shrink-0" aria-hidden="true" />
-          <span class="font-medium" role="status">{{ t("sekaiStation.connection.disconnected") }}</span>
-          <span aria-hidden="true">·</span>
-          <span class="tabular-nums">{{ retryText }}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            class="ml-auto h-6 gap-1 px-1.5 text-xs text-destructive hover:text-destructive"
-            :disabled="feed.retryAt === null"
-            @click="feed.retryImmediately()"
+        <div v-if="empty" class="border-t border-border/60 px-4">
+          <EmptyState
+            v-if="prefs.hasActiveFilters"
+            :icon="LucideFilterX"
+            :title="t('sekaiStation.rooms.emptyFiltered')"
           >
-            <LucideRefreshCcw class="size-3.5" aria-hidden="true" />
-            {{ t("sekaiStation.connection.retryNow") }}
-          </Button>
+            <template #action>
+              <Button type="button" variant="outline" size="sm" @click="prefs.clearFilters()">
+                {{ t("sekaiStation.rooms.clearFilters") }}
+              </Button>
+            </template>
+          </EmptyState>
+          <EmptyState v-else :icon="LucideInbox" :title="t('sekaiStation.rooms.empty')" />
         </div>
 
-        <Card v-if="empty">
-          <CardContent class="flex flex-col items-center gap-3 py-12 text-center">
-            <component
-              :is="prefs.hasActiveFilters ? LucideFilterX : LucideInbox"
-              class="size-8 text-muted-foreground/60"
-              aria-hidden="true"
-            />
-            <p class="text-sm text-muted-foreground">
-              {{ prefs.hasActiveFilters ? t("sekaiStation.rooms.emptyFiltered") : t("sekaiStation.rooms.empty") }}
-            </p>
-          </CardContent>
-        </Card>
-
-        <div v-else class="flex flex-col gap-2">
+        <ul v-else role="list" class="m-0 list-none p-0">
           <StationRoomItem v-for="entry in feed.displayItems" :key="entry.key" :entry="entry" />
-        </div>
+        </ul>
 
         <!-- Pinned rooms are listed while the first burst is still on its way -->
-        <p v-if="!feed.ready" class="py-1 text-center text-xs text-muted-foreground" role="status">
+        <p v-if="!feed.ready" class="border-t border-border/60 px-4 py-2 text-center text-xs text-muted-foreground" role="status">
           {{ t("sekaiStation.rooms.loading") }}
         </p>
       </template>

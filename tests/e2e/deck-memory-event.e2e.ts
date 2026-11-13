@@ -25,7 +25,7 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
     await expect(unit).toContainText("Vivid BAD SQUAD")
     await expect(page.locator("#deck-simulation-attr-label")).toHaveCount(0)
     await expect(page.locator("#deck-world-bloom-turn-label")).toHaveCount(0)
-    await expect(page.getByText(/五属性基础加成均为 25%/)).toBeVisible()
+    await expect(page.getByText(/五属性基础加成 25%/)).toBeVisible()
     await unit.click()
     await expect(page.getByRole("option")).toHaveCount(6)
     await expect(page.getByRole("option", { name: "自定义加成角色" })).toHaveCount(0)

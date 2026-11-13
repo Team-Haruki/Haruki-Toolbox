@@ -1,6 +1,7 @@
 <script setup lang="ts">
-// Ported from Sekai Station's RoomCard, RoomActions and RoomMenu (MIT ©
-// middlered) onto the Toolbox primitives.
+// One room as a row of the list: the number to copy, who posted it and when,
+// the actions, then the message. Ported from Sekai Station's RoomCard,
+// RoomActions and RoomMenu (MIT © middlered) onto the Toolbox primitives.
 import { computed, onBeforeUnmount, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import {
@@ -169,16 +170,15 @@ onBeforeUnmount(() => {
 
 <template>
   <article
-    :class="cn(
-      'flex items-start gap-3 rounded-lg border bg-card px-3 py-2.5 text-card-foreground transition-colors sm:px-4',
-      pinned && 'border-primary/50',
-    )"
+    class="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1 border-t border-border/60 px-4 py-2.5 text-card-foreground"
+    :data-pinned="pinned ? '' : undefined"
   >
-    <!-- Click copies the number; holding it hides every room with this number for a while -->
+    <!-- Click copies the number; holding it hides every room with this number for a while.
+         In a list narrower than 30rem the message runs the full width under the number; from there up it sits beside it. -->
     <button
       type="button"
       :class="cn(
-        'relative inline-flex h-7 shrink-0 touch-manipulation select-none items-center rounded-md px-2 font-mono font-bold leading-none tracking-wider tabular-nums outline-none transition-colors [-webkit-touch-callout:none] focus-visible:ring-[3px] focus-visible:ring-ring/50 pointer-coarse:min-h-10 pointer-coarse:px-3',
+        'relative inline-flex h-7 shrink-0 touch-manipulation select-none items-center rounded-md px-2 font-mono font-bold leading-none tracking-wider tabular-nums outline-none transition-colors [-webkit-touch-callout:none] focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-reduce:transition-none pointer-coarse:min-h-10 pointer-coarse:px-3',
         holdShown ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary hover:bg-primary/15',
       )"
       :style="idStyle"
@@ -200,110 +200,121 @@ onBeforeUnmount(() => {
       <span class="relative">{{ room.id }}</span>
       <span
         v-if="copied"
-        class="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xs"
+        class="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-primary-foreground"
         aria-hidden="true"
       >
         <LucideCheck class="size-3" :stroke-width="3" />
       </span>
     </button>
 
-    <div class="min-w-0 flex-1">
-      <!-- Who and when, with the actions on the same line -->
-      <div class="flex min-h-7 min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-        <span class="min-w-0 truncate font-medium text-card-foreground" :style="nameStyle">{{ room.name }}</span>
-        <!-- Dropped on narrow screens to leave room for the name -->
-        <span v-if="room.info.handle" class="hidden min-w-0 shrink-[3] truncate sm:block">{{ room.info.handle }}</span>
-        <time class="ml-auto shrink-0 pl-1 tabular-nums" :datetime="isoTime" :title="absoluteTime">{{ relativeTime }}</time>
-
-        <!-- Negative margins: the buttons keep their hit area without making the row taller -->
-        <div class="-my-0.5 -mr-1.5 flex shrink-0 items-center sm:-mr-2">
-          <!-- Also in the menu; the shortcut is dropped on narrow screens -->
-          <Button
-            v-if="originalUrl"
-            as-child
-            variant="ghost"
-            size="icon"
-            class="hidden size-8 text-muted-foreground sm:inline-flex"
-          >
-            <a
-              :href="originalUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-              :title="t('sekaiStation.rooms.openOriginal')"
-              :aria-label="t('sekaiStation.rooms.openOriginal')"
-            >
-              <LucideExternalLink aria-hidden="true" />
-            </a>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            :class="cn(
-              'size-8 text-muted-foreground',
-              pinned && 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary dark:hover:bg-primary/15',
-            )"
-            :title="pinned ? t('sekaiStation.rooms.unpin') : t('sekaiStation.rooms.pin')"
-            :aria-label="pinned ? t('sekaiStation.rooms.unpin') : t('sekaiStation.rooms.pin')"
-            :aria-pressed="pinned"
-            @click="togglePin"
-          >
-            <LucidePin :class="pinned && 'fill-current'" aria-hidden="true" />
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger as-child>
-              <Button
-                variant="ghost"
-                size="icon"
-                class="size-8 text-muted-foreground"
-                :title="t('sekaiStation.rooms.more')"
-                :aria-label="t('sekaiStation.rooms.more')"
-              >
-                <LucideEllipsis aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" class="min-w-44">
-              <DropdownMenuItem @select="copyId">
-                <LucideHash aria-hidden="true" />
-                {{ t("sekaiStation.rooms.copyId") }}
-              </DropdownMenuItem>
-              <DropdownMenuItem @select="copyText">
-                <LucideCopy aria-hidden="true" />
-                {{ t("sekaiStation.rooms.copyText") }}
-              </DropdownMenuItem>
-              <DropdownMenuItem v-if="originalUrl" as-child>
-                <a :href="originalUrl" target="_blank" rel="noopener noreferrer">
-                  <LucideExternalLink aria-hidden="true" />
-                  {{ t("sekaiStation.rooms.openOriginal") }}
-                </a>
-              </DropdownMenuItem>
-              <DropdownMenuItem @select="togglePin">
-                <component :is="pinned ? LucidePinOff : LucidePin" aria-hidden="true" />
-                {{ pinned ? t("sekaiStation.rooms.unpin") : t("sekaiStation.rooms.pin") }}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" @select="emit('block')">
-                <LucideEyeOff aria-hidden="true" />
-                {{ t("sekaiStation.rooms.block") }}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      <!-- Plain text only; kept on one line so template whitespace does not reach the pre-wrapped text -->
-      <p
-        v-if="room.msg"
-        class="mt-0.5 whitespace-pre-wrap break-words text-card-foreground/90"
-        :style="messageStyle"
-      ><template v-for="(segment, index) in segments" :key="index"><mark v-if="segment.hit" class="rounded-sm bg-primary/15 px-0.5 text-foreground">{{ segment.text }}</mark><template v-else>{{ segment.text }}</template></template></p>
-
-      <div v-if="extra?.data.length" class="mt-1.5 flex select-none flex-wrap gap-1">
+    <!-- Who and when, with the actions on the same line -->
+    <div class="flex min-h-7 min-w-0 items-center gap-1.5 text-xs text-muted-foreground pointer-coarse:min-h-10">
+      <!-- In a narrow list the time goes under the name, which then keeps the width up to the buttons -->
+      <div class="flex min-w-0 flex-1 flex-col @min-[30rem]/rooms:flex-row @min-[30rem]/rooms:items-center @min-[30rem]/rooms:gap-1.5">
         <span
-          v-for="(value, index) in extra.data"
-          :key="index"
-          class="rounded-sm bg-muted/50 px-1.5 py-0.5 text-xs tabular-nums text-muted-foreground"
-        >{{ value }}</span>
+          class="min-w-0 truncate leading-tight font-medium text-card-foreground @min-[30rem]/rooms:leading-normal"
+          :style="nameStyle"
+        >{{ room.name }}</span>
+        <!-- Dropped in a narrow list -->
+        <span v-if="room.info.handle" class="hidden min-w-0 shrink-[3] truncate @min-[30rem]/rooms:block">{{ room.info.handle }}</span>
+        <time
+          class="shrink-0 tabular-nums @min-[30rem]/rooms:ml-auto @min-[30rem]/rooms:pl-1"
+          :datetime="isoTime"
+          :title="absoluteTime"
+        >{{ relativeTime }}</time>
       </div>
+
+      <!-- Negative margins: the buttons keep their hit area without making the row taller -->
+      <div class="-my-0.5 -mr-2 flex shrink-0 items-center">
+        <!-- Also in the menu; the shortcut is dropped in a narrow list -->
+        <Button
+          v-if="originalUrl"
+          as-child
+          variant="ghost"
+          size="icon"
+          class="hidden size-8 text-muted-foreground @min-[30rem]/rooms:inline-flex"
+        >
+          <a
+            :href="originalUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            :title="t('sekaiStation.rooms.openOriginal')"
+            :aria-label="t('sekaiStation.rooms.openOriginal')"
+          >
+            <LucideExternalLink aria-hidden="true" />
+          </a>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          :class="cn(
+            'size-8 text-muted-foreground',
+            pinned && 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary dark:hover:bg-primary/15',
+          )"
+          :title="pinned ? t('sekaiStation.rooms.unpin') : t('sekaiStation.rooms.pin')"
+          :aria-label="pinned ? t('sekaiStation.rooms.unpin') : t('sekaiStation.rooms.pin')"
+          :aria-pressed="pinned"
+          @click="togglePin"
+        >
+          <LucidePin :class="pinned && 'fill-current'" aria-hidden="true" />
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <Button
+              variant="ghost"
+              size="icon"
+              class="size-8 text-muted-foreground"
+              :title="t('sekaiStation.rooms.more')"
+              :aria-label="t('sekaiStation.rooms.more')"
+            >
+              <LucideEllipsis aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" class="min-w-44">
+            <DropdownMenuItem @select="copyId">
+              <LucideHash aria-hidden="true" />
+              {{ t("sekaiStation.rooms.copyId") }}
+            </DropdownMenuItem>
+            <DropdownMenuItem @select="copyText">
+              <LucideCopy aria-hidden="true" />
+              {{ t("sekaiStation.rooms.copyText") }}
+            </DropdownMenuItem>
+            <DropdownMenuItem v-if="originalUrl" as-child>
+              <a :href="originalUrl" target="_blank" rel="noopener noreferrer">
+                <LucideExternalLink aria-hidden="true" />
+                {{ t("sekaiStation.rooms.openOriginal") }}
+              </a>
+            </DropdownMenuItem>
+            <DropdownMenuItem @select="togglePin">
+              <component :is="pinned ? LucidePinOff : LucidePin" aria-hidden="true" />
+              {{ pinned ? t("sekaiStation.rooms.unpin") : t("sekaiStation.rooms.pin") }}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" @select="emit('block')">
+              <LucideEyeOff aria-hidden="true" />
+              {{ t("sekaiStation.rooms.block") }}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+
+    <!-- Plain text only; kept on one line so template whitespace does not reach the pre-wrapped text -->
+    <p
+      v-if="room.msg"
+      class="col-span-2 min-w-0 whitespace-pre-wrap text-card-foreground/90 [overflow-wrap:anywhere] @min-[30rem]/rooms:col-span-1 @min-[30rem]/rooms:col-start-2"
+      :style="messageStyle"
+    ><template v-for="(segment, index) in segments" :key="index"><mark v-if="segment.hit" class="rounded-sm bg-primary/15 px-0.5 text-foreground">{{ segment.text }}</mark><template v-else>{{ segment.text }}</template></template></p>
+
+    <div
+      v-if="extra?.data.length"
+      class="col-span-2 flex select-none flex-wrap gap-1 pt-0.5 @min-[30rem]/rooms:col-span-1 @min-[30rem]/rooms:col-start-2"
+    >
+      <span
+        v-for="(value, index) in extra.data"
+        :key="index"
+        class="rounded-sm bg-muted px-1.5 py-0.5 text-xs tabular-nums text-muted-foreground"
+      >{{ value }}</span>
     </div>
   </article>
 </template>

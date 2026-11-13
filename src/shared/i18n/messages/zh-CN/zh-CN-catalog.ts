@@ -66,7 +66,7 @@ export default {
       },
       "power": {
         "title": "综合力",
-        "hint": "基础综合力，不含区域道具、称号与角色等级加成。",
+        "hint": "不含区域道具、称号与角色等级加成",
         "noData": "暂无综合力数据",
         "level": "等级",
         "trained": "特训",
@@ -99,18 +99,18 @@ export default {
       },
       "relatedEvents": {
         "title": "关联活动",
-        "empty": "没有关联活动。",
+        "empty": "没有关联活动",
         "cardBonus": "卡牌 +{value}%",
         "leaderBonus": "队长 +{value}%",
         "story": "有卡牌剧情"
       },
       "relatedGachas": {
         "title": "关联卡池",
-        "empty": "没有关联卡池。"
+        "empty": "没有关联卡池"
       },
       "sameCharacter": {
         "title": "该角色的其他卡牌",
-        "empty": "没有其他卡牌。",
+        "empty": "没有其他卡牌",
         "count": "共 {count} 张"
       }
     }
@@ -159,30 +159,30 @@ export default {
     },
     "musics": {
       "title": "活动歌曲",
-      "empty": "该活动暂无歌曲。"
+      "empty": "该活动暂无歌曲"
     },
     "chapters": {
-      "empty": "该活动暂无章节数据。",
+      "empty": "该活动暂无章节数据",
       "supplemental": "追加章节"
     },
     "teams": {
       "title": "欢乐嘉年华队伍",
-      "empty": "该活动暂无队伍数据。"
+      "empty": "该活动暂无队伍数据"
     },
     "gachas": {
       "title": "相关卡池",
-      "empty": "没有找到相关卡池。",
+      "empty": "没有找到相关卡池",
       "count": "{count} 个卡池",
       "showMore": "还有 {count} 个",
       "showLess": "收起",
-      "byPickup": "PICK UP 卡片包含本次活动卡片的卡池",
-      "byPeriod": "举办期间与本次活动重叠（前后 3 天）的卡池"
+      "byPickup": "PICK UP 含本活动卡牌的卡池",
+      "byPeriod": "与活动期间重叠（前后 3 天）的卡池"
     },
     "rewards": {
       "title": "排名奖励",
       "rangeCount": "{count} 个名次区间",
-      "empty": "该活动暂无排名奖励数据。",
-      "unavailable": "该区服暂未提供奖励明细，这里只显示名次区间。",
+      "empty": "该活动暂无排名奖励数据",
+      "unavailable": "该区服暂无奖励明细，仅显示名次区间",
       "rank": "第 {rank} 名",
       "rankRange": "第 {from}–{to} 名",
       "border": "榜线",
@@ -249,22 +249,19 @@ export default {
       "period": "开放时间",
       "startAt": "开始",
       "endAt": "结束",
-      "permanentHint": "常驻卡池，没有结束时间。",
       "lightbox": {
         "banner": "横幅",
         "logo": "标志"
       }
     },
     "pickups": {
-      "empty": "该卡池没有 PICK UP 成员",
-      "wishHint": "本卡池可选择最多 {count} 张许愿卡牌"
+      "empty": "该卡池没有 PICK UP 成员"
     },
     "rates": {
-      "description": "单次招募中各稀有度的提供概率，按卡池数据中的抽选类型分列",
       "bar": "稀有度概率分布",
       "perCard": "单卡概率",
       "empty": "暂无提供概率数据",
-      "wishNote": "本卡池支持许愿：可选择最多 {count} 张卡牌，被选中的卡牌拥有独立的许愿概率。",
+      "wishNote": "可许愿最多 {count} 张卡牌，许愿卡牌另有独立概率",
       "lottery": {
         "normal": "普通抽选",
         "categorized_wish": "许愿抽选",
@@ -274,7 +271,6 @@ export default {
     },
     "simulator": {
       "title": "招募模拟器",
-      "description": "按卡池数据中的提供概率在本地随机模拟，仅供娱乐",
       "pullSingle": "单抽",
       "pullTen": "十连",
       "free": "免费",
@@ -284,9 +280,8 @@ export default {
       "new": "NEW",
       "guaranteed": "保底",
       "reset": "重置",
-      "idle": "点击「单抽」或「十连」开始模拟。",
-      "unavailable": "该卡池没有可供模拟的抽选数据。",
-      "disclaimer": "本模拟器为玩家自制的非官方工具，结果由本地随机数生成，不代表游戏内的实际抽取结果。"
+      "unavailable": "该卡池没有可供模拟的抽选数据",
+      "disclaimer": "非官方模拟，结果不代表游戏内的实际抽取"
     },
     "pool": {
       "summary": "{count} 张卡牌",
@@ -308,7 +303,7 @@ export default {
       "convertAt": "{time} 起转换为通用贴纸",
       "exchange": "贴纸交换所",
       "exchangeEmpty": "该区服暂无这个卡池的交换所数据",
-      "rewardsUnavailable": "该区服暂未提供奖励明细，这里只显示奖励箱编号。",
+      "rewardsUnavailable": "该区服暂无奖励明细，仅显示奖励箱编号",
       "reward": "奖励",
       "cost": "所需贴纸",
       "limit": "限购",
@@ -360,8 +355,7 @@ export default {
       "appendOnly": "仅显示有 APPEND 谱面的歌曲",
       "mvType": "MV 类型",
       "scope": "关联方式",
-      "scopeHint": "选择角色后，可进一步只看该角色的箱曲（活动曲）或演唱曲（Vocal）",
-      "aliasUnavailable": "别名搜索暂不可用，当前只按标题匹配。"
+      "aliasUnavailable": "别名搜索暂不可用"
     },
     "detail": {
       "jacket": "封面",
@@ -369,11 +363,11 @@ export default {
         "info": "基本信息"
       },
       "difficulties": {
-        "empty": "暂无谱面信息。"
+        "empty": "暂无谱面信息"
       },
       "player": {
         "seek": "播放进度",
-        "error": "音频加载失败，请稍后重试。"
+        "error": "音频加载失败，请稍后重试"
       },
       "unlock": {
         "title": "解锁条件"
@@ -383,7 +377,7 @@ export default {
         "open": "在 {host} 打开"
       },
       "events": {
-        "empty": "这首歌曲没有关联的活动。"
+        "empty": "这首歌曲没有关联的活动"
       }
     }
   },
@@ -392,14 +386,14 @@ export default {
   // storyPlayer — owned by the story module (src/modules/story)
   // ---------------------------------------------------------------------
   "storyPlayer": {
+    "description": "在线阅读游戏剧情，画面与语音来自日服",
     "beta": {
       "title": "测试中",
-      "body": "本页面功能正在测试中，可能会遇到各种问题，如果遇到问题或者什么地方与游戏内不符，可以在{tickets}处反馈。",
+      "body": "遇到问题或与游戏内不符，可在{tickets}反馈",
       "tickets": "工单",
       "ticketsLogin": "登录后提交工单"
     },
     "title": "剧情播放",
-    "description": "按游戏的演出播放主线、活动、卡面、特别剧情与区域对话。画面与语音来自日服，文本可选各服官方翻译，日服独有的剧情另有 AI 中文翻译。",
     "textLang": "文本语言",
     "voice": "播放语音",
     "volume": "音量",
@@ -415,20 +409,20 @@ export default {
       "ko": "한국어",
       "zhHansAi": "简体中文（AI 翻译）"
     },
-    "aiPending": "这一话的 AI 翻译还在生成中，请稍后再来。",
-    "aiNotice": "当前文本为 AI 翻译，可能与官方译文有出入。",
-    "aiFailed": "AI 翻译暂时不可用，已显示日文原文。",
+    "aiPending": "这一话的 AI 翻译还在生成，稍后再来",
+    "aiNotice": "AI 翻译，可能与官方译文有出入",
+    "aiFailed": "AI 翻译暂不可用，已显示日文原文",
     "resume": {
       "lastWatched": "上次看到：{title} · {episode}",
       "continue": "继续播放",
       "dismiss": "忽略"
     },
     "errors": {
-      "notFound": "找不到这一话剧情。",
-      "unreleased": "这一话还没有上线。可以在设置里打开「展示未上线内容」后再看。",
-      "missing": "日服素材里还没有这一话的剧本。",
-      "failed": "剧情加载失败。",
-      "catalog": "剧情目录加载失败，请刷新重试。",
+      "notFound": "找不到这一话剧情",
+      "unreleased": "这一话尚未上线，在设置里打开「展示未上线内容」即可观看",
+      "missing": "日服素材里还没有这一话的剧本",
+      "failed": "剧情加载失败",
+      "catalog": "剧情目录加载失败，刷新页面重试",
       "engine": "播放器加载失败：{detail}"
     },
     "stage": {
@@ -448,7 +442,7 @@ export default {
       "exitFullscreen": "退出全屏",
       "showUi": "显示",
       "keyboard": "剧情舞台：按空格或回车继续",
-      "rotateHint": "点击「全屏」横屏观看，文字更清晰；轻点这里也可以继续。"
+      "rotateHint": "点「全屏」横屏观看，轻点此处继续"
     },
     "browser": {
       "tabs": {

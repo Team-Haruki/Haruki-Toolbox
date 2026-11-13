@@ -509,9 +509,7 @@ function formatMoment(timestamp: number) {
   <section class="@container overflow-hidden rounded-xl border bg-card" data-testid="rank-detail-dashboard">
     <header class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 border-b border-border/60 px-4 py-3">
       <h2 class="text-sm font-semibold">{{ label("title") }}</h2>
-      <p class="text-xs text-muted-foreground">
-        {{ window ? label("captionWindow", { window: window.label }) : label("caption", { interval: scopeLabel }) }}
-      </p>
+      <p v-if="window" class="text-xs text-muted-foreground">{{ label("captionWindow", { window: window.label }) }}</p>
     </header>
 
     <!-- The 1px gaps over a border-coloured backdrop draw the hairlines between cells at every column count. -->

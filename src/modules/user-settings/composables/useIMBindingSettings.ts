@@ -251,9 +251,7 @@ export function useIMBindingSettings() {
     }
     userStore.setUser({ socialPlatformInfo: updated })
 
-    toast.success(t("userSettings.imBinding.toast.verifySuccessTitle"), {
-      description: t("userSettings.imBinding.toast.verifySuccessDefaultDescription"),
-    })
+    toast.success(t("userSettings.imBinding.toast.verifySuccessTitle"))
     showCodeDialog.value = false
     resetTurnstileState()
   }
@@ -288,9 +286,7 @@ export function useIMBindingSettings() {
     const updated = extractUpdatedSocial(response)
     if (updated) {
       userStore.setUser({ socialPlatformInfo: updated })
-      toast.success(t("userSettings.imBinding.toast.verifySuccessTitle"), {
-        description: t("userSettings.imBinding.toast.verifySuccessDefaultDescription"),
-      })
+      toast.success(t("userSettings.imBinding.toast.verifySuccessTitle"))
       showCodeDialog.value = false
       return
     }
@@ -331,9 +327,7 @@ export function useIMBindingSettings() {
     if (!response) return
 
     userStore.setUser({ socialPlatformInfo: null })
-    toast.success(t("userSettings.imBinding.toast.unboundSuccessTitle"), {
-      description: t("userSettings.imBinding.toast.unboundSuccessDescription"),
-    })
+    toast.success(t("userSettings.imBinding.toast.unboundSuccessTitle"))
   }
 
   return {

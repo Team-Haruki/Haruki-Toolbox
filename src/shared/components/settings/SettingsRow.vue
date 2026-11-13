@@ -13,12 +13,12 @@
  * after the label, e.g. a status badge), `help` (replaces the help text),
  * `below` (full-width content under the line, e.g. a progress bar).
  */
-import type { Component } from "vue"
+import { useSlots, type Component } from "vue"
 import { Label } from "@/components/ui/label"
 
 export type SettingsRowTone = "default" | "primary" | "success" | "warning" | "info" | "danger"
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   icon?: Component
   label: string
   help?: string
@@ -41,6 +41,12 @@ withDefaults(defineProps<{
   spin: false,
 })
 
+// Read on every render: a conditional `#note` slot comes and goes.
+const slots = useSlots()
+function hasSecondLine() {
+  return Boolean(props.help || slots.help || slots.note)
+}
+
 const TONE_CLASS: Record<SettingsRowTone, string> = {
   default: "bg-muted text-muted-foreground",
   primary: "bg-primary/10 text-primary",
@@ -61,9 +67,10 @@ const TONE_CLASS: Record<SettingsRowTone, string> = {
           : 'flex-wrap items-center justify-between',
       ]"
     >
-      <div :class="['flex min-w-0 flex-1 items-start gap-3', stack ? '' : 'basis-44']">
+      <!-- A label alone centres on its icon; a second line hangs from the top. -->
+      <div :class="['flex min-w-0 flex-1 gap-3', hasSecondLine() ? 'items-start' : 'items-center', stack ? '' : 'basis-44']">
         <span
-          :class="['mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-semibold', TONE_CLASS[tone]]"
+          :class="['flex size-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-semibold', hasSecondLine() ? 'mt-0.5' : '', TONE_CLASS[tone]]"
           aria-hidden="true"
         >
           <slot name="icon">

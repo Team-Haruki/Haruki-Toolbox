@@ -401,7 +401,7 @@ test("ticket detail tells a missing ticket from a failed load", async ({ page })
   await mockAdminTickets(page)
   await page.goto("/admin/tickets/TK-NOPE")
   const detail = page.getByTestId("admin-ticket-detail")
-  await expect(detail.getByText("工单不存在，可能已被删除或链接有误。")).toBeVisible()
+  await expect(detail.getByText("工单不存在，可能已被删除或链接有误")).toBeVisible()
   await detail.getByRole("button", { name: "返回工单列表" }).last().click()
   await expect(page).toHaveURL(/\/admin\/tickets$/)
 

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { resolveSekaiRegionLabel } from "@/lib/sekai-region"
 import PageHeader from "@/shared/components/PageHeader.vue"
 import SekaiAssetImage from "@/shared/components/SekaiAssetImage.vue"
@@ -75,7 +75,7 @@ function accountLabel(entry: { server: string; gameUserId: string; verified: boo
            Desktop: account + grid on the left, the preview pinned on the right. -->
       <div class="grid items-start gap-6 lg:grid-cols-[1fr_1.15fr]">
         <Card class="lg:col-start-1 lg:row-start-1">
-          <CardHeader><CardTitle class="text-base">{{ t("userSettings.frames.accountTitle") }}</CardTitle><CardDescription>{{ t("userSettings.frames.accountDescription") }}</CardDescription></CardHeader>
+          <CardHeader><CardTitle class="text-base">{{ t("userSettings.frames.accountTitle") }}</CardTitle></CardHeader>
           <CardContent class="space-y-3">
             <template v-if="accounts.length">
               <Label for="frame-account">{{ t("userSettings.frames.account") }}</Label>
@@ -89,7 +89,7 @@ function accountLabel(entry: { server: string; gameUserId: string; verified: boo
           </CardContent>
         </Card>
         <Card class="lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:sticky lg:top-6 lg:self-start">
-          <CardHeader class="space-y-3"><div class="flex flex-wrap items-center gap-2"><CardTitle class="text-base">{{ t("userSettings.frames.previewTitle") }}</CardTitle><Badge variant="outline">{{ t("userSettings.frames.example") }}</Badge></div><CardDescription>{{ t("userSettings.frames.previewDescription") }}</CardDescription></CardHeader>
+          <CardHeader><div class="flex flex-wrap items-center gap-2"><CardTitle class="text-base">{{ t("userSettings.frames.previewTitle") }}</CardTitle><Badge variant="outline">{{ t("userSettings.frames.example") }}</Badge></div></CardHeader>
           <CardContent class="space-y-4">
             <div class="flex gap-2" role="group" :aria-label="t('userSettings.frames.previewTitle')"><Button size="sm" :variant="preview === 'panel' ? 'default' : 'outline'" :aria-pressed="preview === 'panel'" @click="preview = 'panel'">{{ t("userSettings.frames.panel") }}</Button><Button size="sm" :variant="preview === 'profile' ? 'default' : 'outline'" :aria-pressed="preview === 'profile'" @click="preview = 'profile'">{{ t("userSettings.frames.profile") }}</Button></div>
             <button type="button" class="relative block w-full overflow-hidden rounded-xl border bg-muted focus-visible:outline-2 focus-visible:outline-primary" :class="preview === 'panel' ? 'aspect-[3/1]' : 'aspect-[4/5]'" :aria-label="t('userSettings.frames.enlarge')" @click="lightboxOpen = true"><SekaiAssetImage :sources="[previewURL]" :alt="t('userSettings.frames.previewAlt', { name: selectedName })" fit="contain" eager /></button>

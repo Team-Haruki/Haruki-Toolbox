@@ -195,9 +195,7 @@ export function useIMAuthorizationSettings() {
       const updatedData = unwrapUpdatedData(response, t("userSettings.imAuthorization.title"))
       userStore.setUser({ authorizeSocialPlatformInfo: updatedData.authorizeSocialPlatformInfo })
 
-      toast.success(t("userSettings.imAuthorization.toast.saveSuccessTitle"), {
-        description: t("userSettings.imAuthorization.toast.saveSuccessDescription"),
-      })
+      toast.success(t("userSettings.imAuthorization.toast.saveSuccessTitle"))
       showEditDialog.value = false
     } catch (error: unknown) {
       toast.error(t("userSettings.imAuthorization.toast.saveFailedTitle"), {
@@ -236,9 +234,7 @@ export function useIMAuthorizationSettings() {
       const updatedData = unwrapUpdatedData(response, t("userSettings.imAuthorization.title"))
       userStore.setUser({ authorizeSocialPlatformInfo: updatedData.authorizeSocialPlatformInfo })
 
-      toast.success(t("userSettings.imAuthorization.toast.deleteSuccessTitle"), {
-        description: t("userSettings.imAuthorization.toast.deleteSuccessDescription"),
-      })
+      toast.success(t("userSettings.imAuthorization.toast.deleteSuccessTitle"))
       deleteTarget.value = null
     } finally {
       isDeleting.value = false

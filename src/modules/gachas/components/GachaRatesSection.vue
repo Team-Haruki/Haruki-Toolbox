@@ -47,7 +47,6 @@ function lotteryLabel(lotteryType: string): string {
   <CatalogDetailSection
     :title="t('gachas.detail.rates')"
     :icon="LucidePercent"
-    :description="t('gachaCatalog.rates.description')"
     :loading="loading"
     :empty="empty"
     :empty-message="t('gachaCatalog.rates.empty')"

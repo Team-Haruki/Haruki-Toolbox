@@ -774,11 +774,8 @@ function formatInteger(value: number) {
 
       <!-- Brushes: what an hour of play is worth -->
       <section class="grid min-w-0 gap-2" data-testid="planner-brushes">
-        <div class="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 px-1">
-          <div class="min-w-0">
-            <h2 class="text-sm font-semibold">{{ t("eventPlanner.brushes.title") }}</h2>
-            <p class="text-xs text-muted-foreground">{{ t("eventPlanner.brushes.description") }}</p>
-          </div>
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-1">
+          <h2 class="min-w-0 text-sm font-semibold">{{ t("eventPlanner.brushes.title") }}</h2>
           <Button size="sm" :disabled="!selectedEventId || !selectedAccount" @click="openBrushDialog()">
             <LucidePlus class="size-4" /> {{ t("eventPlanner.brushes.add") }}
           </Button>
@@ -814,10 +811,7 @@ function formatInteger(value: number) {
               @click="activeTool = ERASER_TOOL_ID"
             >
               <LucideEraser class="size-4 shrink-0" />
-              <span class="min-w-0">
-                <span class="block truncate">{{ t("eventPlanner.brushes.eraser") }}</span>
-                <span class="block truncate text-[11px] font-normal text-muted-foreground">{{ t("eventPlanner.brushes.eraserHint") }}</span>
-              </span>
+              <span class="min-w-0 truncate">{{ t("eventPlanner.brushes.eraser") }}</span>
             </button>
           </div>
 

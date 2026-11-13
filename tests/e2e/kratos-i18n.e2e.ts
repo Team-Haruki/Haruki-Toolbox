@@ -13,6 +13,11 @@ import { expect, test, type Page } from "@playwright/test"
 
 const FIXTURE_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures", "kratos")
 const KRATOS_HOST = "127.0.0.1:9"
+// The column every Kratos-driven page renders into (the sign-in family's
+// shell and the identity-settings page). Builds before the redesign drew a
+// card instead, which audit mode still reads.
+const KRATOS_PAGE = "[data-kratos-page]"
+const KRATOS_PAGE_OR_LEGACY_CARD = `${KRATOS_PAGE}, [data-slot='card']`
 
 function fixture(name: string): string {
   return readFileSync(join(FIXTURE_DIR, `${name}.json`), "utf8")
@@ -158,7 +163,7 @@ async function openState(page: Page, state: KratosState) {
   await page.goto(state.path)
   if (process.env.KRATOS_I18N_AUDIT_OUT) {
     // Audit mode also runs against older builds, whose wording differs.
-    await expect(page.locator("[data-slot='card']").first()).toBeVisible()
+    await expect(page.locator(KRATOS_PAGE_OR_LEGACY_CARD).first()).toBeVisible()
     await expect(page.getByText(/正在加载/)).toHaveCount(0)
     await page.waitForTimeout(800)
     return
@@ -166,12 +171,12 @@ async function openState(page: Page, state: KratosState) {
   await expect(page.getByText(state.expectText).first()).toBeVisible()
 }
 
-// Visible text and text-bearing attributes of the auth cards and toasts. A
+// Visible text and text-bearing attributes of the Kratos pages and toasts. A
 // closed <details> (the error page's technical details) is not rendered, so
 // innerText leaves it out, as the user sees it.
 async function collectVisibleText(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
-    const roots = Array.from(document.querySelectorAll<HTMLElement>("[data-slot='card'], [data-sonner-toast]"))
+  return page.evaluate((pageSelector) => {
+    const roots = Array.from(document.querySelectorAll<HTMLElement>(`${pageSelector}, [data-sonner-toast]`))
     const lines: string[] = []
     for (const root of roots) {
       for (const line of root.innerText.split("\n")) {
@@ -186,7 +191,7 @@ async function collectVisibleText(page: Page): Promise<string[]> {
       }
     }
     return lines
-  })
+  }, process.env.KRATOS_I18N_AUDIT_OUT ? KRATOS_PAGE_OR_LEGACY_CARD : KRATOS_PAGE)
 }
 
 // Brands, product names and user data that are legitimately Latin text.
@@ -216,6 +221,8 @@ test.describe("Kratos flows render in zh-CN", () => {
       // Let toasts and late labels settle.
       await page.waitForTimeout(150)
       const lines = await collectVisibleText(page)
+      // An empty read would pass the check without having looked at anything.
+      expect(lines.length, `no text read from ${state.name}`).toBeGreaterThan(0)
       const latin = findLatinText(lines)
       if (auditOut) {
         mkdirSync(auditOut, { recursive: true })

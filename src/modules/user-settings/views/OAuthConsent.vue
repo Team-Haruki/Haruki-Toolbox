@@ -3,32 +3,25 @@ import { computed, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
-import { Loader2, ShieldAlert, ShieldCheck, ShieldX, UserRound } from "lucide-vue-next"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { cn } from "@/lib/utils"
+import { CircleAlert, Loader2 } from "lucide-vue-next"
 import { useUserStore } from "@/shared/stores/user"
 import { logoutInPlace } from "@/modules/auth/api/logout"
 import {
   acceptOAuthConsentChallenge,
   getOAuthConsentChallenge,
-  getScopeDescription,
-  getScopeLabel,
   groupScopes,
-  isKnownScope,
   rejectOAuthConsentChallenge,
   resolveOAuthRedirectUrl,
   submitOAuthConsent,
   type OAuthConsentChallenge,
 } from "@/modules/user-settings/api/oauth2"
+import OAuthAccountRow from "@/modules/user-settings/components/oauth/OAuthAccountRow.vue"
+import OAuthAppRow from "@/modules/user-settings/components/oauth/OAuthAppRow.vue"
+import OAuthFlowShell from "@/modules/user-settings/components/oauth/OAuthFlowShell.vue"
+import OAuthFlowState from "@/modules/user-settings/components/oauth/OAuthFlowState.vue"
+import OAuthScopeList from "@/modules/user-settings/components/oauth/OAuthScopeList.vue"
 import { buildSwitchAccountAuthorizeUrl, isConsentSubjectMismatch } from "@/modules/user-settings/lib/oauth-consent"
+import { buildConsentScopeRows } from "@/modules/user-settings/lib/oauth-scope-rows"
 import { extractErrorMessage, readApiErrorStatus } from "@/lib/error-utils"
 
 const route = useRoute()
@@ -68,6 +61,8 @@ const scopes = computed(() => {
 
 const scopeGroups = computed(() => groupScopes(scopes.value))
 const hasWriteScope = computed(() => scopeGroups.value.some((group) => group.group === "write"))
+/** The same scopes as rows of the permission list, in the read → write → other order. */
+const scopeRows = computed(() => buildConsentScopeRows(scopes.value))
 
 const clientName = computed(() => {
   if (isChallengeMode.value) {
@@ -79,6 +74,9 @@ const clientName = computed(() => {
 })
 
 const accountName = computed(() => userStore.name || userStore.userId || "")
+// Which button carries the spinner while a request is in flight; an automatic
+// accept (a remembered consent) counts as "allow". Presentation only.
+const pendingChoice = ref<"allow" | "deny">("allow")
 
 // A consent challenge is bound to the subject that passed the login challenge;
 // accepting it never re-binds it. After a sign-out and sign-in as someone else
@@ -303,190 +301,109 @@ watch(
 </script>
 
 <template>
-  <div class="w-full flex-1 flex items-center justify-center px-0 py-4">
-    <Card class="w-full max-w-md" v-if="isLoadingChallenge">
-      <CardHeader class="text-center">
-        <div class="mx-auto mb-2 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-          <Loader2 class="h-6 w-6 text-primary animate-spin" />
-        </div>
-        <CardTitle class="text-xl">{{ t("oauth.consent.authorizing") }}</CardTitle>
-        <CardDescription>
-          {{ t("oauth.consent.continuingDescriptionPrefix") }}
-          <strong class="text-foreground">{{ clientName }}</strong>
-          {{ t("oauth.consent.continuingDescriptionSuffix") }}
-        </CardDescription>
-      </CardHeader>
-    </Card>
-
-    <Card class="w-full max-w-md" v-else-if="subjectMismatch" data-testid="consent-subject-mismatch">
-      <CardHeader class="text-center">
-        <div class="mx-auto mb-2 h-12 w-12 rounded-full bg-amber-500/10 flex items-center justify-center">
-          <ShieldAlert class="h-6 w-6 text-amber-600 dark:text-amber-300" />
-        </div>
-        <CardTitle class="text-xl">{{ t("oauth.consent.subjectMismatchTitle") }}</CardTitle>
-        <CardDescription>{{ t("oauth.consent.subjectMismatchDescription") }}</CardDescription>
-      </CardHeader>
-      <CardContent v-if="accountName || actionError" class="space-y-3">
-        <div
-          v-if="accountName"
-          class="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm"
-          data-testid="consent-account"
-        >
-          <UserRound class="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <i18n-t keypath="oauth.consent.accountLine" scope="global" tag="span" class="min-w-0 truncate">
-            <template #name><strong class="text-foreground">{{ accountName }}</strong></template>
-          </i18n-t>
-        </div>
-        <div
-          v-if="actionError"
-          role="alert"
-          class="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
-        >
+  <OAuthFlowShell
+    :title="t('oauth.consent.title')"
+    :loading="isLoadingChallenge"
+    :loading-label="t('oauth.common.loading')"
+  >
+    <!-- The request was started by another account: nothing can be approved here. -->
+    <template v-if="subjectMismatch">
+      <OAuthFlowState
+        tone="attention"
+        :icon="CircleAlert"
+        :title="t('oauth.consent.subjectMismatchTitle')"
+        :description="t('oauth.consent.subjectMismatchDescription')"
+        data-testid="consent-subject-mismatch"
+      />
+      <dl v-if="accountName">
+        <OAuthAccountRow :name="accountName" data-testid="consent-account" />
+      </dl>
+      <div class="grid min-w-0 gap-4 p-4">
+        <p v-if="actionError" role="alert" class="text-sm whitespace-pre-line text-destructive [overflow-wrap:anywhere]">
           {{ actionError }}
-        </div>
-      </CardContent>
-      <CardFooter class="flex gap-3">
-        <Button variant="outline" class="flex-1" :disabled="isSwitchingAccount" @click="router.push({ name: 'home' })">
-          {{ t("oauth.consent.backHome") }}
-        </Button>
-        <Button class="flex-1" :disabled="isSwitchingAccount" @click="switchAccount">
-          <Loader2 v-if="isSwitchingAccount" class="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
-          <UserRound v-else class="h-4 w-4 mr-2" aria-hidden="true" />
-          {{ t("oauth.consent.switchAccount") }}
-        </Button>
-      </CardFooter>
-    </Card>
-
-    <Card class="w-full max-w-md" v-else-if="isValid">
-      <CardHeader class="text-center">
-        <div class="mx-auto mb-2 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-          <ShieldCheck class="h-6 w-6 text-primary" />
-        </div>
-        <CardTitle class="text-xl">{{ t("oauth.consent.title") }}</CardTitle>
-        <CardDescription>
-          {{ t("oauth.consent.descriptionPrefix") }}
-          <strong class="text-foreground">{{ clientName }}</strong>
-          {{ t("oauth.consent.descriptionSuffix") }}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div class="space-y-4">
-          <div
-            v-if="accountName"
-            class="flex items-center justify-between gap-3 rounded-lg bg-muted/50 px-3 py-2 text-sm"
-            data-testid="consent-account"
+        </p>
+        <div class="flex flex-col gap-2 @min-[22rem]:flex-row-reverse">
+          <Button size="lg" class="w-full @min-[22rem]:flex-1" :disabled="isSwitchingAccount" @click="switchAccount">
+            <Loader2 v-if="isSwitchingAccount" class="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+            {{ t("oauth.common.switchAccount") }}
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            class="w-full @min-[22rem]:w-auto @min-[22rem]:min-w-28"
+            :disabled="isSwitchingAccount"
+            @click="router.push({ name: 'home' })"
           >
-            <span class="flex min-w-0 items-center gap-2">
-              <UserRound class="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-              <i18n-t keypath="oauth.consent.accountLine" scope="global" tag="span" class="min-w-0 truncate">
-                <template #name><strong class="text-foreground">{{ accountName }}</strong></template>
-              </i18n-t>
-            </span>
-            <Button
-              variant="link"
-              size="sm"
-              class="h-auto min-h-9 shrink-0 px-2 py-1 sm:min-h-0 sm:p-0"
-              :disabled="isSubmitting || isSwitchingAccount"
-              @click="switchAccount"
-            >
-              <Loader2 v-if="isSwitchingAccount" class="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-              {{ t("oauth.consent.switchAccount") }}
-            </Button>
-          </div>
-
-          <div>
-            <p class="text-sm font-medium text-muted-foreground mb-2">{{ t("oauth.consent.scopeIntro") }}</p>
-            <div v-if="scopeGroups.length > 0" class="space-y-3">
-              <section v-for="bucket in scopeGroups" :key="bucket.group" :data-scope-group="bucket.group">
-                <p
-                  :class="cn(
-                    'mb-1 text-xs font-medium uppercase tracking-wide',
-                    bucket.group === 'write' ? 'text-amber-700 dark:text-amber-300' : 'text-muted-foreground',
-                  )"
-                >
-                  {{ t(`oauth.consent.groups.${bucket.group}`) }}
-                </p>
-                <ul class="space-y-1.5">
-                  <li
-                    v-for="scope in bucket.scopes"
-                    :key="scope"
-                    :class="cn(
-                      'flex items-start gap-2 rounded-md border px-3 py-2 text-sm',
-                      bucket.group === 'write' && 'border-amber-500/40 bg-amber-500/5 text-amber-900 dark:text-amber-100',
-                      !isKnownScope(scope) && 'border-dashed text-muted-foreground',
-                    )"
-                  >
-                    <span class="min-w-0 flex-1">
-                      <span class="block font-medium">{{ getScopeLabel(scope) }}</span>
-                      <span
-                        v-if="getScopeDescription(scope)"
-                        :class="cn('block text-xs', bucket.group === 'write' ? 'text-amber-800/80 dark:text-amber-200/80' : 'text-muted-foreground')"
-                      >
-                        {{ getScopeDescription(scope) }}
-                      </span>
-                    </span>
-                  </li>
-                </ul>
-              </section>
-            </div>
-            <p v-else class="text-sm text-muted-foreground">
-              {{ t("oauth.consent.noScopesRequested") }}
-            </p>
-          </div>
-
-          <Alert v-if="hasWriteScope" class="border-amber-500/40 bg-amber-500/5 text-amber-800 dark:text-amber-200">
-            <ShieldAlert />
-            <AlertDescription class="text-current">{{ t("oauth.consent.writeWarning") }}</AlertDescription>
-          </Alert>
-
-          <div class="space-y-1 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
-            <p>{{ t("oauth.consent.returnHint", { app: clientName }) }}</p>
-            <p>{{ t("oauth.consent.revokeHint") }}</p>
-            <p v-if="isChallengeMode && accountName">{{ t("oauth.consent.switchAccountHint") }}</p>
-          </div>
-          <div
-            v-if="actionError"
-            role="alert"
-            class="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
-          >
-            {{ actionError }}
-          </div>
+            {{ t("oauth.common.backHome") }}
+          </Button>
         </div>
-      </CardContent>
-      <CardFooter class="flex gap-3">
-        <Button
-          variant="outline"
-          class="flex-1"
-          :disabled="isSubmitting || isSwitchingAccount"
-          @click="submitConsent(false)"
-        >
-          <ShieldX class="h-4 w-4 mr-2" />
-          {{ t("oauth.consent.reject") }}
-        </Button>
-        <Button
-          class="flex-1"
-          :disabled="isSubmitting || isSwitchingAccount"
-          @click="submitConsent(true)"
-        >
-          <Loader2 v-if="isSubmitting" class="h-4 w-4 mr-2 animate-spin" />
-          <ShieldCheck v-else class="h-4 w-4 mr-2" />
-          {{ isSubmitting ? t("oauth.consent.authorizing") : t("oauth.consent.authorize") }}
-        </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </template>
 
-    <Card class="w-full max-w-md" v-else>
-      <CardHeader class="text-center">
-        <CardTitle class="text-xl text-destructive">{{ t("oauth.consent.invalidTitle") }}</CardTitle>
-        <CardDescription>
-          {{ loadError || t("oauth.consent.invalidDescription") }}
-        </CardDescription>
-      </CardHeader>
-      <CardFooter class="justify-center">
-        <Button variant="outline" @click="router.push({ name: 'home' })">
-          {{ t("oauth.consent.backHome") }}
-        </Button>
-      </CardFooter>
-    </Card>
-  </div>
+    <template v-else-if="isValid">
+      <!-- Who is asking, and who is answering. -->
+      <dl class="divide-y divide-border/60">
+        <OAuthAppRow :name="clientName" />
+        <OAuthAccountRow
+          v-if="accountName"
+          :name="accountName"
+          switchable
+          :switching="isSwitchingAccount"
+          :disabled="isSubmitting"
+          data-testid="consent-account"
+          @switch="switchAccount"
+        />
+      </dl>
+
+      <!-- What it asks for, one row per permission. -->
+      <OAuthScopeList :rows="scopeRows" :warn-write="hasWriteScope" />
+
+      <!-- The decision. -->
+      <div class="grid min-w-0 gap-4 p-4">
+        <p v-if="actionError" role="alert" class="text-sm whitespace-pre-line text-destructive [overflow-wrap:anywhere]">
+          {{ actionError }}
+        </p>
+        <div class="flex flex-col gap-2 @min-[22rem]:flex-row-reverse">
+          <Button
+            size="lg"
+            class="w-full @min-[22rem]:flex-1"
+            :disabled="isSubmitting || isSwitchingAccount"
+            @click="pendingChoice = 'allow'; submitConsent(true)"
+          >
+            <Loader2
+              v-if="isSubmitting && pendingChoice === 'allow'"
+              class="size-4 animate-spin motion-reduce:animate-none"
+              aria-hidden="true"
+            />
+            {{ isSubmitting && pendingChoice === "allow" ? t("oauth.consent.authorizing") : t("oauth.consent.authorize") }}
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            class="w-full @min-[22rem]:w-auto @min-[22rem]:min-w-28"
+            :disabled="isSubmitting || isSwitchingAccount"
+            @click="pendingChoice = 'deny'; submitConsent(false)"
+          >
+            <Loader2
+              v-if="isSubmitting && pendingChoice === 'deny'"
+              class="size-4 animate-spin motion-reduce:animate-none"
+              aria-hidden="true"
+            />
+            {{ t("oauth.consent.reject") }}
+          </Button>
+        </div>
+      </div>
+    </template>
+
+    <OAuthFlowState
+      v-else
+      tone="error"
+      :title="t('oauth.consent.invalidTitle')"
+      :description="loadError || t('oauth.consent.invalidDescription')"
+    >
+      <Button variant="outline" @click="router.push({ name: 'home' })">
+        {{ t("oauth.common.backHome") }}
+      </Button>
+    </OAuthFlowState>
+  </OAuthFlowShell>
 </template>

@@ -60,7 +60,7 @@ export default {
       },
       "power": {
         "title": "綜合力",
-        "hint": "基礎綜合力，不含區域道具、稱號與角色等級加成。",
+        "hint": "不含區域道具、稱號與角色等級加成",
         "noData": "暫無綜合力資料",
         "level": "等級",
         "trained": "特訓",
@@ -93,18 +93,18 @@ export default {
       },
       "relatedEvents": {
         "title": "關聯活動",
-        "empty": "沒有關聯活動。",
+        "empty": "沒有關聯活動",
         "cardBonus": "卡牌 +{value}%",
         "leaderBonus": "隊長 +{value}%",
         "story": "有卡牌劇情"
       },
       "relatedGachas": {
         "title": "關聯卡池",
-        "empty": "沒有關聯卡池。"
+        "empty": "沒有關聯卡池"
       },
       "sameCharacter": {
         "title": "該角色的其他卡牌",
-        "empty": "沒有其他卡牌。",
+        "empty": "沒有其他卡牌",
         "count": "共 {count} 張"
       }
     }
@@ -149,30 +149,30 @@ export default {
     },
     "musics": {
       "title": "活動歌曲",
-      "empty": "該活動暫無歌曲。"
+      "empty": "該活動暫無歌曲"
     },
     "chapters": {
-      "empty": "該活動暫無章節資料。",
+      "empty": "該活動暫無章節資料",
       "supplemental": "追加章節"
     },
     "teams": {
       "title": "歡樂嘉年華隊伍",
-      "empty": "該活動暫無隊伍資料。"
+      "empty": "該活動暫無隊伍資料"
     },
     "gachas": {
       "title": "相關卡池",
-      "empty": "沒有找到相關卡池。",
+      "empty": "沒有找到相關卡池",
       "count": "{count} 個卡池",
       "showMore": "還有 {count} 個",
       "showLess": "收起",
-      "byPickup": "PICK UP 卡片包含本次活動卡片的卡池",
-      "byPeriod": "舉辦期間與本次活動重疊（前後 3 天）的卡池"
+      "byPickup": "PICK UP 含本活動卡牌的卡池",
+      "byPeriod": "與活動期間重疊（前後 3 天）的卡池"
     },
     "rewards": {
       "title": "排名獎勵",
       "rangeCount": "{count} 個名次區間",
-      "empty": "該活動暫無排名獎勵資料。",
-      "unavailable": "該區服暫未提供獎勵明細，這裡只顯示名次區間。",
+      "empty": "該活動暫無排名獎勵資料",
+      "unavailable": "該區服暫無獎勵明細，僅顯示名次區間",
       "rank": "第 {rank} 名",
       "rankRange": "第 {from}–{to} 名",
       "border": "榜線",
@@ -235,22 +235,19 @@ export default {
       "period": "開放時間",
       "startAt": "開始",
       "endAt": "結束",
-      "permanentHint": "常駐卡池，沒有結束時間。",
       "lightbox": {
         "banner": "橫幅",
         "logo": "標誌"
       }
     },
     "pickups": {
-      "empty": "該卡池沒有 PICK UP 成員",
-      "wishHint": "本卡池可選擇最多 {count} 張許願卡牌"
+      "empty": "該卡池沒有 PICK UP 成員"
     },
     "rates": {
-      "description": "單次招募中各稀有度的提供機率，按卡池資料中的抽選類型分列",
       "bar": "稀有度機率分佈",
       "perCard": "單卡機率",
       "empty": "暫無提供機率資料",
-      "wishNote": "本卡池支援許願：可選擇最多 {count} 張卡牌，被選中的卡牌擁有獨立的許願機率。",
+      "wishNote": "可許願最多 {count} 張卡牌，許願卡牌另有獨立機率",
       "lottery": {
         "normal": "普通抽選",
         "categorized_wish": "許願抽選",
@@ -260,7 +257,6 @@ export default {
     },
     "simulator": {
       "title": "招募模擬器",
-      "description": "按卡池資料中的提供機率在本地隨機模擬，僅供娛樂",
       "pullSingle": "單抽",
       "pullTen": "十連",
       "free": "免費",
@@ -270,9 +266,8 @@ export default {
       "new": "NEW",
       "guaranteed": "保底",
       "reset": "重置",
-      "idle": "點選「單抽」或「十連」開始模擬。",
-      "unavailable": "該卡池沒有可供模擬的抽選資料。",
-      "disclaimer": "本模擬器為玩家自制的非官方工具，結果由本地隨機數生成，不代表遊戲內的實際抽取結果。"
+      "unavailable": "該卡池沒有可供模擬的抽選資料",
+      "disclaimer": "非官方模擬，結果不代表遊戲內的實際抽取"
     },
     "pool": {
       "summary": "{count} 張卡牌",
@@ -294,7 +289,7 @@ export default {
       "convertAt": "{time} 起轉換為通用貼紙",
       "exchange": "貼紙交換所",
       "exchangeEmpty": "該區服暫無這個卡池的交換所資料",
-      "rewardsUnavailable": "該區服暫未提供獎勵明細，這裡只顯示獎勵箱編號。",
+      "rewardsUnavailable": "該區服暫無獎勵明細，僅顯示獎勵箱編號",
       "reward": "獎勵",
       "cost": "所需貼紙",
       "limit": "限購",
@@ -342,8 +337,7 @@ export default {
       "appendOnly": "僅顯示有 APPEND 譜面的歌曲",
       "mvType": "MV 類型",
       "scope": "關聯方式",
-      "scopeHint": "選擇角色後，可進一步只看該角色的箱曲（活動曲）或演唱曲（Vocal）",
-      "aliasUnavailable": "別名搜尋暫不可用，當前只按標題匹配。"
+      "aliasUnavailable": "別名搜尋暫不可用"
     },
     "detail": {
       "jacket": "封面",
@@ -351,11 +345,11 @@ export default {
         "info": "基本資訊"
       },
       "difficulties": {
-        "empty": "暫無譜面資訊。"
+        "empty": "暫無譜面資訊"
       },
       "player": {
         "seek": "播放進度",
-        "error": "音訊載入失敗，請稍後重試。"
+        "error": "音訊載入失敗，請稍後重試"
       },
       "unlock": {
         "title": "解鎖條件"
@@ -365,19 +359,19 @@ export default {
         "open": "在 {host} 開啟"
       },
       "events": {
-        "empty": "這首歌曲沒有關聯的活動。"
+        "empty": "這首歌曲沒有關聯的活動"
       }
     }
   },
   "storyPlayer": {
+    "description": "線上閱讀遊戲劇情，畫面與語音來自日服",
     "beta": {
       "title": "測試中",
-      "body": "本頁面功能正在測試中，可能會遇到各種問題，如果遇到問題或者什麼地方與遊戲內不符，可以在{tickets}處反饋。",
+      "body": "遇到問題或與遊戲內不符，可在{tickets}反饋",
       "tickets": "工單",
       "ticketsLogin": "登入後提交工單"
     },
     "title": "劇情播放",
-    "description": "按遊戲的演出播放主線、活動、卡面、特別劇情與區域對話。畫面與語音來自日服，文本可選各服官方翻譯，日服獨有的劇情另有 AI 中文翻譯。",
     "textLang": "文本語言",
     "voice": "播放語音",
     "volume": "音量",
@@ -393,20 +387,20 @@ export default {
       "ko": "한국어",
       "zhHansAi": "簡體中文（AI 翻譯）"
     },
-    "aiPending": "這一話的 AI 翻譯還在生成中，請稍後再來。",
-    "aiNotice": "當前文本為 AI 翻譯，可能與官方譯文有出入。",
-    "aiFailed": "AI 翻譯暫時不可用，已顯示日文原文。",
+    "aiPending": "這一話的 AI 翻譯還在生成，稍後再來",
+    "aiNotice": "AI 翻譯，可能與官方譯文有出入",
+    "aiFailed": "AI 翻譯暫不可用，已顯示日文原文",
     "resume": {
       "lastWatched": "上次看到：{title} · {episode}",
       "continue": "繼續播放",
       "dismiss": "忽略"
     },
     "errors": {
-      "notFound": "找不到這一話劇情。",
-      "unreleased": "這一話還沒有上線。可以在設定裡開啟「展示未上線內容」後再看。",
-      "missing": "日服素材裡還沒有這一話的劇本。",
-      "failed": "劇情載入失敗。",
-      "catalog": "劇情目錄載入失敗，請重新整理重試。",
+      "notFound": "找不到這一話劇情",
+      "unreleased": "這一話尚未上線，在設定裡開啟「展示未上線內容」即可觀看",
+      "missing": "日服素材裡還沒有這一話的劇本",
+      "failed": "劇情載入失敗",
+      "catalog": "劇情目錄載入失敗，重新整理頁面重試",
       "engine": "播放器載入失敗：{detail}"
     },
     "stage": {
@@ -426,7 +420,7 @@ export default {
       "exitFullscreen": "退出全螢幕",
       "showUi": "顯示",
       "keyboard": "劇情舞台：按空格或回車繼續",
-      "rotateHint": "點選「全螢幕」橫屏觀看，文字更清晰；輕點這裡也可以繼續。"
+      "rotateHint": "點「全螢幕」橫屏觀看，輕點此處繼續"
     },
     "browser": {
       "tabs": {

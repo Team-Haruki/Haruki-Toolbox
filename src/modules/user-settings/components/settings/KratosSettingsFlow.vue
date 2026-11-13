@@ -1,24 +1,33 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref, useTemplateRef, type Component } from "vue"
 import { useI18n } from "vue-i18n"
-import { RouterLink, useRoute } from "vue-router"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { useRoute } from "vue-router"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Check, ExternalLink, Link2, Loader2, Lock, Mail, Plus, Save, UserRound, KeyRound, ShieldCheck, X, type LucideIcon } from "lucide-vue-next"
-import {
-  Card,
-  CardTitle,
-  CardHeader,
-  CardContent,
-  CardDescription
-} from "@/components/ui/card"
+import { KeyRound, LifeBuoy, Link2, Loader2, PowerOff, Smartphone, Trash2, Unlink, Usb } from "lucide-vue-next"
+import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import PageHeader from "@/shared/components/PageHeader.vue"
+import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
+import SettingsRow, { type SettingsRowTone } from "@/shared/components/settings/SettingsRow.vue"
 import { useKratosBrowserFlow } from "@/modules/auth/composables/useKratosBrowserFlow"
+import KratosFieldInput from "@/modules/auth/components/KratosFieldInput.vue"
 import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue"
+import KratosSettingsActions from "@/modules/user-settings/components/settings/KratosSettingsActions.vue"
 import { getKratosPublicUrl } from "@/modules/auth/lib/kratos"
+import { formatKratosProviderName } from "@/modules/auth/lib/kratos-messages"
 import { createAllowedReturnToOrigins } from "@/modules/auth/lib/return-to"
 import { useKratosSettingsRedirect } from "@/modules/user-settings/composables/useKratosSettingsRedirect"
+import {
+  classifySettingsAction,
+  isKratosSettingsMethodGroup,
+  pickSettingsEnterTarget,
+  resolveSettingsDangerKind,
+  resolveSettingsDangerVerb,
+  resolveSettingsMethodStatus,
+  splitSettingsCodeList,
+  type KratosSettingsMethodGroup,
+  type KratosSettingsMethodStatus,
+} from "@/modules/user-settings/lib/kratos-settings-groups"
 import {
   normalizeKratosSettingsSection as normalizeSection,
   resolveKnownKratosSettingsSection,
@@ -163,18 +172,11 @@ const {
 
 const { t } = useI18n()
 
-// The card is titled after the section it edits (email/nickname, password,
-// two-step verification, Google sign-in); unknown sections read as the profile.
+// The page is titled after the section it edits (email and nickname,
+// password, two-step verification, linked accounts); unknown sections read as
+// the profile.
 const knownSection = computed<KratosSettingsSection>(() => resolveKnownKratosSettingsSection(requestedSection.value))
-const redirectTargetLabel = computed(() => t(`userSettings.kratosFlow.redirect.targets.${knownSection.value}`))
-const cardTitle = computed(() => t(`userSettings.kratosFlow.titles.${knownSection.value}`))
-const SECTION_ICONS: Record<KratosSettingsSection, LucideIcon> = {
-  profile: UserRound,
-  password: Lock,
-  mfa: ShieldCheck,
-  oidc: Link2,
-}
-const cardIcon = computed(() => SECTION_ICONS[knownSection.value])
+const pageTitle = computed(() => t(`userSettings.kratosFlow.titles.${knownSection.value}`))
 
 function resolveSectionGroups(section: string): string[] {
   if (section === "profile") {
@@ -438,28 +440,10 @@ const groupedSections = computed(() => {
 const showGroupTitle = computed(() => isMfaSection.value || groupedSections.value.length > 1)
 
 // Kratos labels are translated, so actions are told apart by their Kratos
-// text id (text/message_settings.go) or node name, never by label wording.
-const DANGEROUS_LABEL_IDS = new Set([
-  1050003, // Unlink {provider}
-  1050004, // Unlink TOTP authenticator app
-  1050016, // Disable backup recovery codes
-  1050018, // Remove security key
-  1050020, // Remove passkey
-])
-const DANGEROUS_NODE_NAMES = new Set(["unlink", "totp_unlink", "lookup_secret_disable", "webauthn_remove", "passkey_remove"])
-const PRIMARY_LABEL_IDS = new Set([
-  1050002, // Link {provider}
-  1050008, // Generate new backup recovery codes
-  1050011, // Confirm backup recovery codes
-  1050012, // Add security key
-  1050019, // Add passkey
-])
-const PRIMARY_NODE_NAMES = new Set(["link", "lookup_secret_regenerate", "lookup_secret_confirm", "webauthn_register_trigger", "passkey_register_trigger"])
-
-interface SettingsAction {
-  name: string
-  labelId: number | null
-}
+// text id or node name, never by label wording (see kratos-settings-groups.ts).
+type SettingsSection = (typeof groupedSections.value)[number]
+type SettingsSubmit = SettingsSection["submitFields"][number]
+type SettingsButton = SettingsSection["buttonFields"][number]
 
 const LAST_METHOD_REMOVAL_NAMES = new Set(["passkey_remove", "webauthn_remove"])
 
@@ -468,69 +452,174 @@ function isLastSignInMethodRemoval(action: { name: string; disabled?: boolean })
   return action.disabled === true && LAST_METHOD_REMOVAL_NAMES.has(action.name)
 }
 
-function isDangerousAction(action: SettingsAction): boolean {
-  return (action.labelId !== null && DANGEROUS_LABEL_IDS.has(action.labelId)) || DANGEROUS_NODE_NAMES.has(action.name)
+const DANGER_ICONS = { remove: Trash2, disable: PowerOff, unlink: Unlink } as const
+
+function dangerIcon(submit: SettingsSubmit): Component {
+  return DANGER_ICONS[resolveSettingsDangerVerb(resolveSettingsDangerKind(submit))]
 }
 
-function isPrimaryAction(action: SettingsAction): boolean {
-  return (action.labelId !== null && PRIMARY_LABEL_IDS.has(action.labelId)) || PRIMARY_NODE_NAMES.has(action.name)
+// One status line per second-step method: whether it is set up. The group's
+// heading already names the method.
+interface MethodIntro {
+  icon: Component
+  tone: SettingsRowTone
+  label: string
 }
 
-function submitVariant(submit: SettingsAction) {
-  if (!isMfaSection.value) {
-    return "default"
-  }
-
-  return isDangerousAction(submit) ? "destructive" : "outline"
+const METHOD_ICONS: Record<KratosSettingsMethodGroup, Component> = {
+  passkey: KeyRound,
+  webauthn: Usb,
+  totp: Smartphone,
+  lookup_secret: LifeBuoy,
 }
 
-function buttonFieldVariant(field: SettingsAction) {
-  if (!isMfaSection.value) {
-    return "outline"
-  }
-
-  if (isDangerousAction(field)) {
-    return "destructive"
-  }
-
-  return isPrimaryAction(field) ? "default" : "outline"
+// Passkeys and security keys are things you add; the authenticator app and
+// the backup codes are switched on.
+const STATUS_KEYS: Record<KratosSettingsMethodGroup, Record<KratosSettingsMethodStatus, string>> = {
+  passkey: { on: "added", pending: "added", off: "notAdded" },
+  webauthn: { on: "added", pending: "added", off: "notAdded" },
+  totp: { on: "on", pending: "pending", off: "off" },
+  lookup_secret: { on: "on", pending: "pending", off: "off" },
 }
 
-/**
- * Submit buttons: the floppy disk only where something is saved; MFA actions
- * add (passkey, security key, recovery codes) or remove/disable, so they get
- * a plus or a cross, and confirmations a check.
- */
-function iconForSubmit(submit: SettingsAction): LucideIcon {
-  if (!isMfaSection.value) {
-    return Save
-  }
-  if (isDangerousAction(submit)) {
-    return X
-  }
-  return isPrimaryAction(submit) ? Plus : Check
+const STATUS_TONES: Record<KratosSettingsMethodStatus, SettingsRowTone> = {
+  on: "success",
+  pending: "warning",
+  off: "default",
 }
 
-function iconForField(name: string) {
-  const normalized = name.toLowerCase()
-
-  if (normalized.includes("passkey") || normalized.includes("webauthn")) {
-    return KeyRound
+function methodIntro(section: SettingsSection): MethodIntro | null {
+  if (!isKratosSettingsMethodGroup(section.group)) {
+    return null
   }
 
-  if (normalized.includes("totp") || normalized.includes("lookup_secret")) {
-    return ShieldCheck
+  const status = resolveSettingsMethodStatus(section.group, section.submitFields)
+  return {
+    icon: METHOD_ICONS[section.group],
+    tone: STATUS_TONES[status],
+    label: t(`userSettings.kratosFlow.status.${STATUS_KEYS[section.group][status]}`),
+  }
+}
+
+/** A linked-account group is a list of providers, each with its one link or unlink button. */
+function isProviderGroup(section: SettingsSection): boolean {
+  return section.group === "oidc"
+    && section.submitFields.length > 0
+    && section.buttonFields.length === 0
+    && section.visibleFields.length === 0
+    && section.displayFields.length === 0
+    && section.submitFields.every((submit) => submit.name === "link" || submit.name === "unlink")
+}
+
+function providerName(submit: SettingsSubmit): string {
+  return formatKratosProviderName(submit.value) || submit.label
+}
+
+function isLinkedProvider(submit: SettingsSubmit): boolean {
+  return submit.name === "unlink"
+}
+
+/** Backup codes are a list; every other text node (the TOTP secret) is one value. */
+function displayLines(field: SettingsSection["displayFields"][number]): string[] {
+  return field.group === "lookup_secret" ? splitSettingsCodeList(field.text) : []
+}
+
+// What the template draws for each group: the status line, what is already
+// there (each with its removal), the inputs, and the group's other buttons
+// (triggers and non-destructive submits, in Kratos order). Those buttons sit
+// in a footer under the inputs they post; a method that asks for nothing
+// (add a passkey, generate codes) keeps them on its status line instead.
+const sectionViews = computed(() =>
+  groupedSections.value.map((section) => {
+    const intro = methodIntro(section)
+    const actionSubmits = section.submitFields.filter((submit) => classifySettingsAction(submit) !== "danger")
+    const hasActions = section.buttonFields.length > 0 || actionSubmits.length > 0
+    const actionsOnIntro = intro !== null
+      && section.visibleFields.length === 0
+      && actionSubmits.every((submit) => classifySettingsAction(submit) !== "commit")
+    return {
+      ...section,
+      intro,
+      providers: isProviderGroup(section),
+      dangerousSubmits: section.submitFields.filter((submit) => classifySettingsAction(submit) === "danger"),
+      actionSubmits,
+      actionMessages: [...section.buttonFields, ...actionSubmits].flatMap((item) => item.messages),
+      introActions: hasActions && actionsOnIntro,
+      footerActions: hasActions && !actionsOnIntro,
+    }
+  })
+)
+
+// --- dangerous actions ask first ------------------------------------------
+// The removal buttons are ordinary submit buttons of the Kratos form. A click
+// is held back, the confirmation opens, and confirming clicks the very same
+// button again, this time let through: the form posts exactly what a direct
+// click would have posted.
+const formElement = useTemplateRef<HTMLFormElement>("settingsForm")
+const confirmOpen = ref(false)
+const pendingDanger = ref<{ submit: SettingsSubmit; button: HTMLButtonElement } | null>(null)
+let confirmedSubmitKey = ""
+
+function handleDangerousClick(event: MouseEvent, submit: SettingsSubmit) {
+  if (confirmedSubmitKey === submit.key) {
+    confirmedSubmitKey = ""
+    return
   }
 
-  if (name.endsWith("email")) {
-    return Mail
+  event.preventDefault()
+  const button = event.currentTarget
+  if (!(button instanceof HTMLButtonElement)) {
+    return
+  }
+  pendingDanger.value = { submit, button }
+  confirmOpen.value = true
+}
+
+function confirmDangerousSubmit() {
+  const pending = pendingDanger.value
+  if (!pending) {
+    return
+  }
+  confirmedSubmitKey = pending.submit.key
+  pending.button.click()
+}
+
+const pendingDangerKind = computed(() =>
+  pendingDanger.value ? resolveSettingsDangerKind(pendingDanger.value.submit) : "generic"
+)
+const confirmTitle = computed(() =>
+  t("userSettings.kratosFlow.confirm.title", { action: pendingDanger.value?.submit.label ?? "" })
+)
+const confirmDescription = computed(() => t(`userSettings.kratosFlow.confirm.descriptions.${pendingDangerKind.value}`))
+const confirmLabel = computed(() =>
+  t(`userSettings.kratosFlow.confirm.actions.${resolveSettingsDangerVerb(pendingDangerKind.value)}`)
+)
+
+// --- Enter in a field presses its own group's button ----------------------
+// Every group shares the one Kratos form, so the browser would press the
+// first submit button on the page (another method's, or a removal).
+function handleFieldEnter(event: KeyboardEvent, section: SettingsSection) {
+  // Only from the input itself: Enter on the show-password button toggles it.
+  if (event.isComposing || !(event.target instanceof HTMLInputElement)) {
+    return
   }
 
-  if (name.toLowerCase().includes("password")) {
-    return Lock
+  event.preventDefault()
+  const target = pickSettingsEnterTarget<SettingsSubmit, SettingsButton>(section.submitFields, section.buttonFields)
+  if (!target) {
+    return
   }
-
-  return UserRound
+  if (target.kind === "trigger") {
+    invokeVisibleFieldAction(target.action)
+    return
+  }
+  const buttons = formElement.value?.querySelectorAll<HTMLButtonElement>("button[data-settings-submit]") ?? []
+  for (const button of buttons) {
+    if (button.dataset.settingsSubmit === target.action.key) {
+      button.click()
+      return
+    }
+  }
 }
 
 const isReady = computed(() => !loading.value && !loadError.value && action.value !== "")
@@ -545,193 +634,246 @@ const kratosHost = computed(() => {
   }
 })
 
+const isLeavingForKratos = computed(() => redirect.status.value === "probing" || redirect.status.value === "redirecting")
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-0 py-4">
-    <Card class="w-full">
-      <CardHeader>
-        <CardTitle class="flex items-center gap-2">
-          <component :is="cardIcon" class="h-6 w-6" aria-hidden="true" />
-          {{ cardTitle }}
-        </CardTitle>
-        <CardDescription>{{ t("userSettings.kratosFlow.description") }}</CardDescription>
-      </CardHeader>
-      <CardContent class="space-y-4">
-        <div v-if="redirect.status.value === 'unreachable'" class="space-y-3" data-testid="kratos-redirect-unreachable">
-          <LoadErrorState
-            :title="t('userSettings.kratosFlow.redirect.unreachableTitle')"
-            :description="t('userSettings.kratosFlow.redirect.unreachableDescription')"
-            :detail="redirect.error.value?.detail"
-            :retrying="false"
-            @retry="redirect.retry"
-          />
-        </div>
-        <div
-          v-else-if="redirect.status.value === 'probing' || redirect.status.value === 'redirecting'"
-          class="flex flex-col items-center gap-3 py-10 text-center"
-          role="status"
-          aria-live="polite"
-          data-testid="kratos-redirect-interstitial"
-        >
-          <Loader2 class="h-6 w-6 animate-spin text-primary" aria-hidden="true" />
-          <p class="text-sm font-medium">
-            {{ t("userSettings.kratosFlow.redirect.title", { target: redirectTargetLabel }) }}
-          </p>
-          <p class="max-w-sm text-sm text-muted-foreground">
-            {{ t("userSettings.kratosFlow.redirect.description") }}
-          </p>
-          <p class="flex items-center gap-1 text-xs text-muted-foreground">
-            <ExternalLink class="h-3.5 w-3.5" aria-hidden="true" />
-            {{ t("userSettings.kratosFlow.redirect.destination", { host: kratosHost }) }}
-          </p>
-        </div>
-        <div v-else-if="loading" class="flex items-center justify-center py-12 text-muted-foreground">
-          <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-          {{ t("auth.common.loadingFlow") }}
-        </div>
-        <div v-else-if="loadError" class="space-y-4">
-          <p class="text-sm text-destructive [overflow-wrap:anywhere]">{{ loadError }}</p>
-          <Button class="w-full" @click="restartFlow">
-            <Save class="mr-2 h-4 w-4" />
-            {{ t("auth.common.restartFlow") }}
-          </Button>
-        </div>
-        <form v-else :action="action" :method="method" class="space-y-4" novalidate>
-          <input v-for="field in displayedHiddenFields" :key="field.key" type="hidden" :name="field.name" :value="field.value" />
+  <div class="@container mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-5" data-kratos-page>
+    <!-- A way back in every state but the interstitial, which is about to leave the page. -->
+    <PageHeader
+      size="compact"
+      :title="pageTitle"
+      :description="t('userSettings.kratosFlow.description')"
+      :back="isLeavingForKratos ? null : { name: 'user.settings' }"
+      :back-label="t('userSettings.kratosFlow.redirect.backToSettings')"
+    />
 
-          <KratosFlowMessages :messages="generalMessages" />
+    <div
+      v-if="redirect.status.value === 'unreachable'"
+      class="rounded-xl border bg-card px-4"
+      data-testid="kratos-redirect-unreachable"
+    >
+      <LoadErrorState
+        :title="t('userSettings.kratosFlow.redirect.unreachable')"
+        description=""
+        :retrying="false"
+        @retry="redirect.retry"
+      />
+    </div>
+    <div
+      v-else-if="isLeavingForKratos"
+      class="flex flex-col items-center gap-2 rounded-xl border bg-card px-4 py-10 text-center"
+      role="status"
+      aria-live="polite"
+      data-testid="kratos-redirect-interstitial"
+    >
+      <Loader2 class="mb-1 size-6 animate-spin text-muted-foreground motion-reduce:animate-none" aria-hidden="true" />
+      <p class="text-sm font-medium">{{ t("userSettings.kratosFlow.redirect.title") }}</p>
+      <p v-if="kratosHost" class="min-w-0 text-xs text-muted-foreground [overflow-wrap:anywhere]">
+        {{ t("userSettings.kratosFlow.redirect.destination", { host: kratosHost }) }}
+      </p>
+    </div>
+    <p
+      v-else-if="loading"
+      class="flex items-center justify-center gap-2 rounded-xl border bg-card px-4 py-12 text-sm text-muted-foreground"
+      role="status"
+    >
+      <Loader2 class="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+      {{ t("auth.common.loadingFlow") }}
+    </p>
+    <div v-else-if="loadError" class="rounded-xl border bg-card px-4">
+      <LoadErrorState :title="loadError" description="" :retry-label="t('auth.common.restartFlow')" @retry="restartFlow" />
+    </div>
+    <form v-else ref="settingsForm" :action="action" :method="method" class="flex min-w-0 flex-col gap-5" novalidate>
+      <input v-for="field in displayedHiddenFields" :key="field.key" type="hidden" :name="field.name" :value="field.value" />
 
-          <div class="space-y-4">
-            <section
-              v-for="section in groupedSections"
-              :key="section.group"
-              class="space-y-3 rounded-md border p-3"
+      <div v-if="generalMessages.length > 0" class="min-w-0 rounded-xl border bg-card px-4 py-3" data-testid="kratos-settings-messages">
+        <KratosFlowMessages :messages="generalMessages" />
+      </div>
+
+      <SettingsGroup
+        v-for="section in sectionViews"
+        :key="section.group"
+        :title="showGroupTitle ? section.title : undefined"
+        surface="card"
+        :data-kratos-group="section.group"
+      >
+        <!-- Linked accounts: one line per provider with its link or unlink button. -->
+        <template v-if="section.providers">
+          <SettingsRow
+            v-for="submit in section.submitFields"
+            :key="submit.key"
+            :icon="Link2"
+            :tone="isLinkedProvider(submit) ? 'success' : 'default'"
+            :label="providerName(submit)"
+          >
+            <template v-if="isLinkedProvider(submit)" #label>
+              <span class="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                {{ t("userSettings.kratosFlow.providers.linked") }}
+              </span>
+            </template>
+            <Button
+              v-if="isLinkedProvider(submit)"
+              type="submit"
+              variant="outline"
+              size="sm"
+              class="h-auto min-h-8 max-w-full whitespace-normal py-1 text-destructive hover:text-destructive"
+              :name="submit.name || undefined"
+              :value="submit.value || undefined"
+              :data-settings-submit="submit.key"
+              :disabled="!isReady || submit.disabled"
+              @click="handleDangerousClick($event, submit)"
             >
-              <h3 v-if="showGroupTitle" class="text-sm font-medium text-foreground/90">
-                {{ section.title }}
-              </h3>
-
-              <div v-if="section.displayFields.length > 0" class="space-y-3">
-                <div v-for="field in section.displayFields" :key="field.key" class="space-y-2">
-                  <p v-if="field.label" class="text-sm font-medium">{{ field.label }}</p>
-                  <div v-if="field.kind === 'image'" class="rounded-md border bg-muted/30 p-3">
-                    <img
-                      :src="field.src"
-                      :alt="field.label || t('auth.kratos.labels.imageAlt')"
-                      class="mx-auto block h-auto w-full max-w-[256px]"
-                      :width="field.width || undefined"
-                      :height="field.height || undefined"
-                      loading="lazy"
-                    />
-                  </div>
-                  <div
-                    v-else
-                    class="rounded-md border bg-muted/30 px-3 py-2 text-sm font-mono whitespace-pre-line break-all"
-                  >
-                    {{ field.text }}
-                  </div>
-                  <KratosFlowMessages :messages="field.messages" />
-                </div>
-              </div>
-
-              <div v-for="field in section.visibleFields" :key="field.key" class="grid gap-2">
-                <Label :for="field.key">{{ field.label }}</Label>
-                <div class="relative w-full items-center">
-                  <template v-if="field.type === 'button'">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      class="w-full justify-start h-auto whitespace-normal break-words text-left"
-                      :name="field.name"
-                      :value="field.value || undefined"
-                      :disabled="field.disabled"
-                      @click="invokeVisibleFieldAction(field)"
-                    >
-                      <component :is="iconForField(field.name)" class="size-4 mr-2 shrink-0" />
-                      <span class="break-words">{{ field.label }}</span>
-                    </Button>
-                  </template>
-                  <template v-else>
-                    <Input
-                      :id="field.key"
-                      :name="field.name"
-                      :type="field.type"
-                      :autocomplete="field.autocomplete || undefined"
-                      :required="field.required"
-                      :disabled="field.disabled"
-                      class="pl-10"
-                      v-model="fieldValues[field.name]"
-                    />
-                    <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                      <component :is="iconForField(field.name)" class="size-4 text-muted-foreground" />
-                    </span>
-                  </template>
-                </div>
-                <KratosFlowMessages :messages="field.messages" />
-              </div>
-
-              <div v-if="section.buttonFields.length > 0" class="grid gap-2">
-                <div v-for="field in section.buttonFields" :key="field.key" class="space-y-1">
-                  <Button
-                    type="button"
-                    :variant="buttonFieldVariant(field)"
-                    class="w-full h-auto whitespace-normal break-words"
-                    :name="field.name"
-                    :value="field.value || undefined"
-                    :disabled="field.disabled"
-                    @click="invokeVisibleFieldAction(field)"
-                  >
-                    <component :is="iconForField(field.name)" class="size-4 mr-2 shrink-0" />
-                    <span class="break-words">{{ field.label }}</span>
-                  </Button>
-                  <KratosFlowMessages :messages="field.messages" />
-                </div>
-              </div>
-
-              <div v-if="section.submitFields.length > 0" class="grid gap-2">
-                <div v-for="submit in section.submitFields" :key="submit.key" class="space-y-1">
-                  <Button
-                    type="submit"
-                    class="w-full h-auto whitespace-normal break-words"
-                    :variant="submitVariant(submit)"
-                    :name="submit.name || undefined"
-                    :value="submit.value || undefined"
-                    :disabled="!isReady || submit.disabled"
-                  >
-                    <component :is="iconForSubmit(submit)" class="mr-2 h-4 w-4 shrink-0" aria-hidden="true" />
-                    <span class="break-words">{{ submit.label }}</span>
-                  </Button>
-                  <!-- Kratos disables removing the last sign-in method; say why instead of leaving a dead button. -->
-                  <p v-if="isLastSignInMethodRemoval(submit)" class="text-xs text-muted-foreground" data-testid="kratos-last-method-hint">
-                    {{ t("userSettings.kratosFlow.hints.lastSignInMethod") }}
-                  </p>
-                  <KratosFlowMessages :messages="submit.messages" />
-                </div>
-              </div>
-            </section>
-          </div>
-
-          <div v-if="!isMfaSection && displayedSubmitFields.length === 0">
-            <Button type="submit" class="w-full h-auto whitespace-normal break-words" :disabled="!isReady">
-              <Save class="mr-2 h-4 w-4 shrink-0" />
-              <span class="break-words">{{ submitLabel || t("common.save") }}</span>
+              {{ submit.label }}
             </Button>
+            <Button
+              v-else
+              type="submit"
+              variant="outline"
+              size="sm"
+              class="h-auto min-h-8 max-w-full whitespace-normal py-1"
+              :name="submit.name || undefined"
+              :value="submit.value || undefined"
+              :data-settings-submit="submit.key"
+              :disabled="!isReady || submit.disabled"
+            >
+              {{ submit.label }}
+            </Button>
+            <template v-if="submit.messages.length > 0" #below>
+              <KratosFlowMessages :messages="submit.messages" variant="field" />
+            </template>
+          </SettingsRow>
+        </template>
+
+        <template v-else>
+          <!-- Whether the method is set up. -->
+          <SettingsRow
+            v-if="section.intro"
+            :icon="section.intro.icon"
+            :tone="section.intro.tone"
+            :label="section.intro.label"
+          >
+            <template v-if="section.introActions" #default>
+              <KratosSettingsActions
+                :buttons="section.buttonFields"
+                :submits="section.actionSubmits"
+                :ready="isReady"
+                @trigger="invokeVisibleFieldAction"
+              />
+            </template>
+          </SettingsRow>
+
+          <!-- What Kratos shows rather than asks for: the QR code and its secret, the backup codes. -->
+          <div
+            v-if="section.displayFields.length > 0"
+            class="flex min-w-0 flex-wrap items-start gap-x-5 gap-y-4 px-4 py-4"
+            data-testid="kratos-settings-display"
+          >
+            <template v-for="field in section.displayFields" :key="field.key">
+              <!-- A QR code needs a light ground to scan in the dark theme. -->
+              <div v-if="field.kind === 'image'" class="shrink-0 rounded-lg dark:bg-white dark:p-2">
+                <img
+                  :src="field.src"
+                  :alt="field.label || t('auth.kratos.labels.imageAlt')"
+                  class="block size-40"
+                  :width="field.width || undefined"
+                  :height="field.height || undefined"
+                  loading="lazy"
+                />
+              </div>
+              <div v-else class="grid min-w-0 flex-1 basis-56 gap-2">
+                <p v-if="field.label" class="text-sm text-muted-foreground">{{ field.label }}</p>
+                <ul
+                  v-if="displayLines(field).length > 0"
+                  class="grid grid-cols-2 gap-x-6 gap-y-1 font-mono text-sm @min-[34rem]:grid-cols-3"
+                >
+                  <li v-for="(line, index) in displayLines(field)" :key="index" class="min-w-0 [overflow-wrap:anywhere]">{{ line }}</li>
+                </ul>
+                <p v-else class="min-w-0 font-mono text-sm whitespace-pre-line [overflow-wrap:anywhere]">{{ field.text }}</p>
+                <KratosFlowMessages :messages="field.messages" variant="field" />
+              </div>
+            </template>
           </div>
-        </form>
-        <!-- A way back in every state (the interstitial is about to leave the page). -->
-        <Button
-          v-if="redirect.status.value !== 'probing' && redirect.status.value !== 'redirecting'"
-          as-child
-          variant="ghost"
-          class="w-full"
-        >
-          <RouterLink :to="{ name: 'user.settings' }">
-            <ArrowLeft class="mr-2 h-4 w-4" />
-            {{ t("userSettings.kratosFlow.redirect.backToSettings") }}
-          </RouterLink>
-        </Button>
-      </CardContent>
-    </Card>
+
+          <!-- What is already there, each with the way to remove it. -->
+          <div v-for="submit in section.dangerousSubmits" :key="submit.key" class="min-w-0">
+            <button
+              type="submit"
+              class="group flex w-full items-center gap-3 px-4 py-3 text-left outline-none transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:pointer-events-none"
+              :name="submit.name || undefined"
+              :value="submit.value || undefined"
+              :data-settings-submit="submit.key"
+              :disabled="!isReady || submit.disabled"
+              @click="handleDangerousClick($event, submit)"
+            >
+              <span
+                class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-destructive/15 text-destructive-tint-foreground group-disabled:bg-muted group-disabled:text-muted-foreground"
+                aria-hidden="true"
+              >
+                <component :is="dangerIcon(submit)" class="size-4" />
+              </span>
+              <span class="min-w-0 flex-1 text-sm font-medium text-destructive group-disabled:text-muted-foreground [overflow-wrap:anywhere]">
+                {{ submit.label }}
+              </span>
+            </button>
+            <!-- Kratos disables removing the last sign-in method; say why instead of leaving a dead button. -->
+            <p
+              v-if="isLastSignInMethodRemoval(submit)"
+              class="-mt-1.5 px-4 pb-3 pl-15 text-xs text-muted-foreground"
+              data-testid="kratos-last-method-hint"
+            >
+              {{ t("userSettings.kratosFlow.hints.lastSignInMethod") }}
+            </p>
+            <div v-if="submit.messages.length > 0" class="-mt-1.5 px-4 pb-3 pl-15">
+              <KratosFlowMessages :messages="submit.messages" variant="field" />
+            </div>
+          </div>
+
+          <div v-if="section.visibleFields.length > 0" class="grid min-w-0 gap-4 px-4 py-4">
+            <KratosFieldInput
+              v-for="field in section.visibleFields"
+              :id="field.key"
+              :key="field.key"
+              v-model="fieldValues[field.name]"
+              :name="field.name"
+              :type="field.type"
+              :label="field.label"
+              :autocomplete="field.autocomplete"
+              :required="field.required"
+              :disabled="field.disabled"
+              :placeholder="field.placeholder"
+              :messages="field.messages"
+              @keydown.enter="handleFieldEnter($event, section)"
+            />
+          </div>
+
+          <div v-if="section.actionMessages.length > 0" class="min-w-0 px-4 py-3">
+            <KratosFlowMessages :messages="section.actionMessages" variant="field" />
+          </div>
+        </template>
+
+        <template v-if="!section.providers && section.footerActions" #footer>
+          <KratosSettingsActions
+            :buttons="section.buttonFields"
+            :submits="section.actionSubmits"
+            :ready="isReady"
+            @trigger="invokeVisibleFieldAction"
+          />
+        </template>
+      </SettingsGroup>
+
+      <div v-if="!isMfaSection && displayedSubmitFields.length === 0" class="flex justify-end">
+        <Button type="submit" size="sm" :disabled="!isReady">{{ submitLabel || t("common.save") }}</Button>
+      </div>
+    </form>
+
+    <ConfirmDialog
+      v-model:open="confirmOpen"
+      :title="confirmTitle"
+      :description="confirmDescription"
+      :confirm-label="confirmLabel"
+      destructive
+      :on-confirm="confirmDangerousSubmit"
+    />
   </div>
 </template>

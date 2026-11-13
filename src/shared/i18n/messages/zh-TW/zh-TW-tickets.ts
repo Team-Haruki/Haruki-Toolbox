@@ -26,11 +26,11 @@ export default {
       "closed": "已關閉"
     },
     "userStatusHint": {
-      "waitingAdmin": "我們已經收到你的工單，目前等待管理員處理。",
-      "waitingAdminAssigned": "已有管理員接手你的工單，回覆會顯示在下方的溝通記錄裡。",
-      "waitingUser": "管理員已回覆，等待你補充資訊或確認後續處理。",
-      "resolved": "此工單已標記為已解決。問題還在的話直接回復即可，確認處理完畢可以關閉工單。",
-      "closed": "此工單已關閉，如還有新問題請重新建立工單。"
+      "waitingAdmin": "已收到，等待管理員處理",
+      "waitingAdminAssigned": "管理員已接手，回覆會顯示在溝通記錄裡",
+      "waitingUser": "管理員已回覆，請補充資訊或確認",
+      "resolved": "確認處理完畢可以關閉工單",
+      "closed": "有新問題請新建工單"
     },
     "time": {
       "justNow": "剛剛"
@@ -54,15 +54,14 @@ export default {
       "allPriorities": "全部優先順序"
     },
     "list": {
+      "description": "檢視處理進度，需要時補充說明",
       "title": "我的工單",
-      "description": "檢視處理進度，並在需要時補充說明。",
       "createButton": "建立工單",
       "filterLabel": "按狀態篩選",
       "waitingCount": "{count} 個工單等你回覆",
       "refresh": "重新整理",
       "loading": "正在載入工單…",
       "empty": "還沒有工單",
-      "emptyDescription": "遇到 Bug、帳號問題或有建議時，可以建立工單聯絡管理員。",
       "emptyFiltered": "沒有「{status}」的工單",
       "showAll": "檢視全部工單",
       "total": "共 {total} 個工單",
@@ -83,13 +82,13 @@ export default {
       },
       "toast": {
         "loadFailedTitle": "載入工單列表失敗",
-        "loadFailedFallback": "請檢查網路後重試；多次失敗可能是服務暫時不可用，請稍後再試。"
+        "loadFailedFallback": "請檢查網路後重試"
       }
     },
     "create": {
+      "description": "反饋 Bug、帳號問題或建議",
       "backButton": "返回工單列表",
       "title": "建立工單",
-      "description": "工單用於反饋 Bug、處理工具箱帳號相關的問題和提出建議，不提供使用教程指導。把關鍵資訊寫清楚，管理員會更容易判斷下一步。",
       "submit": "提交工單",
       "submitting": "提交中...",
       "typeTitle": "問題類型",
@@ -97,29 +96,25 @@ export default {
       "count": "{count} / {max}",
       "fields": {
         "subject": "主題",
-        "subjectPlaceholder": "一句話說明遇到的問題",
-        "subjectHint": "例如：上傳資料失敗、無法綁定帳號、無法授權第三方應用。",
+        "subjectPlaceholder": "一句話說明問題，如：上傳資料失敗",
         "category": "分類",
-        "categoryHint": "選擇最接近的分類即可，不確定可以選其他。",
         "priority": "優先順序",
-        "priorityHint": "緊急優先順序請留給影響登入、資料或主要功能的問題。",
+        "priorityHint": "緊急僅用於影響登入、資料或主要功能的問題",
         "message": "描述",
         "messagePlaceholder": "詳細描述遇到的問題…"
       },
       "guide": {
-        "upload": "建議寫明區服、上傳方式（模組、抓包或引繼碼）、出現時間和頁面上的錯誤提示。",
-        "account": "建議寫明受影響的帳號 ID、區服、出現時間和頁面上的錯誤提示。",
-        "bug": "建議寫明操作步驟、預期結果和實際結果，以及使用的裝置和瀏覽器。",
-        "feature": "建議說明使用場景，以及現在是怎麼做的、哪裡不方便。",
-        "other": "建議寫明出現時間、操作步驟、錯誤提示或相關連結。"
+        "upload": "寫明區服、上傳方式（模組、抓包或引繼碼）、出現時間和錯誤提示",
+        "account": "寫明受影響的帳號 ID、區服、出現時間和錯誤提示",
+        "bug": "寫明操作步驟、預期和實際結果，以及裝置和瀏覽器",
+        "feature": "說明使用場景，以及現在哪裡不方便",
+        "other": "寫明出現時間、操作步驟、錯誤提示或相關連結"
       },
       "tips": {
         "title": "提交之前",
-        "usage": "使用方法和教程類問題請到{link}提問。",
+        "usage": "使用方法和教程類問題請到{link}提問",
         "usageLink": "推薦群聊",
-        "secrets": "不要在工單裡填寫密碼、引繼碼等敏感資訊，管理員不會向你索要。",
-        "oneIssue": "一個工單隻說一個問題，方便跟進和回覆。",
-        "followUp": "提交後可以在工單裡繼續補充；管理員回覆後，側邊欄的「我的工單」會出現提醒。"
+        "secrets": "不要填寫密碼、引繼碼等敏感資訊，管理員不會索要"
       },
       "toast": {
         "subjectRequired": "請輸入工單主題",
@@ -129,7 +124,7 @@ export default {
         "loginRequired": "請先登入",
         "createSuccess": "工單已建立",
         "createFailedTitle": "建立工單失敗",
-        "createFailedFallback": "工單未建立，請檢查主題和描述後重試；多次失敗請稍後再試。"
+        "createFailedFallback": "工單未建立，請稍後重試"
       }
     },
     "detail": {
@@ -158,34 +153,34 @@ export default {
       "replyLabel": "回覆",
       "inputPlaceholder": "回覆管理員…",
       "composeHint": "Enter 傳送，Shift+Enter 換行",
-      "reopenHint": "回覆後工單會重新開啟，由管理員繼續處理。",
+      "reopenHint": "回覆後工單會重新開啟",
       "replyTooLong": "回覆最多 {max} 個字元",
       "sentState": "已傳送",
       "sendButton": "傳送",
-      "closedHint": "工單已關閉，無法繼續回覆。",
+      "closedHint": "工單已關閉，無法繼續回覆",
       "newTicket": "建立新工單",
       "closeButton": "關閉工單",
       "closeDialog": {
         "title": "確認關閉工單",
-        "description": "關閉後將無法繼續傳送訊息。確認關閉？",
+        "description": "關閉後無法繼續回覆",
         "cancel": "取消",
         "confirm": "確認關閉"
       },
       "notFound": "工單不存在",
-      "notFoundDescription": "這個工單可能已被刪除，或不屬於當前登入的帳號。",
+      "notFoundDescription": "可能已被刪除，或不屬於當前帳號",
       "toast": {
         "loadFailedTitle": "載入工單詳情失敗",
-        "loadFailedFallback": "請檢查網路後重試；多次失敗可能是服務暫時不可用，請稍後再試。",
+        "loadFailedFallback": "請檢查網路後重試",
         "sendFailedTitle": "傳送失敗",
-        "sendFailedFallback": "訊息沒有發出去，內容已保留，請檢查網路後重新點選發送。",
+        "sendFailedFallback": "訊息未發出，內容已保留，請重試",
         "closeSuccess": "工單已關閉",
         "closeFailedTitle": "關閉失敗",
-        "closeFailedFallback": "工單沒有關閉，請稍後重試；如果工單已處理完畢也可以直接留著。"
+        "closeFailedFallback": "工單未關閉，請稍後重試"
       }
     },
     "adminList": {
       "title": "工單管理",
-      "description": "快速篩選待處理、未分配和高優先順序工單。",
+      "description": "快速篩選待處理、未分配和高優先順序工單",
       "searchPlaceholder": "搜尋工單…",
       "refreshButton": "重新整理",
       "unassigned": "未分配",
@@ -207,7 +202,7 @@ export default {
         "share": "{count} · {percent}%",
         "empty": "暫無資料",
         "loadFailed": "統計資料載入失敗",
-        "partialFailed": "統計資料沒有全部加載出來。"
+        "partialFailed": "統計資料沒有全部加載出來"
       },
       "quickFilters": {
         "all": "全部工單",
@@ -318,7 +313,7 @@ export default {
         "assigneeCleared": "已取消分配（原處理人 {from}）"
       },
       "actionsTitle": "處理操作",
-      "actionsDescription": "更新工單狀態或分配處理人。",
+      "actionsDescription": "更新工單狀態或分配處理人",
       "statusChangeLabel": "變更狀態",
       "assigneeLabel": "處理人",
       "assigneePlaceholder": "選擇處理人",
@@ -332,7 +327,7 @@ export default {
       "systemSender": "系統",
       "internalTag": "內部備註",
       "messagesTitle": "溝通記錄",
-      "messagesDescription": "公開回復會傳送給使用者，內部備註僅管理員可見。",
+      "messagesDescription": "公開回復會傳送給使用者，內部備註僅管理員可見",
       "noMessages": "暫無訊息",
       "compose": {
         "replyTitle": "回覆使用者",
@@ -343,7 +338,7 @@ export default {
       "noteButton": "備註",
       "sendButton": "傳送",
       "internalSwitchLabel": "內部備註（僅管理員可見）",
-      "notFound": "工單不存在，可能已被刪除或連結有誤。",
+      "notFound": "工單不存在，可能已被刪除或連結有誤",
       "toast": {
         "loadFailedTitle": "載入工單詳情失敗",
         "loadFailedFallback": "載入失敗",

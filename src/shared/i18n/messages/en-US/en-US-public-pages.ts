@@ -3,8 +3,8 @@
 export default {
   "navigationPages": {
     "friendGroups": {
+      "description": "Player group chats for Project SEKAI",
       "title": "Recommended groups",
-      "description": "Recommended chat groups related to pjsk",
       "loading": "Loading...",
       "empty": "No recommended groups",
       "count": "{count} groups",
@@ -16,8 +16,8 @@ export default {
       }
     },
     "friendLinks": {
+      "description": "Other useful SEKAI sites",
       "title": "Friend links",
-      "description": "Recommended websites friendly to Haruki project",
       "loading": "Loading...",
       "empty": "No friend links yet",
       "toast": {
@@ -185,7 +185,7 @@ export default {
     "hero": {
       "badge": "Afdian sponsors",
       "title": "Support Project Haruki",
-      "description": "Every sponsorship helps keep HarukiBot NEO, Haruki Toolbox, and the shared service infrastructure running for the community.",
+      "description": "Your support keeps HarukiBot NEO and Haruki Toolbox running",
       "cta": "Sponsor on Afdian",
       "aboutCta": "About Project Haruki"
     },
@@ -199,11 +199,11 @@ export default {
       "planCount": "{count}",
       "current": {
         "title": "Current sponsors",
-        "empty": "No one is sponsoring right now."
+        "empty": "No one is sponsoring right now"
       },
       "former": {
         "title": "Past sponsors",
-        "empty": "No sponsors whose time has run out yet."
+        "empty": "No sponsors whose time has run out yet"
       }
     },
     "supporter": {
@@ -218,9 +218,8 @@ export default {
     },
     "empty": {
       "title": "No sponsor data yet",
-      "description": "Once the backend publishes sponsor records, the list will appear here.",
       "unavailableTitle": "Sponsor list unavailable",
-      "unavailableDescription": "The sponsor list cannot be loaded right now. Please check back later."
+      "unavailableDescription": "Check back later"
     }
   },
   "legal": {

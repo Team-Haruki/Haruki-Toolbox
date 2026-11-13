@@ -317,13 +317,8 @@ function waitForEventSelection(timeoutMs = 12_000): Promise<boolean> {
                   </Button>
                 </template>
                 <template v-else>
-                  <p
-                    :class="[
-                      'text-xs leading-5',
-                      accountOptions.length === 0 ? 'text-destructive-tint-foreground' : 'text-muted-foreground',
-                    ]"
-                  >
-                    {{ accountOptions.length === 0 ? t("rankBorder.result.noBoundAccount") : t("rankBorder.sections.locateDescription") }}
+                  <p v-if="accountOptions.length === 0" class="text-xs leading-5 text-destructive-tint-foreground">
+                    {{ t("rankBorder.result.noBoundAccount") }}
                   </p>
                   <Button type="button" :disabled="locateDisabled" @click="locateSelectedAccount">
                     <UserSearch :class="['size-4', locating ? 'animate-pulse' : '']" />
@@ -342,16 +337,13 @@ function waitForEventSelection(timeoutMs = 12_000): Promise<boolean> {
                 </Button>
               </form>
 
-              <div class="grid gap-1.5 border-t pt-3">
-                <div class="flex min-w-0 items-center gap-2">
-                  <Switch
-                    v-model="hideProfileAssets"
-                    class="shrink-0"
-                    :aria-label="t('rankBorder.fields.hideProfileAssets')"
-                  />
-                  <p class="min-w-0 text-sm font-medium leading-5">{{ t("rankBorder.fields.hideProfileAssets") }}</p>
-                </div>
-                <p class="text-xs leading-5 text-muted-foreground">{{ t("rankBorder.fields.hideProfileAssetsHint") }}</p>
+              <div class="flex min-w-0 items-center gap-2 border-t pt-3">
+                <Switch
+                  v-model="hideProfileAssets"
+                  class="shrink-0"
+                  :aria-label="t('rankBorder.fields.hideProfileAssets')"
+                />
+                <p class="min-w-0 text-sm font-medium leading-5">{{ t("rankBorder.fields.hideProfileAssets") }}</p>
               </div>
             </div>
           </PopoverContent>

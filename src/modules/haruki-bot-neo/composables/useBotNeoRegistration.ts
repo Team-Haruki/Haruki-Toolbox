@@ -1,7 +1,6 @@
 import { computed, nextTick, onUnmounted, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { toast } from "vue-sonner"
-import { isAxiosError } from "axios"
 import { runAsyncAction } from "@/composables/useAsyncAction"
 import { copyTextToClipboard, isClipboardSupported } from "@/lib/clipboard"
 import { describeError } from "@/lib/error-utils"
@@ -11,30 +10,26 @@ import {
   registerBotNeo,
   type BotNeoRegistrationResult,
 } from "@/modules/haruki-bot-neo/api/registration"
-
-type Step = "input" | "verify" | "result"
+import {
+  checkQQNumber,
+  checkVerificationCode,
+  parseRetryAfterSeconds,
+  readErrorStatus,
+  type BotNeoStep,
+} from "@/modules/haruki-bot-neo/lib/registration"
 
 /** DOM ids of the form fields; validation focuses the invalid one. */
 export const BOT_NEO_QQ_INPUT_ID = "bot-neo-qq"
 export const BOT_NEO_CODE_INPUT_ID = "bot-neo-code"
-
-const QQ_NUMBER_PATTERN = /^[1-9]\d{4,11}$/
-const VERIFICATION_CODE_PATTERN = /^\d{6}$/
-
-function parseRetryAfterSeconds(error: unknown): number | null {
-  if (!isAxiosError(error) || error.response?.status !== 429) return null
-  const header = error.response.headers?.["retry-after"]
-  if (!header) return null
-  const seconds = Number(header)
-  return Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds) : null
-}
 
 export function useBotNeoRegistration() {
   const { t } = useI18n()
 
   const statusLoading = ref(false)
   const registrationEnabled = ref<boolean | null>(null)
-  const step = ref<Step>("input")
+  /** The last status check failed, so it is unknown whether registration is open. */
+  const statusCheckFailed = ref(false)
+  const step = ref<BotNeoStep>("input")
   const qqNumber = ref("")
   const verificationCode = ref("")
   const sending = ref(false)
@@ -43,6 +38,8 @@ export function useBotNeoRegistration() {
   /** Inline errors under the QQ and code fields; empty when valid. */
   const qqError = ref("")
   const codeError = ref("")
+  /** A failed request that no single field explains, shown above the step's buttons. */
+  const formError = ref("")
 
   const cooldownSeconds = ref(0)
   let cooldownTimer: ReturnType<typeof setInterval> | null = null
@@ -85,14 +82,23 @@ export function useBotNeoRegistration() {
   }
 
   async function checkStatus() {
+    let failed = false
     const response = await runAsyncAction(
       statusLoading,
-      () => getBotNeoStatus(),
+      async () => {
+        try {
+          return await getBotNeoStatus()
+        } catch (error) {
+          failed = true
+          throw error
+        }
+      },
       {
         errorTitle: t("botNeo.toast.statusCheckFailed"),
-        fallbackError: t("botNeo.toast.statusCheckFailedFallback"),
+        fallbackError: t("botNeo.toast.statusCheckFailedHint"),
       },
     )
+    statusCheckFailed.value = failed
     if (response) {
       registrationEnabled.value = response.updatedData?.enabled ?? false
     }
@@ -100,25 +106,23 @@ export function useBotNeoRegistration() {
 
   /** Validates the QQ field inline; returns the number or null. */
   function validateQQ(): number | null {
-    const raw = qqNumber.value.trim()
-    if (!raw) {
-      qqError.value = t("botNeo.toast.missingQQNumber")
-      focusField(BOT_NEO_QQ_INPUT_ID)
-      return null
-    }
-    if (!QQ_NUMBER_PATTERN.test(raw)) {
-      qqError.value = t("botNeo.toast.invalidQQNumber")
+    const check = checkQQNumber(qqNumber.value)
+    if (!check.ok) {
+      qqError.value = check.issue === "missing"
+        ? t("botNeo.toast.missingQQNumber")
+        : t("botNeo.toast.invalidQQNumber")
       focusField(BOT_NEO_QQ_INPUT_ID)
       return null
     }
     qqError.value = ""
-    return Number(raw)
+    return check.value
   }
 
   async function handleSendCode() {
     const qq = validateQQ()
     if (qq === null) return
 
+    formError.value = ""
     const response = await runAsyncAction(
       sending,
       () => sendBotNeoVerificationMail(qq),
@@ -134,7 +138,7 @@ export function useBotNeoRegistration() {
             return
           }
 
-          if (isAxiosError(error) && error.response?.status === 409) {
+          if (readErrorStatus(error) === 409) {
             qqError.value = t("botNeo.toast.alreadyRegisteredDescription")
             toast.error(t("botNeo.toast.alreadyRegisteredTitle"), {
               description: t("botNeo.toast.alreadyRegisteredDescription"),
@@ -142,7 +146,7 @@ export function useBotNeoRegistration() {
             return
           }
 
-          if (isAxiosError(error) && error.response?.status === 403) {
+          if (readErrorStatus(error) === 403) {
             toast.error(t("botNeo.toast.registrationDisabledTitle"), {
               description: t("botNeo.toast.registrationDisabledDescription"),
             })
@@ -150,9 +154,9 @@ export function useBotNeoRegistration() {
             return
           }
 
-          toast.error(t("botNeo.toast.sendFailedTitle"), {
-            description: describeError(error, t("botNeo.toast.sendFailedFallback")).message,
-          })
+          const message = describeError(error, t("botNeo.toast.sendFailedFallback")).message
+          formError.value = message
+          toast.error(t("botNeo.toast.sendFailedTitle"), { description: message })
         },
       },
     )
@@ -163,23 +167,21 @@ export function useBotNeoRegistration() {
     })
     codeError.value = ""
     step.value = "verify"
+    focusField(BOT_NEO_CODE_INPUT_ID)
   }
 
   /** Validates the code field inline; returns the code or null. */
   function validateCode(): string | null {
-    const code = verificationCode.value.trim()
-    if (!code) {
-      codeError.value = t("botNeo.toast.missingVerificationCode")
-      focusField(BOT_NEO_CODE_INPUT_ID)
-      return null
-    }
-    if (!VERIFICATION_CODE_PATTERN.test(code)) {
-      codeError.value = t("botNeo.toast.invalidVerificationCode")
+    const check = checkVerificationCode(verificationCode.value)
+    if (!check.ok) {
+      codeError.value = check.issue === "missing"
+        ? t("botNeo.toast.missingVerificationCode")
+        : t("botNeo.toast.invalidVerificationCode")
       focusField(BOT_NEO_CODE_INPUT_ID)
       return null
     }
     codeError.value = ""
-    return code
+    return check.value
   }
 
   async function handleRegister() {
@@ -187,6 +189,7 @@ export function useBotNeoRegistration() {
     const code = validateCode()
     if (!code) return
 
+    formError.value = ""
     const response = await runAsyncAction(
       registering,
       () => registerBotNeo(qq, code),
@@ -202,7 +205,8 @@ export function useBotNeoRegistration() {
             return
           }
 
-          if (isAxiosError(error) && error.response?.status === 409) {
+          if (readErrorStatus(error) === 409) {
+            formError.value = t("botNeo.toast.alreadyRegisteredDescription")
             toast.error(t("botNeo.toast.alreadyRegisteredTitle"), {
               description: t("botNeo.toast.alreadyRegisteredDescription"),
             })
@@ -211,9 +215,11 @@ export function useBotNeoRegistration() {
 
           const message = describeError(error, t("botNeo.toast.registerFailedFallback")).message
           // A wrong code is the usual reason: say so next to the field too.
-          if (isAxiosError(error) && error.response?.status === 400) {
+          if (readErrorStatus(error) === 400) {
             codeError.value = message
             focusField(BOT_NEO_CODE_INPUT_ID)
+          } else {
+            formError.value = message
           }
           toast.error(t("botNeo.toast.registerFailedTitle"), { description: message })
         },
@@ -223,6 +229,7 @@ export function useBotNeoRegistration() {
 
     const data = response.updatedData
     if (!data?.bot_id || !data?.credential) {
+      formError.value = t("botNeo.toast.incompleteResponse")
       toast.error(t("botNeo.toast.registerFailedTitle"), {
         description: t("botNeo.toast.incompleteResponse"),
       })
@@ -253,6 +260,7 @@ export function useBotNeoRegistration() {
     result.value = null
     qqError.value = ""
     codeError.value = ""
+    formError.value = ""
     stopCooldown()
   }
 
@@ -260,16 +268,19 @@ export function useBotNeoRegistration() {
     step.value = "input"
     verificationCode.value = ""
     codeError.value = ""
+    formError.value = ""
   }
 
   return {
     statusLoading,
     registrationEnabled,
+    statusCheckFailed,
     step,
     qqNumber,
     verificationCode,
     qqError,
     codeError,
+    formError,
     sending,
     registering,
     result,

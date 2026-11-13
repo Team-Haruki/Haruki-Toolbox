@@ -216,8 +216,11 @@ test.describe("OAuth2 device authorization page", () => {
     const writeScope = page.locator('li[data-risk="write"]')
     await expect(writeScope).toHaveCount(1)
     await expect(writeScope).toContainText("以你的身份向 Sekai Station 提交车牌（房间号）")
-    await expect(writeScope).toHaveClass(/text-destructive/)
-    await expect(page.getByText(/此授权包含写入权限|includes write access/)).toBeVisible()
+    // Marked for attention with its tag; the other rows carry no "write" tag.
+    await expect(writeScope).toHaveAttribute("data-attention", "write")
+    await expect(writeScope.getByText(/^(写入|Write)$/)).toBeVisible()
+    await expect(page.locator('li[data-risk="read"]').getByText(/^(写入|Write)$/)).toHaveCount(0)
+    await expect(page.getByText(/应用将能以你的身份提交数据|will be able to submit data as you/)).toBeVisible()
 
     // The device's own description is rendered as text, never as HTML.
     await expect(page.getByTestId("device-label")).toHaveText("<b>bold</b> @ home-server")
@@ -241,7 +244,7 @@ test.describe("OAuth2 device authorization page", () => {
 
     await page.getByRole("button", { name: APPROVE }).click()
     await expect(page.getByTestId("device-ack")).toHaveAttribute("data-highlighted", "true")
-    await expect(page.getByText(/请先勾选下方的确认框|Tick the confirmation box/)).toBeVisible()
+    await expect(page.getByText(/请先勾选确认框|Tick the confirmation box/)).toBeVisible()
     expect(callsTo(calls, "approve")).toEqual([])
 
     await page.getByRole("checkbox", { name: ACKNOWLEDGE }).click()

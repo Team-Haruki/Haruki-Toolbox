@@ -138,7 +138,6 @@ function togglePreview(costume3dId: number) {
     v-if="loading || groups.length > 0"
     :title="t('cards.detail.costumes')"
     :icon="LucideShirt"
-    :description="t('cards.detail.costumePreviewHint')"
     :loading="loading && groups.length === 0"
     content-class="flex flex-col gap-4"
   >

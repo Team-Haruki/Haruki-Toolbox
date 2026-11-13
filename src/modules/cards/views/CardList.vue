@@ -240,7 +240,6 @@ function setArtMode(value: AcceptableValue | AcceptableValue[] | undefined) {
       <CatalogEmptyState
         v-else-if="tiles.length === 0"
         :message="t('cards.list.empty')"
-        :hint="t('catalog.results.emptyHint')"
       >
         <template v-if="activeFilterCount > 0" #action>
           <Button variant="outline" size="sm" @click="reset()">{{ t("catalog.filters.clearAll") }}</Button>

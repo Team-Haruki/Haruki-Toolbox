@@ -211,10 +211,7 @@ const revokeDescription = computed(() => {
     <DialogContent size="xl">
       <DialogHeader>
         <DialogTitle>{{ t("userSettings.gameBinding.grants.title") }}</DialogTitle>
-        <DialogDescription class="space-y-1">
-          <span class="block">{{ dialogDescription }}</span>
-          <span class="block text-xs">{{ t("userSettings.gameBinding.grants.dataTypesExplainer") }}</span>
-        </DialogDescription>
+        <DialogDescription>{{ dialogDescription }}</DialogDescription>
       </DialogHeader>
 
       <DialogBody class="@container gap-5">
@@ -270,10 +267,6 @@ const revokeDescription = computed(() => {
                   {{ t("userSettings.gameBinding.grants.actions.cancelEdit") }}
                 </Button>
               </div>
-              <!-- Always visible: who the uploads/reads land on. -->
-              <p class="mt-1 text-xs text-muted-foreground">
-                {{ t("userSettings.gameBinding.grants.form.targetAccount", { account: selectedAccountLabel }) }}
-              </p>
               <p v-if="isEditing" class="mt-1 text-xs text-muted-foreground">
                 {{ t("userSettings.gameBinding.grants.form.lockedWhileEditing") }}
               </p>
@@ -442,8 +435,7 @@ const revokeDescription = computed(() => {
                 {{ props.receivedGrants.length }}
               </span>
             </h3>
-            <p class="mt-1 text-xs text-muted-foreground">{{ t("userSettings.gameBinding.grants.receivedHint") }}</p>
-            <p class="text-xs text-muted-foreground">{{ t("userSettings.gameBinding.grants.receivedUseHint") }}</p>
+            <p class="mt-1 text-xs text-muted-foreground">{{ t("userSettings.gameBinding.grants.receivedUseHint") }}</p>
             <div v-if="props.loading" class="mt-3 grid gap-2">
               <Skeleton v-for="i in 2" :key="i" class="h-10 w-full" />
             </div>

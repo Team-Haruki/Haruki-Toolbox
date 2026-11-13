@@ -277,7 +277,7 @@ function handleViewUpdate(value: string) {
           :skeleton="showSkeleton"
           :blur="blurUnreleased"
         />
-        <CatalogEmptyState v-else :message="emptyMessage" :hint="t('catalog.results.emptyHint')">
+        <CatalogEmptyState v-else :message="emptyMessage">
           <template v-if="activeFilterCount > 0 && !aliasPending" #action>
             <Button variant="outline" size="sm" @click="reset()">{{ t("catalog.filters.clearAll") }}</Button>
           </template>

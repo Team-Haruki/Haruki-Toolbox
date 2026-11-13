@@ -9,30 +9,31 @@ import type { KratosFlowType } from "@/modules/auth/lib/kratos"
 
 export interface KratosInputLabelKeys {
   labelKey: string
+  /** Only where a placeholder adds something the label does not: an example address, the length of a code. */
   placeholderKey?: string
 }
 
 const INPUT_LABEL_KEYS: Record<string, KratosInputLabelKeys> = {
   "identifier": { labelKey: "auth.login.emailLabel", placeholderKey: "auth.login.emailPlaceholder" },
-  "password": { labelKey: "auth.login.passwordLabel", placeholderKey: "auth.login.passwordPlaceholder" },
+  "password": { labelKey: "auth.login.passwordLabel" },
   "email": { labelKey: "auth.login.emailLabel", placeholderKey: "auth.login.emailPlaceholder" },
   "traits.email": { labelKey: "auth.register.emailLabel", placeholderKey: "auth.login.emailPlaceholder" },
-  "traits.name": { labelKey: "auth.register.usernameLabel", placeholderKey: "auth.register.usernamePlaceholder" },
-  "traits.username": { labelKey: "auth.register.usernameLabel", placeholderKey: "auth.register.usernamePlaceholder" },
-  "code": { labelKey: "auth.kratos.labels.code", placeholderKey: "auth.kratos.labels.codePlaceholder" },
+  "traits.name": { labelKey: "auth.register.usernameLabel" },
+  "traits.username": { labelKey: "auth.register.usernameLabel" },
+  "code": { labelKey: "auth.kratos.labels.code" },
   "totp_code": { labelKey: "auth.kratos.labels.totpCode", placeholderKey: "auth.kratos.labels.totpCodePlaceholder" },
   "lookup_secret": { labelKey: "auth.kratos.labels.lookupSecret" },
 }
 
 const REGISTRATION_INPUT_LABEL_KEYS: Record<string, KratosInputLabelKeys> = {
-  "password": { labelKey: "auth.register.passwordLabel", placeholderKey: "auth.register.passwordPlaceholder" },
+  "password": { labelKey: "auth.register.passwordLabel" },
 }
 
 const SETTINGS_INPUT_LABEL_KEYS: Record<string, KratosInputLabelKeys> = {
-  "password": { labelKey: "auth.resetPassword.newPasswordLabel", placeholderKey: "auth.resetPassword.newPasswordPlaceholder" },
+  "password": { labelKey: "auth.resetPassword.newPasswordLabel" },
   // Account settings calls the display name "昵称" everywhere (profile card,
   // "manage email and nickname"); the settings form must not call it 用户名.
-  "traits.name": { labelKey: "userSettings.email.nicknameLabel", placeholderKey: "userSettings.email.nicknamePlaceholder" },
+  "traits.name": { labelKey: "userSettings.email.nicknameLabel" },
 }
 
 export function resolveKratosInputLabelKeys(flowType: KratosFlowType, name: string): KratosInputLabelKeys | null {

@@ -162,9 +162,7 @@ async function syncUserSettings(userId: string) {
     syncedUserId.value = userId
     clearSyncRetryState()
     if (shouldNotifyRecovery) {
-      toast.success(t("core.sync.successTitle"), {
-        description: t("core.sync.successDescription"),
-      })
+      toast.success(t("core.sync.successTitle"))
     }
   } catch (e) {
     if (requestId !== latestSyncRequestId.value) return

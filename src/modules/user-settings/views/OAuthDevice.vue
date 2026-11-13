@@ -1,20 +1,14 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
-import { AppWindow, Ban, Copy, ExternalLink, LogIn } from "lucide-vue-next"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { AppWindow, Ban, CircleAlert, Copy, ExternalLink } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { useUserStore } from "@/shared/stores/user"
-import DeviceCodeEntryCard from "@/modules/user-settings/components/device/DeviceCodeEntryCard.vue"
-import DeviceResultCard from "@/modules/user-settings/components/device/DeviceResultCard.vue"
-import DeviceReviewCard from "@/modules/user-settings/components/device/DeviceReviewCard.vue"
+import DeviceCodeEntry from "@/modules/user-settings/components/device/DeviceCodeEntry.vue"
+import DeviceResult from "@/modules/user-settings/components/device/DeviceResult.vue"
+import DeviceReview from "@/modules/user-settings/components/device/DeviceReview.vue"
+import OAuthFlowShell from "@/modules/user-settings/components/oauth/OAuthFlowShell.vue"
+import OAuthFlowState from "@/modules/user-settings/components/oauth/OAuthFlowState.vue"
 import { useDeviceAuthorization } from "@/modules/user-settings/composables/useDeviceAuthorization"
 import { DEVICE_PAGE_PATH } from "@/modules/user-settings/lib/device-code"
 import { DEVICE_RESULT_STATES } from "@/modules/user-settings/lib/device-flow"
@@ -45,103 +39,111 @@ const {
   copyDevicePageLink,
 } = useDeviceAuthorization()
 
-const isResultState = computed(() => DEVICE_RESULT_STATES.includes(pageState.value))
+/**
+ * Which step the one panel shows. A `review` state without its data falls
+ * back to the code entry, like every state the page has no screen of its own for.
+ */
+type DeviceView = "framed" | "signedOut" | "unavailable" | "review" | "result" | "entry"
+
+const view = computed<DeviceView>(() => {
+  const state = pageState.value
+  if (state === "framed" || state === "signedOut" || state === "unavailable") {
+    return state
+  }
+  if (state === "review" && review.value) {
+    return "review"
+  }
+  return DEVICE_RESULT_STATES.includes(state) ? "result" : "entry"
+})
+
+const pageTitle = computed(() => {
+  if (view.value === "signedOut") {
+    return t("oauth.device.signedOut.title")
+  }
+  return view.value === "review" ? t("oauth.device.review.title") : t("oauth.device.entry.title")
+})
+const pageDescription = computed(() => (view.value === "entry" ? t("oauth.device.entry.description") : null))
 </script>
 
 <template>
-  <div class="w-full flex-1 flex flex-col items-center justify-center gap-4 px-0 py-4">
-    <!-- Inside a frame nothing else renders and nothing is requested (anti-clickjacking). -->
-    <Card v-if="pageState === 'framed'" class="w-full max-w-md">
-      <CardHeader class="text-center">
-        <div class="mx-auto mb-2 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-          <AppWindow class="h-6 w-6 text-primary" />
+  <OAuthFlowShell :title="pageTitle" :description="pageDescription">
+    <!-- In-app browsers keep their own cookies: steer people to the system browser. -->
+    <template v-if="inAppBrowser && view !== 'framed'" #notice>
+      <section class="grid min-w-0 gap-3 rounded-xl border bg-card p-4" data-testid="device-in-app-browser">
+        <div class="flex min-w-0 items-start gap-2 text-sm">
+          <CircleAlert class="mt-0.5 size-4 shrink-0 text-amber-700 dark:text-amber-300" aria-hidden="true" />
+          <div class="grid min-w-0 gap-1">
+            <p class="font-medium text-amber-800 dark:text-amber-300">{{ t("oauth.device.inAppBrowser.title") }}</p>
+            <p class="text-muted-foreground">{{ t("oauth.device.inAppBrowser.description") }}</p>
+          </div>
         </div>
-        <CardTitle class="text-xl">{{ t("oauth.device.framed.title") }}</CardTitle>
-        <CardDescription>{{ t("oauth.device.framed.description") }}</CardDescription>
-      </CardHeader>
-      <CardFooter class="justify-center">
-        <Button as-child>
-          <a :href="DEVICE_PAGE_PATH" target="_blank" rel="noopener noreferrer">
-            <ExternalLink class="h-4 w-4 mr-2" />
-            {{ t("oauth.device.framed.open") }}
-          </a>
+        <Button variant="outline" size="sm" class="justify-self-start" @click="copyDevicePageLink">
+          <Copy class="size-4" aria-hidden="true" />
+          {{ t("oauth.device.inAppBrowser.copy") }}
         </Button>
-      </CardFooter>
-    </Card>
-
-    <template v-else>
-      <Alert v-if="inAppBrowser" class="w-full max-w-md border-amber-500/40 bg-amber-500/5" data-testid="device-in-app-browser">
-        <AppWindow />
-        <AlertTitle>{{ t("oauth.device.inAppBrowser.title") }}</AlertTitle>
-        <AlertDescription class="space-y-2">
-          <p>{{ t("oauth.device.inAppBrowser.description") }}</p>
-          <Button variant="outline" size="sm" @click="copyDevicePageLink">
-            <Copy class="h-4 w-4 mr-2" />
-            {{ t("oauth.device.inAppBrowser.copy") }}
-          </Button>
-        </AlertDescription>
-      </Alert>
-
-      <Card v-if="pageState === 'signedOut'" class="w-full max-w-md">
-        <CardHeader class="text-center">
-          <div class="mx-auto mb-2 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-            <LogIn class="h-6 w-6 text-primary" />
-          </div>
-          <CardTitle class="text-xl">{{ t("oauth.device.signedOut.title") }}</CardTitle>
-          <CardDescription>{{ t("oauth.device.signedOut.description") }}</CardDescription>
-        </CardHeader>
-        <CardFooter>
-          <Button class="w-full" @click="goToLogin">
-            <LogIn class="h-4 w-4 mr-2" />
-            {{ t("oauth.device.signedOut.signIn") }}
-          </Button>
-        </CardFooter>
-      </Card>
-
-      <Card v-else-if="pageState === 'unavailable'" class="w-full max-w-md">
-        <CardHeader class="text-center">
-          <div class="mx-auto mb-2 h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-            <Ban class="h-6 w-6 text-muted-foreground" />
-          </div>
-          <CardTitle class="text-xl">{{ t("oauth.device.unavailable.title") }}</CardTitle>
-          <CardDescription>{{ t("oauth.device.unavailable.description") }}</CardDescription>
-        </CardHeader>
-      </Card>
-
-      <DeviceReviewCard
-        v-else-if="pageState === 'review' && review"
-        v-model:label="labelInput"
-        v-model:acknowledged="acknowledged"
-        :review="review"
-        :entered-code="codeInput"
-        :fallback-account-name="userStore.name"
-        :remaining-seconds="remainingSeconds"
-        :pending-action="pendingAction"
-        :disabled="isRateLimited"
-        :error-text="errorText"
-        :ack-highlighted="ackHighlighted"
-        :approve-outcome-unknown="approveOutcomeUnknown"
-        @approve="approve"
-        @deny="deny"
-        @switch-account="switchAccount"
-      />
-
-      <DeviceResultCard
-        v-else-if="isResultState"
-        :state="pageState"
-        :account-name="approvedAccountName"
-        :error-text="errorText"
-        @start-over="startOver"
-      />
-
-      <DeviceCodeEntryCard
-        v-else
-        v-model="codeInput"
-        :pending="pendingAction === 'lookup'"
-        :disabled="isRateLimited"
-        :error-text="errorText"
-        @submit="submitCode"
-      />
+      </section>
     </template>
-  </div>
+
+    <!-- Inside a frame nothing else renders and nothing is requested (anti-clickjacking). -->
+    <OAuthFlowState
+      v-if="view === 'framed'"
+      :icon="AppWindow"
+      :title="t('oauth.device.framed.title')"
+    >
+      <Button as-child>
+        <a :href="DEVICE_PAGE_PATH" target="_blank" rel="noopener noreferrer">
+          {{ t("oauth.device.framed.open") }}
+          <ExternalLink class="size-4" aria-hidden="true" />
+        </a>
+      </Button>
+    </OAuthFlowState>
+
+    <div v-else-if="view === 'signedOut'" class="p-4">
+      <Button size="lg" class="w-full" @click="goToLogin">
+        {{ t("oauth.device.signedOut.signIn") }}
+      </Button>
+    </div>
+
+    <OAuthFlowState
+      v-else-if="view === 'unavailable'"
+      :icon="Ban"
+      :title="t('oauth.device.unavailable.title')"
+      :description="t('oauth.device.unavailable.description')"
+    />
+
+    <DeviceReview
+      v-else-if="view === 'review' && review"
+      v-model:label="labelInput"
+      v-model:acknowledged="acknowledged"
+      :review="review"
+      :entered-code="codeInput"
+      :fallback-account-name="userStore.name"
+      :remaining-seconds="remainingSeconds"
+      :pending-action="pendingAction"
+      :disabled="isRateLimited"
+      :error-text="errorText"
+      :ack-highlighted="ackHighlighted"
+      :approve-outcome-unknown="approveOutcomeUnknown"
+      @approve="approve"
+      @deny="deny"
+      @switch-account="switchAccount"
+    />
+
+    <DeviceResult
+      v-else-if="view === 'result'"
+      :state="pageState"
+      :account-name="approvedAccountName"
+      :error-text="errorText"
+      @start-over="startOver"
+    />
+
+    <DeviceCodeEntry
+      v-else
+      v-model="codeInput"
+      :pending="pendingAction === 'lookup'"
+      :disabled="isRateLimited"
+      :error-text="errorText"
+      @submit="submitCode"
+    />
+  </OAuthFlowShell>
 </template>

@@ -24,9 +24,8 @@ import RelativeTime from "./RelativeTime.vue"
 
 const { t } = useI18n()
 
-const { query, live, honors, ui } = useRankBorderContext()
+const { live, honors, ui } = useRankBorderContext()
 
-const { intervalOptions, intervalSeconds } = query
 const {
   tracker,
   liveRefreshing,
@@ -99,10 +98,6 @@ const rowViewModels = computed<LeaderRowVM[]>(() => {
     }
   })
 })
-
-const intervalLabel = computed(() =>
-  intervalOptions.value.find((option) => option.value === intervalSeconds.value)?.label ?? "-",
-)
 
 // --- Quick-facts (inline expansion) ------------------------------------------
 // Derived entirely from the overview payload already in memory: the seats on
@@ -224,7 +219,6 @@ onBeforeUnmount(() => {
   <section ref="listRoot" class="@container flex min-w-0 flex-col overflow-hidden rounded-xl border bg-card" data-testid="rank-leaderboard">
     <header class="border-b border-border/60 px-4 py-3">
       <h2 class="text-sm font-semibold">{{ t("rankBorder.overview.board.title") }}</h2>
-      <p class="mt-0.5 text-xs text-muted-foreground">{{ t("rankBorder.overview.board.description", { interval: intervalLabel }) }}</p>
     </header>
 
     <div v-if="tracker.error.value" class="border-b border-border/60">

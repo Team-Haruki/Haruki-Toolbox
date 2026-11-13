@@ -156,7 +156,6 @@ const firstLoad = computed(() => loading.value && tickets.value.length === 0 && 
           v-if="statusFilter === 'all'"
           :icon="LucideTicket"
           :title="t('tickets.list.empty')"
-          :description="t('tickets.list.emptyDescription')"
         >
           <template #action>
             <Button as-child variant="outline" size="sm">

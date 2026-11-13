@@ -506,7 +506,8 @@ const { refreshing, refresh } = useSuiteRefresh([
             :totals-text="rewardTotalsText"
             :score-rank-text="rewardStats ? rewardsText(rewardStats.scoreRank) : null"
             :score-rank-has-remaining="rewardStats != null && hasMusicRewardTotals(rewardStats.scoreRank)"
-            :hint="rewardsAvailable ? t('musicProgress.rewards.hint') : (claimedAchievements == null ? t('musicProgress.rewards.unavailable') : null)"
+            :totals-hint="rewardsAvailable ? t('musicProgress.rewards.hint') : null"
+            :hint="!rewardsAvailable && claimedAchievements == null ? t('musicProgress.rewards.unavailable') : null"
             @select="selectDifficulty"
           />
         </div>

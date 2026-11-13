@@ -6,7 +6,6 @@ import {
   DialogBody,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -30,10 +29,9 @@ const STEP_KEYS = ["copy", "paste", "returnHome", "save"] as const
 
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent size="sm">
+    <DialogContent size="sm" :description="t('userSettings.gameBinding.verifyDialog.description')">
       <DialogHeader>
         <DialogTitle>{{ t("userSettings.gameBinding.verifyDialog.title") }}</DialogTitle>
-        <DialogDescription>{{ t("userSettings.gameBinding.verifyDialog.description") }}</DialogDescription>
       </DialogHeader>
 
       <DialogBody>

@@ -77,7 +77,7 @@ const unbindDialogOpen = ref(false)
 </script>
 
 <template>
-  <div class="flex flex-col gap-1.5">
+  <div>
     <SettingsGroup :title="t('userSettings.imBinding.title')" surface="card" data-testid="im-binding">
       <SettingsRow
         v-if="!isEmailVerified"
@@ -125,7 +125,6 @@ const unbindDialogOpen = ref(false)
           :icon="ShieldCheck"
           tone="warning"
           :label="t('userSettings.imBinding.toast.notVerifiedTitle')"
-          :help="isCurrentQQBinding && isTurnstileEnabled ? t('userSettings.imBinding.captchaHint') : undefined"
         >
           <Button
             size="sm"
@@ -205,18 +204,14 @@ const unbindDialogOpen = ref(false)
         <p v-if="accountError" :id="ACCOUNT_ERROR_ID" role="alert" class="text-xs text-destructive">{{ accountError }}</p>
         <p v-if="sendError" :id="SEND_ERROR_ID" role="alert" class="text-xs text-destructive">{{ sendError }}</p>
 
-        <div v-if="platform === 'qq' && isTurnstileEnabled" class="space-y-2">
-          <p class="text-xs text-muted-foreground">{{ t("userSettings.imBinding.captchaHint") }}</p>
-          <Turnstile
-            ref="turnstileRef"
-            @verify="onTurnstileVerify"
-            @invalid="onTurnstileInvalid"
-          />
-        </div>
+        <Turnstile
+          v-if="platform === 'qq' && isTurnstileEnabled"
+          ref="turnstileRef"
+          @verify="onTurnstileVerify"
+          @invalid="onTurnstileInvalid"
+        />
       </div>
     </SettingsGroup>
-    <!-- What this binding is for, as the group's footnote. -->
-    <p class="px-1 text-xs text-muted-foreground">{{ t("userSettings.imBinding.description") }}</p>
 
   <Dialog v-model:open="showCodeDialog">
     <DialogContent size="sm">

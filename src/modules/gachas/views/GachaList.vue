@@ -226,7 +226,7 @@ function showUnreleased() {
           </template>
         </CatalogEmptyState>
 
-        <CatalogEmptyState v-else :message="t('gachas.list.empty')" :hint="t('catalog.results.emptyHint')">
+        <CatalogEmptyState v-else :message="t('gachas.list.empty')">
           <template v-if="activeFilterCount > 0" #action>
             <Button variant="outline" size="sm" @click="reset()">{{ t("catalog.filters.clearAll") }}</Button>
           </template>

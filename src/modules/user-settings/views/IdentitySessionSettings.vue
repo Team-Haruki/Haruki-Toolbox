@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, type Component } from "vue"
 import { useI18n } from "vue-i18n"
 import { RouterLink, useRoute } from "vue-router"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { formatLocalizedDateTime } from "@/lib/date-time"
 import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
+import EmptyState from "@/shared/components/EmptyState.vue"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import PageHeader from "@/shared/components/PageHeader.vue"
+import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
+import SettingsRow from "@/shared/components/settings/SettingsRow.vue"
 import { describeKratosError } from "@/modules/auth/lib/kratos-messages"
 import { KratosRequestError } from "@/modules/auth/lib/kratos-errors"
 import {
@@ -17,8 +19,8 @@ import {
   fetchKratosMySessions,
   type KratosSessionInfo
 } from "@/modules/auth/lib/kratos"
-import { describeUserAgent } from "@/modules/user-settings/lib/user-agent"
-import { Loader2, LogIn, RefreshCw, ShieldX } from "lucide-vue-next"
+import { describeUserAgent, parseUserAgent } from "@/modules/user-settings/lib/user-agent"
+import { Loader2, LogOut, Monitor, MonitorSmartphone, RefreshCw, Smartphone } from "lucide-vue-next"
 
 const { t } = useI18n()
 const route = useRoute()
@@ -65,6 +67,27 @@ function readSecurityLevel(session: KratosSessionInfo): string {
   return aal === "aal2"
     ? t("userSettings.sessions.page.securityLevel.twoFactor")
     : t("userSettings.sessions.page.securityLevel.normal")
+}
+
+const PHONE_SYSTEMS = new Set(["iOS", "Android", "HarmonyOS"])
+
+/** A phone or a computer, from the device's operating system; a generic mark when unknown. */
+function readDeviceIcon(session: KratosSessionInfo): Component {
+  const os = parseUserAgent(session.devices[0]?.userAgent).os
+  if (!os) {
+    return MonitorSmartphone
+  }
+  return PHONE_SYSTEMS.has(os) ? Smartphone : Monitor
+}
+
+/** When the device signed in, was last verified and will be signed out, label over value. */
+function readSessionFacts(session: KratosSessionInfo): Array<{ key: string; label: string; value: string }> {
+  return [
+    { key: "loginAt", label: t("userSettings.sessions.page.loginAt"), value: formatDateTime(session.issuedAt) },
+    { key: "lastVerified", label: t("userSettings.sessions.page.lastVerified"), value: formatDateTime(session.authenticatedAt) },
+    { key: "expiresAt", label: t("userSettings.sessions.page.expiresAt"), value: formatDateTime(session.expiresAt) },
+    { key: "securityLevel", label: t("userSettings.sessions.page.securityLevel.label"), value: readSecurityLevel(session) },
+  ]
 }
 
 function isSessionExpiredError(error: unknown): boolean {
@@ -146,111 +169,118 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-0 py-4">
+  <div class="@container mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-0 py-4">
     <PageHeader
       size="compact"
-      :title="t('userSettings.sessions.page.title')"
-      :description="t('userSettings.sessions.page.description')"
+      :title="t('userSettings.sessions.page.title')" :description="t('userSettings.sessions.page.description')"
       :back="{ name: 'user.settings' }"
       :back-label="t('userSettings.kratosFlow.redirect.backToSettings')"
-    />
-    <Card class="w-full">
-      <CardContent class="space-y-4">
-        <div class="flex flex-col gap-2 sm:flex-row">
-          <Button variant="outline" class="sm:w-auto" :disabled="loading" @click="loadSessions">
-            <RefreshCw class="mr-2 h-4 w-4" :class="loading ? 'animate-spin' : ''" />
-            {{ t("userSettings.sessions.page.refresh") }}
+    >
+      <template #actions>
+        <Button variant="outline" size="sm" :disabled="loading" @click="loadSessions">
+          <RefreshCw :class="['size-4', loading ? 'animate-spin motion-reduce:animate-none' : '']" aria-hidden="true" />
+          {{ t("userSettings.sessions.page.refresh") }}
+        </Button>
+      </template>
+    </PageHeader>
+
+    <p
+      v-if="loading"
+      class="flex items-center justify-center gap-2 rounded-xl border bg-card px-4 py-12 text-sm text-muted-foreground"
+      role="status"
+    >
+      <Loader2 class="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+      {{ t("auth.common.loadingFlow") }}
+    </p>
+
+    <div v-else-if="sessionExpired" class="rounded-xl border bg-card px-4" data-testid="sessions-expired">
+      <EmptyState :icon="LogOut" :title="t('userSettings.sessions.page.sessionExpired')">
+        <template #action>
+          <Button as-child size="sm">
+            <RouterLink :to="loginRoute">{{ t("userSettings.sessions.page.goLogin") }}</RouterLink>
           </Button>
+        </template>
+      </EmptyState>
+    </div>
+
+    <div v-else-if="loadError" class="rounded-xl border bg-card px-4">
+      <LoadErrorState :title="loadError" description="" :retrying="loading" @retry="loadSessions" />
+    </div>
+
+    <template v-else>
+      <SettingsGroup
+        v-if="currentSession"
+        :title="t('userSettings.sessions.page.currentSession')"
+        surface="card"
+        data-testid="sessions-current"
+      >
+        <SettingsRow
+          :icon="readDeviceIcon(currentSession)"
+          tone="primary"
+          :label="readDeviceLabel(currentSession)"
+        >
+          <!-- An IPv6 address has no break opportunity of its own. -->
+          <template #help>
+            <span class="[overflow-wrap:anywhere]">{{ readDeviceMeta(currentSession) }}</span>
+          </template>
+          <template #below>
+            <dl class="grid grid-cols-2 gap-x-6 gap-y-2 @min-[34rem]:grid-cols-4">
+              <div v-for="fact in readSessionFacts(currentSession)" :key="fact.key" class="min-w-0">
+                <dt class="text-[11px] text-muted-foreground">{{ fact.label }}</dt>
+                <dd class="text-xs tabular-nums">{{ fact.value }}</dd>
+              </div>
+            </dl>
+          </template>
+        </SettingsRow>
+      </SettingsGroup>
+
+      <SettingsGroup :title="t('userSettings.sessions.page.otherSessions')" surface="card" data-testid="sessions-others">
+        <template v-if="hasOtherSessions" #action>
           <Button
-            variant="destructive"
-            class="sm:w-auto"
-            :disabled="loading || !hasOtherSessions || revokingOthers || revokingSessionId !== ''"
+            variant="ghost"
+            size="sm"
+            class="h-7 px-2 text-destructive hover:text-destructive"
+            :disabled="revokingOthers || revokingSessionId !== ''"
             @click="revokeOthersDialogOpen = true"
           >
-            <Loader2 v-if="revokingOthers" class="mr-2 h-4 w-4 animate-spin" />
-            <ShieldX v-else class="mr-2 h-4 w-4" />
+            <Loader2 v-if="revokingOthers" class="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
             {{ t("userSettings.sessions.page.revokeOthers") }}
           </Button>
-        </div>
+        </template>
 
-        <div v-if="loading" class="flex items-center justify-center py-12 text-muted-foreground">
-          <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-          {{ t("auth.common.loadingFlow") }}
-        </div>
+        <EmptyState v-if="!hasOtherSessions" size="sm" :icon="MonitorSmartphone" :title="t('userSettings.sessions.page.empty')" />
 
-        <div
-          v-else-if="sessionExpired"
-          class="flex flex-col items-center gap-3 rounded-md border bg-muted/30 px-4 py-8 text-center"
-          data-testid="sessions-expired"
+        <SettingsRow
+          v-for="session in otherSessions"
+          :key="session.id"
+          :icon="readDeviceIcon(session)"
+          :label="readDeviceLabel(session)"
         >
-          <p class="text-sm font-medium">{{ t("userSettings.sessions.page.sessionExpired") }}</p>
-          <p class="max-w-md text-sm text-muted-foreground">{{ t("userSettings.sessions.page.sessionExpiredDescription") }}</p>
-          <Button as-child size="sm">
-            <RouterLink :to="loginRoute">
-              <LogIn class="mr-2 h-4 w-4" />
-              {{ t("userSettings.sessions.page.goLogin") }}
-            </RouterLink>
+          <template #help>
+            <span class="[overflow-wrap:anywhere]">{{ readDeviceMeta(session) }}</span>
+          </template>
+          <Button
+            variant="outline"
+            size="sm"
+            class="text-destructive hover:text-destructive"
+            :aria-label="t('userSettings.sessions.page.revokeOneNamed', { device: readDeviceLabel(session) })"
+            :disabled="revokingOthers || (revokingSessionId !== '' && revokingSessionId !== session.id)"
+            @click="requestRevokeSession(session)"
+          >
+            <Loader2 v-if="revokingSessionId === session.id" class="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+            {{ t("userSettings.sessions.page.revokeOne") }}
           </Button>
-        </div>
-
-        <LoadErrorState
-          v-else-if="loadError"
-          :title="t('userSettings.sessions.page.loadFailed')"
-          :description="loadError"
-          :retrying="loading"
-          @retry="loadSessions"
-        />
-
-        <div v-else class="space-y-4">
-          <section v-if="currentSession" class="space-y-2 rounded-md border p-3">
-            <div class="flex items-center justify-between gap-2">
-              <h3 class="text-sm font-medium">{{ t("userSettings.sessions.page.currentSession") }}</h3>
-              <span class="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                {{ t("userSettings.sessions.page.currentTag") }}
-              </span>
-            </div>
-            <div class="text-sm font-medium break-all">{{ readDeviceLabel(currentSession) }}</div>
-            <div class="text-xs text-muted-foreground">{{ readDeviceMeta(currentSession) }}</div>
-            <dl class="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
-              <div><dt class="inline">{{ t("userSettings.sessions.page.loginAt") }}: </dt><dd class="inline">{{ formatDateTime(currentSession.issuedAt) }}</dd></div>
-              <div><dt class="inline">{{ t("userSettings.sessions.page.lastVerified") }}: </dt><dd class="inline">{{ formatDateTime(currentSession.authenticatedAt) }}</dd></div>
-              <div><dt class="inline">{{ t("userSettings.sessions.page.expiresAt") }}: </dt><dd class="inline">{{ formatDateTime(currentSession.expiresAt) }}</dd></div>
-              <div><dt class="inline">{{ t("userSettings.sessions.page.securityLevel.label") }}: </dt><dd class="inline">{{ readSecurityLevel(currentSession) }}</dd></div>
-            </dl>
-          </section>
-
-          <section class="space-y-2">
-            <h3 class="text-sm font-medium">{{ t("userSettings.sessions.page.otherSessions") }}</h3>
-
-            <div v-if="!hasOtherSessions" class="rounded-md border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-              {{ t("userSettings.sessions.page.empty") }}
-            </div>
-
-            <div v-else class="space-y-2">
-              <div v-for="session in otherSessions" :key="session.id" class="space-y-3 rounded-md border p-3">
-                <div class="text-sm font-medium break-all">{{ readDeviceLabel(session) }}</div>
-                <div class="text-xs text-muted-foreground">{{ readDeviceMeta(session) }}</div>
-                <dl class="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
-                  <div><dt class="inline">{{ t("userSettings.sessions.page.loginAt") }}: </dt><dd class="inline">{{ formatDateTime(session.issuedAt) }}</dd></div>
-                  <div><dt class="inline">{{ t("userSettings.sessions.page.lastVerified") }}: </dt><dd class="inline">{{ formatDateTime(session.authenticatedAt) }}</dd></div>
-                  <div><dt class="inline">{{ t("userSettings.sessions.page.expiresAt") }}: </dt><dd class="inline">{{ formatDateTime(session.expiresAt) }}</dd></div>
-                  <div><dt class="inline">{{ t("userSettings.sessions.page.securityLevel.label") }}: </dt><dd class="inline">{{ readSecurityLevel(session) }}</dd></div>
-                </dl>
-                <Button
-                  variant="destructive"
-                  :disabled="revokingOthers || (revokingSessionId !== '' && revokingSessionId !== session.id)"
-                  @click="requestRevokeSession(session)"
-                >
-                  <Loader2 v-if="revokingSessionId === session.id" class="mr-2 h-4 w-4 animate-spin" />
-                  <ShieldX v-else class="mr-2 h-4 w-4" />
-                  {{ t("userSettings.sessions.page.revokeOne") }}
-                </Button>
+          <template #below>
+            <dl class="grid grid-cols-2 gap-x-6 gap-y-2 @min-[34rem]:grid-cols-4">
+              <div v-for="fact in readSessionFacts(session)" :key="fact.key" class="min-w-0">
+                <dt class="text-[11px] text-muted-foreground">{{ fact.label }}</dt>
+                <dd class="text-xs tabular-nums">{{ fact.value }}</dd>
               </div>
-            </div>
-          </section>
-        </div>
-      </CardContent>
-    </Card>
+            </dl>
+          </template>
+        </SettingsRow>
+      </SettingsGroup>
+    </template>
 
     <ConfirmDialog
       v-model:open="revokeOneDialogOpen"

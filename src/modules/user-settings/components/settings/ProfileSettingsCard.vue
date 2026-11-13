@@ -82,7 +82,6 @@ function openVerification() {
     <SettingsLinkRow
       :icon="AtSign"
       :label="t('userSettings.email.changeButton')"
-      :help="t('userSettings.email.changeHelp')"
       @click="openIdentitySettings"
     />
   </SettingsGroup>

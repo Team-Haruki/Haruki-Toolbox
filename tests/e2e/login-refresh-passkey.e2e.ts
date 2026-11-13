@@ -193,7 +193,9 @@ test("the refresh passkey button sends a discoverable request and posts the asse
   const mocked = await mockKratos(page, appOrigin, buildRefreshFlow({ appOrigin }))
 
   await page.goto("/user/login?flow=e2e-flow")
-  await expect(page.getByText("为确认是你本人，请再次验证身份")).toBeVisible()
+  // The heading names the step; the explanation is the message Kratos sends with it.
+  await expect(page.getByRole("heading", { name: "确认是你本人" })).toBeVisible()
+  await expect(page.getByText("请再次验证身份")).toBeVisible()
 
   const posted = page.waitForRequest((request) => request.method() === "POST" && request.url().startsWith(`${KRATOS_ORIGIN}/self-service/login`))
   await page.getByRole("button", { name: "使用通行密钥登录", exact: true }).click()
@@ -255,10 +257,10 @@ test("a refresh that lost the user handle offers to sign out and sign in again",
   await expect(hint).toContainText("再次验证没有完成")
   await expect(page.getByText("这个账号不存在")).toHaveCount(0)
   if (process.env.E2E_SHOT_DIR) {
-    await page.locator("[data-slot='card']").first().screenshot({ path: `${process.env.E2E_SHOT_DIR}/refresh-passkey-mismatch-light.png` })
+    await page.locator("[data-kratos-page]").first().screenshot({ path: `${process.env.E2E_SHOT_DIR}/refresh-passkey-mismatch-light.png` })
     await page.emulateMedia({ colorScheme: "dark" })
     await page.waitForTimeout(400)
-    await page.locator("[data-slot='card']").first().screenshot({ path: `${process.env.E2E_SHOT_DIR}/refresh-passkey-mismatch-dark.png` })
+    await page.locator("[data-kratos-page]").first().screenshot({ path: `${process.env.E2E_SHOT_DIR}/refresh-passkey-mismatch-dark.png` })
     await page.emulateMedia({ colorScheme: "light" })
   }
 

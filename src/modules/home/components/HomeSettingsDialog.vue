@@ -57,7 +57,6 @@ import { PREFERRED_VOCAL_TYPES } from "@/shared/stores/settings"
 interface SettingsSection {
   value: string
   label: string
-  description: string
   icon: Component
 }
 
@@ -136,25 +135,21 @@ const settingsSections = computed<SettingsSection[]>(() => [
   {
     value: "preferences",
     label: t("homeSettings.tabs.preferences"),
-    description: t("homeSettings.sections.preferences"),
     icon: SlidersHorizontal,
   },
   {
     value: "app",
     label: t("homeSettings.tabs.app"),
-    description: t("homeSettings.appUpdate.description"),
     icon: Smartphone,
   },
   {
     value: "sekai-data",
     label: t("homeSettings.tabs.sekaiData"),
-    description: t("homeSettings.sections.sekaiData"),
     icon: Database,
   },
   {
     value: "user-data",
     label: t("homeSettings.tabs.userData"),
-    description: t("homeSettings.userData.description"),
     icon: UserRoundCog,
   },
 ])
@@ -305,14 +300,11 @@ const updateStatus = computed<{ icon: Component; tone: SettingsRowTone; label: s
           </nav>
           </div>
 
-          <header class="flex shrink-0 items-start gap-3 border-b px-4 py-3.5 sm:px-5 sm:py-4 sm:pr-14">
+          <header class="flex shrink-0 items-center gap-3 border-b px-4 py-3.5 sm:px-5 sm:py-4 sm:pr-14">
             <span class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary" aria-hidden="true">
               <component :is="activeSection.icon" class="size-4.5" />
             </span>
-            <div class="min-w-0">
-              <h2 class="text-base font-semibold">{{ activeSection.label }}</h2>
-              <p class="mt-0.5 text-sm text-muted-foreground">{{ activeSection.description }}</p>
-            </div>
+            <h2 class="min-w-0 text-base font-semibold">{{ activeSection.label }}</h2>
           </header>
 
           <div class="@container min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
@@ -321,7 +313,6 @@ const updateStatus = computed<{ icon: Component; tone: SettingsRowTone; label: s
                 <SettingsRow
                   :icon="SunMoon"
                   :label="t('homeSettings.theme.label')"
-                  :help="t('homeSettings.theme.help')"
                   label-for="dialog-theme"
                   label-id="dialog-theme-label"
                   stack
@@ -346,7 +337,6 @@ const updateStatus = computed<{ icon: Component; tone: SettingsRowTone; label: s
                 <SettingsRow
                   :icon="Languages"
                   :label="t('homeSettings.locale.label')"
-                  :help="t('homeSettings.locale.help')"
                   label-for="dialog-locale"
                   label-id="dialog-locale-label"
                   stack
@@ -475,7 +465,6 @@ const updateStatus = computed<{ icon: Component; tone: SettingsRowTone; label: s
                 <SettingsRow
                   :icon="CalendarClock"
                   :label="t('homeSettings.unreleased.showLabel')"
-                  :help="t('homeSettings.unreleased.showHelp')"
                   label-for="dialog-show-unreleased-content"
                 >
                   <Switch id="dialog-show-unreleased-content" v-model="selectedShowUnreleasedContent" />
@@ -484,7 +473,6 @@ const updateStatus = computed<{ icon: Component; tone: SettingsRowTone; label: s
                 <SettingsRow
                   :icon="Droplets"
                   :label="t('homeSettings.unreleased.blurLabel')"
-                  :help="t('homeSettings.unreleased.blurHelp')"
                   label-for="dialog-blur-unreleased-content"
                   :dimmed="!selectedShowUnreleasedContent"
                 >
@@ -500,7 +488,6 @@ const updateStatus = computed<{ icon: Component; tone: SettingsRowTone; label: s
                 <SettingsRow
                   :icon="MicVocal"
                   :label="t('homeSettings.music.preferredVocal.label')"
-                  :help="t('homeSettings.music.preferredVocal.help')"
                   label-for="dialog-preferred-vocal"
                   label-id="dialog-preferred-vocal-label"
                   stack
@@ -522,7 +509,6 @@ const updateStatus = computed<{ icon: Component; tone: SettingsRowTone; label: s
                 <SettingsRow
                   :icon="RotateCcw"
                   :label="t('homeSettings.reset.label')"
-                  :help="t('homeSettings.resetDialog.description')"
                 >
                   <Button
                     type="button"

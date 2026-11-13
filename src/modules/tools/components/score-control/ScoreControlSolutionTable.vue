@@ -52,7 +52,7 @@ const visible = computed(() => (expanded.value ? props.ranges : props.ranges.sli
             {{ t("tools.pointCalculator.conditions.boostOption", { index: range.boost }) }}
             <span class="text-[11px] text-muted-foreground">×{{ range.boostMultiplier }}</span>
           </td>
-          <td class="py-1.5 pl-3">
+          <td class="py-1.5 pl-3" :title="isIdleRange(range) ? t('tools.pointCalculator.result.step.idleHint') : undefined">
             <template v-if="isIdleRange(range)">
               {{ t("tools.pointCalculator.result.step.idle") }}
               <span class="text-[11px] whitespace-nowrap text-muted-foreground">

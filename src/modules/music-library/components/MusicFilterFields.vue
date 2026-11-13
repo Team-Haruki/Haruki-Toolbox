@@ -334,8 +334,7 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
       :characters="characters"
       :unit-color-map="unitColorMap"
     >
-      <!-- Trails the avatars. The scope only exists once a character is
-           picked; until then the same spot explains why. -->
+      <!-- Trails the avatars. The scope only exists once a character is picked. -->
       <template v-if="state.chars.length > 0">
         <p :id="`${id}-scope-label`" class="ml-3 text-xs font-medium text-muted-foreground">
           {{ t("musicCatalog.filters.scope") }}
@@ -353,9 +352,6 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
           </ToggleGroupItem>
         </ToggleGroup>
       </template>
-      <!-- A sentence, so it takes its own line under the avatars instead of
-           wrapping into the row. -->
-      <p v-else class="basis-full text-xs text-muted-foreground">{{ t("musicCatalog.filters.scopeHint") }}</p>
     </CatalogCharacterPicker>
   </div>
 </template>

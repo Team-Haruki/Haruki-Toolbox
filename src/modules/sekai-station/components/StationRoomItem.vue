@@ -55,7 +55,7 @@ function openFrame(el: HTMLElement) {
 import { computed, getCurrentInstance, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { toast } from "vue-sonner"
-import StationRoomCard from "@/modules/sekai-station/components/StationRoomCard.vue"
+import StationRoomRow from "@/modules/sekai-station/components/StationRoomRow.vue"
 import { useStationReducedMotion } from "@/modules/sekai-station/composables/useStationReducedMotion"
 import { captureFocusHandOff } from "@/modules/sekai-station/lib/focus-hand-off"
 import { LIVE_FLASH_MAX_AGE_SECONDS } from "@/modules/sekai-station/lib/sekai-station-constants"
@@ -226,7 +226,7 @@ function onBlock() {
     return
   }
   const current = props.entry.room
-  // Captured now: the card unmounts as soon as the room is blocked
+  // Captured now: the row unmounts as soon as the room is blocked
   pendingBlock = {
     key: props.entry.key,
     room: { ...current, info: { ...current.info } },
@@ -293,8 +293,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="root" class="relative">
-    <StationRoomCard
+  <li ref="root" class="relative last:rounded-b-[calc(var(--radius-xl)-1px)]">
+    <StationRoomRow
       :room="entry.room"
       :room-key="entry.key"
       :extra="feed.getExtra(entry.room.id)"
@@ -302,8 +302,8 @@ onBeforeUnmount(() => {
     />
     <span
       ref="flashLayer"
-      class="pointer-events-none absolute inset-0 rounded-lg bg-primary/15 opacity-0"
+      class="pointer-events-none absolute inset-0 rounded-[inherit] bg-primary/15 opacity-0"
       aria-hidden="true"
     />
-  </div>
+  </li>
 </template>

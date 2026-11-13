@@ -11,8 +11,7 @@ const { t } = useI18n()
     <!-- The one heading of the page; the list below carries only its toolbar. -->
     <PageHeader
       size="compact"
-      :title="t('userSettings.oauthAuthorizations.title')"
-      :description="t('userSettings.oauthAuthorizations.description')"
+      :title="t('userSettings.oauthAuthorizations.title')" :description="t('userSettings.oauthAuthorizations.description')"
     />
 
     <OAuth2Authorizations />

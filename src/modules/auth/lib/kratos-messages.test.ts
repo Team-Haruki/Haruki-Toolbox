@@ -100,15 +100,15 @@ describe("localizeKratosMessage", () => {
   })
 
   test("interpolates numeric and named context", () => {
-    expect(localizeKratosMessage({ id: 4000032, text: "The password must be at least 8 characters long, but got 3.", context: { min_length: 8, actual_length: 3 } })).toBe("密码太短，至少需要 8 个字符。")
+    expect(localizeKratosMessage({ id: 4000032, text: "The password must be at least 8 characters long, but got 3.", context: { min_length: 8, actual_length: 3 } })).toBe("密码太短，至少需要 8 个字符")
     expect(localizeKratosMessage({ id: 1050020, text: "Remove passkey \"k@example.com\"", context: { display_name: "k@example.com" } })).toBe("移除通行密钥「k@example.com」")
     expect(localizeKratosMessage({ id: 1060004, text: "A recovery code has been sent to k***@example.com.", context: { masked_address: "k***@example.com" } })).toContain("k***@example.com")
   })
 
   test("names the missing field of a required error", () => {
-    expect(localizeKratosMessage({ id: 4000002, text: "Property identifier is missing.", context: { property: "identifier" } })).toBe("请填写邮箱。")
-    expect(localizeKratosMessage({ id: 4000002, text: "Property password is missing.", context: { property: "password" } })).toBe("请填写密码。")
-    expect(localizeKratosMessage({ id: 4000002, text: "Property foo is missing.", context: { property: "foo" } })).toBe("请填写这一项。")
+    expect(localizeKratosMessage({ id: 4000002, text: "Property identifier is missing.", context: { property: "identifier" } })).toBe("请填写邮箱")
+    expect(localizeKratosMessage({ id: 4000002, text: "Property password is missing.", context: { property: "password" } })).toBe("请填写密码")
+    expect(localizeKratosMessage({ id: 4000002, text: "Property foo is missing.", context: { property: "foo" } })).toBe("请填写这一项")
   })
 
   test("labels identity schema traits by field name, not the schema title", () => {
@@ -121,7 +121,7 @@ describe("localizeKratosMessage", () => {
     const tooOften = "The request was submitted too often. Please request another code."
     expect(localizeKratosMessage({ id: 4000001, text: tooOften, context: { reason: tooOften } })).toContain("尝试次数过多")
     const email = "\"not-an-email\" is not valid \"email\""
-    expect(localizeKratosMessage({ id: 4000001, text: email, context: { reason: email } })).toBe("邮箱格式不正确，请检查后重新填写。")
+    expect(localizeKratosMessage({ id: 4000001, text: email, context: { reason: email } })).toBe("邮箱格式不正确，请检查后重新填写")
     const denied = "Unable to complete OpenID Connect flow because the OpenID Provider returned error \"access_denied\": The user denied the request"
     expect(localizeKratosMessage({ id: 4000001, text: denied, context: { reason: denied } })).toContain("你取消了第三方账号授权")
   })

@@ -40,7 +40,6 @@ test("default deck recommendation selects the ongoing official memory event", as
   await expect(page.getByRole("button", { name: /Vivid BAD SQUAD Memories/ })).toBeVisible()
   await expect(page.locator("#deck-event-simulation")).toHaveAttribute("aria-checked", "false")
   await expect(page.locator("#deck-simulation-type-label")).toHaveCount(0)
-  await expect(page.getByText(/正式总集篇无需开启模拟/)).toBeVisible()
   await page.locator("#deck-event-simulation").click()
   await page.getByRole("combobox", { name: "活动类型", exact: true }).click()
   await page.getByRole("option", { name: "总集篇", exact: true }).click()

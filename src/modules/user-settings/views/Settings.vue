@@ -103,8 +103,7 @@ onMounted(() => {
   <div v-else class="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-0 py-4">
     <PageHeader
       size="compact"
-      :title="t('userSettings.sections.accountTitle')"
-      :description="t('userSettings.sections.accountDescription')"
+      :title="t('userSettings.sections.accountTitle')" :description="t('userSettings.sections.accountDescription')"
     />
 
     <!-- Who you are, how you sign in, then the sponsor binding. -->

@@ -66,7 +66,7 @@ export default {
       },
       "power": {
         "title": "Power",
-        "hint": "Base power, without area items, titles or character-rank bonuses.",
+        "hint": "Excludes area item, title and character rank bonuses",
         "noData": "No power data",
         "level": "Level",
         "trained": "Special training",
@@ -99,18 +99,18 @@ export default {
       },
       "relatedEvents": {
         "title": "Related events",
-        "empty": "No related events.",
+        "empty": "No related events",
         "cardBonus": "Card +{value}%",
         "leaderBonus": "Leader +{value}%",
         "story": "Card story"
       },
       "relatedGachas": {
         "title": "Related gachas",
-        "empty": "No related gachas."
+        "empty": "No related gachas"
       },
       "sameCharacter": {
         "title": "More cards of this character",
-        "empty": "No other cards.",
+        "empty": "No other cards",
         "count": "{count} cards"
       }
     }
@@ -159,30 +159,30 @@ export default {
     },
     "musics": {
       "title": "Event songs",
-      "empty": "No songs for this event."
+      "empty": "No songs for this event"
     },
     "chapters": {
-      "empty": "No chapter data for this event.",
+      "empty": "No chapter data for this event",
       "supplemental": "Supplemental"
     },
     "teams": {
       "title": "Cheerful Carnival teams",
-      "empty": "No team data for this event."
+      "empty": "No team data for this event"
     },
     "gachas": {
       "title": "Related gachas",
-      "empty": "No related gachas found.",
+      "empty": "No related gachas found",
       "count": "{count} gachas",
       "showMore": "{count} more",
       "showLess": "Show fewer",
-      "byPickup": "Gachas whose pickup cards include an event card",
-      "byPeriod": "Gachas whose run overlaps the event period (±3 days)"
+      "byPickup": "Gachas picking up this event's cards",
+      "byPeriod": "Gachas overlapping the event period (±3 days)"
     },
     "rewards": {
       "title": "Ranking rewards",
       "rangeCount": "{count} rank ranges",
-      "empty": "No ranking reward data for this event.",
-      "unavailable": "This server does not provide reward details yet; only the rank ranges are shown.",
+      "empty": "No ranking reward data for this event",
+      "unavailable": "No reward details on this server yet; rank ranges only",
       "rank": "Rank {rank}",
       "rankRange": "Rank {from}–{to}",
       "border": "Border",
@@ -249,22 +249,19 @@ export default {
       "period": "Availability",
       "startAt": "Starts",
       "endAt": "Ends",
-      "permanentHint": "Permanent gacha with no end date.",
       "lightbox": {
         "banner": "Banner",
         "logo": "Logo"
       }
     },
     "pickups": {
-      "empty": "This gacha has no pickup members",
-      "wishHint": "Up to {count} wish cards can be selected in this gacha"
+      "empty": "This gacha has no pickup members"
     },
     "rates": {
-      "description": "Rate per rarity for a single pull, one column per lottery type in the gacha data",
       "bar": "Rarity rate distribution",
       "perCard": "Per card",
       "empty": "No rate data available",
-      "wishNote": "This gacha supports wishes: up to {count} cards can be selected, and selected cards get their own wish rate.",
+      "wishNote": "Up to {count} cards can be wished for; wished cards have their own rate",
       "lottery": {
         "normal": "Normal",
         "categorized_wish": "Wish",
@@ -274,7 +271,6 @@ export default {
     },
     "simulator": {
       "title": "Pull simulator",
-      "description": "Local random simulation using the rates in the gacha data, for fun only",
       "pullSingle": "Pull ×1",
       "pullTen": "Pull ×10",
       "free": "Free",
@@ -284,9 +280,8 @@ export default {
       "new": "NEW",
       "guaranteed": "Guaranteed",
       "reset": "Reset",
-      "idle": "Press Pull ×1 or Pull ×10 to start.",
-      "unavailable": "This gacha has no lottery data to simulate.",
-      "disclaimer": "This fan-made simulator is unofficial: results come from a local random number generator and do not reflect actual in-game pulls."
+      "unavailable": "This gacha has no lottery data to simulate",
+      "disclaimer": "Unofficial simulation; results do not reflect actual in-game pulls"
     },
     "pool": {
       "summary": "{count} cards",
@@ -308,7 +303,7 @@ export default {
       "convertAt": "Converts to the generic sticker from {time}",
       "exchange": "Sticker exchange",
       "exchangeEmpty": "No exchange data for this gacha on the current server",
-      "rewardsUnavailable": "This server does not provide reward details yet; only the reward box ids are shown.",
+      "rewardsUnavailable": "No reward details on this server yet; reward box ids only",
       "reward": "Reward",
       "cost": "Stickers",
       "limit": "Limit",
@@ -360,8 +355,7 @@ export default {
       "appendOnly": "Only songs with an APPEND chart",
       "mvType": "MV type",
       "scope": "Relation",
-      "scopeHint": "Pick a character to narrow down to their box (event) songs or vocals",
-      "aliasUnavailable": "Alias search is temporarily unavailable; only titles are matched."
+      "aliasUnavailable": "Alias search is unavailable right now"
     },
     "detail": {
       "jacket": "Jacket",
@@ -369,7 +363,7 @@ export default {
         "info": "Overview"
       },
       "difficulties": {
-        "empty": "No chart data."
+        "empty": "No chart data"
       },
       "player": {
         "seek": "Playback position",
@@ -383,7 +377,7 @@ export default {
         "open": "Open on {host}"
       },
       "events": {
-        "empty": "This song is not linked to any event."
+        "empty": "This song is not linked to any event"
       }
     }
   },
@@ -392,14 +386,14 @@ export default {
   // storyPlayer — owned by the story module (src/modules/story)
   // ---------------------------------------------------------------------
   "storyPlayer": {
+    "description": "Read the game stories; visuals and voices come from the JP server",
     "beta": {
       "title": "In testing",
-      "body": "This page is still being tested and you may run into bugs. If something breaks or doesn't match the game, please report it in {tickets}.",
+      "body": "If something breaks or doesn't match the game, report it in {tickets}",
       "tickets": "a ticket",
       "ticketsLogin": "a ticket (sign in first)"
     },
     "title": "Story player",
-    "description": "Plays main, event, card, special stories and area talks the way the game stages them. Visuals and voices come from the JP server; text can be any server's official translation, with an AI Chinese translation for JP-only stories.",
     "textLang": "Text language",
     "voice": "Voices",
     "volume": "Volume",
@@ -415,20 +409,20 @@ export default {
       "ko": "한국어",
       "zhHansAi": "简体中文（AI 翻译）"
     },
-    "aiPending": "The AI translation of this episode is still being made. Check back later.",
-    "aiNotice": "This text is an AI translation and may differ from the official one.",
-    "aiFailed": "The AI translation is unavailable right now; the Japanese text is shown instead.",
+    "aiPending": "The AI translation of this episode is not ready yet; check back later",
+    "aiNotice": "AI translation; may differ from the official one",
+    "aiFailed": "AI translation unavailable; showing the Japanese text",
     "resume": {
       "lastWatched": "Last watched: {title} · {episode}",
       "continue": "Continue",
       "dismiss": "Dismiss"
     },
     "errors": {
-      "notFound": "This episode could not be found.",
-      "unreleased": "This episode is not out yet. Turn on “Show unreleased content” in Settings to watch it.",
-      "missing": "The JP assets do not have this episode's script yet.",
-      "failed": "The story failed to load.",
-      "catalog": "The story list failed to load. Refresh to try again.",
+      "notFound": "This episode could not be found",
+      "unreleased": "This episode is not out yet; turn on “Show unreleased content” in Settings to watch it",
+      "missing": "The JP assets do not have this episode's script yet",
+      "failed": "The story failed to load",
+      "catalog": "The story list failed to load; refresh to try again",
       "engine": "The player failed to load: {detail}"
     },
     "stage": {
@@ -448,7 +442,7 @@ export default {
       "exitFullscreen": "Exit fullscreen",
       "showUi": "Show",
       "keyboard": "Story stage: press Space or Enter to continue",
-      "rotateHint": "Tap \"Fullscreen\" to watch sideways with readable text; tapping here also continues."
+      "rotateHint": "Tap \"Fullscreen\" to watch sideways; tap here to continue"
     },
     "browser": {
       "tabs": {

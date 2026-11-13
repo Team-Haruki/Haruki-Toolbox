@@ -3,21 +3,21 @@
 export default {
   "navigationPages": {
     "friendGroups": {
+      "description": "PJSK 相關的玩家交流群",
       "title": "推薦群聊",
-      "description": "一些與pjsk相關的群聊推薦",
       "loading": "載入中...",
       "empty": "暫無推薦群聊",
       "count": "{count} 個群",
       "copyNumber": "複製群號 {number}",
       "copied": "已複製群號 {number}",
-      "copyFailed": "複製失敗，請手動複製群號。",
+      "copyFailed": "複製失敗，請手動複製群號",
       "toast": {
         "loadFailedTitle": "載入推薦群聊失敗"
       }
     },
     "friendLinks": {
+      "description": "其他好用的 Sekai 站點",
       "title": "友情連結",
-      "description": "一些與Haruki專案友好的網站推薦",
       "loading": "載入中...",
       "empty": "暫無友情連結",
       "toast": {
@@ -185,7 +185,7 @@ export default {
     "hero": {
       "badge": "愛發電贊助",
       "title": "支援 Project Haruki",
-      "description": "每一份贊助都會幫助 HarukiBot NEO、Haruki 工具箱以及公共服務基礎設施繼續穩定執行。",
+      "description": "你的贊助讓 HarukiBot NEO 和 Haruki 工具箱持續執行",
       "cta": "前往愛發電贊助",
       "aboutCta": "關於 Project Haruki"
     },
@@ -199,11 +199,11 @@ export default {
       "planCount": "{count} 人",
       "current": {
         "title": "當前贊助",
-        "empty": "暫無正在贊助的贊助者。"
+        "empty": "暫無正在贊助的贊助者"
       },
       "former": {
         "title": "曾經贊助",
-        "empty": "暫無贊助時長已到期的贊助者。"
+        "empty": "暫無贊助時長已到期的贊助者"
       }
     },
     "supporter": {
@@ -218,9 +218,8 @@ export default {
     },
     "empty": {
       "title": "暫無贊助資料",
-      "description": "後端發布贊助記錄後，名單會顯示在這裡。",
       "unavailableTitle": "贊助名單暫不可用",
-      "unavailableDescription": "贊助名單暫時無法載入，請稍後再來看看。"
+      "unavailableDescription": "請稍後再來看看"
     }
   },
   "legal": {
