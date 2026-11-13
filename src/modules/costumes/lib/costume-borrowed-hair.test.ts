@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test"
-import { defaultHairThumbnail, hairDonors, MULTI_TONE_HAIR_CHARACTER_IDS } from "./costume-borrowed-hair"
+import { hairDonors, MULTI_TONE_HAIR_CHARACTER_IDS } from "./costume-borrowed-hair"
 
 const genders = new Map<number, string>(
   Array.from({ length: 26 }, (_, index) => {
@@ -21,13 +21,6 @@ describe("hairDonors", () => {
 
   it("lends nothing when the gender is unknown", () => {
     expect(hairDonors(5, new Map())).toEqual([])
-  })
-})
-
-describe("defaultHairThumbnail", () => {
-  it("names the default hair's costume thumbnail", () => {
-    expect(defaultHairThumbnail(5)).toBe("hair_default_05")
-    expect(defaultHairThumbnail(21)).toBe("hair_default_21")
   })
 })
 

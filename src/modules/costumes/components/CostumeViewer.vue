@@ -26,8 +26,10 @@ export type CostumeViewerRecipe = {
    * without the character, and frames it on its own.
    */
   accessoryOnly?: boolean
-  /** Experimental: this character's default hairstyle in the role's own hair colours, instead of the hair. */
+  /** Experimental: a hairstyle of this character in the role's own hair colours, instead of the hair. */
   hairFromCharacterId?: number | null
+  /** With hairFromCharacterId: which of its hairs (absent: its default). */
+  hairFromCostume3dId?: number | null
 }
 
 /** "archive": the game's backdrop (the character archive costume viewer's); "transparent": the frame's plain color. */
@@ -173,6 +175,7 @@ async function loadRecipe() {
       motionType: recipe.motionType ?? "costume",
       motionRoleId: recipe.motionRoleId ?? null,
       hairFromCharacterId: recipe.hairFromCharacterId ?? null,
+      hairFromCostume3dId: recipe.hairFromCostume3dId ?? null,
     })
     if (generation !== loadGeneration) {
       return

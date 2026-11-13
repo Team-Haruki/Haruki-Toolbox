@@ -57,7 +57,7 @@ import { useCostumeRoleData } from "../composables/useCostumeRoleData"
 import { COSTUME_SLOTS, pickDefaultOptionId, type CostumeSlot, type RuntimeCostumeOption } from "../lib/costume-options"
 import { isSameSetCell, NONE_HEAD_COSTUME3D_IDS, orderBySeries, type SeriesContext, type WornPart } from "../lib/costume-series-order"
 import { fitsWornHair, hairForHead, headForHair, type HeadHairRules } from "../lib/costume-head-hair"
-import { defaultHairThumbnail, hairDonors, MULTI_TONE_HAIR_CHARACTER_IDS } from "../lib/costume-borrowed-hair"
+import { hairDonors, MULTI_TONE_HAIR_CHARACTER_IDS } from "../lib/costume-borrowed-hair"
 import { MOTION_FOLLOW, motionValue, orderMotions, parseMotionValue } from "../lib/costume-motions"
 import {
   CARD_SUPPLIES,
@@ -157,9 +157,11 @@ const headId = ref<number | null>(queryNumber("head"))
 const hairId = ref<number | null>(queryNumber("hair"))
 /**
  * Experimental (the toolbar's experiments menu): another character's default hairstyle, recoloured by the engine with
- * this character's own default hair palette (`hairFrom`, the lending character). Overrides the hair while set.
+ * this character's own default hair colours (`hairFrom`, the lending character; `hairFromHair`, which of its hairs,
+ * absent: its default). Overrides the hair while set.
  */
 const hairFrom = ref<number | null>(queryNumber("hairFrom"))
+const hairFromHair = ref<number | null>(queryNumber("hairFromHair"))
 const borrowHairEnabled = ref(hairFrom.value != null)
 
 function queryUnit(): string | null {
@@ -587,6 +589,23 @@ function selectOption(id: number) {
 // --- Experimental: borrowed hair ------------------------------------------
 
 const hairDonorIds = computed(() => hairDonors(characterId.value, genderById.value))
+/** The lending character whose hairs the experimental section lists (the worn one, or the first). */
+const browsedDonor = ref<number | null>(null)
+const shownDonor = computed<number | null>(() => {
+  if (!borrowHairEnabled.value || activeSlot.value !== "hair") {
+    return null
+  }
+  const donors = hairDonorIds.value
+  for (const id of [browsedDonor.value, hairFrom.value]) {
+    if (id != null && donors.includes(id)) {
+      return id
+    }
+  }
+  return donors[0] ?? null
+})
+const shownDonorUnit = computed<string | null>(() => (shownDonor.value != null ? characterMap.value.get(shownDonor.value)?.unit ?? null : null))
+const { data: donorData, loading: donorLoading } = useCostumeRoleData(region, shownDonor, shownDonorUnit)
+const donorHairs = computed(() => donorData.value?.options.hair ?? [])
 /** This character's default hair is a gradient or two-tone: recoloured hair only approximates it. */
 const approximatePalette = computed(() => MULTI_TONE_HAIR_CHARACTER_IDS.has(characterId.value))
 
@@ -599,19 +618,16 @@ function setBorrowHair(enabled: boolean) {
   }
 }
 
-/** Wears `donorId`'s default hairstyle; a full head set (its own hairstyle) comes off for it. */
-function selectBorrowedHair(donorId: number) {
+/** Wears `donorId`'s hair `hair`; a full head set (its own hairstyle) comes off for it. */
+function selectBorrowedHair(donorId: number, hair: number) {
   hairFrom.value = donorId
+  hairFromHair.value = hair
   const rules = headHairRules()
   const options = roleData.value?.options
   const head = options?.head.find((option) => option.id === headId.value) ?? null
   if (rules && options && head?.includesHair && hairId.value != null) {
     headId.value = headForHair(head, hairId.value, rules, options.head, roleData.value?.defaults?.headCostume3dId ?? null)
   }
-}
-
-function donorThumbnailSources(donorId: number): string[] {
-  return thumbnailSources({ thumbnailAssetbundleName: defaultHairThumbnail(donorId) } as RuntimeCostumeOption)
 }
 
 function thumbnailSources(option: RuntimeCostumeOption): string[] {
@@ -630,8 +646,12 @@ function thumbnailSources(option: RuntimeCostumeOption): string[] {
 const currentOutfit = computed(() => {
   const names = roleData.value?.nameById
   const label = (id: number | null) => (id != null ? names?.get(id)?.name ?? `#${id}` : null)
-  const borrowed = hairFrom.value != null
-    ? t("costumes.dressup.experimental.borrowedHairCaption", { name: characterMap.value.get(hairFrom.value)?.name ?? `#${hairFrom.value}` })
+  const donorName = hairFrom.value != null ? characterMap.value.get(hairFrom.value)?.name ?? `#${hairFrom.value}` : null
+  const borrowedHairName = hairFromHair.value != null && shownDonor.value === hairFrom.value
+    ? donorData.value?.nameById.get(hairFromHair.value)?.name ?? null
+    : null
+  const borrowed = donorName != null
+    ? t("costumes.dressup.experimental.borrowedHairCaption", { name: borrowedHairName ? `${donorName}「${borrowedHairName}」` : donorName })
     : null
   return { body: label(bodyId.value), head: label(headId.value), hair: borrowed ?? label(hairId.value) }
 })
@@ -768,11 +788,12 @@ const recipe = computed<CostumeViewerRecipe | null>(() => {
     ...parseMotionValue(motionChoice.value),
     accessoryOnly: showingAccessoryOnly.value,
     hairFromCharacterId: borrowHairEnabled.value ? hairFrom.value : null,
+    hairFromCostume3dId: borrowHairEnabled.value && hairFrom.value != null ? hairFromHair.value : null,
   }
 })
 
 // Keep the URL shareable without polluting history.
-watch([characterId, bodyId, headId, hairId, unitOverride, motionChoice, background, accessoryOnly, hairFrom], ([nextCharacter, nextBody, nextHead, nextHair, nextUnit, nextMotion, nextBackground, nextAccessoryOnly, nextHairFrom]) => {
+watch([characterId, bodyId, headId, hairId, unitOverride, motionChoice, background, accessoryOnly, hairFrom, hairFromHair], ([nextCharacter, nextBody, nextHead, nextHair, nextUnit, nextMotion, nextBackground, nextAccessoryOnly, nextHairFrom, nextHairFromHair]) => {
   void router.replace({
     query: {
       ...route.query,
@@ -785,6 +806,7 @@ watch([characterId, bodyId, headId, hairId, unitOverride, motionChoice, backgrou
       head: nextHead != null ? String(nextHead) : undefined,
       hair: nextHair != null ? String(nextHair) : undefined,
       hairFrom: nextHairFrom != null ? String(nextHairFrom) : undefined,
+      hairFromHair: nextHairFrom != null && nextHairFromHair != null ? String(nextHairFromHair) : undefined,
     },
   })
 })
@@ -799,6 +821,10 @@ watch(() => route.query, () => {
   const nextHead = queryNumber("head")
   const nextHair = queryNumber("hair")
   const nextHairFrom = queryNumber("hairFrom")
+  const nextHairFromHair = queryNumber("hairFromHair")
+  if (hairFromHair.value !== nextHairFromHair) {
+    hairFromHair.value = nextHairFromHair
+  }
   if (hairFrom.value !== nextHairFrom) {
     hairFrom.value = nextHairFrom
     if (nextHairFrom != null) {
@@ -1150,26 +1176,47 @@ watch(() => route.query, () => {
                 <p v-if="approximatePalette" class="text-[11px] text-muted-foreground">
                   {{ t("costumes.dressup.experimental.approximateHint") }}
                 </p>
-                <div class="grid grid-cols-5 gap-1.5 sm:grid-cols-6" role="radiogroup" :aria-label="t('costumes.dressup.experimental.borrowHairTitle')">
+                <div class="flex flex-wrap gap-1" role="tablist" :aria-label="t('costumes.dressup.experimental.borrowHairTitle')">
                   <button
                     v-for="donorId in hairDonorIds"
                     :key="donorId"
                     type="button"
-                    role="radio"
-                    :aria-checked="hairFrom === donorId"
+                    role="tab"
+                    :aria-selected="shownDonor === donorId"
                     :title="characterMap.get(donorId)?.name ?? `#${donorId}`"
+                    :class="[
+                      'relative flex shrink-0 items-center justify-center rounded-full ring-2 ring-offset-1 ring-offset-card transition',
+                      shownDonor === donorId ? 'ring-primary' : 'ring-transparent opacity-70 hover:opacity-100 hover:ring-border',
+                    ]"
+                    @click="browsedDonor = donorId"
+                  >
+                    <SekaiCharacterAvatar :character-id="donorId" :name="characterMap.get(donorId)?.name ?? ''" size="sm" class="ring-0" />
+                    <span v-if="hairFrom === donorId" class="absolute -right-0.5 -bottom-0.5 size-2 rounded-full bg-primary ring-2 ring-card" />
+                  </button>
+                </div>
+                <p v-if="donorLoading && donorHairs.length === 0" class="py-3 text-center text-xs text-muted-foreground">
+                  {{ t("costumes.dressup.experimental.loadingHairs") }}
+                </p>
+                <div v-else class="grid grid-cols-4 gap-1.5 sm:grid-cols-5" role="radiogroup" :aria-label="characterMap.get(shownDonor ?? 0)?.name ?? ''">
+                  <button
+                    v-for="option in donorHairs"
+                    :key="option.id"
+                    type="button"
+                    role="radio"
+                    :aria-checked="hairFrom === shownDonor && hairFromHair === option.id"
+                    :title="option.name"
                     class="group flex min-w-0 flex-col items-center gap-0.5 rounded-md text-center outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    @click="selectBorrowedHair(donorId)"
+                    @click="shownDonor != null && selectBorrowedHair(shownDonor, option.id)"
                   >
                     <span
                       :class="[
                         'relative block aspect-square w-full overflow-hidden rounded-md bg-muted/40 ring-2 transition',
-                        hairFrom === donorId ? 'ring-primary' : 'ring-transparent group-hover:ring-border',
+                        hairFrom === shownDonor && hairFromHair === option.id ? 'ring-primary' : 'ring-transparent group-hover:ring-border',
                       ]"
                     >
-                      <SekaiAssetImage :sources="donorThumbnailSources(donorId)" :alt="characterMap.get(donorId)?.name ?? ''" fit="contain" placeholder-class="bg-transparent" />
+                      <SekaiAssetImage :sources="thumbnailSources(option)" :alt="option.name" fit="contain" placeholder-class="bg-transparent" />
                     </span>
-                    <span class="w-full truncate text-[10px] leading-tight text-muted-foreground">{{ characterMap.get(donorId)?.name }}</span>
+                    <span class="w-full truncate text-[10px] leading-tight text-muted-foreground">{{ option.name }}</span>
                   </button>
                 </div>
               </section>

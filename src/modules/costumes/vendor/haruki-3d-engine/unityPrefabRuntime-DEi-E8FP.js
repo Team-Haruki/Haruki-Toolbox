@@ -14,10 +14,11 @@ function n(e) {
 		return Number(n);
 	}, o = e.headPackagePath, s = o == null ? null : String(o).trim();
 	if (s !== null && (s.length === 0 || s.length > 1024 || s.includes("\0"))) throw Error("headPackagePath must be null or a non-empty string of at most 1024 characters without NUL bytes.");
-	let c = e.headOptionalCostume3dId == null ? null : a("headOptionalCostume3dId");
+	let c = e.headOptionalCostume3dId == null ? null : a("headOptionalCostume3dId"), l = e.hairFromCharacterId == null ? null : a("hairFromCharacterId");
 	return {
 		roleId: n,
-		hairFromCharacterId: e.hairFromCharacterId == null ? null : a("hairFromCharacterId"),
+		hairFromCharacterId: l,
+		hairFromCostume3dId: l == null || e.hairFromCostume3dId == null ? null : a("hairFromCostume3dId"),
 		bodyCostume3dId: a("bodyCostume3dId"),
 		headCostume3dId: a("headCostume3dId"),
 		headPackagePath: s,
@@ -139,7 +140,8 @@ function c(e) {
 		e.headOptionalCostume3dId ?? "",
 		e.motionRoleId ?? "",
 		e.motionType ?? "costume",
-		e.hairFromCharacterId ?? ""
+		e.hairFromCharacterId ?? "",
+		e.hairFromCostume3dId ?? ""
 	].join("\0");
 }
 //#endregion
@@ -170,10 +172,10 @@ function m(e) {
 	return t === "head_only" || t === "head_all" || t === "head_front" || t === "head_back";
 }
 function h(e, t) {
-	return `${e}:${fe(t)}`;
+	return `${e}:${ue(t)}`;
 }
 function g(e, t, n, r = {}) {
-	return e.registry.filter((e) => e.characterId === t).filter((e) => r.unit === void 0 || pe(e.unit, r.unit)).filter((e) => f(e) === n).filter(oe).sort((e, t) => e.costume3dId - t.costume3dId);
+	return e.registry.filter((e) => e.characterId === t).filter((e) => r.unit === void 0 || de(e.unit, r.unit)).filter((e) => f(e) === n).filter(ie).sort((e, t) => e.costume3dId - t.costume3dId);
 }
 function _(e) {
 	let { partSet: t, selection: n, activeRoleId: r } = e, i = h(n.characterId, n.unit);
@@ -181,21 +183,21 @@ function _(e) {
 	let a = v(t, n.characterId, n.unit, "body", n.bodyCostume3dId), o = x(t, n), s = y(t, b(t, n), "hair"), c = {
 		...n,
 		headPackagePath: o.packagePath
-	}, l = ee(t, c, o), u = l && d(l.part) === "head" ? l : s, f = l && d(l.part) === "head_optional" ? l : null, p = te(t, n);
-	ce(n.characterId, n.unit, [
+	}, l = S(t, c, o), u = l && d(l.part) === "head" ? l : s, f = l && d(l.part) === "head_optional" ? l : null, p = ee(t, n);
+	oe(n.characterId, n.unit, [
 		a,
 		u,
 		f,
 		p
-	].filter(Boolean)), le(t.compatibility, c, d(o));
+	].filter(Boolean)), se(t.compatibility, c, d(o));
 	let m = [
 		a,
 		u,
 		f,
 		p
-	].filter(Boolean), g = me(o), _ = he(m, g), ne = t.role && h(t.role.characterId, t.role.unit) === i ? t.role : null;
-	if (!ne) throw Error(`The part set has no role ${i}.`);
-	let re = [a, ...he([
+	].filter(Boolean), g = fe(o), _ = pe(m, g), C = t.role && h(t.role.characterId, t.role.unit) === i ? t.role : null;
+	if (!C) throw Error(`The part set has no role ${i}.`);
+	let te = [a, ...pe([
 		u,
 		f,
 		p
@@ -213,23 +215,23 @@ function _(e) {
 		].map(encodeURIComponent).join("-")}`,
 		displayName: `Custom ${i}`,
 		characterId: n.characterId,
-		characterHeightMeters: ne.characterHeightMeters,
-		skinColors: ne.skinColors,
-		materialSlots: re,
-		runtimeExtension: _e(_)
+		characterHeightMeters: C.characterHeightMeters,
+		skinColors: C.skinColors,
+		materialSlots: te,
+		runtimeExtension: he(_)
 	};
 }
 function v(e, t, n, r, i) {
-	let a = ae(e, t, n, r, i);
+	let a = re(e, t, n, r, i);
 	if (!a) throw Error(`Missing ${r} registry entry for role ${h(t, n)}, costume3dId ${i}.`);
 	return y(e, a, r);
 }
 function y(e, t, n) {
-	if (!e.packages.has(t.packagePath)) throw Error(`Missing loaded ${n} package for role ${h(t.characterId, t.unit)}, ${re(t)}.`);
-	return ie(e.packages.get(t.packagePath), t);
+	if (!e.packages.has(t.packagePath)) throw Error(`Missing loaded ${n} package for role ${h(t.characterId, t.unit)}, ${te(t)}.`);
+	return ne(e.packages.get(t.packagePath), t);
 }
 function b(e, t) {
-	let n = ae(e, t.characterId, t.unit, "hair", t.hairCostume3dId);
+	let n = re(e, t.characterId, t.unit, "hair", t.hairCostume3dId);
 	if (!n) throw Error(`Missing hair registry entry for role ${h(t.characterId, t.unit)}, costume3dId ${t.hairCostume3dId}.`);
 	let r = x(e, t).headCostume3dAssetbundleType?.trim().toLowerCase(), i = r ? n.headTypeVariants?.[r] : void 0;
 	return i ? {
@@ -239,7 +241,7 @@ function b(e, t) {
 	} : n;
 }
 function x(e, t) {
-	let n = t.headPackagePath?.trim() || null, r = e.registry.filter((e) => e.characterId === t.characterId && pe(e.unit, t.unit) && e.costume3dId === t.headCostume3dId && ["head", "head_optional"].includes(f(e) ?? "") && oe(e) && (n === null || e.packagePath === n)).sort((e, t) => {
+	let n = t.headPackagePath?.trim() || null, r = e.registry.filter((e) => e.characterId === t.characterId && de(e.unit, t.unit) && e.costume3dId === t.headCostume3dId && ["head", "head_optional"].includes(f(e) ?? "") && ie(e) && (n === null || e.packagePath === n)).sort((e, t) => {
 		let n = e.packagePath.localeCompare(t.packagePath);
 		return n === 0 ? d(e).localeCompare(d(t)) : n;
 	});
@@ -253,26 +255,26 @@ function x(e, t) {
 	}
 	return r[0];
 }
-function ee(e, t, n = x(e, t)) {
-	if (se(n)) return null;
-	if (!e.packages.has(n.packagePath)) throw Error(`Missing loaded head package for role ${h(t.characterId, t.unit)}, ${re(n)}.`);
-	return ie(e.packages.get(n.packagePath), n);
+function S(e, t, n = x(e, t)) {
+	if (ae(n)) return null;
+	if (!e.packages.has(n.packagePath)) throw Error(`Missing loaded head package for role ${h(t.characterId, t.unit)}, ${te(n)}.`);
+	return ne(e.packages.get(n.packagePath), n);
 }
-function te(e, t) {
-	let n = ne(e, t);
-	if (!n || se(n)) return null;
-	if (!e.packages.has(n.packagePath)) throw Error(`Missing loaded head_optional package for role ${h(t.characterId, t.unit)}, ${re(n)}.`);
-	return ie(e.packages.get(n.packagePath), n);
+function ee(e, t) {
+	let n = C(e, t);
+	if (!n || ae(n)) return null;
+	if (!e.packages.has(n.packagePath)) throw Error(`Missing loaded head_optional package for role ${h(t.characterId, t.unit)}, ${te(n)}.`);
+	return ne(e.packages.get(n.packagePath), n);
 }
-function ne(e, t) {
+function C(e, t) {
 	if (!t.headOptionalCostume3dId) return null;
-	let n = e.registry.filter((e) => e.characterId === t.characterId && pe(e.unit, t.unit) && e.costume3dId === t.headOptionalCostume3dId && f(e) === "head_optional" && oe(e)).sort((e, t) => e.packagePath.localeCompare(t.packagePath));
+	let n = e.registry.filter((e) => e.characterId === t.characterId && de(e.unit, t.unit) && e.costume3dId === t.headOptionalCostume3dId && f(e) === "head_optional" && ie(e)).sort((e, t) => e.packagePath.localeCompare(t.packagePath));
 	if (n.length === 0) throw Error(`Missing head_optional registry entry for role ${h(t.characterId, t.unit)}, costume3dId ${t.headOptionalCostume3dId}.`);
 	let r = new Set(n.map((e) => e.packagePath));
 	if (r.size > 1) throw Error(`Ambiguous head_optional registry entry for role ${h(t.characterId, t.unit)}, costume3dId ${t.headOptionalCostume3dId}; the legacy selector cannot identify one original source. Candidates: ${[...r].join(", ")}.`);
 	return n[0];
 }
-function re(e) {
+function te(e) {
 	let t = [
 		`costume3dId ${e.costume3dId}`,
 		`partType ${d(e)}`,
@@ -282,7 +284,7 @@ function re(e) {
 	let n = e.warnings?.[0];
 	return n && t.push(`warning ${n}`), t.join(", ");
 }
-function ie(e, t) {
+function ne(e, t) {
 	let n = f(t) ?? e.part.partType;
 	return {
 		...e,
@@ -299,41 +301,41 @@ function ie(e, t) {
 		}
 	};
 }
-function ae(e, t, n, r, i) {
-	return e.registry.find((e) => e.characterId === t && pe(e.unit, n) && e.costume3dId === i && f(e) === r && oe(e));
+function re(e, t, n, r, i) {
+	return e.registry.find((e) => e.characterId === t && de(e.unit, n) && e.costume3dId === i && f(e) === r && ie(e));
 }
-function oe(e) {
+function ie(e) {
 	return e.status !== "missing";
 }
-function se(e) {
+function ae(e) {
 	return e.status === "empty" && f(e) === "head_optional";
 }
-function ce(e, t, n) {
-	let r = n.find((n) => n.part.characterId !== e || !pe(n.part.unit, t));
+function oe(e, t, n) {
+	let r = n.find((n) => n.part.characterId !== e || !de(n.part.unit, t));
 	if (r) throw Error(`Part ${r.part.partType}/${r.part.costume3dId} belongs to role ${h(r.part.characterId, r.part.unit)}, not ${h(e, t)}.`);
 }
-function le(e, t, n) {
+function se(e, t, n) {
 	if (!e || n === "head") return;
-	let r = de(t.unit, t.headCostume3dId, t.hairCostume3dId);
-	if (ue(e).has(r)) throw Error(`Head ${t.headCostume3dId} and hair ${t.hairCostume3dId} are not available together.`);
+	let r = le(t.unit, t.headCostume3dId, t.hairCostume3dId);
+	if (ce(e).has(r)) throw Error(`Head ${t.headCostume3dId} and hair ${t.hairCostume3dId} are not available together.`);
 }
-function ue(e) {
+function ce(e) {
 	if (!e) return /* @__PURE__ */ new Set();
 	let t = l.get(e);
 	if (t) return t;
-	let n = new Set([...e.denied ?? [], ...(e.rules ?? []).filter((e) => e.state === "not_available")].map((e) => de(e.unit, e.headCostume3dId, e.hairCostume3dId)));
+	let n = new Set([...e.denied ?? [], ...(e.rules ?? []).filter((e) => e.state === "not_available")].map((e) => le(e.unit, e.headCostume3dId, e.hairCostume3dId)));
 	return l.set(e, n), n;
 }
-function de(e, t, n) {
-	return `${fe(e)}|${t}|${n}`;
+function le(e, t, n) {
+	return `${ue(e)}|${t}|${n}`;
 }
-function fe(e) {
+function ue(e) {
 	return e ?? "";
 }
-function pe(e, t) {
-	return fe(e) === fe(t);
+function de(e, t) {
+	return ue(e) === ue(t);
 }
-function me(e) {
+function fe(e) {
 	return d(e) === "head_optional" ? {
 		kind: "resolved_head_optional_source",
 		activePartTypes: /* @__PURE__ */ new Set([
@@ -350,41 +352,41 @@ function me(e) {
 		])
 	};
 }
-function he(e, t) {
-	return e.filter((e) => ge(e, t));
+function pe(e, t) {
+	return e.filter((e) => me(e, t));
 }
-function ge(e, t) {
+function me(e, t) {
 	return t.activePartTypes.has(d(e.part));
 }
-function S(e) {
+function w(e) {
 	return typeof e == "string" ? e : "";
 }
-function _e(e) {
-	let t = ye(e);
+function he(e) {
+	let t = _e(e);
 	return {
-		characterControllers: ve(e),
-		nativeMeshes: lt(e, t),
+		characterControllers: ge(e),
+		nativeMeshes: st(e, t),
 		pjskSpringBone: {
 			raw: t.raw,
 			runtimeUnitySetup: t
 		}
 	};
 }
-function ve(e) {
+function ge(e) {
 	let t = e.findIndex((e) => {
 		let t = d(e.part);
 		return t === "head" || t === "hair";
 	}), n = t >= 0 ? e[t].characterControllers ?? {} : {}, r = (e) => {
 		if (Array.isArray(e)) return e.map(r);
-		if (!E(e) || ArrayBuffer.isView(e)) return e;
+		if (!O(e) || ArrayBuffer.isView(e)) return e;
 		let n = {};
-		for (let [i, a] of Object.entries(e)) n[i] = (i === "pathId" || i === "transformPathId") && typeof a == "number" ? w(a, t) : i === "raw" ? a : r(a);
+		for (let [i, a] of Object.entries(e)) n[i] = (i === "pathId" || i === "transformPathId") && typeof a == "number" ? E(a, t) : i === "raw" ? a : r(a);
 		return n;
 	};
 	return r(n);
 }
-function ye(e) {
-	let t = e.map((e, t) => Pe(e, t)), n = t[0]?.setup ?? {}, r = t.map((e) => e.prefabGraph).filter((e) => e !== null), i = e.flatMap((e) => [...e.warnings ?? [], ...e.springBone?.warnings ?? []]), a = bt(t.flatMap((e) => e.activeRoots)), o = t.flatMap((e) => e.managers), s = t.flatMap((e) => e.bones), c = t.flatMap((e) => e.extraBones), l = t.flatMap((e) => e.colliders), u = t.flatMap((e) => e.constraints), d = Xe(t), f = be(i, d), p = tt(t, d), m = et(s, d), h = ke(r);
+function _e(e) {
+	let t = e.map((e, t) => Me(e, t)), n = t[0]?.setup ?? {}, r = t.map((e) => e.prefabGraph).filter((e) => e !== null), i = e.flatMap((e) => [...e.warnings ?? [], ...e.springBone?.warnings ?? []]), a = vt(t.flatMap((e) => e.activeRoots)), o = t.flatMap((e) => e.managers), s = t.flatMap((e) => e.bones), c = t.flatMap((e) => e.extraBones), l = t.flatMap((e) => e.colliders), u = t.flatMap((e) => e.constraints), d = Je(t), f = ve(i, d), p = $e(t, d), m = Qe(s, d), h = De(r);
 	if (!h) throw Error("Composed parts do not provide the official model_combine_setup body/head paths.");
 	let g = {
 		...n,
@@ -415,8 +417,8 @@ function ye(e) {
 			activeRoots: a.length ? a : ["body", "face"],
 			inactiveRoots: []
 		},
-		funit: De(e),
-		raw: Oe(t),
+		funit: Te(e),
+		raw: Ee(t),
 		managers: o,
 		bones: s,
 		extraBones: c,
@@ -427,28 +429,28 @@ function ye(e) {
 			version: "0414",
 			sourceKind: "viewer_composed_part_runtime_package",
 			constraints: u,
-			warnings: bt(t.flatMap((e) => yt(e.setup.constraintSetup?.warnings)))
+			warnings: vt(t.flatMap((e) => _t(e.setup.constraintSetup?.warnings)))
 		},
 		managerColliderCaches: p,
 		warnings: f
 	};
-	return xe(t, g, dt(e)), g;
+	return ye(t, g, lt(e)), g;
 }
-function be(e, t) {
+function ve(e, t) {
 	let n = t.filter((e) => e.sourceKind === "colliderFlag");
-	return n.length > 0 && n.every((e) => O(e.colliders).length > 0) ? e.filter((e) => !/has colliderFlag .* but no body colliders matched runtime CL_\* prefixes/.test(e)) : e;
+	return n.length > 0 && n.every((e) => A(e.colliders).length > 0) ? e.filter((e) => !/has colliderFlag .* but no body colliders matched runtime CL_\* prefixes/.test(e)) : e;
 }
-function xe(e, t, n) {
+function ye(e, t, n) {
 	for (let r of e.filter((e) => e.partType === "head_optional")) {
-		let i = r.prefabGraph, a = _t(S(r.runtime.mount?.attachNode)), o = a ? Se(e, a) : null, s = (i?.transforms ?? []).find((e) => e.parentPathId == null && S(e.transformPath) === "optional");
+		let i = r.prefabGraph, a = ht(w(r.runtime.mount?.attachNode)), o = a ? be(e, a) : null, s = (i?.transforms ?? []).find((e) => e.parentPathId == null && w(e.transformPath) === "optional");
 		if (!i || !o || !s || typeof o.pathId != "number" || typeof s.pathId != "number") {
-			t.warnings?.push(`Head optional prefab '${S(r.runtime.part.modelAssetbundleName) || "<unknown>"}' was not instantiated: official prefab root 'optional' or active attach node '${a || "<missing>"}' was not found.`);
+			t.warnings?.push(`Head optional prefab '${w(r.runtime.part.modelAssetbundleName) || "<unknown>"}' was not instantiated: official prefab root 'optional' or active attach node '${a || "<missing>"}' was not found.`);
 			continue;
 		}
-		let c = (i.monoBehaviours ?? []).find((e) => S(e.scriptName) === "CharacterAccessoryTransformController" && we(S(e.transformPath), "optional"));
+		let c = (i.monoBehaviours ?? []).find((e) => w(e.scriptName) === "CharacterAccessoryTransformController" && Se(w(e.transformPath), "optional"));
 		if (c) {
-			let e = S(c.transformPath), a = (i.transforms ?? []).find((t) => S(t.transformPath) === e);
-			a ? (Te(a, pt(r.runtime, n)), i.headOptionalControllerPath = e) : t.warnings?.push(`Head optional controller target '${e || "<missing>"}' was not found in prefab 'optional'.`);
+			let e = w(c.transformPath), a = (i.transforms ?? []).find((t) => w(t.transformPath) === e);
+			a ? (Ce(a, dt(r.runtime, n)), i.headOptionalControllerPath = e) : t.warnings?.push(`Head optional controller target '${e || "<missing>"}' was not found in prefab 'optional'.`);
 		} else s.localPosition = {
 			X: 0,
 			Y: 0,
@@ -459,15 +461,15 @@ function xe(e, t, n) {
 			z: 0,
 			w: 1
 		};
-		Ce(i, "optional"), s.parentPathId = o.pathId, o.childPathIds = [.../* @__PURE__ */ new Set([...o.childPathIds ?? [], s.pathId])], i.headOptionalAttachPath = S(o.transformPath), i.headOptionalPrefabRootPath = "optional";
+		xe(i, "optional"), s.parentPathId = o.pathId, o.childPathIds = [.../* @__PURE__ */ new Set([...o.childPathIds ?? [], s.pathId])], i.headOptionalAttachPath = w(o.transformPath), i.headOptionalPrefabRootPath = "optional";
 	}
 }
-function Se(e, t) {
+function be(e, t) {
 	for (let n of e) {
 		if (n.partType === "head_optional" || !n.prefabGraph) continue;
-		let e = n.prefabGraph.transforms ?? [], r = new Map(e.filter((e) => typeof e.pathId == "number").map((e) => [e.pathId, e])), i = new Map(D(n.prefabGraph.gameObjects).map((e) => [gt(e.pathId, NaN), e.activeSelf !== !1 && e.activeInHierarchy !== !1])), a = (e) => typeof e.gameObjectPathId != "number" || i.get(e.gameObjectPathId) !== !1, o = (e) => {
+		let e = n.prefabGraph.transforms ?? [], r = new Map(e.filter((e) => typeof e.pathId == "number").map((e) => [e.pathId, e])), i = new Map(k(n.prefabGraph.gameObjects).map((e) => [mt(e.pathId, NaN), e.activeSelf !== !1 && e.activeInHierarchy !== !1])), a = (e) => typeof e.gameObjectPathId != "number" || i.get(e.gameObjectPathId) !== !1, o = (e) => {
 			if (!a(e)) return null;
-			if (S(e.name) === t || _t(S(e.transformPath)) === t) return e;
+			if (w(e.name) === t || ht(w(e.transformPath)) === t) return e;
 			for (let t of e.childPathIds ?? []) {
 				let e = r.get(t), n = e ? o(e) : null;
 				if (n) return n;
@@ -475,32 +477,32 @@ function Se(e, t) {
 			return null;
 		};
 		for (let t of n.activeRoots) {
-			let n = e.find((e) => e.parentPathId == null && S(e.transformPath) === t), r = n ? o(n) : null;
+			let n = e.find((e) => e.parentPathId == null && w(e.transformPath) === t), r = n ? o(n) : null;
 			if (r) return r;
 		}
 	}
 	return null;
 }
-function Ce(e, t) {
-	let n = (e) => we(S(e.transformPath), t);
-	e.transforms = (e.transforms ?? []).filter(n), e.gameObjects = D(e.gameObjects).filter(n), e.renderers = D(e.renderers).filter(n), e.animators = D(e.animators).filter(n), e.monoBehaviours = (e.monoBehaviours ?? []).filter(n), e.constraints = D(e.constraints).filter(n), e.rootTransformPathIds = e.transforms.filter((e) => S(e.transformPath) === t).map((e) => e.pathId).filter((e) => typeof e == "number");
+function xe(e, t) {
+	let n = (e) => Se(w(e.transformPath), t);
+	e.transforms = (e.transforms ?? []).filter(n), e.gameObjects = k(e.gameObjects).filter(n), e.renderers = k(e.renderers).filter(n), e.animators = k(e.animators).filter(n), e.monoBehaviours = (e.monoBehaviours ?? []).filter(n), e.constraints = k(e.constraints).filter(n), e.rootTransformPathIds = e.transforms.filter((e) => w(e.transformPath) === t).map((e) => e.pathId).filter((e) => typeof e == "number");
 }
-function we(e, t) {
+function Se(e, t) {
 	return e === t || e.startsWith(`${t}/`);
 }
-function Te(e, t) {
-	let n = ht(t?.position, 0, 0, 0), r = ht(t?.rotationEulerDegrees, 0, 0, 0), i = ht(t?.scale, 1, 1, 1);
+function Ce(e, t) {
+	let n = pt(t?.position, 0, 0, 0), r = pt(t?.rotationEulerDegrees, 0, 0, 0), i = pt(t?.scale, 1, 1, 1);
 	e.localPosition = {
 		X: n.x,
 		Y: n.y,
 		Z: n.z
-	}, e.localRotation = Ee(r), e.localScale = {
+	}, e.localRotation = we(r), e.localScale = {
 		X: Math.abs(i.x),
 		Y: Math.abs(i.y),
 		Z: Math.abs(i.z)
 	};
 }
-function Ee(e) {
+function we(e) {
 	let t = e.x * Math.PI / 180, n = e.y * Math.PI / 180, r = e.z * Math.PI / 180, i = Math.cos(t / 2), a = Math.cos(n / 2), o = Math.cos(r / 2), s = Math.sin(t / 2), c = Math.sin(n / 2), l = Math.sin(r / 2);
 	return {
 		x: s * a * o - i * c * l,
@@ -509,8 +511,8 @@ function Ee(e) {
 		w: i * a * o - s * c * l
 	};
 }
-function De(e) {
-	let t = e.map((e) => vt(e.springBone?.funit)).filter((e) => Object.keys(e).length > 0), n = (e, t) => typeof e[t] == "number" && Number.isFinite(e[t]) ? Math.max(Math.trunc(e[t]), 0) : 0, r = bt(t.flatMap((e) => yt(e.detectedScripts))).sort((e, t) => e.localeCompare(t));
+function Te(e) {
+	let t = e.map((e) => gt(e.springBone?.funit)).filter((e) => Object.keys(e).length > 0), n = (e, t) => typeof e[t] == "number" && Number.isFinite(e[t]) ? Math.max(Math.trunc(e[t]), 0) : 0, r = vt(t.flatMap((e) => _t(e.detectedScripts))).sort((e, t) => e.localeCompare(t));
 	return {
 		present: t.some((e) => e.present === !0),
 		scriptCount: t.reduce((e, t) => e + n(t, "scriptCount"), 0),
@@ -523,16 +525,16 @@ function De(e) {
 		policy: "metadata_only; do not merge with UTJ/Sekai SpringBone runtime"
 	};
 }
-function Oe(e) {
+function Ee(e) {
 	let t = e.filter((e) => e.partType === "body").flatMap((e) => e.extraBones), n = e.filter((e) => e.partType === "head" || e.partType === "hair" || e.partType === "head_optional").flatMap((e) => e.extraBones);
 	return {
 		body: { extraBones: t },
 		head: { extraBones: n }
 	};
 }
-function ke(e) {
-	let t = Ae(e), n = je(e);
-	return !t || !Me(e, "face") || !n ? null : {
+function De(e) {
+	let t = Oe(e), n = ke(e);
+	return !t || !Ae(e, "face") || !n ? null : {
 		version: "0414",
 		sourceKind: "viewer_composed_part_runtime_package",
 		parentRootPath: "body",
@@ -551,16 +553,16 @@ function ke(e) {
 		childCombineNodeBPath: `${n}/Head`
 	};
 }
-function Ae(e) {
-	return ["body/Position/PositionOffset/Hip/Waist/Spine/Chest/Neck", "body/Position/Hip/Waist/Spine/Chest/Neck"].find((t) => Me(e, t)) ?? null;
+function Oe(e) {
+	return ["body/Position/PositionOffset/Hip/Waist/Spine/Chest/Neck", "body/Position/Hip/Waist/Spine/Chest/Neck"].find((t) => Ae(e, t)) ?? null;
+}
+function ke(e) {
+	return ["face/Position/Hip/Waist/Spine/Chest/Neck", "face/Position"].find((t) => Ae(e, t)) ?? null;
+}
+function Ae(e, t) {
+	return e.some((e) => k(e?.transforms).some((e) => w(e.transformPath) === t));
 }
 function je(e) {
-	return ["face/Position/Hip/Waist/Spine/Chest/Neck", "face/Position"].find((t) => Me(e, t)) ?? null;
-}
-function Me(e, t) {
-	return e.some((e) => D(e?.transforms).some((e) => S(e.transformPath) === t));
-}
-function Ne(e) {
 	let t = e.springBone ?? {};
 	return {
 		managers: t.managers,
@@ -575,14 +577,14 @@ function Ne(e) {
 		constraintSetup: t.constraintSetup
 	};
 }
-function Pe(e, t) {
-	let n = Ne(e), r = d(e.part), i = Fe(r, yt(n.activeRootProfile?.activeRoots)), a = Ie(C(n.managers, t, r), i), o = Ie(C(n.bones, t, r), i), s = Ie(Le(n.extraBones, t, r), i), c = Ie(C(n.colliders, t, r), i), l = ze(C(n.colliderBindings, t, r), o), u = Be(C(n.managerColliderCaches, t, r), a), f = Ve(n.constraintSetup, t, r, i);
-	return Ue(a, o, u), {
+function Me(e, t) {
+	let n = je(e), r = d(e.part), i = Ne(r, _t(n.activeRootProfile?.activeRoots)), a = Pe(T(n.managers, t, r), i), o = Pe(T(n.bones, t, r), i), s = Pe(Fe(n.extraBones, t, r), i), c = Pe(T(n.colliders, t, r), i), l = Le(T(n.colliderBindings, t, r), o), u = Re(T(n.managerColliderCaches, t, r), a), f = ze(n.constraintSetup, t, r, i);
+	return Ve(a, o, u), {
 		runtime: e,
 		partIndex: t,
 		partType: r,
 		setup: n,
-		prefabGraph: He(e.springBone?.prefabGraph, t),
+		prefabGraph: Be(e.springBone?.prefabGraph, t),
 		managers: a,
 		bones: o,
 		extraBones: s,
@@ -593,72 +595,72 @@ function Pe(e, t) {
 		activeRoots: i
 	};
 }
-function Fe(e, t) {
+function Ne(e, t) {
 	return e === "body" && t.includes("body") ? ["body"] : (e === "head" || e === "hair") && t.includes("face") ? ["face"] : e === "head_optional" && t.includes("optional") ? ["optional"] : t.length ? [t[0]] : [e === "body" ? "body" : "face"];
 }
-function Ie(e, t) {
-	let n = new Set(t.map((e) => T(e)));
+function Pe(e, t) {
+	let n = new Set(t.map((e) => D(e)));
 	return e.filter((e) => {
-		let t = T(ct(e.nodePath) ?? e.poseRoot);
+		let t = D(ot(e.nodePath) ?? e.poseRoot);
 		return n.has(t);
 	});
 }
-function Le(e, t, n) {
-	return C(e, t, n).map((e) => {
-		let n = e, r = Re(n.gameObject ?? n.GameObject, t), i = Re(n.referenceBone ?? n.ReferenceBone, t);
-		return n.gameObject = r, n.GameObject = r, n.referenceBone = i, n.ReferenceBone = i, n.nodePath = r?.transformPath ?? r?.TransformPath ?? null, n.poseRoot = ct(n.nodePath) ?? null, n;
+function Fe(e, t, n) {
+	return T(e, t, n).map((e) => {
+		let n = e, r = Ie(n.gameObject ?? n.GameObject, t), i = Ie(n.referenceBone ?? n.ReferenceBone, t);
+		return n.gameObject = r, n.GameObject = r, n.referenceBone = i, n.ReferenceBone = i, n.nodePath = r?.transformPath ?? r?.TransformPath ?? null, n.poseRoot = ot(n.nodePath) ?? null, n;
 	});
 }
-function Re(e, t) {
-	if (!E(e)) return e;
+function Ie(e, t) {
+	if (!O(e)) return e;
 	let n = { ...e };
-	return typeof n.pathId == "number" && (n.pathId = w(n.pathId, t)), typeof n.PathId == "number" && (n.PathId = w(n.PathId, t)), n;
+	return typeof n.pathId == "number" && (n.pathId = E(n.pathId, t)), typeof n.PathId == "number" && (n.PathId = E(n.PathId, t)), n;
 }
-function ze(e, t) {
+function Le(e, t) {
 	let n = new Set(t.map((e) => e.pathId).filter((e) => typeof e == "number"));
 	return e.filter((e) => typeof e.sourceSpringBonePathId != "number" || n.has(e.sourceSpringBonePathId));
 }
-function Be(e, t) {
+function Re(e, t) {
 	let n = new Set(t.map((e) => e.pathId).filter((e) => typeof e == "number"));
 	return e.filter((e) => typeof e.managerPathId != "number" || n.has(e.managerPathId));
 }
-function Ve(e, t, n, r) {
-	let i = new Set(r.map((e) => T(e)));
-	return C(e?.constraints, t, n).map((e) => {
-		let n = D(e.sources).map((e) => {
+function ze(e, t, n, r) {
+	let i = new Set(r.map((e) => D(e)));
+	return T(e?.constraints, t, n).map((e) => {
+		let n = k(e.sources).map((e) => {
 			let n = { ...e };
-			return typeof n.sourcePathId == "number" && (n.sourcePathId = w(n.sourcePathId, t)), n;
+			return typeof n.sourcePathId == "number" && (n.sourcePathId = E(n.sourcePathId, t)), n;
 		});
-		return typeof e.worldUpObjectPathId == "number" && (e.worldUpObjectPathId = w(e.worldUpObjectPathId, t)), {
+		return typeof e.worldUpObjectPathId == "number" && (e.worldUpObjectPathId = E(e.worldUpObjectPathId, t)), {
 			...e,
 			sources: n
 		};
 	}).filter((e) => {
-		let t = T(ct(e.ownerPath));
+		let t = D(ot(e.ownerPath));
 		return !t || i.has(t);
 	});
 }
-function He(e, t) {
-	if (!E(e)) return null;
+function Be(e, t) {
+	if (!O(e)) return null;
 	let n = { ...e };
-	return n.runtimePartIndex = t, n.transforms = D(e.transforms).map((e) => {
+	return n.runtimePartIndex = t, n.transforms = k(e.transforms).map((e) => {
 		let n = {
 			...e,
 			runtimePartIndex: t
 		};
-		return typeof n.pathId == "number" && (n.pathId = w(n.pathId, t)), typeof n.PathId == "number" && (n.PathId = w(n.PathId, t)), typeof n.parentPathId == "number" && (n.parentPathId = w(n.parentPathId, t)), Array.isArray(n.childPathIds) && (n.childPathIds = n.childPathIds.map((e) => typeof e == "number" ? w(e, t) : e)), n;
-	}), n.monoBehaviours = D(e.monoBehaviours).map((e) => {
+		return typeof n.pathId == "number" && (n.pathId = E(n.pathId, t)), typeof n.PathId == "number" && (n.PathId = E(n.PathId, t)), typeof n.parentPathId == "number" && (n.parentPathId = E(n.parentPathId, t)), Array.isArray(n.childPathIds) && (n.childPathIds = n.childPathIds.map((e) => typeof e == "number" ? E(e, t) : e)), n;
+	}), n.monoBehaviours = k(e.monoBehaviours).map((e) => {
 		let n = {
 			...e,
 			runtimePartIndex: t
 		};
-		return typeof n.pathId == "number" && (n.pathId = w(n.pathId, t)), n;
+		return typeof n.pathId == "number" && (n.pathId = E(n.pathId, t)), n;
 	}), n;
 }
-function Ue(e, t, n) {
+function Ve(e, t, n) {
 	let r = /* @__PURE__ */ new Map();
 	for (let n of e) {
-		let e = n.nodePath, i = t.filter((t) => We(t.nodePath, e)).map((e) => e.pathId).filter((e) => typeof e == "number");
+		let e = n.nodePath, i = t.filter((t) => He(t.nodePath, e)).map((e) => e.pathId).filter((e) => typeof e == "number");
 		i.length && (n.bonePathIds = i, typeof n.pathId == "number" && r.set(n.pathId, i));
 	}
 	for (let e of n) {
@@ -666,33 +668,33 @@ function Ue(e, t, n) {
 		t?.length && (e.springBonePathIds = t);
 	}
 }
-function We(e, t) {
+function He(e, t) {
 	return !e || !t ? !1 : e === t || e.startsWith(`${t}/`);
 }
-function C(e, t, n) {
+function T(e, t, n) {
 	return Array.isArray(e) ? e.map((e) => {
-		if (!E(e)) return e;
+		if (!O(e)) return e;
 		let r = { ...e };
-		return r.runtimePartIndex = t, r.runtimePartType = n, typeof r.pathId == "number" && (r.pathId = w(r.pathId, t)), typeof r.index == "number" && (r.index = w(r.index, t)), typeof r.managerPathId == "number" && (r.managerPathId = w(r.managerPathId, t)), typeof r.pivotSourcePathId == "number" && (r.pivotSourcePathId = w(r.pivotSourcePathId, t)), typeof r.sourceSpringBonePathId == "number" && (r.sourceSpringBonePathId = w(r.sourceSpringBonePathId, t)), Array.isArray(r.bonePathIds) && (r.bonePathIds = r.bonePathIds.map((e) => typeof e == "number" ? w(e, t) : e)), Array.isArray(r.forceProviders) && (r.forceProviders = Ge(r.forceProviders, t)), Array.isArray(r.directColliderPathIds) && (r.directColliderPathIds = r.directColliderPathIds.map((e) => typeof e == "number" ? w(e, t) : e)), Array.isArray(r.sourceColliderPathIds) && (r.sourceColliderPathIds = r.sourceColliderPathIds.map((e) => typeof e == "number" ? w(e, t) : e)), Array.isArray(r.colliders) && (r.colliders = r.colliders.map((e) => typeof e == "number" ? w(e, t) : e)), Array.isArray(r.selectedColliderIndexes) && (r.selectedColliderIndexes = r.selectedColliderIndexes.map((e) => typeof e == "number" ? w(e, t) : e)), Array.isArray(r.sphereColliderIndexes) && (r.sphereColliderIndexes = r.sphereColliderIndexes.map((e) => typeof e == "number" ? w(e, t) : e)), Array.isArray(r.capsuleColliderIndexes) && (r.capsuleColliderIndexes = r.capsuleColliderIndexes.map((e) => typeof e == "number" ? w(e, t) : e)), Array.isArray(r.panelColliderIndexes) && (r.panelColliderIndexes = r.panelColliderIndexes.map((e) => typeof e == "number" ? w(e, t) : e)), Array.isArray(r.springBonePathIds) && (r.springBonePathIds = r.springBonePathIds.map((e) => typeof e == "number" ? w(e, t) : e)), E(r.collidersByRoot) && (r.collidersByRoot = Ke(r.collidersByRoot, t)), E(r.candidateRoots) && (r.candidateRoots = Ke(r.candidateRoots, t)), r;
+		return r.runtimePartIndex = t, r.runtimePartType = n, typeof r.pathId == "number" && (r.pathId = E(r.pathId, t)), typeof r.index == "number" && (r.index = E(r.index, t)), typeof r.managerPathId == "number" && (r.managerPathId = E(r.managerPathId, t)), typeof r.pivotSourcePathId == "number" && (r.pivotSourcePathId = E(r.pivotSourcePathId, t)), typeof r.sourceSpringBonePathId == "number" && (r.sourceSpringBonePathId = E(r.sourceSpringBonePathId, t)), Array.isArray(r.bonePathIds) && (r.bonePathIds = r.bonePathIds.map((e) => typeof e == "number" ? E(e, t) : e)), Array.isArray(r.forceProviders) && (r.forceProviders = Ue(r.forceProviders, t)), Array.isArray(r.directColliderPathIds) && (r.directColliderPathIds = r.directColliderPathIds.map((e) => typeof e == "number" ? E(e, t) : e)), Array.isArray(r.sourceColliderPathIds) && (r.sourceColliderPathIds = r.sourceColliderPathIds.map((e) => typeof e == "number" ? E(e, t) : e)), Array.isArray(r.colliders) && (r.colliders = r.colliders.map((e) => typeof e == "number" ? E(e, t) : e)), Array.isArray(r.selectedColliderIndexes) && (r.selectedColliderIndexes = r.selectedColliderIndexes.map((e) => typeof e == "number" ? E(e, t) : e)), Array.isArray(r.sphereColliderIndexes) && (r.sphereColliderIndexes = r.sphereColliderIndexes.map((e) => typeof e == "number" ? E(e, t) : e)), Array.isArray(r.capsuleColliderIndexes) && (r.capsuleColliderIndexes = r.capsuleColliderIndexes.map((e) => typeof e == "number" ? E(e, t) : e)), Array.isArray(r.panelColliderIndexes) && (r.panelColliderIndexes = r.panelColliderIndexes.map((e) => typeof e == "number" ? E(e, t) : e)), Array.isArray(r.springBonePathIds) && (r.springBonePathIds = r.springBonePathIds.map((e) => typeof e == "number" ? E(e, t) : e)), O(r.collidersByRoot) && (r.collidersByRoot = We(r.collidersByRoot, t)), O(r.candidateRoots) && (r.candidateRoots = We(r.candidateRoots, t)), r;
 	}) : [];
 }
-function Ge(e, t) {
+function Ue(e, t) {
 	return e.map((e) => {
-		if (!E(e)) return e;
+		if (!O(e)) return e;
 		let n = {
 			...e,
 			runtimePartIndex: t
 		};
-		return typeof n.sourcePathId == "number" && (n.sourcePathId = w(n.sourcePathId, t)), typeof n.springManagerPathId == "number" && (n.springManagerPathId = w(n.springManagerPathId, t)), n;
+		return typeof n.sourcePathId == "number" && (n.sourcePathId = E(n.sourcePathId, t)), typeof n.springManagerPathId == "number" && (n.springManagerPathId = E(n.springManagerPathId, t)), n;
 	});
 }
-function w(e, t) {
+function E(e, t) {
 	return (t + 1) * 1e9 + e;
 }
-function Ke(e, t) {
-	return Object.fromEntries(Object.entries(e).map(([e, n]) => [e, Array.isArray(n) ? n.map((e) => typeof e == "number" ? w(e, t) : e).filter((e) => typeof e == "number") : []]));
+function We(e, t) {
+	return Object.fromEntries(Object.entries(e).map(([e, n]) => [e, Array.isArray(n) ? n.map((e) => typeof e == "number" ? E(e, t) : e).filter((e) => typeof e == "number") : []]));
 }
-var qe = [
+var Ge = [
 	[1, "CL_Hip"],
 	[2, "CL_Chest"],
 	[4, "CL_Left_Arm"],
@@ -700,16 +702,16 @@ var qe = [
 	[16, "CL_Left_Elbow"],
 	[32, "CL_Right_Elbow"]
 ];
-function Je(e) {
-	return qe.filter(([t]) => (e & t) !== 0).map(([, e]) => e);
+function Ke(e) {
+	return Ge.filter(([t]) => (e & t) !== 0).map(([, e]) => e);
 }
-function Ye(e) {
+function qe(e) {
 	return e.flatMap((e) => e.partType === "body" ? [] : e.bones.filter((t) => (t.colliderFlag ?? 0) === 0 || typeof t.pathId != "number" ? !1 : !e.colliderBindings.some((e) => e.sourceSpringBonePathId === t.pathId && (e.sourceKind === "deferred_body_colliderFlag" || e.sourceKind === "colliderFlag"))).map((t) => ({
 		sourceKind: "deferred_body_colliderFlag",
 		partKind: t.partKind ?? e.partType,
 		sourceSpringBonePathId: t.pathId,
 		colliderFlag: t.colliderFlag,
-		matchedPrefixes: Je(t.colliderFlag ?? 0),
+		matchedPrefixes: Ke(t.colliderFlag ?? 0),
 		collidersByRoot: {},
 		defaultRoot: "body",
 		sourceColliderPathIds: [],
@@ -717,12 +719,12 @@ function Ye(e) {
 		rebindReason: "viewer_synthesized_missing_colliderFlag_binding"
 	})));
 }
-function Xe(e) {
-	let t = e.filter((e) => e.partType === "body").flatMap((e) => e.colliders), n = it(t);
-	return Ye(e).map((e) => Ze(e, t)).concat(e.flatMap((e) => e.colliderBindings.map((r) => {
-		if (r.sourceKind === "deferred_body_colliderFlag" && e.partType !== "body") return Ze(r, t);
-		if (r.sourceKind !== "colliderFlag" || e.partType === "body" || !at(n)) return r;
-		let i = ot(n);
+function Je(e) {
+	let t = e.filter((e) => e.partType === "body").flatMap((e) => e.colliders), n = nt(t);
+	return qe(e).map((e) => Ye(e, t)).concat(e.flatMap((e) => e.colliderBindings.map((r) => {
+		if (r.sourceKind === "deferred_body_colliderFlag" && e.partType !== "body") return Ye(r, t);
+		if (r.sourceKind !== "colliderFlag" || e.partType === "body" || !rt(n)) return r;
+		let i = it(n);
 		return {
 			...r,
 			collidersByRoot: n,
@@ -733,8 +735,8 @@ function Xe(e) {
 		};
 	})));
 }
-function Ze(e, t) {
-	let n = Qe(e, t);
+function Ye(e, t) {
+	let n = Xe(e, t);
 	return {
 		...e,
 		sourceKind: "colliderFlag",
@@ -746,23 +748,23 @@ function Ze(e, t) {
 		rebindReason: "viewer_composed_deferred_body_colliderFlag"
 	};
 }
-function Qe(e, t) {
-	let n = yt(e.matchedPrefixes), r = it(t.filter((e) => typeof e.index == "number" && $e(e, n))), i = at(r) ? ot(r).root : T(e.defaultRoot ?? "body");
+function Xe(e, t) {
+	let n = _t(e.matchedPrefixes), r = nt(t.filter((e) => typeof e.index == "number" && Ze(e, n))), i = rt(r) ? it(r).root : D(e.defaultRoot ?? "body");
 	return {
 		byRoot: r,
 		defaultRoot: i,
 		indexes: r[i] ?? []
 	};
 }
-function $e(e, t) {
+function Ze(e, t) {
 	if (!t.length) return !1;
-	let n = S(e.nodeName);
+	let n = w(e.nodeName);
 	return t.some((e) => n.startsWith(e));
 }
-function et(e, t) {
+function Qe(e, t) {
 	let n = new Map(e.filter((e) => typeof e.pathId == "number").map((e) => [e.pathId, e]));
 	return t.filter((e) => typeof e.sourceSpringBonePathId == "number").map((e) => {
-		let t = n.get(e.sourceSpringBonePathId), r = at(e.collidersByRoot) ? e.collidersByRoot : { [e.defaultRoot ?? t?.poseRoot ?? "unknown"]: e.colliders ?? [] };
+		let t = n.get(e.sourceSpringBonePathId), r = rt(e.collidersByRoot) ? e.collidersByRoot : { [e.defaultRoot ?? t?.poseRoot ?? "unknown"]: e.colliders ?? [] };
 		return {
 			sourceKind: e.sourceKind ?? "direct",
 			partKind: e.partKind ?? t?.partKind ?? "Unknown",
@@ -778,70 +780,70 @@ function et(e, t) {
 		};
 	});
 }
-function tt(e, t) {
+function $e(e, t) {
 	let n = new Map(e.flatMap((e) => e.colliders).filter((e) => typeof e.index == "number").map((e) => [e.index, e]));
-	return e.flatMap((e) => e.managerColliderCaches.map((r) => e.partType === "head" || e.partType === "hair" ? nt(r, t, n) : rt(r, n)));
+	return e.flatMap((e) => e.managerColliderCaches.map((r) => e.partType === "head" || e.partType === "hair" ? et(r, t, n) : tt(r, n)));
 }
-function nt(e, t, n) {
-	let r = new Set(O(e.springBonePathIds)), i = xt(t.filter((e) => typeof e.sourceSpringBonePathId == "number" && r.has(e.sourceSpringBonePathId) && e.sourceKind === "colliderFlag").flatMap((e) => O(e.colliders)).filter((e) => n.has(e)));
+function et(e, t, n) {
+	let r = new Set(A(e.springBonePathIds)), i = yt(t.filter((e) => typeof e.sourceSpringBonePathId == "number" && r.has(e.sourceSpringBonePathId) && e.sourceKind === "colliderFlag").flatMap((e) => A(e.colliders)).filter((e) => n.has(e)));
 	return i.length ? {
 		...e,
-		sphereColliderIndexes: i.filter((e) => S(n.get(e)?.scriptName).includes("Sphere")),
-		capsuleColliderIndexes: i.filter((e) => S(n.get(e)?.scriptName).includes("Capsule")),
-		panelColliderIndexes: i.filter((e) => S(n.get(e)?.scriptName).includes("Panel")),
+		sphereColliderIndexes: i.filter((e) => w(n.get(e)?.scriptName).includes("Sphere")),
+		capsuleColliderIndexes: i.filter((e) => w(n.get(e)?.scriptName).includes("Capsule")),
+		panelColliderIndexes: i.filter((e) => w(n.get(e)?.scriptName).includes("Panel")),
 		reason: "viewer_composed_head_body_collider_cache"
-	} : rt(e, n);
+	} : tt(e, n);
 }
-function rt(e, t) {
+function tt(e, t) {
 	return {
 		...e,
-		sphereColliderIndexes: O(e.sphereColliderIndexes).filter((e) => t.has(e)),
-		capsuleColliderIndexes: O(e.capsuleColliderIndexes).filter((e) => t.has(e)),
-		panelColliderIndexes: O(e.panelColliderIndexes).filter((e) => t.has(e)),
+		sphereColliderIndexes: A(e.sphereColliderIndexes).filter((e) => t.has(e)),
+		capsuleColliderIndexes: A(e.capsuleColliderIndexes).filter((e) => t.has(e)),
+		panelColliderIndexes: A(e.panelColliderIndexes).filter((e) => t.has(e)),
 		reason: "viewer_composed_active_parts_manager_cache"
 	};
 }
-function it(e) {
+function nt(e) {
 	let t = /* @__PURE__ */ new Map();
 	for (let n of e) {
 		if (typeof n.index != "number") continue;
-		let e = T(ct(n.nodePath) ?? n.poseRoot ?? "body"), r = t.get(e) ?? [];
+		let e = D(ot(n.nodePath) ?? n.poseRoot ?? "body"), r = t.get(e) ?? [];
 		r.push(n.index), t.set(e, r);
 	}
 	return Object.fromEntries([...t.entries()].map(([e, t]) => [e, [...new Set(t)].sort((e, t) => e - t)]));
 }
-function at(e) {
+function rt(e) {
 	return !!(e && Object.values(e).some((e) => e.length > 0));
 }
-function ot(e) {
-	let [t, n] = Object.entries(e).sort(([e], [t]) => st(e) - st(t) || e.localeCompare(t))[0];
+function it(e) {
+	let [t, n] = Object.entries(e).sort(([e], [t]) => at(e) - at(t) || e.localeCompare(t))[0];
 	return {
 		root: t,
 		indexes: n
 	};
 }
-function st(e) {
+function at(e) {
 	return e === "body" ? 0 : e === "sit_body" ? 1 : e === "guitar_body" ? 2 : 10;
 }
-function T(e) {
+function D(e) {
 	return (e ?? "").trim() || "body";
 }
-function ct(e) {
+function ot(e) {
 	return e?.split("/").find(Boolean) ?? null;
 }
-function lt(e, t) {
+function st(e, t) {
 	let n = [...t.warnings ?? []], r = [];
 	for (let [i, a] of e.entries()) {
 		let e = d(a.part);
-		for (let o of D(a.nativeMeshes?.meshes)) {
-			let a = ut(o, i);
+		for (let o of k(a.nativeMeshes?.meshes)) {
+			let a = ct(o, i);
 			if (e !== "head_optional") {
 				r.push(a);
 				continue;
 			}
-			let s = S(a.rendererTransformPath), c = D(t.prefabGraphs).find((e) => gt(e.runtimePartIndex, -1) === i && !!S(e.headOptionalAttachPath)), l = S(c?.headOptionalPrefabRootPath);
+			let s = w(a.rendererTransformPath), c = k(t.prefabGraphs).find((e) => mt(e.runtimePartIndex, -1) === i && !!w(e.headOptionalAttachPath)), l = w(c?.headOptionalPrefabRootPath);
 			if (!c || !l) {
-				n.push(`Head optional mesh '${S(o.meshPath) || S(o.meshName) || "<unnamed>"}' was skipped because the official prefab could not be mounted.`);
+				n.push(`Head optional mesh '${w(o.meshPath) || w(o.meshName) || "<unnamed>"}' was skipped because the official prefab could not be mounted.`);
 				continue;
 			}
 			s !== l && !s.startsWith(`${l}/`) || r.push({
@@ -857,82 +859,82 @@ function lt(e, t) {
 		warnings: n
 	};
 }
-function ut(e, t) {
+function ct(e, t) {
 	let n = { ...e };
 	for (let e of [
 		"rendererPathId",
 		"rendererTransformPathId",
 		"rootBonePathId"
-	]) typeof n[e] == "number" && (n[e] = w(n[e], t));
-	return Array.isArray(n.bonePathIds) && (n.bonePathIds = n.bonePathIds.map((e) => typeof e == "number" ? w(e, t) : e)), n;
+	]) typeof n[e] == "number" && (n[e] = E(n[e], t));
+	return Array.isArray(n.bonePathIds) && (n.bonePathIds = n.bonePathIds.map((e) => typeof e == "number" ? E(e, t) : e)), n;
 }
-function dt(e) {
+function lt(e) {
 	let t = [
 		...e.filter((e) => d(e.part) === "head"),
 		...e.filter((e) => d(e.part) === "hair"),
 		...e.filter((e) => d(e.part) !== "head_optional")
 	];
 	for (let e of t) {
-		let t = ft(S(e.source?.bundlePath));
+		let t = ut(w(e.source?.bundlePath));
 		if (t) return t;
-		let n = ft(S(e.part.modelAssetbundleName));
+		let n = ut(w(e.part.modelAssetbundleName));
 		if (n) return n;
 	}
 	return null;
 }
-function ft(e) {
+function ut(e) {
 	let t = e.replace(/\\/g, "/").replace(/\.bundle$/i, "").match(/(?:^|\/)face\/([^/]+)\/([^/]+)$/i);
 	return t ? `${t[1]}/${t[2]}` : null;
 }
-function pt(e, t) {
+function dt(e, t) {
 	if (!t) return null;
-	let n = mt(e)[t];
-	return E(n) ? n : null;
+	let n = ft(e)[t];
+	return O(n) ? n : null;
 }
-function mt(e) {
-	return vt(e.mount?.accessoryTransformAdjustments);
+function ft(e) {
+	return gt(e.mount?.accessoryTransformAdjustments);
 }
-function ht(e, t, n, r) {
-	let i = vt(e);
+function pt(e, t, n, r) {
+	let i = gt(e);
 	return {
-		x: gt(i.x ?? i.X, t),
-		y: gt(i.y ?? i.Y, n),
-		z: gt(i.z ?? i.Z, r)
+		x: mt(i.x ?? i.X, t),
+		y: mt(i.y ?? i.Y, n),
+		z: mt(i.z ?? i.Z, r)
 	};
 }
-function gt(e, t) {
+function mt(e, t) {
 	return typeof e == "number" && Number.isFinite(e) ? e : t;
 }
-function _t(e) {
+function ht(e) {
 	return (e?.replace(/\\/g, "/").split("/").filter(Boolean).pop() ?? "") || null;
 }
-function E(e) {
+function O(e) {
 	return !!(e && typeof e == "object" && !Array.isArray(e));
 }
-function vt(e) {
-	return E(e) ? e : {};
+function gt(e) {
+	return O(e) ? e : {};
 }
-function yt(e) {
+function _t(e) {
 	return Array.isArray(e) ? e.filter((e) => typeof e == "string") : [];
 }
-function D(e) {
-	return Array.isArray(e) ? e.filter((e) => E(e)) : [];
+function k(e) {
+	return Array.isArray(e) ? e.filter((e) => O(e)) : [];
 }
-function O(e) {
+function A(e) {
 	return Array.isArray(e) ? e.filter((e) => typeof e == "number") : [];
 }
-function bt(e) {
+function vt(e) {
 	return [...new Set(e)];
 }
-function xt(e) {
+function yt(e) {
 	return [...new Set(e)].sort((e, t) => e - t);
 }
-function St(e) {
+function bt(e) {
 	let { runtime: t, role: n } = e;
 	if (d(t.part) !== "head_optional") throw Error(`Part ${t.packagePath} is not a head_optional part.`);
-	let r = "optional", i = He(t.springBone?.prefabGraph, 0), a = i?.transforms?.find((e) => e.parentPathId == null && S(e.transformPath) === r);
+	let r = "optional", i = Be(t.springBone?.prefabGraph, 0), a = i?.transforms?.find((e) => e.parentPathId == null && w(e.transformPath) === r);
 	if (!i || !a) throw Error(`Head optional part ${t.packagePath} has no official prefab root '${r}'.`);
-	Ce(i, r), a.localPosition = {
+	xe(i, r), a.localPosition = {
 		X: 0,
 		Y: 0,
 		Z: 0
@@ -942,7 +944,7 @@ function St(e) {
 		z: 0,
 		w: 1
 	}, i.headOptionalPrefabRootPath = r;
-	let o = D(t.nativeMeshes?.meshes).map((e) => ut(e, 0)).filter((e) => we(S(e.rendererTransformPath), r));
+	let o = k(t.nativeMeshes?.meshes).map((e) => ct(e, 0)).filter((e) => Se(w(e.rendererTransformPath), r));
 	if (o.length === 0) throw Error(`Head optional part ${t.packagePath} has no renderer under '${r}'.`);
 	let s = [...t.warnings ?? []], c = {
 		version: "0414",
@@ -985,7 +987,7 @@ function St(e) {
 }
 //#endregion
 //#region src/parts/customWardrobeController.ts
-var Ct = class {
+var xt = class {
 	options;
 	partSet = null;
 	selection = null;
@@ -1016,7 +1018,7 @@ var Ct = class {
 	async setCustomSelection(e, t = () => !0) {
 		if (!this.partSet) throw Error("No custom part package set is loaded.");
 		let n = this.resolveHeadSource(e);
-		if (this.assertSameActiveCharacter(n), await this.ensureSelectionPackages(n), !t()) throw wt();
+		if (this.assertSameActiveCharacter(n), await this.ensureSelectionPackages(n), !t()) throw St();
 		this.activeRoleId ??= h(n.characterId, n.unit);
 		let r = this.compose(n);
 		return this.selection = { ...n }, this.combined = r, r;
@@ -1039,7 +1041,7 @@ var Ct = class {
 			this.findRegistryEntry(e, "body", e.bodyCostume3dId),
 			t,
 			b(this.partSet, e),
-			ne(this.partSet, e)
+			C(this.partSet, e)
 		].filter((e) => e !== null && e.status !== "empty");
 		await Promise.all(n.map(async (e) => {
 			if (!this.partSet.packages.has(e.packagePath) && !await this.options.loadPartRuntime(e)) throw Error(`Failed to load ${e.partType} package ${e.packagePath}.`);
@@ -1060,17 +1062,17 @@ var Ct = class {
 		});
 	}
 };
-function wt() {
+function St() {
 	let e = /* @__PURE__ */ Error("Custom part selection was superseded by a newer request.");
 	return e.name = "AbortError", e;
 }
 //#endregion
 //#region src/original/unityFile.ts
-var Tt = new TextDecoder("utf-8", { fatal: !0 });
-function k(e, t) {
+var Ct = new TextDecoder("utf-8", { fatal: !0 });
+function j(e, t) {
 	if (!e) throw Error(t);
 }
-var Et = class {
+var wt = class {
 	bytes;
 	little;
 	view;
@@ -1079,7 +1081,7 @@ var Et = class {
 		this.bytes = e, this.little = t, this.view = new DataView(e.buffer, e.byteOffset, e.byteLength);
 	}
 	ensure(e) {
-		k(e >= 0 && this.offset + e <= this.bytes.length, "truncated Unity data");
+		j(e >= 0 && this.offset + e <= this.bytes.length, "truncated Unity data");
 	}
 	take(e) {
 		this.ensure(e);
@@ -1138,19 +1140,19 @@ var Et = class {
 	}
 	cstring() {
 		let e = this.bytes.indexOf(0, this.offset);
-		k(e >= 0, "unterminated Unity string");
-		let t = Tt.decode(this.bytes.subarray(this.offset, e));
+		j(e >= 0, "unterminated Unity string");
+		let t = Ct.decode(this.bytes.subarray(this.offset, e));
 		return this.offset = e + 1, t;
 	}
 	count(e = 2147483647) {
 		let t = this.i32();
-		return k(t >= 0 && t <= e, `invalid Unity array length ${t}`), t;
+		return j(t >= 0 && t <= e, `invalid Unity array length ${t}`), t;
 	}
 };
-function A(e, t) {
-	return k(e >= 0n && e <= BigInt(2 ** 53 - 1), `${t} out of range`), Number(e);
+function Tt(e, t) {
+	return j(e >= 0n && e <= BigInt(2 ** 53 - 1), `${t} out of range`), Number(e);
 }
-function Dt(e, t) {
+function Et(e, t) {
 	let n = new Uint8Array(t), r = 0, i = 0, a = e.length;
 	for (; r < a;) {
 		let o = e[r++], s = o >>> 4;
@@ -1160,9 +1162,9 @@ function Dt(e, t) {
 				t = e[r++], s += t;
 			while (t === 255);
 		}
-		if (k(r + s <= a && i + s <= t, "LZ4 literal run out of range"), n.set(e.subarray(r, r + s), i), r += s, i += s, r >= a) break;
+		if (j(r + s <= a && i + s <= t, "LZ4 literal run out of range"), n.set(e.subarray(r, r + s), i), r += s, i += s, r >= a) break;
 		let c = e[r] | e[r + 1] << 8;
-		r += 2, k(c > 0 && c <= i, "invalid LZ4 match distance");
+		r += 2, j(c > 0 && c <= i, "invalid LZ4 match distance");
 		let l = o & 15;
 		if (l === 15) {
 			let t;
@@ -1170,48 +1172,48 @@ function Dt(e, t) {
 				t = e[r++], l += t;
 			while (t === 255);
 		}
-		l += 4, k(i + l <= t, "LZ4 match out of range");
+		l += 4, j(i + l <= t, "LZ4 match out of range");
 		let u = i - c;
 		if (c >= l) n.copyWithin(i, u, u + l), i += l;
 		else for (let e = 0; e < l; e++) n[i++] = n[u++];
 	}
-	return k(i === t, "LZ4 output size mismatch"), n;
+	return j(i === t, "LZ4 output size mismatch"), n;
 }
-function Ot(e, t, n) {
+function Dt(e, t, n) {
 	let r = n & 63;
-	return r === 0 ? (k(e.length === t, "uncompressed UnityFS block size mismatch"), e) : (k(r === 2 || r === 3, `unsupported UnityFS block compression ${r}`), Dt(e, t));
+	return r === 0 ? (j(e.length === t, "uncompressed UnityFS block size mismatch"), e) : (j(r === 2 || r === 3, `unsupported UnityFS block compression ${r}`), Et(e, t));
 }
-function kt(e) {
-	let t = new Et(e);
-	k(t.cstring() === "UnityFS", "not a UnityFS bundle");
+function Ot(e) {
+	let t = new wt(e);
+	j(t.cstring() === "UnityFS", "not a UnityFS bundle");
 	let n = t.u32();
-	k(n === 8, `unsupported UnityFS version ${n}`);
+	j(n === 8, `unsupported UnityFS version ${n}`);
 	let r = t.cstring(), i = t.cstring();
-	k(A(t.i64(), "UnityFS size") === e.length, "UnityFS size mismatch");
+	j(Tt(t.i64(), "UnityFS size") === e.length, "UnityFS size mismatch");
 	let a = t.u32(), o = t.u32(), s = t.u32();
 	t.align(16);
-	let c = t.offset, l = (s & 128) != 0, u = l ? e.length - a : c, d = new Et(Ot(e.subarray(u, u + a), o, s));
+	let c = t.offset, l = (s & 128) != 0, u = l ? e.length - a : c, d = new wt(Dt(e.subarray(u, u + a), o, s));
 	d.take(16);
 	let f = Array.from({ length: d.count(1 << 20) }, () => ({
 		size: d.u32(),
 		compressed: d.u32(),
 		flags: d.u16()
 	})), p = Array.from({ length: d.count(65536) }, () => ({
-		offset: A(d.i64(), "node offset"),
-		size: A(d.i64(), "node size"),
+		offset: Tt(d.i64(), "node offset"),
+		size: Tt(d.i64(), "node size"),
 		flags: d.u32(),
 		path: d.cstring()
 	})), m = l ? c : u + a;
 	s & 512 && (m = Math.ceil(m / 16) * 16);
 	let h = f.reduce((e, t) => e + t.size, 0), g;
-	if (f.every((e) => (e.flags & 63) == 0)) g = e.subarray(m, m + h), k(g.length === h, "truncated UnityFS data");
+	if (f.every((e) => (e.flags & 63) == 0)) g = e.subarray(m, m + h), j(g.length === h, "truncated UnityFS data");
 	else {
 		g = new Uint8Array(h);
 		let t = 0;
-		for (let n of f) g.set(Ot(e.subarray(m, m + n.compressed), n.size, n.flags), t), m += n.compressed, t += n.size;
+		for (let n of f) g.set(Dt(e.subarray(m, m + n.compressed), n.size, n.flags), t), m += n.compressed, t += n.size;
 	}
 	let _ = /* @__PURE__ */ new Map();
-	for (let e of p) k(e.offset + e.size <= g.length && !_.has(e.path), `invalid UnityFS node ${e.path}`), _.set(e.path, {
+	for (let e of p) j(e.offset + e.size <= g.length && !_.has(e.path), `invalid UnityFS node ${e.path}`), _.set(e.path, {
 		path: e.path,
 		flags: e.flags,
 		bytes: g.subarray(e.offset, e.offset + e.size)
@@ -1222,8 +1224,8 @@ function kt(e) {
 		nodes: _
 	};
 }
-var At = new TextEncoder().encode((/* @__PURE__ */ "AABB.AnimationClip.AnimationCurve.AnimationState.Array.Base.BitField.bitset.bool.char.ColorRGBA.Component.data.deque.double.dynamic_array.FastPropertyName.first.float.Font.GameObject.Generic Mono.GradientNEW.GUID.GUIStyle.int.list.long long.map.Matrix4x4f.MdFour.MonoBehaviour.MonoScript.m_ByteSize.m_Curve.m_EditorClassIdentifier.m_EditorHideFlags.m_Enabled.m_ExtensionPtr.m_GameObject.m_Index.m_IsArray.m_IsStatic.m_MetaFlag.m_Name.m_ObjectHideFlags.m_PrefabInternal.m_PrefabParentObject.m_Script.m_StaticEditorFlags.m_Type.m_Version.Object.pair.PPtr<Component>.PPtr<GameObject>.PPtr<Material>.PPtr<MonoBehaviour>.PPtr<MonoScript>.PPtr<Object>.PPtr<Prefab>.PPtr<Sprite>.PPtr<TextAsset>.PPtr<Texture>.PPtr<Texture2D>.PPtr<Transform>.Prefab.Quaternionf.Rectf.RectInt.RectOffset.second.set.short.size.SInt16.SInt32.SInt64.SInt8.staticvector.string.TextAsset.TextMesh.Texture.Texture2D.Transform.TypelessData.UInt16.UInt32.UInt64.UInt8.unsigned int.unsigned long long.unsigned short.vector.Vector2f.Vector3f.Vector4f.m_ScriptingClassIdentifier.Gradient.Type*.int2_storage.int3_storage.BoundsInt.m_CorrespondingSourceObject.m_PrefabInstance.m_PrefabAsset.FileSize.Hash128.RenderingLayerMask.fixed_array.EntityId.".split(".")).join("\0")), jt = 16384;
-function j(e, t) {
+var kt = new TextEncoder().encode((/* @__PURE__ */ "AABB.AnimationClip.AnimationCurve.AnimationState.Array.Base.BitField.bitset.bool.char.ColorRGBA.Component.data.deque.double.dynamic_array.FastPropertyName.first.float.Font.GameObject.Generic Mono.GradientNEW.GUID.GUIStyle.int.list.long long.map.Matrix4x4f.MdFour.MonoBehaviour.MonoScript.m_ByteSize.m_Curve.m_EditorClassIdentifier.m_EditorHideFlags.m_Enabled.m_ExtensionPtr.m_GameObject.m_Index.m_IsArray.m_IsStatic.m_MetaFlag.m_Name.m_ObjectHideFlags.m_PrefabInternal.m_PrefabParentObject.m_Script.m_StaticEditorFlags.m_Type.m_Version.Object.pair.PPtr<Component>.PPtr<GameObject>.PPtr<Material>.PPtr<MonoBehaviour>.PPtr<MonoScript>.PPtr<Object>.PPtr<Prefab>.PPtr<Sprite>.PPtr<TextAsset>.PPtr<Texture>.PPtr<Texture2D>.PPtr<Transform>.Prefab.Quaternionf.Rectf.RectInt.RectOffset.second.set.short.size.SInt16.SInt32.SInt64.SInt8.staticvector.string.TextAsset.TextMesh.Texture.Texture2D.Transform.TypelessData.UInt16.UInt32.UInt64.UInt8.unsigned int.unsigned long long.unsigned short.vector.Vector2f.Vector3f.Vector4f.m_ScriptingClassIdentifier.Gradient.Type*.int2_storage.int3_storage.BoundsInt.m_CorrespondingSourceObject.m_PrefabInstance.m_PrefabAsset.FileSize.Hash128.RenderingLayerMask.fixed_array.EntityId.".split(".")).join("\0")), At = 16384;
+function jt(e, t) {
 	return (n, r, i) => {
 		let a = e.BYTES_PER_ELEMENT;
 		if (i) {
@@ -1250,27 +1252,27 @@ var Mt = (() => {
 	}, r = {
 		size: 2,
 		read: (e) => e.u16(),
-		array: j(Uint16Array, (e, t, n) => e.getUint16(t, n))
+		array: jt(Uint16Array, (e, t, n) => e.getUint16(t, n))
 	}, i = {
 		size: 2,
 		read: (e) => e.i16(),
-		array: j(Int16Array, (e, t, n) => e.getInt16(t, n))
+		array: jt(Int16Array, (e, t, n) => e.getInt16(t, n))
 	}, a = {
 		size: 4,
 		read: (e) => e.u32(),
-		array: j(Uint32Array, (e, t, n) => e.getUint32(t, n))
+		array: jt(Uint32Array, (e, t, n) => e.getUint32(t, n))
 	}, o = {
 		size: 4,
 		read: (e) => e.i32(),
-		array: j(Int32Array, (e, t, n) => e.getInt32(t, n))
+		array: jt(Int32Array, (e, t, n) => e.getInt32(t, n))
 	}, s = {
 		size: 4,
 		read: (e) => e.f32(),
-		array: j(Float32Array, (e, t, n) => e.getFloat32(t, n))
+		array: jt(Float32Array, (e, t, n) => e.getFloat32(t, n))
 	}, c = {
 		size: 8,
 		read: (e) => e.f64(),
-		array: j(Float64Array, (e, t, n) => e.getFloat64(t, n))
+		array: jt(Float64Array, (e, t, n) => e.getFloat64(t, n))
 	}, l = (e) => ({
 		size: 8,
 		read: (t) => e ? t.i64() : t.u64(),
@@ -1303,21 +1305,21 @@ var Mt = (() => {
 	};
 })();
 function Nt(e) {
-	let t = (e.metaFlags & jt) !== 0, n = (e, t) => t ? (t) => {
+	let t = (e.metaFlags & At) !== 0, n = (e, t) => t ? (t) => {
 		let n = e(t);
 		return t.align(), n;
 	} : e, r = Mt[e.type];
 	if (r && e.children.length === 0) return n(r.read, t);
 	if (e.type === "string") return (e) => {
-		let t = e.count(), n = Tt.decode(e.take(t));
+		let t = e.count(), n = Ct.decode(e.take(t));
 		return e.align(), n;
 	};
 	if (e.type === "TypelessData") return n((e) => e.take(e.count()), t);
 	let i = e.children[0];
 	if (i && i.type === "Array") {
-		k(i.children.length === 2, `invalid TypeTree array ${e.name}`);
-		let r = i.children[1], a = t || (i.metaFlags & jt) !== 0, o = Mt[r.type];
-		if (o && r.children.length === 0 && (r.metaFlags & jt) === 0) return n((e) => {
+		j(i.children.length === 2, `invalid TypeTree array ${e.name}`);
+		let r = i.children[1], a = t || (i.metaFlags & At) !== 0, o = Mt[r.type];
+		if (o && r.children.length === 0 && (r.metaFlags & At) === 0) return n((e) => {
 			let t = e.count(), n = e.take(t * o.size);
 			return o.array(n, t, e.little);
 		}, a);
@@ -1330,7 +1332,7 @@ function Nt(e) {
 			return n;
 		}, a);
 	}
-	k(e.children.length > 0, `unsupported TypeTree leaf ${e.type} ${e.name}`);
+	j(e.children.length > 0, `unsupported TypeTree leaf ${e.type} ${e.name}`);
 	let a = e.children.map((e) => [e.name, Nt(e)]);
 	return n((e) => {
 		let t = {};
@@ -1340,7 +1342,7 @@ function Nt(e) {
 }
 function Pt(e) {
 	let t = e.count(1 << 20), n = e.count(1 << 26);
-	k(t > 0, "missing embedded TypeTree");
+	j(t > 0, "missing embedded TypeTree");
 	let r = Array(t);
 	for (let n = 0; n < t; n++) {
 		e.u16();
@@ -1349,7 +1351,7 @@ function Pt(e) {
 		let i = e.u32(), a = e.u32(), o = e.i32();
 		e.i32();
 		let s = e.i32();
-		k(e.u64() === 0n, "managed-reference TypeTrees are not supported"), r[n] = {
+		j(e.u64() === 0n, "managed-reference TypeTrees are not supported"), r[n] = {
 			level: t,
 			typeOffset: i,
 			nameOffset: a,
@@ -1358,8 +1360,8 @@ function Pt(e) {
 		};
 	}
 	let i = e.take(n), a = (e) => {
-		let t = (e & 2147483648) == 0, n = t ? i : At, r = t ? e : e & 2147483647, a = n.indexOf(0, r);
-		return Tt.decode(n.subarray(r, a < 0 ? n.length : a));
+		let t = (e & 2147483648) == 0, n = t ? i : kt, r = t ? e : e & 2147483647, a = n.indexOf(0, r);
+		return Ct.decode(n.subarray(r, a < 0 ? n.length : a));
 	}, o = [], s = null;
 	for (let e of r) {
 		let t = {
@@ -1369,21 +1371,21 @@ function Pt(e) {
 			metaFlags: e.metaFlags,
 			children: []
 		};
-		k(e.level <= o.length, "invalid TypeTree nesting"), o.length = e.level, e.level === 0 ? s = t : o[e.level - 1].children.push(t), o.push(t);
+		j(e.level <= o.length, "invalid TypeTree nesting"), o.length = e.level, e.level === 0 ? s = t : o[e.level - 1].children.push(t), o.push(t);
 	}
 	return s;
 }
 function Ft(e) {
-	let t = new Et(e);
+	let t = new wt(e);
 	t.u32(), t.u32();
 	let n = t.u32();
-	t.u32(), k(n === 22, `unsupported SerializedFile version ${n}`);
+	t.u32(), j(n === 22, `unsupported SerializedFile version ${n}`);
 	let r = t.u8();
 	t.take(3);
-	let i = t.u32(), a = A(t.i64(), "file size"), o = A(t.i64(), "data offset");
-	t.i64(), k(a === e.length, "SerializedFile size mismatch"), t.little = r === 0;
+	let i = t.u32(), a = Tt(t.i64(), "file size"), o = Tt(t.i64(), "data offset");
+	t.i64(), j(a === e.length, "SerializedFile size mismatch"), t.little = r === 0;
 	let s = t.cstring(), c = t.i32();
-	k(t.u8() === 1, "SerializedFile without TypeTrees");
+	j(t.u8() === 1, "SerializedFile without TypeTrees");
 	let l = [];
 	for (let e = t.count(65536); e > 0; e--) {
 		let e = t.i32();
@@ -1401,8 +1403,8 @@ function Ft(e) {
 	let u = /* @__PURE__ */ new Map(), d = t.little;
 	for (let n = t.count(1 << 24); n > 0; n--) {
 		t.align();
-		let n = t.i64(), r = A(t.i64(), "object offset") + o, i = t.u32(), s = l[t.i32()];
-		k(s && r + i <= a && !u.has(n), `invalid object entry ${n}`);
+		let n = t.i64(), r = Tt(t.i64(), "object offset") + o, i = t.u32(), s = l[t.i32()];
+		j(s && r + i <= a && !u.has(n), `invalid object entry ${n}`);
 		let c;
 		u.set(n, {
 			pathId: n,
@@ -1413,8 +1415,8 @@ function Ft(e) {
 			byteSize: i,
 			read() {
 				if (c === void 0) {
-					let t = new Et(e.subarray(r, r + i), d);
-					c = s.read(t), k(t.offset === i, `object ${n} (class ${s.classId}): ${i - t.offset} bytes unread`);
+					let t = new wt(e.subarray(r, r + i), d);
+					c = s.read(t), j(t.offset === i, `object ${n} (class ${s.classId}): ${i - t.offset} bytes unread`);
 				}
 				return c;
 			}
@@ -1430,7 +1432,7 @@ function Ft(e) {
 			path: t.cstring()
 		});
 	}
-	return k(t.count(65536) === 0, "SerializedFile reference types are not supported"), t.cstring(), k(t.offset === 48 + i, "SerializedFile metadata size mismatch"), {
+	return j(t.count(65536) === 0, "SerializedFile reference types are not supported"), t.cstring(), j(t.offset === 48 + i, "SerializedFile metadata size mismatch"), {
 		unityVersion: s,
 		targetPlatform: c,
 		objects: u,
@@ -1455,7 +1457,7 @@ var Rt = class {
 	size;
 	constructor(e, t) {
 		this.name = e;
-		let n = kt(t);
+		let n = Ot(t);
 		this.size = [...n.nodes.values()].reduce((e, t) => e + t.bytes.length, 0);
 		let r = null, i = "";
 		for (let t of n.nodes.values()) t.flags & 4 ? (Lt(!r, `${e}: more than one SerializedFile`), r = Ft(t.bytes), i = t.path) : this.streams.set(t.path, t.bytes);
@@ -1652,22 +1654,21 @@ function Qt(e) {
 }
 //#endregion
 //#region src/original/hairRecolor.ts
-var $t = 256;
-function en(e, t, n, r, i) {
+function $t(e, t, n, r, i) {
 	let a = (e) => {
 		let t = e / 255;
 		return t <= .04045 ? t / 12.92 : ((t + .055) / 1.055) ** 2.4;
 	}, o = a(e), s = a(t), c = a(n), l = (.4124 * o + .3576 * s + .1805 * c) / .95047, u = .2126 * o + .7152 * s + .0722 * c, d = (.0193 * o + .1192 * s + .9505 * c) / 1.08883, f = (e) => e > .008856 ? Math.cbrt(e) : 7.787 * e + 16 / 116, p = f(l), m = f(u), h = f(d);
 	r[i] = 116 * m - 16, r[i + 1] = 500 * (p - m), r[i + 2] = 200 * (m - h);
 }
-function tn(e, t, n, r, i) {
+function en(e, t, n, r, i) {
 	let a = (e + 16) / 116, o = a + t / 500, s = a - n / 200, c = (e) => e ** 3 > .008856 ? e ** 3 : (e - 16 / 116) / 7.787, l = c(o) * .95047, u = c(a), d = c(s) * 1.08883, f = (e) => {
 		let t = e <= .0031308 ? 12.92 * e : 1.055 * Math.max(e, 0) ** (1 / 2.4) - .055;
 		return Math.max(0, Math.min(255, Math.round(t * 255)));
 	};
 	r[i] = f(3.2406 * l - 1.5372 * u - .4986 * d), r[i + 1] = f(-.9689 * l + 1.8758 * u + .0415 * d), r[i + 2] = f(.0557 * l - .204 * u + 1.057 * d);
 }
-function nn(e, t, n, r, i = new Uint8Array(e * t)) {
+function tn(e, t, n, r, i = new Uint8Array(e * t)) {
 	for (let a = 0; a + 2 < r.length; a += 3) {
 		let o = n[r[a] * 2] * e, s = n[r[a] * 2 + 1] * t, c = n[r[a + 1] * 2] * e, l = n[r[a + 1] * 2 + 1] * t, u = n[r[a + 2] * 2] * e, d = n[r[a + 2] * 2 + 1] * t, f = (c - o) * (d - s) - (l - s) * (u - o);
 		if (f === 0) continue;
@@ -1679,7 +1680,7 @@ function nn(e, t, n, r, i = new Uint8Array(e * t)) {
 	}
 	return i;
 }
-function rn(e, t, n, r) {
+function nn(e, t, n, r) {
 	let i = e;
 	for (let e = 0; e < r; e++) {
 		let e = i.slice();
@@ -1691,101 +1692,141 @@ function rn(e, t, n, r) {
 	}
 	return i;
 }
-function an(e, t) {
-	let n = t.reduce((e, t) => e + t, 0);
-	if (n === 0) throw Error("the palette hair covers no texel");
+function rn(e, t) {
+	let n = 0;
+	for (let e = 0; e < t.length; e++) t[e] && n++;
 	let r = new Float32Array(n * 3), i = 0;
-	for (let n = 0; n < t.length; n++) t[n] && en(e.data[n * 4], e.data[n * 4 + 1], e.data[n * 4 + 2], r, 3 * i++);
-	let a = Array.from({ length: n }, (e, t) => t).sort((e, t) => r[e * 3] - r[t * 3]), o = a.slice(Math.floor(n * .4)), s = (e) => e.sort((e, t) => e - t)[e.length >> 1], c = s(o.map((e) => r[e * 3 + 1])), l = s(o.map((e) => r[e * 3 + 2])), u = a.filter((e) => {
-		let t = r[e * 3 + 1], n = r[e * 3 + 2];
-		return Math.hypot(t, n) <= 12 || Math.hypot(t - c, n - l) <= 35;
-	}), d = u.length >= n * .5 ? u : a, f = new Float32Array($t * 3);
-	for (let e = 0; e < $t; e++) {
-		let t = Math.floor(e * d.length / $t), n = Math.max(t + 1, Math.floor((e + 1) * d.length / $t)), i = 0, a = 0, o = 0;
-		for (let e = t; e < n; e++) {
-			let t = d[Math.min(e, d.length - 1)];
-			i += r[t * 3], a += r[t * 3 + 1], o += r[t * 3 + 2];
-		}
-		let s = n - t;
-		f[e * 3] = i / s, f[e * 3 + 1] = a / s, f[e * 3 + 2] = o / s;
-	}
-	let p = f.slice();
-	for (let e = 0; e < $t; e++) for (let t of [1, 2]) {
-		let n = 0, r = 0;
-		for (let i = -4; i <= 4; i++) {
-			let a = Math.min($t - 1, Math.max(0, e + i));
-			n += f[a * 3 + t], r++;
-		}
-		p[e * 3 + t] = n / r;
-	}
-	return p;
+	for (let n = 0; n < t.length; n++) t[n] && $t(e.data[n * 4], e.data[n * 4 + 1], e.data[n * 4 + 2], r, 3 * i++);
+	return r;
 }
-function on(e, t, n, r) {
-	let i = e.data.slice(), a = /* @__PURE__ */ new Float32Array(3), o = [];
-	for (let n = 0; n < t.length; n++) t[n] && (en(e.data[n * 4], e.data[n * 4 + 1], e.data[n * 4 + 2], a, 0), o.push(a[0]));
-	if (o.length === 0) return i;
-	let s = Float32Array.from(o).sort(), c = r.length / 3;
-	for (let t = 0; t < n.length; t++) {
-		if (!n[t]) continue;
-		en(e.data[t * 4], e.data[t * 4 + 1], e.data[t * 4 + 2], a, 0);
-		let o = 0, l = s.length;
-		for (; o < l;) {
-			let e = o + l >> 1;
-			s[e] < a[0] ? o = e + 1 : l = e;
+function an(e) {
+	let t = e.length / 3, n = new Float32Array(t);
+	for (let r = 0; r < t; r++) n[r] = e[r * 3];
+	n.sort();
+	let r = n[Math.floor(t * .2)], i = n[Math.min(t - 1, Math.floor(t * .8))], a = (r + i) / 2;
+	for (let e = 0; e < 30; e++) {
+		let e = 0, o = 0, s = 0, c = 0;
+		for (let r = 0; r < t; r++) n[r] < a ? (e += n[r], o++) : (s += n[r], c++);
+		o && (r = e / o), c && (i = s / c);
+		let l = (r + i) / 2;
+		if (Math.abs(l - a) < .001) break;
+		a = l;
+	}
+	return a;
+}
+function on(e, t, n) {
+	let r = [];
+	for (let n = 0; n < e.length; n += 3) t(e[n]) && r.push(e[n]);
+	if (r.length === 0) throw Error("a hair tone covers no texel");
+	r.sort((e, t) => e - t);
+	let i = r[Math.min(r.length - 1, Math.floor(n / 100 * r.length))];
+	for (let n of [2, Infinity]) {
+		let r = 0, a = 0, o = 0;
+		for (let s = 0; s < e.length; s += 3) t(e[s]) && Math.abs(e[s] - i) <= n && (r += e[s + 1], a += e[s + 2], o++);
+		if (o) return {
+			L: i,
+			a: r / o,
+			b: a / o
+		};
+	}
+	throw Error("unreachable");
+}
+function sn(e, t) {
+	let n = rn(e, t);
+	if (n.length === 0) throw Error("the hair covers no texel");
+	let r = an(n), i = on(n, (e) => e >= r, 50), a = [];
+	for (let e = 0; e < n.length; e += 3) {
+		let t = n[e + 1], r = n[e + 2];
+		(Math.hypot(t, r) <= 12 || Math.hypot(t - i.a, r - i.b) <= 35) && a.push(e);
+	}
+	if (a.length * 3 >= n.length * .5 && a.length * 3 < n.length) {
+		let e = new Float32Array(a.length * 3);
+		a.forEach((t, r) => e.set(n.subarray(t, t + 3), r * 3)), n = e, r = an(n);
+	}
+	return {
+		dark: on(n, (e) => e < r, 50),
+		main: on(n, (e) => e >= r, 50),
+		high: on(n, (e) => e >= r, 99)
+	};
+}
+var cn = (e, t, n) => e + (t - e) * n;
+function ln(e, t, n, r) {
+	let i = e.data.slice(), a = [
+		n.dark,
+		n.main,
+		n.high
+	], o = [
+		r.dark,
+		r.main,
+		r.high
+	], s = a.map((e) => e.L), c = o.map((e) => e.L);
+	for (let e = 1; e < 3; e++) s[e] = Math.max(s[e], s[e - 1] + .5), c[e] = Math.max(c[e], c[e - 1] + .5);
+	let l = Math.min(1.6, Math.max(.4, (c[1] - c[0]) / (s[1] - s[0]))), u = /* @__PURE__ */ new Float32Array(3), d = /* @__PURE__ */ new Uint8Array(3);
+	for (let n = 0; n < t.length; n++) {
+		if (!t[n]) continue;
+		$t(e.data[n * 4], e.data[n * 4 + 1], e.data[n * 4 + 2], u, 0);
+		let r = u[0], f, p, m, h, g;
+		if (r <= s[0]) f = c[0] + (r - s[0]) * l, {a: p, b: m} = o[0], {a: h, b: g} = a[0];
+		else if (r >= s[2]) f = c[2] + (r - s[2]), {a: p, b: m} = o[2], {a: h, b: g} = a[2];
+		else {
+			let e = r < s[1] ? 0 : 1, t = (r - s[e]) / (s[e + 1] - s[e]);
+			f = cn(c[e], c[e + 1], t), p = cn(o[e].a, o[e + 1].a, t), m = cn(o[e].b, o[e + 1].b, t), h = cn(a[e].a, a[e + 1].a, t), g = cn(a[e].b, a[e + 1].b, t);
 		}
-		let u = Math.min(c - 1, Math.floor(o / s.length * c));
-		tn(r[u * 3], r[u * 3 + 1], r[u * 3 + 2], i, t * 4);
+		let _ = Math.min(1, Math.max(0, (30 - Math.hypot(u[1] - h, u[2] - g)) / 10));
+		if (_ !== 0) {
+			en(Math.min(100, Math.max(0, f)), p, m, d, 0);
+			for (let t = 0; t < 3; t++) i[n * 4 + t] = Math.round(cn(e.data[n * 4 + t], d[t], _));
+		}
 	}
 	return i;
 }
 //#endregion
 //#region src/original/borrowedHair.ts
-var sn = "borrowed-hair:", cn = 8, ln = ["_MainTex", "_ShadowTex"], un = /* @__PURE__ */ new WeakMap(), dn = (e) => e.startsWith(sn), fn = (e) => -e;
+var un = "borrowed-hair:", dn = 8, fn = ["_MainTex", "_ShadowTex"], pn = 1.01, mn = /* @__PURE__ */ new WeakMap(), hn = (e) => e.startsWith(un), gn = (e) => -e;
 function M(e, t) {
 	if (!e) throw Error(t);
 }
-async function pn(e, t, n) {
-	let r = t.role;
-	M(r, "borrowed hair needs the part set's role");
-	let i = fn(n), a = t.registry.find((e) => e.partType === "hair" && e.costume3dId === i);
-	if (a) return a;
-	M(n !== r.characterId, "a character cannot borrow its own hair");
-	let o = await e.characterUnit(n), s = await e.roleIndex(n, o), c = s.registry.find((e) => e.partType === "hair" && e.costume3dId === s.role.hairCostume3dId);
-	M(c?.bundlePath, `character ${n} has no default hair bundle`);
-	let l = t.registry.find((e) => e.partType === "hair" && e.costume3dId === r.hairCostume3dId);
-	M(l?.bundlePath, `role ${r.characterId} has no default hair bundle`);
-	let u = un.get(t) ?? /* @__PURE__ */ new Map();
-	un.set(t, u);
-	let d = (e) => `${sn}${r.characterId}:${n}:${e}`;
-	u.set(d(c.packagePath), {
-		source: c,
-		palette: l,
-		roleCharacterId: r.characterId
+async function _n(e, t, n, r = null) {
+	let i = t.role;
+	M(i, "borrowed hair needs the part set's role"), M(n !== i.characterId, "a character cannot borrow its own hair");
+	let a = await e.characterUnit(n), o = await e.roleIndex(n, a), s = r ?? o.role.hairCostume3dId, c = gn(s), l = t.registry.find((e) => e.partType === "hair" && e.costume3dId === c);
+	if (l) return l;
+	let u = o.registry.find((e) => e.partType === "hair" && e.costume3dId === s);
+	M(u?.bundlePath, `character ${n} has no hair ${s}`);
+	let d = t.registry.find((e) => e.partType === "hair" && e.costume3dId === i.hairCostume3dId);
+	M(d?.bundlePath, `role ${i.characterId} has no default hair bundle`);
+	let f = mn.get(t) ?? /* @__PURE__ */ new Map();
+	mn.set(t, f);
+	let p = (e) => `${un}${i.characterId}:${n}:${e}`;
+	f.set(p(u.packagePath), {
+		source: u,
+		palette: d,
+		roleCharacterId: i.characterId
 	});
-	let f = c.headTypeVariants ? Object.fromEntries(Object.entries(c.headTypeVariants).flatMap(([e, t]) => t ? (u.set(d(t.packagePath), {
+	let m = u.headTypeVariants ? Object.fromEntries(Object.entries(u.headTypeVariants).flatMap(([e, t]) => t ? (f.set(p(t.packagePath), {
 		source: {
-			...c,
+			...u,
 			bundlePath: t.bundlePath,
 			packagePath: t.packagePath
 		},
-		palette: l,
-		roleCharacterId: r.characterId
+		palette: d,
+		roleCharacterId: i.characterId
 	}), [[e, {
 		bundlePath: t.bundlePath,
-		packagePath: d(t.packagePath)
-	}]]) : [])) : null, p = {
-		...c,
-		characterId: r.characterId,
-		unit: r.unit,
-		costume3dId: i,
-		packagePath: d(c.packagePath),
-		headTypeVariants: f
+		packagePath: p(t.packagePath)
+	}]]) : [])) : null, h = {
+		...u,
+		characterId: i.characterId,
+		unit: i.unit,
+		costume3dId: c,
+		packagePath: p(u.packagePath),
+		headTypeVariants: m
 	};
-	return t.registry = [...t.registry, p], p;
+	return t.registry = [...t.registry, h], h;
 }
-function mn(e) {
+function vn(e) {
 	let t = e.nativeMeshes?.meshes ?? [], n = t.filter((e) => e.meshName === "Hair"), r = n.length ? n : t, i = new Set(r.flatMap((e) => e.submeshes.map((t) => `${e.meshName}|${t.materialKey}`))), a = (e.materialSlots ?? []).filter((e) => i.has(`${e.meshName}|${e.materialKey}`)), o = {};
-	for (let e of ln) {
+	for (let e of fn) {
 		let t = a.flatMap((e) => e.rawMaterial.textureProperties).find((t) => t.name === e && t.uri)?.uri;
 		t && (o[e] = t);
 	}
@@ -1797,34 +1838,88 @@ function mn(e) {
 		})))
 	};
 }
-function hn(e, t, n) {
+function yn(e, t, n) {
 	let r = new Uint8Array(e * t);
-	for (let { uv: i, indices: a } of n.uvs) nn(e, t, i, a, r);
+	for (let { uv: i, indices: a } of n.uvs) tn(e, t, i, a, r);
 	return r;
 }
-async function gn(t, n, r, i) {
+async function bn(t, n, r, i) {
 	let a = Zt(), o = a.payload(t), s = a.payload(n);
 	M(o && s, `borrowed hair textures ${t} / ${n} were not delivered`);
-	let [c, l] = await Promise.all([Jt(o), Jt(s)]), { width: u, height: d } = o, f = hn(u, d, r), p = an({
-		width: s.width,
-		height: s.height,
-		data: l
-	}, hn(s.width, s.height, i)), m = on({
+	let [c, l] = await Promise.all([Jt(o), Jt(s)]), { width: u, height: d } = o, f = yn(u, d, r), p = {
 		width: u,
 		height: d,
 		data: c
-	}, f, rn(f, u, d, cn), p), h = new e.DataTexture(m, u, d, e.RGBAFormat, e.UnsignedByteType);
-	return h.name = `${o.name} (recoloured)`, h.flipY = !1, h.generateMipmaps = !1, h.colorSpace = e.NoColorSpace, h.needsUpdate = !0, h;
+	}, m = sn({
+		width: s.width,
+		height: s.height,
+		data: l
+	}, yn(s.width, s.height, i)), h = ln(p, nn(f, u, d, dn), sn(p, f), m), g = new e.DataTexture(h, u, d, e.RGBAFormat, e.UnsignedByteType);
+	return g.name = `${o.name} (recoloured)`, g.flipY = !1, g.generateMipmaps = !1, g.colorSpace = e.NoColorSpace, g.needsUpdate = !0, g;
 }
-async function _n(e, t, n) {
-	let r = un.get(t)?.get(n.packagePath);
+function xn(t) {
+	let n = (t.bonePaths ?? []).findIndex((e) => e === "Head" || e.endsWith("/Head")), r = t.boneInverseBindMatrices;
+	return n < 0 || !r || r.length < (n + 1) * 16 ? null : new e.Matrix4().fromArray(Array.from({ length: 16 }, (e, t) => r[n * 16 + t]));
+}
+function Sn(t) {
+	let n = xn(t), r = t.positions;
+	if (!n || !r || r.length < 3) return null;
+	let i = [
+		[],
+		[],
+		[]
+	], a = new e.Vector3();
+	for (let e = 0; e + 2 < r.length; e += 3) a.set(r[e], r[e + 1], r[e + 2]).applyMatrix4(n), i[0].push(a.x), i[1].push(a.y), i[2].push(a.z);
+	return i.map((e) => (e.sort((e, t) => e - t), [e[Math.floor(e.length * .005)], e[Math.floor(e.length * .995)]]));
+}
+function Cn(e, t) {
+	let n = [
+		0,
+		1,
+		2
+	].reduce((e, n) => {
+		let r = (e) => Math.abs(t[e][0] + t[e][1]) / (t[e][1] - t[e][0]);
+		return r(n) < r(e) ? n : e;
+	}, 0), [r, i] = [
+		0,
+		1,
+		2
+	].filter((e) => e !== n), a = (e) => t[e][1] - t[e][0], o = a(r) >= a(i) ? r : i, s = (e[n][1] - e[n][0]) / (t[n][1] - t[n][0]), c = Math.abs(t[o][0]) > Math.abs(t[o][1]) ? 0 : 1, l = e[o][c] / t[o][c], u = [
+		s,
+		s,
+		s
+	];
+	return u[o] = l, u.map((e) => Math.min(1.15, Math.max(.9, e * pn)));
+}
+function wn(t, n) {
+	let r = xn(t);
+	if (!r || !t.positions) return t;
+	let i = r.clone().invert().multiply(new e.Matrix4().makeScale(n[0], n[1], n[2])).multiply(r), a = new e.Matrix3().setFromMatrix4(i), o = new e.Matrix3().getNormalMatrix(i), s = new e.Vector3(), c = (e, t) => {
+		if (!e) return e;
+		let n = new Float32Array(e.length);
+		for (let r = 0; r + 2 < e.length; r += 3) s.set(e[r], e[r + 1], e[r + 2]), t(s), n[r] = s.x, n[r + 1] = s.y, n[r + 2] = s.z;
+		return n;
+	};
+	return {
+		...t,
+		positions: c(t.positions, (e) => e.applyMatrix4(i)),
+		normals: c(t.normals, (e) => e.applyMatrix3(o).normalize()),
+		morphTargets: t.morphTargets?.map((e) => ({
+			...e,
+			positionDeltas: c(e.positionDeltas, (e) => e.applyMatrix3(a)),
+			normalDeltas: c(e.normalDeltas, (e) => e.applyMatrix3(o))
+		}))
+	};
+}
+async function Tn(e, t, n) {
+	let r = mn.get(t)?.get(n.packagePath);
 	M(r, `no source for borrowed hair ${n.packagePath}`);
-	let [i, a] = await Promise.all([e.build(r.source), e.build(r.palette)]), o = mn(i), s = mn(a), c = /* @__PURE__ */ new Map();
-	for (let e of ln) {
+	let [i, a] = await Promise.all([e.build(r.source), e.build(r.palette)]), o = vn(i), s = vn(a), c = /* @__PURE__ */ new Map();
+	for (let e of fn) {
 		let t = o.uris[e], n = s.uris[e];
 		if (!t || !n) continue;
 		let i = `original:recolor/${r.roleCharacterId}/${t.slice(9)}`;
-		Zt().define(i, () => gn(t, n, o, s)), c.set(t, i);
+		Zt().define(i, () => bn(t, n, o, s)), c.set(t, i);
 	}
 	let l = (e) => e === "Hair", u = (i.materialSlots ?? []).filter((e) => l(e.meshName)).map((e) => ({
 		...e,
@@ -1853,7 +1948,7 @@ async function _n(e, t, n) {
 			rootBonePath: e.rootBonePath ? h(e.rootBonePath) : e.rootBonePath ?? null,
 			rootBonePathId: e.rootBonePath ? p.get(h(e.rootBonePath)) : e.rootBonePathId ?? null
 		};
-	}), v = i.nativeMeshes ?? {}, y = {
+	}), v = i.nativeMeshes ?? {}, y = _.find((e) => e.meshName === "Face"), b = g.find((e) => e.meshName === "Face"), x = y ? Sn(y) : null, S = b ? Sn(b) : null, ee = x && S ? Cn(x, S) : null, C = g.filter((e) => l(e.meshName)).map((e) => ee ? wn(e, ee) : e), te = {
 		...i.characterControllers ?? {},
 		eye: a.characterControllers?.eye
 	};
@@ -1868,16 +1963,16 @@ async function _n(e, t, n) {
 		},
 		nativeMeshes: {
 			...v,
-			meshes: [..._, ...g.filter((e) => l(e.meshName))]
+			meshes: [..._, ...C]
 		},
 		materialSlots: [...d, ...u],
-		characterControllers: y
+		characterControllers: te
 	};
 }
 //#endregion
 //#region src/runtime/runtimePackageLoader.ts
-async function vn(e, t) {
-	let n = xn(t.roleId), r = await e.roleIndex(n.characterId, n.unit);
+async function En(e, t) {
+	let n = kn(t.roleId), r = await e.roleIndex(n.characterId, n.unit);
 	if (r.registry.length === 0) throw Error(`The master rows have no parts for role ${t.roleId}.`);
 	let i = {
 		registry: r.registry,
@@ -1886,14 +1981,14 @@ async function vn(e, t) {
 		compatibility: r.compatibility,
 		packages: /* @__PURE__ */ new Map(),
 		contentId: e.id
-	}, a = new Ct({ loadPartRuntime: (t) => bn(e, i, t) });
+	}, a = new xt({ loadPartRuntime: (t) => On(e, i, t) });
 	return a.loadPartPackageSet(i), {
-		combinedCharacter: t.deferDefaultSelection ? null : await a.setCustomSelection(yn(r.role)),
+		combinedCharacter: t.deferDefaultSelection ? null : await a.setCustomSelection(Dn(r.role)),
 		partSet: i,
 		wardrobe: a
 	};
 }
-function yn(e) {
+function Dn(e) {
 	return {
 		characterId: e.characterId,
 		unit: e.unit,
@@ -1904,13 +1999,13 @@ function yn(e) {
 		headOptionalCostume3dId: null
 	};
 }
-async function bn(e, t, n) {
+async function On(e, t, n) {
 	let r = t.packages.get(n.packagePath);
 	if (r) return r;
-	let i = dn(n.packagePath) ? await _n(e, t, n) : await e.build(n);
+	let i = hn(n.packagePath) ? await Tn(e, t, n) : await e.build(n);
 	return t.packages.set(n.packagePath, i), i;
 }
-function xn(e) {
+function kn(e) {
 	if (!e) throw Error("Runtime role id is required.");
 	let [t, ...n] = e.split(":"), r = Number(t);
 	if (!Number.isInteger(r) || r <= 0) throw Error(`Invalid runtime role id: ${e}`);
@@ -1921,7 +2016,7 @@ function xn(e) {
 }
 //#endregion
 //#region src/engine/unityCoordinateConversion.ts
-var Sn = {
+var An = {
 	right: new e.Vector3(1, 0, 0),
 	left: new e.Vector3(-1, 0, 0),
 	up: new e.Vector3(0, 1, 0),
@@ -1929,31 +2024,31 @@ var Sn = {
 	forward: new e.Vector3(0, 0, 1),
 	back: new e.Vector3(0, 0, -1)
 };
-function Cn(t, n) {
+function jn(t, n) {
 	if (!t) return n.clone();
 	let r = F(t.x ?? t.X), i = F(t.y ?? t.Y), a = F(t.z ?? t.Z);
 	return r === null || i === null || a === null ? n.clone() : new e.Vector3(r, i, a);
 }
-function wn(t) {
+function Mn(t) {
 	if (!t) return new e.Quaternion();
 	let n = F(t.x ?? t.X), r = F(t.y ?? t.Y), i = F(t.z ?? t.Z), a = F(t.w ?? t.W);
-	return n === null || r === null || i === null || a === null ? new e.Quaternion() : Tn(new e.Quaternion(n, r, i, a));
+	return n === null || r === null || i === null || a === null ? new e.Quaternion() : Nn(new e.Quaternion(n, r, i, a));
 }
-function Tn(e) {
+function Nn(e) {
 	let t = Math.fround, n = t(e.x), r = t(e.y), i = t(e.z), a = t(e.w), o = t(n * n), s = t(r * r), c = t(i * i), l = t(a * a), u = t(t(o + s) + t(c + l)), d = t(t(s + c) + t(l + o)), f = t(Math.sqrt(u)), p = t(Math.sqrt(d));
 	return e.set(u > t(1e-30) ? t(n / f) : 0, d > t(1e-30) ? t(r / p) : 0, u > t(1e-30) ? t(i / f) : 0, d > t(1e-30) ? t(a / p) : 1);
 }
-function En(t) {
+function Pn(t) {
 	return new e.Vector3(-t.x, t.y, t.z);
 }
-function Dn(e) {
-	return En(e);
+function Fn(e) {
+	return Pn(e);
 }
-function On(t) {
+function In(t) {
 	return new e.Quaternion(t.x, -t.y, -t.z, t.w);
 }
-function kn(e) {
-	return Dn(Sn[e]);
+function Ln(e) {
+	return Fn(An[e]);
 }
 function N(e, t) {
 	let n = Math.fround;
@@ -1964,43 +2059,43 @@ function N(e, t) {
 	}
 	return t;
 }
-var An = new e.Quaternion();
+var Rn = new e.Quaternion();
 function P(e, t) {
 	let n = Math.fround;
 	t.set(n(e.position.x), n(e.position.y), n(e.position.z));
-	for (let r = e.parent; r; r = r.parent) t.set(n(t.x * n(r.scale.x)), n(t.y * n(r.scale.y)), n(t.z * n(r.scale.z))), Nn(t, r.quaternion), t.set(n(t.x + n(r.position.x)), n(t.y + n(r.position.y)), n(t.z + n(r.position.z)));
+	for (let r = e.parent; r; r = r.parent) t.set(n(t.x * n(r.scale.x)), n(t.y * n(r.scale.y)), n(t.z * n(r.scale.z))), Vn(t, r.quaternion), t.set(n(t.x + n(r.position.x)), n(t.y + n(r.position.y)), n(t.z + n(r.position.z)));
 	return t;
 }
-function jn(e, t) {
+function zn(e, t) {
 	let n = [];
 	for (let t = e; t; t = t.parent) n.push(t);
 	let r = Math.fround;
 	t.set(r(t.x), r(t.y), r(t.z));
 	for (let e = n.length - 1; e >= 0; e--) {
 		let i = n[e];
-		t.set(r(t.x - r(i.position.x)), r(t.y - r(i.position.y)), r(t.z - r(i.position.z))), Nn(t, i.quaternion, !0), t.set(r(t.x * Mn(i.scale.x)), r(t.y * Mn(i.scale.y)), r(t.z * Mn(i.scale.z)));
+		t.set(r(t.x - r(i.position.x)), r(t.y - r(i.position.y)), r(t.z - r(i.position.z))), Vn(t, i.quaternion, !0), t.set(r(t.x * Bn(i.scale.x)), r(t.y * Bn(i.scale.y)), r(t.z * Bn(i.scale.z)));
 	}
 	return t;
 }
-function Mn(e) {
+function Bn(e) {
 	let t = Math.fround, n = t(e), r = Math.abs(n);
 	if (r < t(1e-9)) return 0;
 	if (!Number.isFinite(n)) return 1 / n;
 	let i = 2 ** Math.floor(Math.log2(r)), a = Math.floor((r / i - 1) * 2048), o = t(Math.sign(n) * Math.round(8192 / (1 + (a + .5) / 2048)) / 8192 / i), s = t(o * t(2.000000476837158 - t(o * n)));
 	return s = t(s * t(2 - t(s * n))), Number.isNaN(s) ? o : s;
 }
-function Nn(e, t, n = !1) {
+function Vn(e, t, n = !1) {
 	let r = Math.fround, i = e.x, a = e.y, o = e.z, s = n ? -1 : 1, c = s * r(t.x), l = s * r(t.y), u = s * r(t.z), d = r(t.w), f = r(r(-2 * l * l) - r(2 * u * u)), p = r(r(-2 * u * d) - r(-2 * c * l)), m = r(r(2 * c * u) - r(-2 * l * d)), h = r(r(2 * l * c) - r(-2 * u * d)), g = r(r(-2 * u * u) - r(2 * c * c)), _ = r(r(-2 * c * d) - r(-2 * l * u)), v = r(r(-2 * l * d) - r(-2 * u * c)), y = r(r(2 * u * l) - r(-2 * c * d)), b = r(r(-2 * c * c) - r(2 * l * l));
 	e.set(r(r(r(f * i) + i) + r(r(p * a) + r(m * o))), r(r(r(h * i) + a) + r(r(g * a) + r(_ * o))), r(r(r(v * i) + o) + r(r(y * a) + r(b * o))));
 }
-function Pn(e, t) {
-	return t.copy(Fn(t, N(e, An)));
+function Hn(e, t) {
+	return t.copy(Un(t, N(e, Rn)));
 }
-function Fn(t, n) {
+function Un(t, n) {
 	let r = Math.fround, i = r(n.x * 2), a = r(n.y * 2), o = r(n.z * 2), s = r(n.x * i), c = r(n.y * a), l = r(n.z * o), u = r(n.x * a), d = r(n.x * o), f = r(n.y * o), p = r(n.w * i), m = r(n.w * a), h = r(n.w * o);
 	return new e.Vector3(r((1 - (c + l)) * t.x + (u - h) * t.y + (d + m) * t.z), r((u + h) * t.x + (1 - (s + l)) * t.y + (f - p) * t.z), r((d - m) * t.x + (f + p) * t.y + (1 - (s + c)) * t.z));
 }
-function In(t, n, r) {
+function Wn(t, n, r) {
 	let i = Math.fround, a = i(e.MathUtils.clamp(r, 0, 1)), o = i(t.x), s = i(t.y), c = i(t.z), l = i(t.w), u = i(n.x), d = i(n.y), f = i(n.z), p = i(n.w);
 	i(i(i(i(o * u) + i(s * d)) + i(c * f)) + i(l * p)) < 0 && (u = -u, d = -d, f = -f, p = -p);
 	let m = i(o + i(i(u - o) * a)), h = i(s + i(i(d - s) * a)), g = i(c + i(i(f - c) * a)), _ = i(l + i(i(p - l) * a)), v = i(Math.sqrt(i(i(i(i(m * m) + i(h * h)) + i(g * g)) + i(_ * _))));
@@ -2011,10 +2106,10 @@ function F(e) {
 }
 //#endregion
 //#region src/engine/utjSpringBoneRuntime.ts
-var Ln = /* @__PURE__ */ function(e) {
+var Gn = /* @__PURE__ */ function(e) {
 	return e[e.NoCollision = 0] = "NoCollision", e[e.HeadIsEmbedded = 1] = "HeadIsEmbedded", e[e.TailCollision = 2] = "TailCollision", e;
-}({}), I = 1e-5, Rn = .001, zn = new e.Vector3(1, 0, 0);
-function Bn(t, n) {
+}({}), I = 1e-5, Kn = .001, qn = new e.Vector3(1, 0, 0);
+function Jn(t, n) {
 	return {
 		currTipPos: n.clone(),
 		prevTipPos: n.clone(),
@@ -2023,32 +2118,32 @@ function Bn(t, n) {
 		cachedMovement: new e.Vector3(0, 0, 0)
 	};
 }
-function Vn(e) {
-	let t = lr(e.parentRotation.clone().multiply(e.initialLocalRotation)), n = Fn(e.boneAxis, t);
+function Yn(e) {
+	let t = _r(e.parentRotation.clone().multiply(e.initialLocalRotation)), n = Un(e.boneAxis, t);
 	return L(n.multiplyScalar(Math.fround(e.springLength))), L(e.headPosition.clone().add(n));
 }
-function Hn(e, t) {
+function Xn(e, t) {
 	let n = Math.fround;
 	L(e.currTipPos), L(e.prevTipPos);
-	let r = e.currTipPos.clone(), i = L(L(Vn(t).sub(e.currTipPos)).multiplyScalar(n(t.stiffnessForce))), a = L(L(L(t.springForce.clone().add(t.externalForce)).add(i)).multiplyScalar(n(.5 * n(t.deltaTime) * n(t.deltaTime)))), o = L(L(e.currTipPos.clone().sub(e.prevTipPos)).multiplyScalar(n(1 - n(t.dragForce))));
+	let r = e.currTipPos.clone(), i = L(L(Yn(t).sub(e.currTipPos)).multiplyScalar(n(t.stiffnessForce))), a = L(L(L(t.springForce.clone().add(t.externalForce)).add(i)).multiplyScalar(n(.5 * n(t.deltaTime) * n(t.deltaTime)))), o = L(L(e.currTipPos.clone().sub(e.prevTipPos)).multiplyScalar(n(1 - n(t.dragForce))));
 	L(e.currTipPos.add(L(a.add(o)))), e.prevTipPos.copy(r);
 	let s = L(t.headPosition.clone()), c = L(e.currTipPos.clone().sub(s));
-	Math.fround(c.length()) <= Rn && c.copy(t.lengthFallbackDirection ?? t.boneAxis), ur(c), L(c.multiplyScalar(n(t.springLength))), e.currTipPos.copy(L(c.add(s)));
+	Math.fround(c.length()) <= Kn && c.copy(t.lengthFallbackDirection ?? t.boneAxis), vr(c), L(c.multiplyScalar(n(t.springLength))), e.currTipPos.copy(L(c.add(s)));
 }
-function Un(e, t) {
+function Zn(e, t) {
 	let n = L(t.clone());
 	L(e.cachedMovement.copy(n).sub(e.cachedPosition)), e.cachedPosition.copy(n);
 }
-function Wn(t, n, r, i, a, o = zn) {
+function Qn(t, n, r, i, a, o = qn) {
 	let s = r.clone().sub(n), c = s.length();
-	if (c <= Rn) {
+	if (c <= Kn) {
 		s.copy(o).normalize(), t.copy(n).addScaledVector(s, i);
 		return;
 	}
 	let l = e.MathUtils.clamp(c, i, a);
 	t.copy(n).addScaledVector(s, l / c);
 }
-function Gn(t) {
+function $n(t) {
 	if (t.targets.length === 0) return;
 	let n = t.springConstant * t.deltaTime * t.deltaTime, r = new e.Vector3();
 	for (let e of t.targets) {
@@ -2059,22 +2154,22 @@ function Gn(t) {
 	}
 	t.currTipPos.add(r);
 }
-function Kn(e, t) {
+function er(e, t) {
 	let n = 0, r = null, i = e.currTipPos.clone();
-	for (let i of hr(t.colliders)) {
+	for (let i of Cr(t.colliders)) {
 		if (i.enabled === !1) continue;
-		let a = Yn(i, t.headPosition, e.currTipPos, t.tailRadius, t.springLength);
+		let a = rr(i, t.headPosition, e.currTipPos, t.tailRadius, t.springLength);
 		t.onColliderCheck?.(i, {
 			status: a.status,
 			beforeTailPosition: e.currTipPos.clone(),
 			afterTailPosition: a.tailPosition.clone(),
 			hitNormal: a.hitNormal.clone(),
-			details: qn(i, t.headPosition, e.currTipPos, a.tailPosition, t.tailRadius)
+			details: tr(i, t.headPosition, e.currTipPos, a.tailPosition, t.tailRadius)
 		}), a.status !== 0 && (e.currTipPos.copy(a.tailPosition), e.hitNormal.copy(a.hitNormal), r = a.hitNormal, n = a.status, t.onCollision?.(i, a));
 	}
-	return r && or(e, r, t.bounce, t.friction, i), n;
+	return r && mr(e, r, t.bounce, t.friction, i), n;
 }
-function qn(e, t, n, r, i) {
+function tr(e, t, n, r, i) {
 	return e.kind === "sphere" ? {
 		kind: e.kind,
 		localHeadPosition: t.clone().applyMatrix4(e.worldToLocalMatrix),
@@ -2111,23 +2206,23 @@ function qn(e, t, n, r, i) {
 		capsuleRadius: e.radius
 	};
 }
-function Jn(e, t) {
+function nr(e, t) {
 	let n = t.headPosition.clone();
 	n.y -= t.groundHeight;
 	let r = e.currTipPos.clone();
-	return r.y -= t.groundHeight, Zn(n, e.currTipPos.distanceTo(t.headPosition), r, t.tailRadius, 1) === 0 ? !1 : (r.y += t.groundHeight, Wn(e.currTipPos, t.headPosition, r, t.springLength * .5, t.springLength, t.lengthFallbackDirection), e.prevTipPos.copy(e.currTipPos), e.hitNormal.set(0, 1, 0), !0);
+	return r.y -= t.groundHeight, ar(n, e.currTipPos.distanceTo(t.headPosition), r, t.tailRadius, 1) === 0 ? !1 : (r.y += t.groundHeight, Qn(e.currTipPos, t.headPosition, r, t.springLength * .5, t.springLength, t.lengthFallbackDirection), e.prevTipPos.copy(e.currTipPos), e.hitNormal.set(0, 1, 0), !0);
 }
-function Yn(e, t, n, r, i) {
-	return e.kind === "sphere" ? $n(t, n, r, e) : e.kind === "capsule" ? er(t, n, r, e.start, e.end, e.radius) : e.kind === "panel" ? Xn(t, n, r, i, e) : tr(t, n, r, e);
+function rr(e, t, n, r, i) {
+	return e.kind === "sphere" ? sr(t, n, r, e) : e.kind === "capsule" ? cr(t, n, r, e.start, e.end, e.radius) : e.kind === "panel" ? ir(t, n, r, i, e) : lr(t, n, r, e);
 }
-function Xn(t, n, r, i, a) {
+function ir(t, n, r, i, a) {
 	let o = n.clone().applyMatrix4(a.worldToLocalMatrix), s = r;
 	if (o.z >= s) return R(n);
 	let c = a.width * .5, l = a.height * .5;
 	if (Math.abs(o.x) >= c + s || Math.abs(o.y) >= l + s) return R(n);
 	let u = t.clone().applyMatrix4(a.worldToLocalMatrix), d = i, f = 0, p = o.clone();
 	if (o.z > 0 || u.z > 0) if (Math.abs(o.y) <= l && Math.abs(o.x) <= c) {
-		if (f = Zn(u, d, p, s, 2), f === 0) return R(n);
+		if (f = ar(u, d, p, s, 2), f === 0) return R(n);
 	} else if (Math.abs(o.y) > l) {
 		let t = o.y >= 0 ? l : -l, n = new e.Vector3(0, o.y - t, o.z);
 		n.lengthSq() <= I * I ? n.set(0, 0, 0) : n.normalize(), p.set(o.x + n.x * s, t + n.y * s, n.z * s), f = 2;
@@ -2139,21 +2234,21 @@ function Xn(t, n, r, i, a) {
 	return {
 		status: f,
 		tailPosition: p.applyMatrix4(a.localToWorldMatrix),
-		hitNormal: _r(new e.Vector3(0, 0, 1), a.localToWorldMatrix)
+		hitNormal: Tr(new e.Vector3(0, 0, 1), a.localToWorldMatrix)
 	};
 }
-function Zn(e, t, n, r, i) {
+function ar(e, t, n, r, i) {
 	if (B(n, i) >= r) return 0;
 	let a = B(e, i);
-	if (a + t <= r) return n.copy(e), vr(n, i, a + t), 1;
+	if (a + t <= r) return n.copy(e), Er(n, i, a + t), 1;
 	let o = (i + 1) % 3, s = (i + 2) % 3, c = B(n, o) - B(e, o), l = B(n, s) - B(e, s), u = Math.sqrt(c * c + l * l);
 	if (u > .001) {
 		let d = a - r, f = Math.sqrt(t * t - d * d) / u;
-		vr(n, o, B(e, o) + c * f), vr(n, s, B(e, s) + l * f), vr(n, i, r);
+		Er(n, o, B(e, o) + c * f), Er(n, s, B(e, s) + l * f), Er(n, i, r);
 	} else n.copy(e);
 	return 2;
 }
-function Qn(t, n, r, i, a, o = a, s = {}) {
+function or(t, n, r, i, a, o = a, s = {}) {
 	let c = r + a, l = n.clone().sub(i);
 	if (l.lengthSq() >= c * c) return R(n);
 	if (t.distanceToSquared(i) <= o * o) {
@@ -2164,37 +2259,37 @@ function Qn(t, n, r, i, a, o = a, s = {}) {
 			hitNormal: n
 		};
 	}
-	let u = ir(t, n.distanceTo(t), i, c);
+	let u = fr(t, n.distanceTo(t), i, c);
 	if (!u) return s.noIntersectionStatus === 2 ? {
 		status: 2,
 		tailPosition: n.clone(),
 		hitNormal: z(n.clone().sub(i), l)
 	} : R(n);
-	let d = ar(u, n);
+	let d = pr(u, n);
 	return {
 		status: 2,
 		tailPosition: d,
 		hitNormal: z(d.clone().sub(i), l)
 	};
 }
-function $n(e, t, n, r) {
-	let i = e.clone().applyMatrix4(r.worldToLocalMatrix), a = t.clone().applyMatrix4(r.worldToLocalMatrix), o = n, s = Math.abs(r.lossyScaleX) * r.radius, c = Qn(i, a, o, r.localOffset, s, s, {
+function sr(e, t, n, r) {
+	let i = e.clone().applyMatrix4(r.worldToLocalMatrix), a = t.clone().applyMatrix4(r.worldToLocalMatrix), o = n, s = Math.abs(r.lossyScaleX) * r.radius, c = or(i, a, o, r.localOffset, s, s, {
 		headEmbeddedFallback: !1,
 		noIntersectionStatus: 2
 	});
 	return c.status === 0 ? R(t) : {
 		status: c.status,
 		tailPosition: c.tailPosition.clone().applyMatrix4(r.localToWorldMatrix),
-		hitNormal: _r(c.hitNormal.clone(), r.localToWorldNormalMatrix)
+		hitNormal: Tr(c.hitNormal.clone(), r.localToWorldNormalMatrix)
 	};
 }
-function er(t, n, r, i, a, o) {
+function cr(t, n, r, i, a, o) {
 	let s = a.clone().sub(i), c = s.lengthSq();
-	if (c <= I * I) return Qn(t, n, r, i, o);
+	if (c <= I * I) return or(t, n, r, i, o);
 	let l = e.MathUtils.clamp(n.clone().sub(i).dot(s) / c, 0, 1), u = i.clone().addScaledVector(s, l), d = r + o, f = n.clone().sub(u);
 	if (f.lengthSq() >= d * d) return R(n);
-	if (l <= I) return Qn(t, n, r, i, o);
-	if (l >= 1 - I) return Qn(t, n, r, a, o);
+	if (l <= I) return or(t, n, r, i, o);
+	if (l >= 1 - I) return or(t, n, r, a, o);
 	let p = z(f, t.clone().sub(u)), m = e.MathUtils.clamp(t.clone().sub(i).dot(s) / c, 0, 1), h = i.clone().addScaledVector(s, m);
 	return {
 		status: t.distanceToSquared(h) <= o * o ? 1 : 2,
@@ -2202,25 +2297,25 @@ function er(t, n, r, i, a, o) {
 		hitNormal: p
 	};
 }
-function tr(e, t, n, r) {
-	let i = nr(e.clone().applyMatrix4(r.worldToLocalMatrix), t.clone().applyMatrix4(r.worldToLocalMatrix), n, r.localStart, r.localEnd, r.radius, r.lossyScaleX);
+function lr(e, t, n, r) {
+	let i = ur(e.clone().applyMatrix4(r.worldToLocalMatrix), t.clone().applyMatrix4(r.worldToLocalMatrix), n, r.localStart, r.localEnd, r.radius, r.lossyScaleX);
 	if (i.status === 0) return R(t);
-	let a = i.tailPosition.clone().applyMatrix4(r.localToWorldMatrix), o = _r(i.hitNormal, r.localToWorldNormalMatrix);
+	let a = i.tailPosition.clone().applyMatrix4(r.localToWorldMatrix), o = Tr(i.hitNormal, r.localToWorldNormalMatrix);
 	return {
 		status: i.status,
 		tailPosition: a,
 		hitNormal: o
 	};
 }
-function nr(t, n, r, i, a, o, s = 1) {
+function ur(t, n, r, i, a, o, s = 1) {
 	if (o <= 1e-4) return R(n);
 	let c = i.y <= a.y ? i : a, l = i.y <= a.y ? a : i, u = c.y, d = l.y;
-	return n.y <= u || n.y >= d ? Qn(t, n, r, n.y < d ? c : l, o, Math.abs(s) * o, {
+	return n.y <= u || n.y >= d ? or(t, n, r, n.y < d ? c : l, o, Math.abs(s) * o, {
 		headEmbeddedFallback: new e.Vector3(0, 0, 0),
 		noIntersectionStatus: 2
-	}) : rr(t, n, r, o, s);
+	}) : dr(t, n, r, o, s);
 }
-function rr(t, n, r, i, a = 1) {
+function dr(t, n, r, i, a = 1) {
 	let o = i + r, s = n.x * n.x + n.z * n.z;
 	if (s > o * o) return R(n);
 	let c = Math.sqrt(s), l = c > I ? n.x / c : 0, u = c > I ? n.z / c : 0, d = new e.Vector3(o * l, n.y, o * u), f = new e.Vector3(l, 0, u), p = t.x * t.x + t.z * t.z, m = Math.abs(a) * i;
@@ -2230,7 +2325,7 @@ function rr(t, n, r, i, a = 1) {
 		hitNormal: f
 	};
 }
-function ir(e, t, n, r) {
+function fr(e, t, n, r) {
 	let i = n.clone().sub(e), a = i.lengthSq(), o = Math.sqrt(a);
 	if (o <= 0) return null;
 	let s = i.multiplyScalar(1 / o), c = t * t, l = c + a - r * r, u = .5 / o, d = a * 4 * c - l * l;
@@ -2242,12 +2337,12 @@ function ir(e, t, n, r) {
 		radius: u * Math.sqrt(d)
 	};
 }
-function ar(e, t) {
+function pr(e, t) {
 	let n = t.clone().sub(e.origin), r = e.origin.clone().addScaledVector(e.upVector, n.dot(e.upVector)), i = t.clone().sub(r), a = i.length();
 	return a <= I || e.radius <= I ? e.origin.clone() : e.origin.clone().addScaledVector(i, e.radius / a);
 }
-function or(e, t, n, r, i = e.currTipPos) {
-	let a = z(t, zn), o = e.prevTipPos.clone(), s = i.clone().sub(o), c = a.clone().multiplyScalar(s.dot(a)), l = s.sub(c).multiplyScalar(1 - r).sub(c.multiplyScalar(n));
+function mr(e, t, n, r, i = e.currTipPos) {
+	let a = z(t, qn), o = e.prevTipPos.clone(), s = i.clone().sub(o), c = a.clone().multiplyScalar(s.dot(a)), l = s.sub(c).multiplyScalar(1 - r).sub(c.multiplyScalar(n));
 	if (l.lengthSq() <= 1e-4) {
 		e.prevTipPos.copy(e.currTipPos);
 		return;
@@ -2256,7 +2351,7 @@ function or(e, t, n, r, i = e.currTipPos) {
 	let u = e.currTipPos.distanceTo(o), d = l.length(), f = Math.max(d - u, 0);
 	f > 0 && e.currTipPos.addScaledVector(l, f / d);
 }
-function sr(e) {
+function hr(e) {
 	if (!e.limit.active) return !1;
 	let t = Math.fround, n = e.vector, r = L(e.basisUp.clone()), i = L(e.basisSide.clone()), a = L(e.basisForward.clone());
 	L(n);
@@ -2268,39 +2363,39 @@ function sr(e) {
 	let v = t(g * _), y = t(g * _ * t(Math.PI / 180)), b = L(i.multiplyScalar(t(Math.sin(y))));
 	return L(b.add(L(a.multiplyScalar(t(Math.cos(y)))))), L(b.multiplyScalar(l)), L(n.copy(s).add(b)), v !== p;
 }
-function cr(t, n, r, i, a) {
+function gr(t, n, r, i, a) {
 	let o = Math.fround, s = r.clone().multiply(i);
-	lr(s);
-	let c = Fn(new e.Vector3(o(o(n.x) - o(t.x)), o(o(n.y) - o(t.y)), o(o(n.z) - o(t.z))), s.invert());
+	_r(s);
+	let c = Un(new e.Vector3(o(o(n.x) - o(t.x)), o(o(n.y) - o(t.y)), o(o(n.z) - o(t.z))), s.invert());
 	if (c.lengthSq() <= I * I) return i.clone();
-	ur(c);
-	let l = dr(a, c);
+	vr(c);
+	let l = yr(a, c);
 	return i.clone().multiply(l);
 }
 function L(e) {
 	return e.set(Math.fround(e.x), Math.fround(e.y), Math.fround(e.z));
 }
-function lr(e) {
+function _r(e) {
 	return e.set(Math.fround(e.x), Math.fround(e.y), Math.fround(e.z), Math.fround(e.w));
 }
-function ur(e) {
+function vr(e) {
 	L(e);
 	let t = Math.fround(e.length());
 	return t > 1e-5 ? e.set(Math.fround(e.x / t), Math.fround(e.y / t), Math.fround(e.z / t)) : e.set(0, 0, 0);
 }
-function dr(t, n) {
-	let r = Math.fround, i = mr(t.clone()), a = mr(n.clone()), o = pr(i, a);
+function yr(t, n) {
+	let r = Math.fround, i = Sr(t.clone()), a = Sr(n.clone()), o = xr(i, a);
 	if (i.lengthSq() === 0 || a.lengthSq() === 0 || o > .999999) return new e.Quaternion();
 	let s = Array(9);
 	if (o < -.999999) {
 		let t = new e.Vector3(0, i.z, -i.y);
-		pr(t, t) < 1e-6 && t.set(-i.z, 0, i.x);
-		let n = r(1 / r(Math.sqrt(pr(t, t))));
+		xr(t, t) < 1e-6 && t.set(-i.z, 0, i.x);
+		let n = r(1 / r(Math.sqrt(xr(t, t))));
 		L(t.multiplyScalar(n));
-		let a = fr(t, i), o = i.toArray(), c = t.toArray(), l = a.toArray();
+		let a = br(t, i), o = i.toArray(), c = t.toArray(), l = a.toArray();
 		for (let e = 0; e < 3; e++) for (let t = 0; t < 3; t++) s[e * 3 + t] = r(r(r(l[t] * l[e]) - r(o[t] * o[e])) - r(c[t] * c[e]));
 	} else {
-		let e = fr(i, a), t = r(r(1 - o) / pr(e, e)), n = r(e.x * t), c = r(e.y * t), l = r(e.z * t), u = r(e.y * n), d = r(e.z * n), f = r(e.y * l);
+		let e = br(i, a), t = r(r(1 - o) / xr(e, e)), n = r(e.x * t), c = r(e.y * t), l = r(e.z * t), u = r(e.y * n), d = r(e.z * n), f = r(e.y * l);
 		s[0] = r(o + r(e.x * n)), s[1] = r(e.z + u), s[2] = r(d - e.y), s[3] = r(u - e.z), s[4] = r(o + r(c * e.y)), s[5] = r(e.x + f), s[6] = r(e.y + d), s[7] = r(f - e.x), s[8] = r(o + r(e.z * l));
 	}
 	let c = [
@@ -2321,18 +2416,18 @@ function dr(t, n) {
 	let u = r(Math.sqrt(r(r(r(r(c[0] * c[0]) + r(c[1] * c[1])) + r(c[2] * c[2])) + r(c[3] * c[3]))));
 	return new e.Quaternion(r(c[0] / u), r(c[1] / u), r(c[2] / u), r(c[3] / u));
 }
-function fr(t, n) {
+function br(t, n) {
 	let r = Math.fround;
 	return new e.Vector3(r(r(t.y * n.z) - r(t.z * n.y)), r(r(t.z * n.x) - r(t.x * n.z)), r(r(t.x * n.y) - r(t.y * n.x)));
 }
-function pr(e, t) {
+function xr(e, t) {
 	let n = Math.fround;
 	return n(n(n(e.x * t.x) + n(e.y * t.y)) + n(e.z * t.z));
 }
-function mr(e) {
+function Sr(e) {
 	let t = Math.fround;
 	e.set(t(e.x), t(e.y), t(e.z));
-	let n = t(Math.sqrt(pr(e, e)));
+	let n = t(Math.sqrt(xr(e, e)));
 	return n >= Math.fround(1e-5) ? e.set(t(e.x / n), t(e.y / n), t(e.z / n)) : e.set(0, 0, 0);
 }
 function R(t) {
@@ -2342,28 +2437,28 @@ function R(t) {
 		hitNormal: new e.Vector3(0, 0, 0)
 	};
 }
-function hr(e) {
-	return [...e].sort((e, t) => gr(e) - gr(t));
+function Cr(e) {
+	return [...e].sort((e, t) => wr(e) - wr(t));
 }
-function gr(e) {
+function wr(e) {
 	return e.kind === "capsule" || e.kind === "capsuleLocal" ? 0 : e.kind === "sphere" ? 1 : 2;
 }
 function z(e, t) {
-	return e.lengthSq() <= I * I && e.copy(t), e.lengthSq() <= I * I && e.copy(zn), e.normalize();
+	return e.lengthSq() <= I * I && e.copy(t), e.lengthSq() <= I * I && e.copy(qn), e.normalize();
 }
-function _r(e, t) {
+function Tr(e, t) {
 	let n = t.elements, r = e.x, i = e.y, a = e.z;
-	return e.set(n[0] * r + n[4] * i + n[8] * a, n[1] * r + n[5] * i + n[9] * a, n[2] * r + n[6] * i + n[10] * a), z(e, zn);
+	return e.set(n[0] * r + n[4] * i + n[8] * a, n[1] * r + n[5] * i + n[9] * a, n[2] * r + n[6] * i + n[10] * a), z(e, qn);
 }
 function B(e, t) {
 	return t === 0 ? e.x : t === 1 ? e.y : e.z;
 }
-function vr(e, t, n) {
+function Er(e, t, n) {
 	t === 0 ? e.x = n : t === 1 ? e.y = n : e.z = n;
 }
 //#endregion
 //#region src/engine/unityPrefabSpringRuntimeAdapter.ts
-var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"), Cr = kn("down"), wr = class t {
+var Dr = 1401298464324817e-60, Or = Ln("right"), kr = Ln("left"), Ar = Ln("back"), jr = Ln("down"), Mr = class t {
 	bones;
 	managerBatches;
 	missingNodes;
@@ -2396,24 +2491,24 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 		this.bones = e, this.managerBatches = t, this.missingNodes = n, this.skinnedBones = r, this.setupDiagnostics = i;
 	}
 	static fromPjskRuntimeExtension(e, n) {
-		let r = hi(e);
+		let r = Ci(e);
 		if (!r) return null;
 		n.updateMatrixWorld(!0);
-		let i = Hr(n), a = Vr(r), o = Kr(n), s = [], c = Qr(r), l = jr(r, i, s, c), u = Jr(r), d = Yr(r), f = Xr(r, l), p = qr(r), m = Nr(r), h = Mr(r, c, m), g = /* @__PURE__ */ new Map(), _ = /* @__PURE__ */ new Map(), v = /* @__PURE__ */ new Map(), y = /* @__PURE__ */ new Map();
+		let i = Xr(n), a = Yr(r), o = ei(n), s = [], c = oi(r), l = zr(r, i, s, c), u = ni(r), d = ri(r), f = ii(r, l), p = ti(r), m = Vr(r), h = Br(r, c, m), g = /* @__PURE__ */ new Map(), _ = /* @__PURE__ */ new Map(), v = /* @__PURE__ */ new Map(), y = /* @__PURE__ */ new Map();
 		n.traverse((e) => y.set(e, y.size));
 		let b = /* @__PURE__ */ new Map();
 		for (let e of p.values()) b.set(e, V(i, e.nodePath, e.runtimePartIndex));
-		let x = (r.managers ?? []).filter((e) => $r(e.nodePath ?? e.poseRoot, c)).map((e) => ({
+		let x = (r.managers ?? []).filter((e) => si(e.nodePath ?? e.poseRoot, c)).map((e) => ({
 			source: e,
 			node: V(i, e.nodePath, e.runtimePartIndex),
 			nodes: []
 		})).sort((e, t) => (y.get(e.node) ?? 0) - (y.get(t.node) ?? 0));
 		for (let e of x) {
-			let t = e.source, n = Dr(i, t, v), o = e.node ? [...b].filter(([n, r]) => r ? zi(r, e.node) : n.pathId !== void 0 && t.bonePathIds?.includes(n.pathId)).sort((e, t) => (y.get(e[1]) ?? Infinity) - (y.get(t[1]) ?? Infinity)).map(([e]) => e) : (t.bonePathIds ?? []).map((e) => p.get(e));
+			let t = e.source, n = Fr(i, t, v), o = e.node ? [...b].filter(([n, r]) => r ? qi(r, e.node) : n.pathId !== void 0 && t.bonePathIds?.includes(n.pathId)).sort((e, t) => (y.get(e[1]) ?? Infinity) - (y.get(t[1]) ?? Infinity)).map(([e]) => e) : (t.bonePathIds ?? []).map((e) => p.get(e));
 			for (let p of o) {
-				if (!p || !$r(p.nodePath, c)) continue;
+				if (!p || !si(p.nodePath, c)) continue;
 				let o = p.pathId;
-				if (!Fr(p, m)) {
+				if (!Ur(p, m)) {
 					h.rejectedUnverifiedBoneSourceCount += 1;
 					continue;
 				}
@@ -2423,25 +2518,25 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 					continue;
 				}
 				e.nodes.push(v), _.set(v, p);
-				let y = Lr(p, v, a, i), x = V(i, p.pivotNodePath, p.runtimePartIndex), ee = Ir(r, t, p, o === void 0 ? void 0 : u.get(o), o === void 0 ? void 0 : d.get(o), t.pathId === void 0 ? void 0 : f.get(t.pathId), l), te = Er(t, p, v, y, x, ei(i, p), n, ee);
-				te && g.set(v, te);
+				let y = Gr(p, v, a, i), x = V(i, p.pivotNodePath, p.runtimePartIndex), S = Wr(r, t, p, o === void 0 ? void 0 : u.get(o), o === void 0 ? void 0 : d.get(o), t.pathId === void 0 ? void 0 : f.get(t.pathId), l), ee = Pr(t, p, v, y, x, ci(i, p), n, S);
+				ee && g.set(v, ee);
 			}
 		}
-		let ee = [...g.values()];
-		ee.sort((e, t) => Ri(e.node) - Ri(t.node));
-		let te = x.map((e) => {
-			let t = [...new Set(e.nodes)].map((e) => g.get(e)).sort((e, t) => Ri(e.node) - Ri(t.node));
+		let S = [...g.values()];
+		S.sort((e, t) => Ki(e.node) - Ki(t.node));
+		let ee = x.map((e) => {
+			let t = [...new Set(e.nodes)].map((e) => g.get(e)).sort((e, t) => Ki(e.node) - Ki(t.node));
 			return {
 				source: e.source,
 				bones: t,
-				animatedBones: new Set(t.filter((t) => fi(_.get(t.node), t.node, e.source))),
+				animatedBones: new Set(t.filter((t) => bi(_.get(t.node), t.node, e.source))),
 				gravity: K(e.source.rawGravity),
-				forceProviders: Dr(i, e.source, v),
+				forceProviders: Fr(i, e.source, v),
 				slowMotionScale: J(e.source.slowMotionScale) ?? 1,
 				isPaused: e.source.isPaused === !0
 			};
 		});
-		return ee.length > 0 ? new t(ee, te, s, o, h) : null;
+		return S.length > 0 ? new t(S, ee, s, o, h) : null;
 	}
 	getControlledTrackNodeNames() {
 		return new Set(this.bones.map((e) => e.node.name).filter(Boolean));
@@ -2460,8 +2555,8 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 		};
 	}
 	setTimelineControl(e) {
-		for (let t of this.managerBatches) t.slowMotionScale = ji(e.slowMotionScale, 1), t.isPaused = e.paused ?? !1;
-		for (let t of this.bones) t.stiffnessForce = ji(e.stiffnessForce, t.originalStiffnessForce), t.dragForce = ji(e.dragForce, t.originalDragForce), t.windInfluence = ji(e.windInfluence, t.originalWindInfluence), t.slowMotionScale = ji(e.slowMotionScale, 1), t.isPaused = e.paused ?? !1;
+		for (let t of this.managerBatches) t.slowMotionScale = zi(e.slowMotionScale, 1), t.isPaused = e.paused ?? !1;
+		for (let t of this.bones) t.stiffnessForce = zi(e.stiffnessForce, t.originalStiffnessForce), t.dragForce = zi(e.dragForce, t.originalDragForce), t.windInfluence = zi(e.windInfluence, t.originalWindInfluence), t.slowMotionScale = zi(e.slowMotionScale, 1), t.isPaused = e.paused ?? !1;
 	}
 	clearTimelineControl() {
 		this.setTimelineControl({});
@@ -2481,7 +2576,7 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 					i.skinAnimationLocalRotation.copy(i.node.quaternion), this.applyBoneRotation(i, s);
 					continue;
 				}
-				!o || this.updateManagerPathId !== null && r.has(this.updateManagerPathId) || (this.computeExternalForce(i, t, n), this.updateBoneSpringAndRotation(i, mi(t, J(a.simulationFrameRate) ?? 60, n.slowMotionScale), this.externalForce, s));
+				!o || this.updateManagerPathId !== null && r.has(this.updateManagerPathId) || (this.computeExternalForce(i, t, n), this.updateBoneSpringAndRotation(i, Si(t, J(a.simulationFrameRate) ?? 60, n.slowMotionScale), this.externalForce, s));
 			}
 		}
 		for (let e of n) e.isActive && this.updateWindVolumeOneSelfLateUpdate(e, t);
@@ -2509,22 +2604,22 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 	}
 	computeWindVolume(e, t) {
 		let n = e.weight * e.strength;
-		if (n <= yr || e.period <= .001) return this.providerForce.set(0, 0, 0);
+		if (n <= Dr || e.period <= .001) return this.providerForce.set(0, 0, 0);
 		e.node.updateMatrixWorld(!0), N(e.node, this.providerRotation), t.node.getWorldPosition(this.localBonePosition).applyMatrix4(this.providerWorldToLocal.copy(e.node.matrixWorld).invert());
 		let r = -this.localBonePosition.x, i = Math.sin(e.timeFactor + Math.sin(r * e.positionalMultiplier) + Math.cos(this.localBonePosition.z * e.positionalMultiplier));
 		return this.providerForce.set(0, 0, 1).applyQuaternion(this.providerRotation).addScaledVector(e.offsetVector, i).normalize().multiplyScalar(n * t.windInfluence);
 	}
 	computeWindVolumeOneSelfForce(t, n, r) {
 		let i = t.weight * t.strength;
-		if (i <= yr || t.period <= yr) return this.providerForce.set(0, 0, 0);
-		t.currentTime = Ai(t.currentTime, r, t.period);
+		if (i <= Dr || t.period <= Dr) return this.providerForce.set(0, 0, 0);
+		t.currentTime = Ri(t.currentTime, r, t.period);
 		let a = t.currentTime * Math.PI * 2 / t.period;
 		if (t.node.updateMatrixWorld(!0), N(t.node, this.providerRotation), this.waveAxis.set(0, 1, 0).applyQuaternion(this.providerRotation), Math.abs(t.spinPeriod) > .001) {
-			t.spinTime = Ai(t.spinTime, r, t.spinPeriod);
+			t.spinTime = Ri(t.spinTime, r, t.spinPeriod);
 			let e = t.spinTime * Math.PI * 2 / t.spinPeriod;
-			this.providerRight.copy(br).applyQuaternion(this.providerRotation), this.providerUp.set(0, 1, 0).applyQuaternion(this.providerRotation), this.waveAxis.copy(this.providerRight).multiplyScalar(Math.cos(e)).addScaledVector(this.providerUp, Math.sin(e));
+			this.providerRight.copy(Or).applyQuaternion(this.providerRotation), this.providerUp.set(0, 1, 0).applyQuaternion(this.providerRotation), this.waveAxis.copy(this.providerRight).multiplyScalar(Math.cos(e)).addScaledVector(this.providerUp, Math.sin(e));
 		}
-		let o = Math.max(t.peakDistance, yr);
+		let o = Math.max(t.peakDistance, Dr);
 		n.node.getWorldPosition(this.localBonePosition).applyMatrix4(this.providerWorldToLocal.copy(t.node.matrixWorld).invert());
 		let s = Math.PI * 2 / o, c = -this.localBonePosition.x, l = Math.sin(a + Math.sin(s * c) + Math.cos(s * this.localBonePosition.z));
 		return this.mainWindDirection.set(0, 0, 1).applyQuaternion(this.providerRotation).addScaledVector(this.waveAxis, t.amplitude * l).normalize(), this.additionalDirection.set(-Math.cos(e.MathUtils.degToRad(t.additionalWindAngle)), 0, -Math.sin(e.MathUtils.degToRad(t.additionalWindAngle))).normalize(), this.providerForce.copy(this.mainWindDirection).multiplyScalar(i).addScaledVector(this.additionalDirection, t.additionalWindStrength).multiplyScalar(n.windInfluence);
@@ -2537,7 +2632,7 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 		for (let e of this.bones) e.node.quaternion.copy(e.initialLocalRotation), e.skinAnimationLocalRotation.copy(e.initialLocalRotation), e.node.scale.copy(e.initialLocalScale), e.node.updateMatrix(), e.node.updateMatrixWorld(!0);
 	}
 	resetStateToCurrentPose() {
-		for (let e of this.bones) N(e.node.parent, this.parentRotation), P(e.node, this.headPosition), e.skinAnimationLocalRotation.copy(e.node.quaternion), this.debugAnimatedTip.copy(Vn({
+		for (let e of this.bones) N(e.node.parent, this.parentRotation), P(e.node, this.headPosition), e.skinAnimationLocalRotation.copy(e.node.quaternion), this.debugAnimatedTip.copy(Yn({
 			headPosition: this.headPosition,
 			parentRotation: this.parentRotation,
 			initialLocalRotation: e.initialLocalRotation,
@@ -2549,7 +2644,7 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 		let r = /* @__PURE__ */ new Set(), i = [], a = [], o = 0, s = 0, c = 0, l = 0;
 		for (let t of this.bones) {
 			for (let e of t.colliders) r.add(e);
-			N(t.node.parent, this.parentRotation), P(t.node, this.headPosition), this.debugAnimatedTip.copy(Vn({
+			N(t.node.parent, this.parentRotation), P(t.node, this.headPosition), this.debugAnimatedTip.copy(Yn({
 				headPosition: this.headPosition,
 				parentRotation: this.parentRotation,
 				initialLocalRotation: t.initialLocalRotation,
@@ -2568,7 +2663,7 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 				pivotSourceName: t.pivotSourceName,
 				pivotSourcePath: t.pivotSourcePath,
 				pivotResolvedPath: t.pivotResolvedPath,
-				tailBinding: Si(t.tailBinding),
+				tailBinding: Ai(t.tailBinding),
 				offset: n,
 				colliderCount: t.colliders.length,
 				lastCollisionStatus: t.lastCollisionStatus,
@@ -2581,7 +2676,7 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 				forceProviderCount: t.forceProviders.length,
 				stiffnessForce: t.stiffnessForce,
 				managerDynamicRatio: t.dynamicRatio,
-				dynamicRatio: di(t),
+				dynamicRatio: yi(t),
 				isAnimated: t.isAnimated,
 				automaticUpdates: t.automaticUpdates,
 				boneEnabled: t.enabled,
@@ -2589,11 +2684,11 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 				isSumOfForcesOnBone: t.isSumOfForcesOnBone,
 				simulationFrameRate: t.simulationFrameRate,
 				slowMotionScale: t.slowMotionScale,
-				updateSkipReason: _i(t),
+				updateSkipReason: Ti(t),
 				animatedTipDelta: U(d),
 				velocity: U(f),
 				springForce: U(t.springForce),
-				colliderBindings: t.colliderBindingDiagnostics.map(oi)
+				colliderBindings: t.colliderBindingDiagnostics.map(mi)
 			}), u.includes("skirt") && a.push({
 				name: t.node.name,
 				path: Y(t.node),
@@ -2605,7 +2700,7 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 				pivotSourceName: t.pivotSourceName,
 				pivotSourcePath: t.pivotSourcePath,
 				pivotResolvedPath: t.pivotResolvedPath,
-				tailBinding: Si(t.tailBinding),
+				tailBinding: Ai(t.tailBinding),
 				offset: n,
 				appliedRotationDegrees: e.MathUtils.radToDeg(t.skinAnimationLocalRotation.clone().normalize().angleTo(t.node.quaternion.clone().normalize())),
 				colliderCount: t.colliders.length,
@@ -2621,7 +2716,7 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 				stiffnessForce: t.stiffnessForce,
 				dragForce: t.dragForce,
 				managerDynamicRatio: t.dynamicRatio,
-				dynamicRatio: di(t),
+				dynamicRatio: yi(t),
 				isAnimated: t.isAnimated,
 				automaticUpdates: t.automaticUpdates,
 				boneEnabled: t.enabled,
@@ -2629,17 +2724,17 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 				isSumOfForcesOnBone: t.isSumOfForcesOnBone,
 				simulationFrameRate: t.simulationFrameRate,
 				slowMotionScale: t.slowMotionScale,
-				updateSkipReason: _i(t),
+				updateSkipReason: Ti(t),
 				animatedTipDelta: U(d),
 				velocity: U(f),
 				headMovement: U(t.state.cachedMovement),
 				gravity: U(t.gravity),
 				springForce: U(t.springForce),
-				colliderBindings: t.colliderBindingDiagnostics.map(oi)
+				colliderBindings: t.colliderBindingDiagnostics.map(mi)
 			});
 		}
 		i.sort((e, t) => t.offset - e.offset), a.sort((e, t) => t.offset - e.offset);
-		let u = gi(i, n), d = Tr(this.bones, this.skinnedBones);
+		let u = wi(i, n), d = Nr(this.bones, this.skinnedBones);
 		return {
 			runtimeMode: "unity-prefab",
 			enabled: t,
@@ -2659,7 +2754,7 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 			controlledPartCounts: d.counts,
 			controlledHairSamples: d.hairSamples,
 			skirtOffsets: a,
-			bindingDiagnostics: this.bones.flatMap((e) => e.colliderBindingDiagnostics).map(oi),
+			bindingDiagnostics: this.bones.flatMap((e) => e.colliderBindingDiagnostics).map(mi),
 			skinnedBoneMatches: c,
 			skinnedBoneMisses: l
 		};
@@ -2667,7 +2762,7 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 	updateBoneSpringAndRotation(t, n, r, i) {
 		N(t.node.parent, this.parentRotation), P(t.node, this.headPosition);
 		let a = this.shouldTraceBone(t) ? this.createTraceEvent(t, n, r, i) : null;
-		t.skinAnimationLocalRotation.copy(t.node.quaternion), a && (a.skinAnimationLocalRotation = yi(t.skinAnimationLocalRotation)), Un(t.state, this.headPosition), a && (a.stateAfterCache = W(t.state)), Hn(t.state, {
+		t.skinAnimationLocalRotation.copy(t.node.quaternion), a && (a.skinAnimationLocalRotation = Di(t.skinAnimationLocalRotation)), Zn(t.state, this.headPosition), a && (a.stateAfterCache = W(t.state)), Xn(t.state, {
 			headPosition: this.headPosition,
 			parentRotation: this.parentRotation,
 			initialLocalRotation: t.initialLocalRotation,
@@ -2682,7 +2777,7 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 		}), a && (a.stateAfterUpdateSpring = W(t.state)), this.applyLengthLimits(t, n), a && (a.stateAfterLengthLimits = W(t.state));
 		let o = Math.abs(t.radius);
 		a && (a.tailRadius = o);
-		let s = t.collideWithGround ? Jn(t.state, {
+		let s = t.collideWithGround ? nr(t.state, {
 			headPosition: this.headPosition,
 			springLength: t.springLength,
 			tailRadius: o,
@@ -2693,7 +2788,7 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 		}) : !1;
 		a && (a.groundHit = s, a.stateAfterGround = W(t.state)), t.lastCollisionInfo = null;
 		let c = [], l = t.enableCollision ? this.buildWorldColliders(t.colliders) : [];
-		t.lastCollisionStatus = !s && t.enableCollision ? Kn(t.state, {
+		t.lastCollisionStatus = !s && t.enableCollision ? er(t.state, {
 			headPosition: this.headPosition,
 			springLength: t.springLength,
 			tailRadius: o,
@@ -2701,7 +2796,7 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 			bounce: t.bounce,
 			friction: t.friction,
 			onColliderCheck: a ? (e, t) => {
-				c.push(xi(e, t));
+				c.push(ki(e, t));
 			} : void 0,
 			onCollision: (e, n) => {
 				t.lastCollisionInfo = {
@@ -2713,8 +2808,8 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 				};
 			}
 		}) : 0, a && (a.collisionChecks = c, a.collisionStatus = t.lastCollisionStatus, a.stateAfterCollisions = W(t.state));
-		let u = a ? bi(t) : void 0;
-		t.lastAngleLimitApplied = t.enableAngleLimits ? this.applyAngleLimits(t, n, u) : !1, a && u && (a.angleLimit = u, a.stateAfterAngleLimits = W(t.state)), this.resetInvalidTipPosition(t), this.applyBoneRotation(t, i), a && (a.finalLocalRotation = yi(t.node.quaternion), this.pushTraceEvent(a));
+		let u = a ? Oi(t) : void 0;
+		t.lastAngleLimitApplied = t.enableAngleLimits ? this.applyAngleLimits(t, n, u) : !1, a && u && (a.angleLimit = u, a.stateAfterAngleLimits = W(t.state)), this.resetInvalidTipPosition(t), this.applyBoneRotation(t, i), a && (a.finalLocalRotation = Di(t.node.quaternion), this.pushTraceEvent(a));
 	}
 	applyLengthLimits(t, n) {
 		if (!t.enableLengthLimits || t.lengthLimitTargets.length === 0) return;
@@ -2722,7 +2817,7 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 			position: P(t.node, new e.Vector3()),
 			initialLength: t.initialLength
 		}));
-		Gn({
+		$n({
 			currTipPos: t.state.currTipPos,
 			springConstant: t.springConstant,
 			deltaTime: n,
@@ -2733,11 +2828,11 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 		if (!e.yAngleLimit && !e.zAngleLimit) return !1;
 		let r = e.pivotNode ?? e.node.parent ?? e.node;
 		r.updateMatrixWorld(!0), this.angleVector.copy(e.state.currTipPos).sub(e.state.cachedPosition), this.angleVector.set(Math.fround(this.angleVector.x), Math.fround(this.angleVector.y), Math.fround(this.angleVector.z));
-		let i = Pn(r, xr.clone()), a = Pn(r, Sr.clone()), o = Pn(r, Cr.clone());
+		let i = Hn(r, kr.clone()), a = Hn(r, Ar.clone()), o = Hn(r, jr.clone());
 		n && (n.enabled = !0, n.hasPivot = !0, n.pivotName = r.name || null, n.pivotPath = Y(r) || null, n.vectorBefore = U(this.angleVector), n.forward = U(i), n.back = U(a), n.down = U(o));
 		let s = !1;
 		if (e.yAngleLimit) {
-			let r = sr({
+			let r = hr({
 				basisSide: o,
 				basisUp: a,
 				basisForward: i,
@@ -2749,7 +2844,7 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 			n && (n.yApplied = r, n.afterY = U(this.angleVector)), s = r || s;
 		}
 		if (e.zAngleLimit) {
-			let r = sr({
+			let r = hr({
 				basisSide: a,
 				basisUp: o,
 				basisForward: i,
@@ -2763,10 +2858,10 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 		return e.state.currTipPos.copy(e.state.cachedPosition).add(this.angleVector), e.state.currTipPos.set(Math.fround(e.state.currTipPos.x), Math.fround(e.state.currTipPos.y), Math.fround(e.state.currTipPos.z)), n && (n.vectorAfter = U(this.angleVector)), s;
 	}
 	applyBoneRotation(e, t = e.dynamicRatio) {
-		this.resetInvalidTipPosition(e), this.localRotation.copy(cr(this.headPosition, e.state.currTipPos, this.parentRotation, e.initialLocalRotation, e.boneAxis)), e.node.quaternion.copy(Tn(In(e.skinAnimationLocalRotation, this.localRotation, t))), e.node.updateMatrix(), e.node.updateMatrixWorld(!0);
+		this.resetInvalidTipPosition(e), this.localRotation.copy(gr(this.headPosition, e.state.currTipPos, this.parentRotation, e.initialLocalRotation, e.boneAxis)), e.node.quaternion.copy(Nn(Wn(e.skinAnimationLocalRotation, this.localRotation, t))), e.node.updateMatrix(), e.node.updateMatrixWorld(!0);
 	}
 	resetInvalidTipPosition(e) {
-		Number.isFinite(e.state.currTipPos.x) && Number.isFinite(e.state.currTipPos.y) && Number.isFinite(e.state.currTipPos.z) || (this.debugAnimatedTip.copy(Vn({
+		Number.isFinite(e.state.currTipPos.x) && Number.isFinite(e.state.currTipPos.y) && Number.isFinite(e.state.currTipPos.z) || (this.debugAnimatedTip.copy(Yn({
 			headPosition: this.headPosition,
 			parentRotation: this.parentRotation,
 			initialLocalRotation: e.initialLocalRotation,
@@ -2791,7 +2886,7 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 			pivotSourceName: e.pivotSourceName,
 			pivotSourcePath: e.pivotSourcePath,
 			pivotResolvedPath: e.pivotResolvedPath,
-			tailBinding: Si(e.tailBinding),
+			tailBinding: Ai(e.tailBinding),
 			managerPathId: e.managerPathId,
 			updateManagerPathId: this.updateManagerPathId,
 			deltaTime: t,
@@ -2804,9 +2899,9 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 			colliderCount: e.colliders.length,
 			forceProviderCount: e.forceProviders.length,
 			headPosition: U(this.headPosition),
-			parentRotation: yi(this.parentRotation),
-			initialLocalRotation: yi(e.initialLocalRotation),
-			skinAnimationLocalRotation: yi(e.skinAnimationLocalRotation),
+			parentRotation: Di(this.parentRotation),
+			initialLocalRotation: Di(e.initialLocalRotation),
+			skinAnimationLocalRotation: Di(e.skinAnimationLocalRotation),
 			boneAxis: U(e.boneAxis),
 			boneAxisSource: e.boneAxisSource,
 			springLength: e.springLength,
@@ -2819,7 +2914,7 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 			externalForce: U(n),
 			stateBefore: W(e.state),
 			stateAfterCache: W(e.state),
-			animatedTip: U(Vn({
+			animatedTip: U(Yn({
 				headPosition: this.headPosition,
 				parentRotation: this.parentRotation,
 				initialLocalRotation: e.initialLocalRotation,
@@ -2833,9 +2928,9 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 			collisionStatus: 0,
 			collisionChecks: [],
 			stateAfterCollisions: W(e.state),
-			angleLimit: bi(e),
+			angleLimit: Oi(e),
 			stateAfterAngleLimits: W(e.state),
-			finalLocalRotation: yi(e.node.quaternion)
+			finalLocalRotation: Di(e.node.quaternion)
 		};
 	}
 	pushTraceEvent(e) {
@@ -2853,7 +2948,7 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 		this.frameColliderCache.clear();
 		let t = /* @__PURE__ */ new Set();
 		for (let n of e) for (let e of n.colliders) t.add(e);
-		let n = [...t].sort((e, t) => Fi(e.source) - Fi(t.source));
+		let n = [...t].sort((e, t) => Ui(e.source) - Ui(t.source));
 		for (let e of n) {
 			let t = this.createWorldCollider(e);
 			t && this.frameColliderCache.set(e, t);
@@ -2871,9 +2966,9 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 			radius: Math.max(0, n.sphere.radius ?? .01),
 			localToWorldMatrix: this.colliderLocalToWorld.clone(),
 			worldToLocalMatrix: this.colliderWorldToLocal.clone(),
-			worldToLocalRadiusScale: Li(this.colliderWorldToLocal),
+			worldToLocalRadiusScale: Gi(this.colliderWorldToLocal),
 			localToWorldNormalMatrix: new e.Matrix4().makeRotationFromQuaternion(N(t.node, new e.Quaternion())),
-			lossyScaleX: Ii(t.node)
+			lossyScaleX: Wi(t.node)
 		}) : n?.capsule ? (t.node.updateMatrixWorld(!0), this.colliderLocalToWorld.copy(t.node.matrixWorld), this.colliderWorldToLocal.copy(t.node.matrixWorld).invert(), {
 			kind: "capsuleLocal",
 			enabled: i,
@@ -2885,9 +2980,9 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 			radius: Math.max(0, n.capsule.radius ?? .01),
 			localToWorldMatrix: this.colliderLocalToWorld.clone(),
 			worldToLocalMatrix: this.colliderWorldToLocal.clone(),
-			worldToLocalRadiusScale: Li(this.colliderWorldToLocal),
+			worldToLocalRadiusScale: Gi(this.colliderWorldToLocal),
 			localToWorldNormalMatrix: new e.Matrix4().makeRotationFromQuaternion(N(t.node, new e.Quaternion())),
-			lossyScaleX: Ii(t.node)
+			lossyScaleX: Wi(t.node)
 		}) : n?.panel ? (t.node.updateMatrixWorld(!0), this.colliderLocalToWorld.copy(t.node.matrixWorld), this.colliderWorldToLocal.copy(t.node.matrixWorld).invert(), {
 			kind: "panel",
 			enabled: i,
@@ -2898,16 +2993,16 @@ var yr = 1401298464324817e-60, br = kn("right"), xr = kn("left"), Sr = kn("back"
 			height: Math.max(0, n.panel.height ?? 0),
 			localToWorldMatrix: this.colliderLocalToWorld.clone(),
 			worldToLocalMatrix: this.colliderWorldToLocal.clone(),
-			worldToLocalRadiusScale: Li(this.colliderWorldToLocal),
-			worldToLocalLengthScale: Li(this.colliderWorldToLocal),
+			worldToLocalRadiusScale: Gi(this.colliderWorldToLocal),
+			worldToLocalLengthScale: Gi(this.colliderWorldToLocal),
 			localToWorldNormalMatrix: new e.Matrix4().makeRotationFromQuaternion(N(t.node, new e.Quaternion()))
 		}) : null;
 	}
 };
-function Tr(e, t) {
+function Nr(e, t) {
 	let n = /* @__PURE__ */ new Map(), r = [];
 	for (let i of e) {
-		let e = Ci(i.sourceBonePath), a = `${i.runtimePartIndex ?? "null"}|${i.runtimePartType ?? "null"}|${e ?? "null"}`, o = n.get(a);
+		let e = ji(i.sourceBonePath), a = `${i.runtimePartIndex ?? "null"}|${i.runtimePartType ?? "null"}|${e ?? "null"}`, o = n.get(a);
 		o || (o = {
 			runtimePartIndex: i.runtimePartIndex,
 			runtimePartType: i.runtimePartType,
@@ -2929,10 +3024,10 @@ function Tr(e, t) {
 		hairSamples: r
 	};
 }
-function Er(t, n, r, i, a, o, s, c) {
+function Pr(t, n, r, i, a, o, s, c) {
 	let l = i.tailPosition, u = P(r, new e.Vector3()), d = l.clone().sub(u);
 	d.set(Math.fround(d.x), Math.fround(d.y), Math.fround(d.z));
-	let f = Math.fround(d.length()), p = r.quaternion.clone(), m = wi(r, l), h = e.MathUtils.clamp(J(t.dynamicRatio) ?? .5, 0, 1), g = o.map((t) => ({
+	let f = Math.fround(d.length()), p = r.quaternion.clone(), m = Mi(r, l), h = e.MathUtils.clamp(J(t.dynamicRatio) ?? .5, 0, 1), g = o.map((t) => ({
 		node: t.node,
 		initialLength: P(t.node, new e.Vector3()).distanceTo(l)
 	})), _ = n.rawStiffnessForce ?? 300, v = n.rawDragForce ?? n.dragForce ?? .4, y = Math.max(0, n.rawWindInfluence ?? 1), b = J(t.slowMotionScale) ?? 1, x = t.isPaused === !0;
@@ -2960,7 +3055,7 @@ function Er(t, n, r, i, a, o, s, c) {
 		gravity: K(t.rawGravity),
 		forceProviders: s,
 		node: r,
-		state: Bn(u, l),
+		state: Jn(u, l),
 		initialLocalRotation: p,
 		initialLocalScale: r.scale.clone(),
 		skinAnimationLocalRotation: p.clone(),
@@ -2968,7 +3063,7 @@ function Er(t, n, r, i, a, o, s, c) {
 		boneAxisSource: m.source,
 		springLength: f,
 		dynamicRatio: h,
-		isAnimated: fi(n, r, t),
+		isAnimated: bi(n, r, t),
 		simulationFrameRate: J(t.simulationFrameRate) ?? 60,
 		slowMotionScale: b,
 		bounce: J(t.bounce) ?? 0,
@@ -2985,8 +3080,8 @@ function Er(t, n, r, i, a, o, s, c) {
 		lengthLimitTargets: g,
 		angularStiffness: Math.max(0, n.rawAngularStiffness ?? 100),
 		pivotNode: a,
-		yAngleLimit: ui(n.rawAngleLimits?.y),
-		zAngleLimit: ui(n.rawAngleLimits?.z),
+		yAngleLimit: vi(n.rawAngleLimits?.y),
+		zAngleLimit: vi(n.rawAngleLimits?.z),
 		colliders: c.colliders,
 		colliderBindingDiagnostics: c.diagnostics,
 		lastCollisionStatus: 0,
@@ -2994,27 +3089,27 @@ function Er(t, n, r, i, a, o, s, c) {
 		lastAngleLimitApplied: !1
 	};
 }
-function Dr(e, t, n) {
+function Fr(e, t, n) {
 	return (t.forceProviders ?? []).map((t) => {
-		let r = Or(t), i = r ? n.get(r) : void 0;
+		let r = Ir(t), i = r ? n.get(r) : void 0;
 		if (i) return i;
-		let a = kr(e, t);
+		let a = Lr(e, t);
 		return a && r && n.set(r, a), a;
 	}).filter((e) => !!e);
 }
-function Or(e) {
+function Ir(e) {
 	let t = typeof e.runtimePartIndex == "number" ? `${e.runtimePartIndex}:` : "";
 	return typeof e.sourcePathId == "number" ? `${t}path:${e.sourcePathId}` : e.nodePath ? `${t}nodePath:${e.nodePath}` : null;
 }
-function kr(t, n) {
+function Lr(t, n) {
 	let r = n.scriptName ?? "", i = r.endsWith("WindVolumeOneSelf"), a = r.endsWith("WindVolume") && !i, o = r.endsWith("ForceVolume") && !a;
 	if (!o && !a && !i) return null;
-	let s = V(t, n.nodePath, n.runtimePartIndex) ?? Ar(t, n.nodeName), c = n.raw ?? {};
-	if (!s || !Di(c, "m_Enabled", !0) || n.activeSelf === !1 || n.activeInHierarchy === !1) return null;
+	let s = V(t, n.nodePath, n.runtimePartIndex) ?? Rr(t, n.nodeName), c = n.raw ?? {};
+	if (!s || !Fi(c, "m_Enabled", !0) || n.activeSelf === !1 || n.activeInHierarchy === !1) return null;
 	let l = {
 		sourcePathId: J(n.sourcePathId),
 		node: s,
-		springManagerPathId: J(n.springManagerPathId) ?? Oi(c, "<SpringManager>k__BackingField") ?? Oi(c, "_SpringManager_k__BackingField") ?? Oi(c, "springManager")
+		springManagerPathId: J(n.springManagerPathId) ?? Ii(c, "<SpringManager>k__BackingField") ?? Ii(c, "_SpringManager_k__BackingField") ?? Ii(c, "springManager")
 	};
 	return o ? {
 		kind: "ForceVolume",
@@ -3028,11 +3123,11 @@ function kr(t, n) {
 		period: q(c, "period", 0),
 		positionalMultiplier: q(c, "positionalMultiplier", 0),
 		timeFactor: q(c, "timeFactor", 0),
-		offsetVector: Ei(c, "offsetVector")
+		offsetVector: Pi(c, "offsetVector")
 	} : {
 		kind: "WindVolumeOneSelf",
 		...l,
-		isActive: Di(c, "isActive", !1),
+		isActive: Fi(c, "isActive", !1),
 		dynamicRatio: e.MathUtils.clamp(q(c, "dynamicRatio", .5), 0, 1),
 		simulationFrameRate: Math.max(0, q(c, "simulationFrameRate", 60)),
 		weight: q(c, "weight", 0),
@@ -3047,15 +3142,15 @@ function kr(t, n) {
 		additionalWindStrength: q(c, "additionalWindStrength", 0)
 	};
 }
-function Ar(e, t) {
+function Rr(e, t) {
 	if (!t) return null;
 	let n = [...new Set(e.nodeByPath.values())].filter((e) => e.name === t);
 	return n.length === 1 ? n[0] : null;
 }
-function jr(e, t, n, r) {
+function zr(e, t, n, r) {
 	let i = /* @__PURE__ */ new Map();
 	for (let a of e.colliders ?? []) {
-		if (typeof a.index != "number" || !$r(a.nodePath, r)) continue;
+		if (typeof a.index != "number" || !si(a.nodePath, r)) continue;
 		let e = V(t, a.nodePath, a.runtimePartIndex);
 		if (!e) {
 			n.push(a.nodePath ?? a.nodeName ?? `collider:${a.index}`);
@@ -3068,7 +3163,7 @@ function jr(e, t, n, r) {
 	}
 	return i;
 }
-function Mr(e, t, n) {
+function Br(e, t, n) {
 	return {
 		managerCount: e.managers?.length ?? 0,
 		boneSourceCount: e.bones?.length ?? 0,
@@ -3081,11 +3176,11 @@ function Mr(e, t, n) {
 		activeRoots: [...t].sort()
 	};
 }
-function Nr(e) {
+function Vr(e) {
 	let t = /* @__PURE__ */ new Set(), n = /* @__PURE__ */ new Set(), r = !1;
 	for (let i of e.prefabGraphs ?? []) {
 		Array.isArray(i.monoBehaviours) && (r = !0);
-		for (let e of i.monoBehaviours ?? []) Pr(e.scriptName) && (typeof e.pathId == "number" && t.add(e.pathId), e.transformPath && n.add(H(e.runtimePartIndex ?? -1, e.transformPath)));
+		for (let e of i.monoBehaviours ?? []) Hr(e.scriptName) && (typeof e.pathId == "number" && t.add(e.pathId), e.transformPath && n.add(H(e.runtimePartIndex ?? -1, e.transformPath)));
 	}
 	return {
 		hasComponentMetadata: r,
@@ -3093,35 +3188,35 @@ function Nr(e) {
 		partPaths: n
 	};
 }
-function Pr(e) {
+function Hr(e) {
 	let t = e?.trim().toLowerCase();
 	return t === "springbone" || t === "sekaispringbone";
 }
-function Fr(e, t) {
+function Ur(e, t) {
 	return !t.hasComponentMetadata || typeof e.pathId == "number" && t.pathIds.has(e.pathId) ? !0 : !!(e.nodePath && t.partPaths.has(H(e.runtimePartIndex ?? -1, e.nodePath)));
 }
-function Ir(e, t, n, r, i, a, o) {
+function Wr(e, t, n, r, i, a, o) {
 	if (!r && !i) return {
 		colliders: [],
-		diagnostics: a ? [ai(t, n, r, i, null, null, null, `no per-bone collider binding; manager cache not used as fallback; ${li(a)}`, [])] : []
+		diagnostics: a ? [pi(t, n, r, i, null, null, null, `no per-bone collider binding; manager cache not used as fallback; ${_i(a)}`, [])] : []
 	};
-	let s = i?.sourceKind ?? r?.sourceKind ?? "direct", c = ti(i?.candidateRoots ?? r?.collidersByRoot, o);
+	let s = i?.sourceKind ?? r?.sourceKind ?? "direct", c = li(i?.candidateRoots ?? r?.collidersByRoot, o);
 	if (s === "colliderFlag" && c.size > 0) {
-		let o = ri(c, a), s = ii(e, t, n, i, r, o), l = s.root ? o.get(s.root) ?? [] : [];
+		let o = di(c, a), s = fi(e, t, n, i, r, o), l = s.root ? o.get(s.root) ?? [] : [];
 		return {
 			colliders: l,
-			diagnostics: [ai(t, n, r, i, c, i?.defaultRoot ?? r?.defaultRoot, s.root, `${s.reason}; manager cache constrained; ${li(a)}`, l)]
+			diagnostics: [pi(t, n, r, i, c, i?.defaultRoot ?? r?.defaultRoot, s.root, `${s.reason}; manager cache constrained; ${_i(a)}`, l)]
 		};
 	}
-	let l = si((i?.selectedColliderIndexes ?? r?.colliders ?? []).map((e) => o.get(e)).filter((e) => !!e), t, n);
+	let l = hi((i?.selectedColliderIndexes ?? r?.colliders ?? []).map((e) => o.get(e)).filter((e) => !!e), t, n);
 	return {
 		colliders: l,
-		diagnostics: [ai(t, n, r, i, null, i?.defaultRoot ?? r?.defaultRoot, null, `${i?.selectedColliderIndexes ? "bindingDecision.selectedColliderIndexes" : r?.colliders ? "colliderBinding.colliders" : "no direct collider indexes"} / direct serialized collider references / pose root preference; ${li(a)}`, l)]
+		diagnostics: [pi(t, n, r, i, null, i?.defaultRoot ?? r?.defaultRoot, null, `${i?.selectedColliderIndexes ? "bindingDecision.selectedColliderIndexes" : r?.colliders ? "colliderBinding.colliders" : "no direct collider indexes"} / direct serialized collider references / pose root preference; ${_i(a)}`, l)]
 	};
 }
-function Lr(t, n, r, i) {
+function Gr(t, n, r, i) {
 	n.updateMatrixWorld(!0);
-	let a = P(n, new e.Vector3()), o = Pn(n, kn("right")), s = Math.fround, c = new e.Vector3(s(a.x - s(o.x * s(.1))), s(a.y - s(o.y * s(.1))), s(a.z - s(o.z * s(.1)))), l = t.nodePath ? Wr(r, t.nodePath, t.runtimePartIndex) : void 0, u = l ? zr(l, r, i, t.runtimePartIndex) : [], d = u.map((e) => e.source.name ?? e.node.name), f = u.map((e) => e.source.transformPath ?? Y(e.node));
+	let a = P(n, new e.Vector3()), o = Hn(n, Ln("right")), s = Math.fround, c = new e.Vector3(s(a.x - s(o.x * s(.1))), s(a.y - s(o.y * s(.1))), s(a.z - s(o.z * s(.1)))), l = t.nodePath ? Qr(r, t.nodePath, t.runtimePartIndex) : void 0, u = l ? qr(l, r, i, t.runtimePartIndex) : [], d = u.map((e) => e.source.name ?? e.node.name), f = u.map((e) => e.source.transformPath ?? Y(e.node));
 	if (u.length === 0) return {
 		mode: "fallback",
 		childCount: 0,
@@ -3146,7 +3241,7 @@ function Lr(t, n, r, i) {
 		r.set(s(r.x), s(r.y), s(r.z)), m = s(m + s(r.length()));
 	}
 	p.set(s(p.x / u.length), s(p.y / u.length), s(p.z / u.length)), m = s(m / u.length);
-	let h = Rr(a, p, m);
+	let h = Kr(a, p, m);
 	return {
 		mode: "averageChildren",
 		childCount: u.length,
@@ -3156,20 +3251,20 @@ function Lr(t, n, r, i) {
 		tailPosition: h
 	};
 }
-function Rr(t, n, r) {
+function Kr(t, n, r) {
 	let i = Math.fround, a = n.clone().sub(t);
-	if (a.set(i(a.x), i(a.y), i(a.z)), a.lengthSq() <= 1e-5 * 1e-5) a.copy(br);
+	if (a.set(i(a.x), i(a.y), i(a.z)), a.lengthSq() <= 1e-5 * 1e-5) a.copy(Or);
 	else {
 		let e = i(a.length());
 		a.set(i(a.x / e), i(a.y / e), i(a.z / e));
 	}
 	return new e.Vector3(i(t.x + i(a.x * i(r))), i(t.y + i(a.y * i(r))), i(t.z + i(a.z * i(r))));
 }
-function zr(e, t, n, r) {
+function qr(e, t, n, r) {
 	let i = [];
 	for (let a of e.childPathIds ?? []) {
 		let e = t.transformByPathId.get(a);
-		if (!e || !Br(e, t)) continue;
+		if (!e || !Jr(e, t)) continue;
 		let o = V(n, e.transformPath, r ?? e.runtimePartIndex);
 		o && i.push({
 			source: e,
@@ -3178,10 +3273,10 @@ function zr(e, t, n, r) {
 	}
 	return i;
 }
-function Br(e, t) {
+function Jr(e, t) {
 	return typeof e.pathId == "number" && t.pivotTransformPathIds.has(e.pathId) ? !1 : !e.transformPath || !t.pivotTransformPaths.has(e.transformPath);
 }
-function Vr(e) {
+function Yr(e) {
 	let t = /* @__PURE__ */ new Map(), n = /* @__PURE__ */ new Map(), r = /* @__PURE__ */ new Map(), i = /* @__PURE__ */ new Set(), a = /* @__PURE__ */ new Set();
 	for (let i of e.prefabGraphs ?? []) for (let e of i.transforms ?? []) typeof e.pathId == "number" && t.set(e.pathId, e), e.transformPath && (n.set(e.transformPath, e), typeof e.runtimePartIndex == "number" && r.set(H(e.runtimePartIndex, e.transformPath), e));
 	for (let t of e.prefabGraphs ?? []) for (let e of t.monoBehaviours ?? []) if (e.scriptName?.toLowerCase() === "springbonepivot" && e.transformPath) {
@@ -3197,15 +3292,15 @@ function Vr(e) {
 		pivotTransformPaths: a
 	};
 }
-function Hr(e) {
+function Xr(e) {
 	let t = /* @__PURE__ */ new Map(), n = /* @__PURE__ */ new Map(), r = /* @__PURE__ */ new Map();
 	return e.traverse((i) => {
 		let a = Y(i, e);
 		if (!a) return;
 		t.set(a, i);
-		let o = Ni(i, e);
+		let o = Vi(i, e);
 		o && o !== a && r.set(o, i);
-		let s = Gr(i), c = i.userData.pjskTransformPath;
+		let s = $r(i), c = i.userData.pjskTransformPath;
 		for (let e of typeof c == "string" && c.length > 0 ? [c] : []) typeof s == "number" && n.set(H(s, e), i), t.has(e) || t.set(e, i);
 	}), {
 		nodeByPath: t,
@@ -3213,7 +3308,7 @@ function Hr(e) {
 		canonicalNodeByPath: r
 	};
 }
-function Ur(e, t) {
+function Zr(e, t) {
 	return t ? e.nodeByPath.get(t) ?? e.canonicalNodeByPath.get(t) ?? null : null;
 }
 function V(e, t, n) {
@@ -3222,41 +3317,41 @@ function V(e, t, n) {
 		let r = e.nodeByPartPath.get(H(n, t));
 		if (r) return r;
 	}
-	return Ur(e, t);
+	return Zr(e, t);
 }
-function Wr(e, t, n) {
+function Qr(e, t, n) {
 	return typeof n == "number" ? e.transformByPartPath.get(H(n, t)) ?? e.transformByPath.get(t) : e.transformByPath.get(t);
 }
 function H(e, t) {
 	return `${e}:${t}`;
 }
-function Gr(e) {
+function $r(e) {
 	let t = e.userData.pjskRuntimePartIndex;
 	return typeof t == "number" ? t : void 0;
 }
-function Kr(e) {
+function ei(e) {
 	let t = /* @__PURE__ */ new Set();
 	return e.traverse((e) => {
 		let n = e;
 		if (n.isSkinnedMesh) for (let e of n.skeleton.bones) t.add(e);
 	}), t;
 }
-function qr(e) {
+function ti(e) {
 	let t = /* @__PURE__ */ new Map();
 	for (let n of e.bones ?? []) typeof n.pathId == "number" && t.set(n.pathId, n);
 	return t;
 }
-function Jr(e) {
+function ni(e) {
 	let t = /* @__PURE__ */ new Map();
 	for (let n of e.colliderBindings ?? []) typeof n.sourceSpringBonePathId == "number" && t.set(n.sourceSpringBonePathId, n);
 	return t;
 }
-function Yr(e) {
+function ri(e) {
 	let t = /* @__PURE__ */ new Map();
 	for (let n of e.bindingDecisions ?? []) typeof n.sourceSpringBonePathId == "number" && t.set(n.sourceSpringBonePathId, n);
 	return t;
 }
-function Xr(e, t) {
+function ii(e, t) {
 	let n = /* @__PURE__ */ new Map();
 	for (let r of e.managerColliderCaches ?? []) {
 		if (typeof r.managerPathId != "number") continue;
@@ -3267,7 +3362,7 @@ function Xr(e, t) {
 			...r.panelColliderIndexes ?? []
 		]) {
 			let i = typeof n == "number" ? t.get(n) : void 0;
-			typeof n == "number" && i && Zr(r, i) && e.add(n);
+			typeof n == "number" && i && ai(r, i) && e.add(n);
 		}
 		n.set(r.managerPathId, {
 			source: r,
@@ -3276,19 +3371,19 @@ function Xr(e, t) {
 	}
 	return n;
 }
-function Zr(e, t) {
+function ai(e, t) {
 	let n = e.managerNodePath ?? "", r = t.source.nodePath ?? "", i = t.source.shape;
 	return n.endsWith("/Position/PositionOffset/Hip") ? i?.sphere ? /\/(?:Left_Thigh|Right_Thigh)\/CL_/.test(r) || /\/Hip\/CL_HipSphereCollider$/.test(r) : !1 : !0;
 }
-function Qr(e) {
+function oi(e) {
 	return new Set((e.activeRootProfile?.activeRoots ?? []).map((e) => G(e)).filter((e) => !!e));
 }
-function $r(e, t) {
+function si(e, t) {
 	if (t.size === 0) return !0;
-	let n = G(Ci(e));
+	let n = G(ji(e));
 	return n !== null && t.has(n);
 }
-function ei(e, t) {
+function ci(e, t) {
 	let n = [];
 	for (let r of t.lengthLimitTargets ?? []) {
 		let i = V(e, r.nodePath, r.runtimePartIndex ?? t.runtimePartIndex);
@@ -3299,7 +3394,7 @@ function ei(e, t) {
 	}
 	return n;
 }
-function ti(e, t) {
+function li(e, t) {
 	let n = /* @__PURE__ */ new Map();
 	for (let [r, i] of Object.entries(e ?? {})) {
 		let e = i.map((e) => t.get(e)).filter((e) => !!e);
@@ -3307,23 +3402,23 @@ function ti(e, t) {
 	}
 	return n;
 }
-function ni(e, t) {
+function ui(e, t) {
 	return !t || t.colliderIndexes.size === 0 ? e : e.filter((e) => typeof e.source.index == "number" && t.colliderIndexes.has(e.source.index));
 }
-function ri(e, t) {
+function di(e, t) {
 	let n = /* @__PURE__ */ new Map();
 	for (let [r, i] of e.entries()) {
-		let e = ni(i, t);
+		let e = ui(i, t);
 		e.length > 0 && n.set(r, e);
 	}
 	return n;
 }
-function ii(e, t, n, r, i, a) {
+function fi(e, t, n, r, i, a) {
 	if (a.size === 1) return {
 		root: a.keys().next().value,
 		reason: "single manager-cache root"
 	};
-	let o = G(Ci(n.nodePath));
+	let o = G(ji(n.nodePath));
 	if (o && a.has(o)) return {
 		root: o,
 		reason: "joint root matched candidate root"
@@ -3360,7 +3455,7 @@ function ii(e, t, n, r, i, a) {
 		reason: c ? `binding.defaultRoot ${c} not available after manager cache` : "no matching root"
 	};
 }
-function ai(e, t, n, r, i, a, o, s, c) {
+function pi(e, t, n, r, i, a, o, s, c) {
 	return {
 		sourceKind: r?.sourceKind ?? n?.sourceKind ?? "direct",
 		colliderFlag: r?.colliderFlag ?? n?.colliderFlag ?? null,
@@ -3381,7 +3476,7 @@ function ai(e, t, n, r, i, a, o, s, c) {
 		selectionReason: s
 	};
 }
-function oi(e) {
+function mi(e) {
 	return {
 		...e,
 		candidateRoots: e.candidateRoots.map((e) => ({
@@ -3391,8 +3486,8 @@ function oi(e) {
 		selectedColliderSourcePathIds: [...e.selectedColliderSourcePathIds]
 	};
 }
-function si(e, t, n) {
-	let r = ci(t, n);
+function hi(e, t, n) {
+	let r = gi(t, n);
 	if (!r) return e;
 	let i = /* @__PURE__ */ new Map();
 	for (let t of e) {
@@ -3404,35 +3499,35 @@ function si(e, t, n) {
 		return !n || n.length <= 1 || !n.some((e) => e.source.nodePath?.startsWith(r)) || e.source.nodePath?.startsWith(r);
 	});
 }
-function ci(e, t) {
+function gi(e, t) {
 	return t.nodePath?.startsWith("sit_body/") ? "sit_body/" : t.nodePath?.startsWith("body/") || e.partKind === "Head" || t.nodePath?.startsWith("face/") ? "body/" : null;
 }
-function li(e) {
+function _i(e) {
 	return e ? `${e.source.managerNodeName ?? "manager"} manager cache (${e.source.sphereColliderIndexes?.length ?? 0} sphere, ${e.source.capsuleColliderIndexes?.length ?? 0} capsule, ${e.source.panelColliderIndexes?.length ?? 0} panel)` : "no manager cache available";
 }
-function ui(e) {
+function vi(e) {
 	return e?.active ? {
 		active: !0,
 		min: e.min ?? 0,
 		max: e.max ?? 0
 	} : null;
 }
-function di(e) {
+function yi(e) {
 	return e.isAnimated ? e.dynamicRatio : 1;
 }
-function fi(e, t, n) {
-	let r = pi(n.animatedBoneNames);
+function bi(e, t, n) {
+	let r = xi(n.animatedBoneNames);
 	return r.size === 0 ? !1 : r.has(t.name) || typeof e.nodeName == "string" && r.has(e.nodeName);
 }
-function pi(e) {
+function xi(e) {
 	return Array.isArray(e) ? new Set(e.filter((e) => typeof e == "string")) : /* @__PURE__ */ new Set();
 }
-function mi(e, t, n) {
+function Si(e, t, n) {
 	let r = t > 0 ? 1 / t : e;
 	return n === 1 ? r : r * n;
 }
-function hi(e) {
-	let t = Mi(Mi(Mi(e)?.pjskSpringBone)?.runtimeUnitySetup), n = t?.version;
+function Ci(e) {
+	let t = Bi(Bi(Bi(e)?.pjskSpringBone)?.runtimeUnitySetup), n = t?.version;
 	return n === "0414" || n === 414 ? t : null;
 }
 function U(e) {
@@ -3443,7 +3538,7 @@ function U(e) {
 		length: e.length()
 	};
 }
-function gi(e, t) {
+function wi(e, t) {
 	if (t.springDebugAllOffsets) return e;
 	let n = (t.springDebugBones ?? []).map((e) => e.trim().toLowerCase()).filter(Boolean);
 	return n.length === 0 ? [] : e.filter((e) => {
@@ -3460,13 +3555,13 @@ function gi(e, t) {
 		return n.some((e) => t.includes(e));
 	});
 }
-function _i(e) {
+function Ti(e) {
 	return e.automaticUpdates ? e.enabled ? e.isPaused ? "isPaused=true" : e.isSumOfForcesOnBone ? null : "isSumOfForcesOnBone=false" : "enabled=false" : "automaticUpdates=false";
 }
-function vi(e) {
+function Ei(e) {
 	return e ? U(e) : null;
 }
-function yi(e) {
+function Di(e) {
 	return {
 		x: e.x,
 		y: e.y,
@@ -3483,7 +3578,7 @@ function W(e) {
 		cachedMovement: U(e.cachedMovement)
 	};
 }
-function bi(e) {
+function Oi(e) {
 	return {
 		enabled: e.enableAngleLimits,
 		hasPivot: !!e.pivotNode,
@@ -3500,7 +3595,7 @@ function bi(e) {
 		vectorAfter: null
 	};
 }
-function xi(e, t) {
+function ki(e, t) {
 	return {
 		kind: e.kind,
 		name: e.debugName ?? null,
@@ -3511,20 +3606,20 @@ function xi(e, t) {
 		beforeTailPosition: U(t.beforeTailPosition),
 		afterTailPosition: U(t.afterTailPosition),
 		hitNormal: U(t.hitNormal),
-		localHeadPosition: vi(t.details.localHeadPosition),
-		localTailPositionBefore: vi(t.details.localTailPositionBefore),
-		localTailPositionAfter: vi(t.details.localTailPositionAfter),
+		localHeadPosition: Ei(t.details.localHeadPosition),
+		localTailPositionBefore: Ei(t.details.localTailPositionBefore),
+		localTailPositionAfter: Ei(t.details.localTailPositionAfter),
 		localTailRadius: t.details.localTailRadius ?? null,
-		localSphereOrigin: vi(t.details.localSphereOrigin),
+		localSphereOrigin: Ei(t.details.localSphereOrigin),
 		localSphereRadius: t.details.localSphereRadius ?? null,
-		localCapsuleStart: vi(t.details.localCapsuleStart),
-		localCapsuleEnd: vi(t.details.localCapsuleEnd),
+		localCapsuleStart: Ei(t.details.localCapsuleStart),
+		localCapsuleEnd: Ei(t.details.localCapsuleEnd),
 		capsuleRadius: t.details.capsuleRadius ?? null,
 		panelWidth: t.details.panelWidth ?? null,
 		panelHeight: t.details.panelHeight ?? null
 	};
 }
-function Si(e) {
+function Ai(e) {
 	return {
 		mode: e.mode,
 		childCount: e.childCount,
@@ -3533,7 +3628,7 @@ function Si(e) {
 		tailPosition: U(e.tailPosition)
 	};
 }
-function Ci(e) {
+function ji(e) {
 	if (!e) return null;
 	let t = e.indexOf("/");
 	return t < 0 ? e : e.slice(0, t);
@@ -3542,51 +3637,51 @@ function G(e) {
 	return e ? e.endsWith("/") ? e.slice(0, -1) : e : null;
 }
 function K(t) {
-	return Dn(Array.isArray(t) ? new e.Vector3(t[0] ?? 0, t[1] ?? 0, t[2] ?? 0) : Cn(t, new e.Vector3()));
+	return Fn(Array.isArray(t) ? new e.Vector3(t[0] ?? 0, t[1] ?? 0, t[2] ?? 0) : jn(t, new e.Vector3()));
 }
-function wi(e, t) {
+function Mi(e, t) {
 	e.updateMatrixWorld(!0);
-	let n = Ti(jn(e, t.clone()));
+	let n = Ni(zn(e, t.clone()));
 	return n ? {
 		axis: n,
 		source: "computed-local-tip"
 	} : {
-		axis: br.clone(),
+		axis: Or.clone(),
 		source: "fallback-local-tip"
 	};
 }
-function Ti(t) {
+function Ni(t) {
 	let n = Math.fround(t.length());
 	return n <= 1e-5 ? null : new e.Vector3(Math.fround(t.x / n), Math.fround(t.y / n), Math.fround(t.z / n));
 }
 function q(e, t, n) {
-	return J(e[t] ?? e[ki(t)]) ?? n;
+	return J(e[t] ?? e[Li(t)]) ?? n;
 }
-function Ei(t, n) {
-	let r = t[n] ?? t[ki(n)];
+function Pi(t, n) {
+	let r = t[n] ?? t[Li(n)];
 	return Array.isArray(r) || typeof r == "object" && r ? K(r) : new e.Vector3();
 }
-function Di(e, t, n) {
-	let r = e[t] ?? e[ki(t)];
+function Fi(e, t, n) {
+	let r = e[t] ?? e[Li(t)];
 	return typeof r == "boolean" ? r : typeof r == "number" ? r !== 0 : n;
 }
-function Oi(e, t) {
-	let n = Mi(e[t] ?? e[ki(t)]);
+function Ii(e, t) {
+	let n = Bi(e[t] ?? e[Li(t)]);
 	return J(n?.m_PathID ?? n?.m_pathID ?? n?.pathId);
 }
-function ki(e) {
+function Li(e) {
 	return e.length > 0 ? e[0].toUpperCase() + e.slice(1) : e;
 }
-function Ai(t, n, r) {
+function Ri(t, n, r) {
 	return r > 0 ? e.MathUtils.euclideanModulo(t + n, r) : t + n;
 }
-function ji(e, t) {
+function zi(e, t) {
 	return typeof e == "number" && Number.isFinite(e) ? e : t;
 }
 function J(e) {
 	return typeof e == "number" && Number.isFinite(e) ? e : null;
 }
-function Mi(e) {
+function Bi(e) {
 	return e && typeof e == "object" ? e : null;
 }
 function Y(e, t) {
@@ -3594,36 +3689,36 @@ function Y(e, t) {
 	for (; r && r !== t;) r.name && !r.name.startsWith("Loaded:") && n.unshift(r.name), r = r.parent;
 	return n.join("/");
 }
-function Ni(e, t) {
+function Vi(e, t) {
 	let n = [], r = e;
-	for (; r && r !== t;) r.name && !r.name.startsWith("Loaded:") && n.unshift(Pi(r.name)), r = r.parent;
+	for (; r && r !== t;) r.name && !r.name.startsWith("Loaded:") && n.unshift(Hi(r.name)), r = r.parent;
 	return n.join("/");
 }
-function Pi(e) {
+function Hi(e) {
 	return e.replace(/_([1-9]\d*)$/, "");
 }
-function Fi(e) {
+function Ui(e) {
 	return e.shape?.sphere ? 0 : e.shape?.capsule ? 1 : 2;
 }
-function Ii(t) {
+function Wi(t) {
 	return t.getWorldScale(new e.Vector3()).x;
 }
-function Li(e) {
+function Gi(e) {
 	let t = e.elements;
 	return Math.sqrt(t[0] * t[0] + t[1] * t[1] + t[2] * t[2]);
 }
-function Ri(e) {
+function Ki(e) {
 	let t = 0, n = e;
 	for (; n;) t += 1, n = n.parent;
 	return t;
 }
-function zi(e, t) {
+function qi(e, t) {
 	for (let n = e; n; n = n.parent) if (n === t) return !0;
 	return !1;
 }
 //#endregion
 //#region src/engine/prefabNodeLookup.ts
-function Bi(e) {
+function Ji(e) {
 	let t = /* @__PURE__ */ new Map();
 	return e.traverse((n) => {
 		if (n === e || !n.name) return;
@@ -3640,29 +3735,29 @@ function Bi(e) {
 }
 //#endregion
 //#region src/engine/unityConstraintRuntime.ts
-var Vi = 7, Hi = class {
+var Yi = 7, Xi = class {
 	graph;
 	setup;
 	constraints;
 	constructor(e, t, n) {
 		this.graph = e, this.setup = t, e.root.updateMatrixWorld(!0);
 		let r = Array.isArray(t.constraints) ? t.constraints : [];
-		this.constraints = r.map((t) => Gi(e, t, n));
+		this.constraints = r.map((t) => $i(e, t, n));
 	}
 	update() {
 		this.graph.root.updateMatrixWorld(!0);
-		let e = this.constraints.map(Ki);
-		return this.graph.root.updateMatrixWorld(!0), Wi(this.setup, e);
+		let e = this.constraints.map(ea);
+		return this.graph.root.updateMatrixWorld(!0), Qi(this.setup, e);
 	}
 };
-function Ui(e, t, n) {
+function Zi(e, t, n) {
 	if (!t) return null;
 	let r = Array.isArray(t.constraints) ? t.constraints : [];
 	e.root.updateMatrixWorld(!0);
-	let i = r.map((t) => Gi(e, t, n)).map(Ki);
-	return e.root.updateMatrixWorld(!0), Wi(t, i);
+	let i = r.map((t) => $i(e, t, n)).map(ea);
+	return e.root.updateMatrixWorld(!0), Qi(t, i);
 }
-function Wi(e, t) {
+function Qi(e, t) {
 	let n = t.filter((e) => e.resolvedOwner && e.sources.length > 0 && e.sources.every((e) => e.resolvedSource)).length;
 	return {
 		version: e.version ?? null,
@@ -3675,8 +3770,8 @@ function Wi(e, t) {
 		constraints: t
 	};
 }
-function Gi(e, t, n) {
-	let r = X(t.type) ?? "unknown", i = X(t.ownerPath), a = X(t.ownerName), o = Zi(e, i, a), s = Zi(e, X(t.worldUpObjectPath), X(t.worldUpObjectName)).node, c = (Array.isArray(t.sources) ? t.sources : []).map((t) => Ji(e, t, n, r !== "position"));
+function $i(e, t, n) {
+	let r = X(t.type) ?? "unknown", i = X(t.ownerPath), a = X(t.ownerName), o = aa(e, i, a), s = aa(e, X(t.worldUpObjectPath), X(t.worldUpObjectName)).node, c = (Array.isArray(t.sources) ? t.sources : []).map((t) => na(e, t, n, r !== "position"));
 	return {
 		source: t,
 		type: r,
@@ -3688,7 +3783,7 @@ function Gi(e, t, n) {
 		sourceDebug: c.map((e) => e.debug)
 	};
 }
-function Ki(e) {
+function ea(e) {
 	let { source: t, type: n, ownerPath: r, ownerName: i, owner: a, worldUpObject: o, sources: s, sourceDebug: c } = e, l = (e, t) => ({
 		type: n,
 		status: e,
@@ -3704,10 +3799,10 @@ function Ki(e) {
 	if (s.length === 0) return l("unresolved", "constraint has no source transforms");
 	let u = s.find((e) => !e.node);
 	if (u) return l("unresolved", u.debug.sourceName ? `source transform ${u.debug.sourceName} was not uniquely resolved` : "constraint source transform was not resolved");
-	let d = s.filter(Xi);
-	return n === "parent" ? ua(a.node, d, t) ? qi(n, r, i, c, "parent constraint applied with height-scaled translation offsets") : l("skipped", "parent constraint has no positive source weight") : n === "rotation" ? fa(a.node, d, t) ? qi(n, r, i, c, "rotation constraint applied with weighted source rotations") : l("skipped", "rotation constraint has no positive source weight") : n === "position" ? da(a.node, d, t) ? qi(n, r, i, c, "position constraint applied in the parent space") : l("skipped", "position constraint has no positive source weight") : n === "aim" ? pa(a.node, d, t, o) ? qi(n, r, i, c, "aim constraint applied with exported aim/up vectors") : l("skipped", "aim constraint target direction or source weight was invalid") : l("skipped", `unsupported constraint type ${n}`);
+	let d = s.filter(ia);
+	return n === "parent" ? va(a.node, d, t) ? ta(n, r, i, c, "parent constraint applied with height-scaled translation offsets") : l("skipped", "parent constraint has no positive source weight") : n === "rotation" ? ba(a.node, d, t) ? ta(n, r, i, c, "rotation constraint applied with weighted source rotations") : l("skipped", "rotation constraint has no positive source weight") : n === "position" ? ya(a.node, d, t) ? ta(n, r, i, c, "position constraint applied in the parent space") : l("skipped", "position constraint has no positive source weight") : n === "aim" ? xa(a.node, d, t, o) ? ta(n, r, i, c, "aim constraint applied with exported aim/up vectors") : l("skipped", "aim constraint target direction or source weight was invalid") : l("skipped", `unsupported constraint type ${n}`);
 }
-function qi(e, t, n, r, i) {
+function ta(e, t, n, r, i) {
 	return {
 		type: e,
 		status: "applied",
@@ -3719,8 +3814,8 @@ function qi(e, t, n, r, i) {
 		sources: r
 	};
 }
-function Ji(e, t, n, r) {
-	let i = X(t.sourcePath), a = X(t.sourceName), o = r ? Yi(e, i, a) : Zi(e, i, null), s = ya(t.weight) ?? 1, c = _a(t.translationOffset, n), l = va(t.rotationOffset);
+function na(e, t, n, r) {
+	let i = X(t.sourcePath), a = X(t.sourceName), o = r ? ra(e, i, a) : aa(e, i, null), s = Da(t.weight) ?? 1, c = Ta(t.translationOffset, n), l = Ea(t.rotationOffset);
 	return {
 		node: o.node,
 		weight: s,
@@ -3744,7 +3839,7 @@ function Ji(e, t, n, r) {
 		}
 	};
 }
-function Yi(e, t, n) {
+function ra(e, t, n) {
 	if (n) {
 		let t = null;
 		if (e.root.traverse((e) => {
@@ -3754,12 +3849,12 @@ function Yi(e, t, n) {
 			reason: "rebound by transform name in the combined model"
 		};
 	}
-	return Zi(e, t, n);
+	return aa(e, t, n);
 }
-function Xi(e) {
+function ia(e) {
 	return !!e.node;
 }
-function Zi(e, t, n) {
+function aa(e, t, n) {
 	if (t) {
 		let n = e.nodeByPath.get(t);
 		if (n) return {
@@ -3784,100 +3879,100 @@ function Zi(e, t, n) {
 		reason: `transform name ${n} was not found`
 	};
 }
-var Qi = (t) => new e.Vector3(-t.x, t.y, t.z), $i = (t) => new e.Quaternion(t.x, -t.y, -t.z, t.w), ea = Qi, ta = $i;
-function na(t) {
-	return t.updateMatrixWorld(!0), Qi(t.getWorldPosition(new e.Vector3()));
+var oa = (t) => new e.Vector3(-t.x, t.y, t.z), sa = (t) => new e.Quaternion(t.x, -t.y, -t.z, t.w), ca = oa, la = sa;
+function ua(t) {
+	return t.updateMatrixWorld(!0), oa(t.getWorldPosition(new e.Vector3()));
 }
-function ra(t) {
-	return $i(N(t, new e.Quaternion()));
+function da(t) {
+	return sa(N(t, new e.Quaternion()));
 }
-function ia(t) {
+function fa(t) {
 	return new e.Quaternion().setFromEuler(new e.Euler(e.MathUtils.degToRad(t.x), e.MathUtils.degToRad(t.y), e.MathUtils.degToRad(t.z), "YXZ"));
 }
-function aa(t) {
+function pa(t) {
 	let n = new e.Euler().setFromQuaternion(t, "YXZ");
 	return new e.Vector3(e.MathUtils.radToDeg(n.x), e.MathUtils.radToDeg(n.y), e.MathUtils.radToDeg(n.z));
 }
-function oa(t, n) {
+function ma(t, n) {
 	let r = t.clone().normalize(), i = new e.Vector3().crossVectors(n, r);
 	if (i.lengthSq() < 1e-12) return new e.Quaternion().setFromUnitVectors(new e.Vector3(0, 0, 1), r);
 	i = i.normalize();
 	let a = new e.Vector3().crossVectors(r, i);
 	return new e.Quaternion().setFromRotationMatrix(new e.Matrix4().makeBasis(i, a, r));
 }
-function sa(t, n) {
+function ha(t, n) {
 	let r = t.reduce((e, t) => e + Math.max(0, t.weight), 0);
 	if (r <= 0) return null;
 	let i = new e.Vector3();
 	for (let e of t) {
 		let t = Math.max(0, e.weight);
 		if (t <= 0) continue;
-		let a = na(e.node);
-		n && a.add(n(e, ra(e.node))), i.addScaledVector(a, t / r);
+		let a = ua(e.node);
+		n && a.add(n(e, da(e.node))), i.addScaledVector(a, t / r);
 	}
 	return i;
 }
-function ca(e, t) {
+function ga(e, t) {
 	let n = null, r = 0;
 	for (let i of e) {
 		let e = Math.max(0, i.weight);
-		e <= 0 || (n = ga(n, t(i), r, e), r += e);
+		e <= 0 || (n = wa(n, t(i), r, e), r += e);
 	}
 	return n;
 }
-function la(t, n, r, i, a = null) {
-	let o = e.MathUtils.clamp(ya(n.weight) ?? 1, 0, 1), s = ra(t.parent);
+function _a(t, n, r, i, a = null) {
+	let o = e.MathUtils.clamp(Da(n.weight) ?? 1, 0, 1), s = da(t.parent);
 	if (i) {
-		let r = s.clone().invert().multiply(i).normalize(), a = ya(n.rotationAxis) ?? Vi, c = n.rotationAtRest ? ha(n.rotationAtRest) : aa($i(t.quaternion)), l = aa(r), u = ia(new e.Vector3(ma(a, 1) ? l.x : c.x, ma(a, 2) ? l.y : c.y, ma(a, 4) ? l.z : c.z)), d = ia(c).slerp(u, o).normalize();
-		t.quaternion.copy(ta(d));
+		let r = s.clone().invert().multiply(i).normalize(), a = Da(n.rotationAxis) ?? Yi, c = n.rotationAtRest ? Ca(n.rotationAtRest) : pa(sa(t.quaternion)), l = pa(r), u = fa(new e.Vector3(Sa(a, 1) ? l.x : c.x, Sa(a, 2) ? l.y : c.y, Sa(a, 4) ? l.z : c.z)), d = fa(c).slerp(u, o).normalize();
+		t.quaternion.copy(la(d));
 	}
 	if (r && t.parent) {
 		t.parent.updateMatrixWorld(!0);
-		let i = Qi(t.parent.worldToLocal(ea(r)));
+		let i = oa(t.parent.worldToLocal(ca(r)));
 		a && i.add(a);
-		let s = ya(n.translationAxis) ?? Vi, c = n.translationAtRest ? ha(n.translationAtRest) : Qi(t.position), l = new e.Vector3(ma(s, 1) ? i.x : c.x, ma(s, 2) ? i.y : c.y, ma(s, 4) ? i.z : c.z);
-		t.position.copy(ea(c.clone().lerp(l, o)));
+		let s = Da(n.translationAxis) ?? Yi, c = n.translationAtRest ? Ca(n.translationAtRest) : oa(t.position), l = new e.Vector3(Sa(s, 1) ? i.x : c.x, Sa(s, 2) ? i.y : c.y, Sa(s, 4) ? i.z : c.z);
+		t.position.copy(ca(c.clone().lerp(l, o)));
 	}
 	t.updateMatrix(), t.updateMatrixWorld(!0);
 }
-function ua(t, n, r) {
-	let i = sa(n, (t, n) => t.translationOffset ? Qi(t.translationOffset).applyQuaternion(n) : new e.Vector3()), a = ca(n, (t) => ra(t.node).multiply(t.rotationOffset ? ia(t.rotationOffset) : new e.Quaternion()));
-	return !i || !a ? !1 : (la(t, r, i, a), !0);
+function va(t, n, r) {
+	let i = ha(n, (t, n) => t.translationOffset ? oa(t.translationOffset).applyQuaternion(n) : new e.Vector3()), a = ga(n, (t) => da(t.node).multiply(t.rotationOffset ? fa(t.rotationOffset) : new e.Quaternion()));
+	return !i || !a ? !1 : (_a(t, r, i, a), !0);
 }
-function da(t, n, r) {
-	let i = sa(n);
-	return i ? (la(t, r, i, null, r.translationOffset ? ha(r.translationOffset) : new e.Vector3()), !0) : !1;
+function ya(t, n, r) {
+	let i = ha(n);
+	return i ? (_a(t, r, i, null, r.translationOffset ? Ca(r.translationOffset) : new e.Vector3()), !0) : !1;
 }
-function fa(e, t, n) {
-	let r = ca(t, (e) => ra(e.node));
+function ba(e, t, n) {
+	let r = ga(t, (e) => da(e.node));
 	if (!r) return !1;
-	let i = va(n.rotationOffset);
-	return i && r.multiply(ia(i)), la(e, n, null, r), !0;
+	let i = Ea(n.rotationOffset);
+	return i && r.multiply(fa(i)), _a(e, n, null, r), !0;
 }
-function pa(t, n, r, i) {
-	let a = sa(n);
+function xa(t, n, r, i) {
+	let a = ha(n);
 	if (!a) return !1;
-	let o = na(t), s = a.clone().sub(o);
+	let o = ua(t), s = a.clone().sub(o);
 	if (s.lengthSq() < 1e-12) return !1;
-	let c = ha(r.aimVector ?? {
+	let c = Ca(r.aimVector ?? {
 		x: 0,
 		y: 0,
 		z: 1
-	}), l = ha(r.upVector ?? {
+	}), l = Ca(r.upVector ?? {
 		x: 0,
 		y: 1,
 		z: 0
-	}), u = ha(r.worldUpVector ?? {
+	}), u = Ca(r.worldUpVector ?? {
 		x: 0,
 		y: 1,
 		z: 0
 	}), d;
-	switch (ya(r.worldUpType) ?? 0) {
+	switch (Da(r.worldUpType) ?? 0) {
 		case 1:
-			d = i ? na(i).sub(o) : new e.Vector3(0, 1, 0);
+			d = i ? ua(i).sub(o) : new e.Vector3(0, 1, 0);
 			break;
 		case 2:
-			d = i ? u.clone().applyQuaternion(ra(i)) : u.clone();
+			d = i ? u.clone().applyQuaternion(da(i)) : u.clone();
 			break;
 		case 3:
 			d = u.clone();
@@ -3887,48 +3982,48 @@ function pa(t, n, r, i) {
 			break;
 		default: d = new e.Vector3(0, 1, 0);
 	}
-	let f = d ? oa(s, d).multiply(oa(c, l).invert()) : new e.Quaternion().setFromUnitVectors(c.clone().normalize(), s.clone().normalize()), p = va(r.rotationOffset);
-	return p && f.multiply(ia(p)), la(t, r, null, f.normalize()), !0;
+	let f = d ? ma(s, d).multiply(ma(c, l).invert()) : new e.Quaternion().setFromUnitVectors(c.clone().normalize(), s.clone().normalize()), p = Ea(r.rotationOffset);
+	return p && f.multiply(fa(p)), _a(t, r, null, f.normalize()), !0;
 }
-function ma(e, t) {
+function Sa(e, t) {
 	return (e & t) !== 0;
 }
-function ha(t) {
-	return Cn(t, new e.Vector3());
+function Ca(t) {
+	return jn(t, new e.Vector3());
 }
-function ga(e, t, n, r) {
+function wa(e, t, n, r) {
 	if (!e) return t.clone();
 	let i = t.clone();
 	return e.dot(i) < 0 && i.set(-i.x, -i.y, -i.z, -i.w), e.slerp(i, r / (n + r)).normalize();
 }
-function _a(t, n) {
-	return !t || typeof t != "object" ? null : En(Cn(t, new e.Vector3())).multiplyScalar(n);
+function Ta(t, n) {
+	return !t || typeof t != "object" ? null : Pn(jn(t, new e.Vector3())).multiplyScalar(n);
 }
-function va(t) {
-	return !t || typeof t != "object" ? null : Cn(t, new e.Vector3());
+function Ea(t) {
+	return !t || typeof t != "object" ? null : jn(t, new e.Vector3());
 }
 function X(e) {
 	return typeof e == "string" ? e : null;
 }
-function ya(e) {
+function Da(e) {
 	return typeof e == "number" && Number.isFinite(e) ? e : null;
 }
 //#endregion
 //#region src/engine/unityPrefabRuntime.ts
-function ba(e, t) {
+function Oa(e, t) {
 	let n = t, r = e.nodeByPath.get("body/Position");
 	if (!r) throw Error("Official CharacterModel PositionNote 'body/Position' was not found.");
 	return r.scale.setScalar(n), r.updateMatrix(), e.root.updateMatrixWorld(!0), r;
 }
-function xa(e) {
+function ka(e) {
 	return e && typeof e == "object" ? e : {};
 }
 function Z(e) {
-	let t = xa(xa(xa(e).pjskSpringBone).runtimeUnitySetup);
+	let t = ka(ka(ka(e).pjskSpringBone).runtimeUnitySetup);
 	return t.version === "0414" ? t : null;
 }
-function Sa(e) {
-	let t = xa(xa(e).nativeMeshes);
+function Aa(e) {
+	let t = ka(ka(e).nativeMeshes);
 	return t.version === "0414" ? t : null;
 }
 function Q(e, t) {
@@ -3942,24 +4037,24 @@ function Q(e, t) {
 	}
 	return null;
 }
-function Ca(e) {
+function ja(e) {
 	return e?.parentingMode === "model_combine_setup";
 }
-function wa(e, t) {
+function Ma(e, t) {
 	e.parent && e.parent.remove(e), t.add(e), e.updateMatrix();
 }
-function Ta(e, t) {
-	for (; e.children.length > 0;) wa(e.children[0], t);
+function Na(e, t) {
+	for (; e.children.length > 0;) Ma(e.children[0], t);
 }
-function Ea(e, t, n) {
+function Pa(e, t, n) {
 	let r = [], i = /* @__PURE__ */ new Set();
 	for (let a of t) {
 		let t = e.get(a);
-		t && !i.has(t) && (wa(t, n), i.add(t), r.push(a));
+		t && !i.has(t) && (Ma(t, n), i.add(t), r.push(a));
 	}
 	return r;
 }
-function Da(e, t, n) {
+function Fa(e, t, n) {
 	e.parent && e.parent.remove(e);
 	let r = /* @__PURE__ */ new Set();
 	e.traverse((e) => {
@@ -3968,42 +4063,42 @@ function Da(e, t, n) {
 	for (let [e, n] of t.entries()) r.has(n) && t.delete(e);
 	for (let [e, t] of n.entries()) r.has(t) && n.delete(e);
 }
-function Oa(e, t, n) {
+function Ia(e, t, n) {
 	for (let [r, i] of e.entries()) i === t && e.set(r, n);
 }
-function ka(e, t, n, r, i) {
+function La(e, t, n, r, i) {
 	let a = r.childMoveSuffix ?? "_target", o = r.parentRootPath, s = r.childRootPath, c = Q(t, [r.parentCombineNodeAPath ?? r.parentAttachPath]), l = Q(t, [r.parentCombineNodeBPath]), u = Q(t, [r.childCombineNodeAPath ?? r.childOriginPath]), d = Q(t, [r.childCombineNodeBPath]), f = Q(t, [s]);
 	if (!o || !s || !c || !l || !u || !d || !f) throw Error("Official model_combine_setup paths were not fully resolved.");
-	Ta(l.node, d.node);
+	Na(l.node, d.node);
 	let p = c.node.parent, m = u.node.parent;
 	if (p && m) {
-		for (let e of [...p.children]) e.name.endsWith(a) && wa(e, m);
-		let e = Ea(t, i, t.get(o) ?? p), n = i.filter((t) => !e.includes(t));
+		for (let e of [...p.children]) e.name.endsWith(a) && Ma(e, m);
+		let e = Pa(t, i, t.get(o) ?? p), n = i.filter((t) => !e.includes(t));
 		if (n.length > 0) throw Error(`Official model_combine_setup head renderers were not moved: ${n.join(", ")}.`);
 		let c = `${s}/${r.faceRendererName ?? "Face"}`;
 		if (!e.includes(c)) throw Error(`Official model_combine_setup face renderer '${c}' was not moved.`);
-		wa(u.node, p);
+		Ma(u.node, p);
 	}
-	return u.node.position.copy(c.node.position), u.node.quaternion.copy(c.node.quaternion), u.node.scale.copy(c.node.scale), u.node.updateMatrix(), d.node.position.copy(l.node.position), d.node.quaternion.copy(l.node.quaternion), d.node.scale.copy(l.node.scale), d.node.updateMatrix(), Oa(n, c.node, u.node), Oa(n, l.node, d.node), Da(l.node, t, n), Da(c.node, t, n), Da(f.node, t, n), t.set(c.path, u.node), t.set(l.path, d.node), r.parentAttachPath && t.set(r.parentAttachPath, u.node), r.parentCombineNodeBPath && t.set(r.parentCombineNodeBPath, d.node), e.updateMatrixWorld(!0), {
+	return u.node.position.copy(c.node.position), u.node.quaternion.copy(c.node.quaternion), u.node.scale.copy(c.node.scale), u.node.updateMatrix(), d.node.position.copy(l.node.position), d.node.quaternion.copy(l.node.quaternion), d.node.scale.copy(l.node.scale), d.node.updateMatrix(), Ia(n, c.node, u.node), Ia(n, l.node, d.node), Fa(l.node, t, n), Fa(c.node, t, n), Fa(f.node, t, n), t.set(c.path, u.node), t.set(l.path, d.node), r.parentAttachPath && t.set(r.parentAttachPath, u.node), r.parentCombineNodeBPath && t.set(r.parentCombineNodeBPath, d.node), e.updateMatrixWorld(!0), {
 		bodyNodeA: c,
 		bodyNodeB: l,
 		faceNodeA: u,
 		faceNodeB: d
 	};
 }
-function Aa(e, t) {
+function Ra(e, t) {
 	return [...new Set((Z(e)?.prefabGraphs ?? []).flatMap((e) => e.renderers ?? []).filter((e) => e.typeName === "SkinnedMeshRenderer").map((e) => e.transformPath).filter((e) => !!(e && e.startsWith(`${t}/`))))];
 }
-function ja(e, t) {
+function za(e, t) {
 	let n = Z(e), r = n?.bodyHeadAssembly?.childRootPath, i = t.rendererTransformPath;
 	if (!r || !i?.startsWith(`${r}/`)) return !1;
 	let a = (n.prefabGraphs ?? []).flatMap((e) => e.renderers ?? []).filter((e) => e.transformPath === i);
 	return a.length > 0 && a.every((e) => e.typeName !== "SkinnedMeshRenderer");
 }
-function Ma(e, t) {
-	return (Sa(e)?.meshes ?? []).find((e) => e.rendererTransformPath?.startsWith(`${t}/`) && typeof e.rootBonePath == "string")?.rootBonePath ?? null;
+function Ba(e, t) {
+	return (Aa(e)?.meshes ?? []).find((e) => e.rendererTransformPath?.startsWith(`${t}/`) && typeof e.rootBonePath == "string")?.rootBonePath ?? null;
 }
-function Na(e, t) {
+function Va(e, t) {
 	let n = e, r = /* @__PURE__ */ new Set();
 	for (; typeof n.parentPathId == "number";) {
 		if (typeof n.pathId == "number" && !r.add(n.pathId)) throw Error(`Runtime prefab graph contains a parent cycle at PathID ${n.pathId}.`);
@@ -4013,17 +4108,17 @@ function Na(e, t) {
 	}
 	return n;
 }
-function Pa(e) {
+function Ha(e) {
 	let t = e.transformPath?.split("/")[0];
 	return t ? `${e.runtimePartIndex ?? -1}:${t}` : null;
 }
-function Fa(e, t) {
+function Ua(e, t) {
 	let n = /* @__PURE__ */ new Map();
-	for (let r of Sa(e)?.meshes ?? []) {
+	for (let r of Aa(e)?.meshes ?? []) {
 		if (typeof r.rendererTransformPathId != "number") continue;
 		let e = t.get(r.rendererTransformPathId);
 		if (!e) continue;
-		let i = Na(e, t), a = Pa(e);
+		let i = Va(e, t), a = Ha(e);
 		if (!a || typeof i.pathId != "number") continue;
 		let o = n.get(a);
 		if (o !== void 0 && o !== i.pathId) throw Error(`Runtime native meshes reference multiple Unity prefab instances for '${a}' (${o}, ${i.pathId}).`);
@@ -4031,17 +4126,17 @@ function Fa(e, t) {
 	}
 	return n;
 }
-function Ia(t, n) {
+function Wa(t, n) {
 	let r = n.prefabGraphs ?? [], i = new e.Group();
 	i.name = "UnityPrefabSourceRoot", i.userData.pjskUnityPrefabSourceGraph = !0;
 	let a = /* @__PURE__ */ new Map(), o = /* @__PURE__ */ new Map(), s = /* @__PURE__ */ new Map(), c = /* @__PURE__ */ new Map();
 	for (let e of r) for (let t of e.transforms ?? []) typeof t.pathId != "number" || !t.transformPath || (o.set(t.pathId, t), c.set(t.transformPath, (c.get(t.transformPath) ?? 0) + 1));
-	let l = new Set([...c.entries()].filter(([, e]) => e > 1).map(([e]) => e)), u = Fa(t, o);
+	let l = new Set([...c.entries()].filter(([, e]) => e > 1).map(([e]) => e)), u = Ua(t, o);
 	for (let t of r) for (let n of t.transforms ?? []) {
 		if (typeof n.pathId != "number" || !n.transformPath) continue;
 		let t = new e.Object3D();
-		t.name = n.name ?? n.transformPath.split("/").pop() ?? `path_${n.pathId}`, t.userData.pjskTransformPath = n.transformPath, t.userData.pjskRuntimePartIndex = n.runtimePartIndex, t.userData.pjskPoseRoot = n.poseRoot ?? null, t.position.copy(En(Cn(n.localPosition, new e.Vector3()))), t.quaternion.copy(On(wn(n.localRotation))), t.scale.copy(Cn(n.localScale, new e.Vector3(1, 1, 1))), t.updateMatrix(), a.set(n.pathId, t);
-		let r = Na(n, o), i = u.get(Pa(n) ?? "");
+		t.name = n.name ?? n.transformPath.split("/").pop() ?? `path_${n.pathId}`, t.userData.pjskTransformPath = n.transformPath, t.userData.pjskRuntimePartIndex = n.runtimePartIndex, t.userData.pjskPoseRoot = n.poseRoot ?? null, t.position.copy(Pn(jn(n.localPosition, new e.Vector3()))), t.quaternion.copy(In(Mn(n.localRotation))), t.scale.copy(jn(n.localScale, new e.Vector3(1, 1, 1))), t.updateMatrix(), a.set(n.pathId, t);
+		let r = Va(n, o), i = u.get(Ha(n) ?? "");
 		(i === void 0 || i === r.pathId || !s.has(n.transformPath)) && s.set(n.transformPath, t);
 	}
 	for (let [e, t] of a.entries()) {
@@ -4055,18 +4150,18 @@ function Ia(t, n) {
 		ambiguousPaths: l
 	};
 }
-function La(e, t) {
+function Ga(e, t) {
 	let n = Z(e);
 	if (!n?.prefabGraphs?.length) return null;
-	let { root: r, nodeByPath: i, nodeByPathId: a, ambiguousPaths: o } = Ia(e, n);
+	let { root: r, nodeByPath: i, nodeByPathId: a, ambiguousPaths: o } = Wa(e, n);
 	r.updateMatrixWorld(!0);
-	let s = za(r), c = n.bodyHeadAssembly;
-	if (!Ca(c)) throw Error("Runtime package must provide the official model_combine_setup body/head assembly.");
+	let s = qa(r), c = n.bodyHeadAssembly;
+	if (!ja(c)) throw Error("Runtime package must provide the official model_combine_setup body/head assembly.");
 	let l = Q(i, [c.parentAttachPath]), u = Q(i, [c.childRootPath]), d = Q(i, [c.childOriginPath]);
 	if (!l || !u || !d) throw Error("Official model_combine_setup body/head roots were not fully resolved.");
-	let f = Aa(e, u.path), p = ka(r, i, a, c, f), m = Ma(e, l.path.split("/")[0]), h = m ? i.get(m) ?? null : null, g = za(r), _ = s - g, v = [];
+	let f = Ra(e, u.path), p = La(r, i, a, c, f), m = Ba(e, l.path.split("/")[0]), h = m ? i.get(m) ?? null : null, g = qa(r), _ = s - g, v = [];
 	if (t) {
-		let e = Bi(t);
+		let e = Ji(t);
 		for (let [t, n] of i.entries()) {
 			let r = e.get(t);
 			r && v.push({
@@ -4094,8 +4189,8 @@ function La(e, t) {
 		targetPaths: v.slice(0, 24).map((e) => String(e.source.userData.pjskTransformPath ?? e.source.name)),
 		keyNodes: {
 			runtimeMount: null,
-			modelCombineBodyNeck: eo(p.bodyNodeA.node, r),
-			modelCombineFaceNeck: eo(p.faceNodeA.node, r)
+			modelCombineBodyNeck: co(p.bodyNodeA.node, r),
+			modelCombineFaceNeck: co(p.faceNodeA.node, r)
 		}
 	};
 	return {
@@ -4116,10 +4211,10 @@ function La(e, t) {
 		debug: y
 	};
 }
-function Ra(e) {
+function Ka(e) {
 	let t = Z(e);
 	if (!t?.prefabGraphs?.length) return null;
-	let { root: n, nodeByPath: r, nodeByPathId: i, ambiguousPaths: a } = Ia(e, t), o = za(n);
+	let { root: n, nodeByPath: r, nodeByPathId: i, ambiguousPaths: a } = Wa(e, t), o = qa(n);
 	return {
 		root: n,
 		nodeByPath: r,
@@ -4160,14 +4255,14 @@ function Ra(e) {
 		}
 	};
 }
-function za(e) {
+function qa(e) {
 	let t = 0;
 	return e.traverse((n) => {
 		n !== e && (t += 1);
 	}), t;
 }
-function Ba(t, n) {
-	let r = Sa(n), i = r?.meshes ?? [];
+function Ja(t, n) {
+	let r = Aa(n), i = r?.meshes ?? [];
 	if (!r || i.length === 0) return {
 		meshCount: 0,
 		boneCount: t.nodeByPath.size,
@@ -4179,7 +4274,7 @@ function Ba(t, n) {
 	let a = 0, o = 0, s = [], c = [...r.warnings ?? []], l = [];
 	t.root.updateMatrixWorld(!0);
 	for (let r of i) {
-		if (ja(n, r)) continue;
+		if (za(n, r)) continue;
 		let i = r.rendererTransformPath, u = r.bonePaths ?? [], d = r.bonePathIds ?? [], f = [
 			...typeof r.rendererTransformPathId == "number" ? [] : [i],
 			...d.length === 0 ? u : [],
@@ -4201,7 +4296,7 @@ function Ba(t, n) {
 			c.push(e), l.push(e);
 			continue;
 		}
-		let m = Wa(r);
+		let m = Qa(r);
 		if (!m) {
 			let e = `Native mesh '${r.meshPath ?? r.meshName ?? "<unnamed>"}' skipped: invalid geometry payload.`;
 			c.push(e), l.push(e);
@@ -4234,14 +4329,14 @@ function Ba(t, n) {
 		} else y = new e.Mesh(m, g);
 		if (y.name = _, y.userData.pjskNativeUnityMesh = !0, y.userData.pjskPartKind = r.partKind ?? null, y.userData.pjskRendererPathId = r.rendererPathId ?? null, y.frustumCulled = !1, p.add(y), b) {
 			t.root.updateMatrixWorld(!0), b.updateMatrixWorld(!0);
-			let n = Ua(r, x.length, c), a = b.matrixWorld.clone();
+			let n = Za(r, x.length, c), a = b.matrixWorld.clone();
 			if (n.length > 0) {
 				let e = a.clone().invert();
 				for (let t of n) t.multiply(e);
 			}
 			let o = new e.Skeleton(x, n.length > 0 ? n : void 0);
 			n.length === 0 && o.calculateInverses(), b.bind(o, a);
-			let l = Va(x[0], o.boneInverses[0]), u = Ha(x, o.boneInverses), d = i && t.headRendererPaths.includes(i) ? t.bodyRootBone ?? null : typeof r.rootBonePathId == "number" ? t.nodeByPathId.get(r.rootBonePathId) ?? null : r.rootBonePath ? t.nodeByPath.get(r.rootBonePath) ?? null : null;
+			let l = Ya(x[0], o.boneInverses[0]), u = Xa(x, o.boneInverses), d = i && t.headRendererPaths.includes(i) ? t.bodyRootBone ?? null : typeof r.rootBonePathId == "number" ? t.nodeByPathId.get(r.rootBonePathId) ?? null : r.rootBonePath ? t.nodeByPath.get(r.rootBonePath) ?? null : null;
 			y.userData.pjskUnityRootBone = d, s.push({
 				meshName: _,
 				partKind: r.partKind ?? null,
@@ -4266,14 +4361,14 @@ function Ba(t, n) {
 		warnings: c
 	};
 }
-function Va(t, n) {
+function Ya(t, n) {
 	let r = new e.Matrix4().multiplyMatrices(t.matrixWorld, n), i = new e.Vector3(), a = new e.Quaternion(), o = new e.Vector3();
 	return r.decompose(i, a, o), {
-		restTranslation: Qa(i),
-		restScale: Qa(o)
+		restTranslation: oo(i),
+		restScale: oo(o)
 	};
 }
-function Ha(t, n) {
+function Xa(t, n) {
 	if (t.length < 2 || n.length !== t.length) return {
 		restMatrixSpread: 0,
 		restMatrixSpreadBonePath: null
@@ -4292,7 +4387,7 @@ function Ha(t, n) {
 		restMatrixSpreadBonePath: s > 0 ? o : null
 	};
 }
-function Ua(t, n, r) {
+function Za(t, n, r) {
 	let i = t.boneInverseBindMatrices ?? [];
 	if (n === 0 || i.length === 0) {
 		if (n === 0 && i.length === 0) return [];
@@ -4303,7 +4398,7 @@ function Ua(t, n, r) {
 	for (let t = 0; t < i.length; t += 16) a.push(new e.Matrix4().fromArray(i, t));
 	return a;
 }
-function Wa(t) {
+function Qa(t) {
 	let n = t.positions ?? [];
 	if (n.length === 0 || n.length % 3 != 0) return null;
 	let r = n.length / 3, i = new e.BufferGeometry();
@@ -4359,27 +4454,27 @@ function $(e, t, n) {
 	let r = e[t] ?? [];
 	if (r.length !== 0 && r.length !== n) throw Error(`Native mesh '${e.meshPath ?? e.meshName ?? "<unnamed>"}' attribute '${t}' has ${r.length} values; expected ${n}.`);
 }
-function Ga(e, t, n, r) {
+function $a(e, t, n, r) {
 	e.root.updateMatrixWorld(!0);
-	let i = r ? r.update() : Ui(e, Z(t)?.constraintSetup, n);
+	let i = r ? r.update() : Zi(e, Z(t)?.constraintSetup, n);
 	for (let t of e.meshCarrierBindings) t.target.position.copy(t.source.position), t.target.quaternion.copy(t.source.quaternion), t.target.scale.copy(t.source.scale), t.target.updateMatrix();
 	return e.root.updateMatrixWorld(!0), i;
 }
-function Ka(e, t, n) {
+function eo(e, t, n) {
 	let r = Z(t)?.constraintSetup;
-	return r ? new Hi(e, r, n) : null;
+	return r ? new Xi(e, r, n) : null;
 }
-function qa(e, t, n) {
+function to(e, t, n) {
 	let r = {
 		...e?.debug ?? n,
-		setupVersion: Ja(t)
+		setupVersion: no(t)
 	};
 	if (!e) return r;
 	let i = e.root;
 	i.updateMatrixWorld(!0);
-	let a = Z(t)?.bodyHeadAssembly, o = Bi(i), s = (t) => {
-		let n = Q(e.nodeByPath, t) ?? Ya(o, t);
-		return n ? eo(n.node, i) : null;
+	let a = Z(t)?.bodyHeadAssembly, o = Ji(i), s = (t) => {
+		let n = Q(e.nodeByPath, t) ?? ro(o, t);
+		return n ? co(n.node, i) : null;
 	}, c = s([
 		a?.parentCombineNodeAPath ?? "",
 		e.debug.sourcePath ?? "",
@@ -4401,7 +4496,7 @@ function qa(e, t, n) {
 	]), p = s(["mdl_chr_IDL_A_00/Position", "mdl_chr_IDL_A_00/Position_4"]);
 	return {
 		...r,
-		positionRoots: to(i),
+		positionRoots: lo(i),
 		assemblyDistances: {
 			bodyNeckToFaceNeck: null,
 			bodyHeadToFaceHead: null
@@ -4417,10 +4512,10 @@ function qa(e, t, n) {
 		}
 	};
 }
-function Ja(e) {
+function no(e) {
 	return Z(e) ? "0414" : "";
 }
-function Ya(e, t) {
+function ro(e, t) {
 	for (let n of t) {
 		let t = e.get(n);
 		if (t) return {
@@ -4430,22 +4525,22 @@ function Ya(e, t) {
 	}
 	return null;
 }
-function Xa(e) {
+function io(e) {
 	return e.replace(/_\d+$/, "");
 }
-function Za(e, t, n = !1) {
+function ao(e, t, n = !1) {
 	let r = [], i = e;
-	for (; i && i !== t;) i.name && r.push(n ? Xa(i.name) : i.name), i = i.parent;
+	for (; i && i !== t;) i.name && r.push(n ? io(i.name) : i.name), i = i.parent;
 	return r.reverse().join("/");
 }
-function Qa(e) {
+function oo(e) {
 	return {
 		x: Number(e.x.toFixed(5)),
 		y: Number(e.y.toFixed(5)),
 		z: Number(e.z.toFixed(5))
 	};
 }
-function $a(e) {
+function so(e) {
 	return {
 		x: Number(e.x.toFixed(5)),
 		y: Number(e.y.toFixed(5)),
@@ -4453,28 +4548,28 @@ function $a(e) {
 		w: Number(e.w.toFixed(5))
 	};
 }
-function eo(t, n) {
+function co(t, n) {
 	t.updateMatrixWorld(!0);
 	let r = new e.Vector3(), i = new e.Quaternion(), a = new e.Vector3(0, 0, 1);
 	return t.getWorldPosition(r), N(t, i), a.applyQuaternion(i).normalize(), {
-		path: Za(t, n),
-		canonicalPath: Za(t, n, !0),
-		parentPath: t.parent && t.parent !== n ? Za(t.parent, n) : null,
+		path: ao(t, n),
+		canonicalPath: ao(t, n, !0),
+		parentPath: t.parent && t.parent !== n ? ao(t.parent, n) : null,
 		destroyed: t.userData.pjskModelCombineDestroyed === !0,
-		localPosition: Qa(t.position),
-		localQuaternion: $a(t.quaternion),
-		worldPosition: Qa(r),
-		worldQuaternion: $a(i),
-		worldForward: Qa(a)
+		localPosition: oo(t.position),
+		localQuaternion: so(t.quaternion),
+		worldPosition: oo(r),
+		worldQuaternion: so(i),
+		worldForward: oo(a)
 	};
 }
-function to(e) {
+function lo(e) {
 	let t = [], n = /* @__PURE__ */ new Set();
 	return e.updateMatrixWorld(!0), e.traverse((r) => {
 		if (r === e || !r.name || n.has(r)) return;
-		let i = Za(r, e, !0), a = i === "face/Position", o = i === "body/Position", s = i.endsWith("/Position") && i.split("/").some((e) => e.startsWith("mdl_chr_"));
-		!a && !o && !s || (n.add(r), t.push(eo(r, e)));
+		let i = ao(r, e, !0), a = i === "face/Position", o = i === "body/Position", s = i.endsWith("/Position") && i.split("/").some((e) => e.startsWith("mdl_chr_"));
+		!a && !o && !s || (n.add(r), t.push(co(r, e)));
 	}), t;
 }
 //#endregion
-export { St as A, pn as C, It as D, Zt as E, r as F, i as I, n as L, ne as M, h as N, Rt as O, s as P, yn as S, Qt as T, On as _, Ba as a, bn as b, Bi as c, Ln as d, Gn as f, sr as g, cr as h, Ka as i, Je as j, Ct as k, wr as l, $n as m, Ra as n, qa as o, tr as p, La as r, Ga as s, ba as t, Rr as u, N as v, Gt as w, vn as x, Tn as y };
+export { bt as A, _n as C, It as D, Zt as E, r as F, i as I, n as L, C as M, h as N, Rt as O, s as P, Dn as S, Qt as T, In as _, Ja as a, On as b, Ji as c, Gn as d, $n as f, hr as g, gr as h, eo as i, Ke as j, xt as k, Mr as l, sr as m, Ka as n, to as o, lr as p, Ga as r, $a as s, Oa as t, Kr as u, N as v, Gt as w, En as x, Nn as y };

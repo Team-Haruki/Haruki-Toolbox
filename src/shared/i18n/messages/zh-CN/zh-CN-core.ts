@@ -924,11 +924,12 @@ export default {
       "experimental": {
         "title": "实验功能",
         "note": "测试中的功能，效果可能不完整",
-        "borrowHair": "借用其他角色的默认发型",
-        "borrowHairTitle": "其他角色的默认发型",
+        "borrowHair": "借用其他角色的发型",
+        "borrowHairTitle": "其他角色的发型",
         "borrowHairHint": "按本角色默认发色重新上色",
+        "loadingHairs": "正在读取发型…",
         "approximateHint": "本角色是渐变或双色发，重新上色只是近似效果",
-        "borrowedHairCaption": "{name}的默认发型（借用）"
+        "borrowedHairCaption": "{name}的发型（借用）"
       },
       "filters": {
         "count": "{count} 件",

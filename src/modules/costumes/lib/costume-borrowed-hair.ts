@@ -1,5 +1,5 @@
 /**
- * Experimental: wear another character's default hairstyle, recoloured by the 3D engine with the palette of the
+ * Experimental: wear another character's hairstyle, recoloured by the 3D engine with the colours of the
  * current character's own default hair (the recipe's `hairFromCharacterId`). Heads share one size within a gender,
  * so only characters of the same gender lend their hair for now (Mizuki, "secret" in the master, counts as female).
  */
@@ -13,11 +13,6 @@ export const MULTI_TONE_HAIR_CHARACTER_IDS: ReadonlySet<number> = new Set([2, 11
 
 /** The 26 game characters. */
 const GAME_CHARACTER_IDS = Array.from({ length: 26 }, (_, index) => index + 1)
-
-/** The costume thumbnail of a character's default hair (`thumbnail/costume/hair_default_05`). */
-export function defaultHairThumbnail(characterId: number): string {
-  return `hair_default_${String(characterId).padStart(2, "0")}`
-}
 
 /** The head size group of a gameCharacters gender: Mizuki ("secret") has the female head. */
 function headGroup(gender: string | undefined): string | undefined {
