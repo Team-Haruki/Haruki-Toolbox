@@ -1,4 +1,4 @@
-import { A as e, C as t, D as n, E as r, F as i, I as a, L as o, M as s, N as c, P as l, T as u, _ as d, a as f, b as p, c as m, i as h, l as g, n as _, r as v, s as y, t as b, v as x, x as S } from "./unityPrefabRuntime-DEi-E8FP.js";
+import { A as e, C as t, D as n, E as r, F as i, I as a, L as o, M as s, N as c, P as l, T as u, _ as d, a as f, b as p, c as m, i as h, l as g, n as _, r as v, s as y, t as b, v as x, x as S } from "./unityPrefabRuntime-CWVh8HCp.js";
 import * as C from "three";
 import { CompressedArrayTexture as w, CompressedCubeTexture as T, CompressedTexture as ee, Data3DTexture as te, DataTexture as E, FileLoader as ne, FloatType as D, HalfFloatType as re, LinearFilter as ie, LinearMipmapLinearFilter as ae, LinearSRGBColorSpace as oe, Loader as se, NoColorSpace as ce, RGBAFormat as le, RGBA_ASTC_4x4_Format as ue, RGBA_ASTC_6x6_Format as de, RGBA_BPTC_Format as fe, RGBA_ETC2_EAC_Format as pe, RGBA_PVRTC_4BPPV1_Format as me, RGBA_S3TC_DXT1_Format as he, RGBA_S3TC_DXT3_Format as ge, RGBA_S3TC_DXT5_Format as _e, RGB_BPTC_UNSIGNED_Format as ve, RGB_ETC1_Format as ye, RGB_ETC2_Format as be, RGB_PVRTC_4BPPV1_Format as xe, RGB_S3TC_DXT1_Format as Se, RGFormat as Ce, RedFormat as we, SRGBColorSpace as Te, UnsignedByteType as O } from "three";
 //#region src/data/costumeShopLights.ts
@@ -439,7 +439,7 @@ var nt = 1, rt = class {
 			contentId: this.id
 		};
 		if (typeof Worker > "u") {
-			this.inPlace ??= import("./originalPartWorker-UrK6R38Q.js").then((e) => (e.registerOriginalHost(this.id, this.host), e));
+			this.inPlace ??= import("./originalPartWorker-BbrsDZw4.js").then((e) => (e.registerOriginalHost(this.id, this.host), e));
 			try {
 				return {
 					id: 0,
