@@ -16,7 +16,8 @@ import type { RankBorderMasterHonor, RankBorderMasterHonorGroup } from "@/module
  *         tw/kr/cn: flat `resourceBoxDetails` rows keyed by `resourceBoxId`
  *       → honors (resourceType `honor`, `resourceId` = honor id)
  *           event honors (`honor_top_*`) draw on `honorGroups.backgroundAssetbundleName`
- *       → generic resources (jewel, coin, material, tickets…) as type + quantity
+ *       → generic resources (jewel, coin, material, tickets…) as type + quantity,
+ *         named from their own master table and drawn with their thumbnail
  */
 
 export const EVENT_RANKING_REWARD_PURPOSE = "event_ranking_reward"
@@ -53,17 +54,61 @@ export type EventRewardResource = {
   quantity: number
 }
 
+/** The master file that names the resources of a type (`id` → `name`). */
+export const EVENT_REWARD_NAME_FILES = {
+  material: "materials",
+  skill_practice_ticket: "skillPracticeTickets",
+  practice_ticket: "practiceTickets",
+  boost_item: "boostItems",
+} as const
+
+/**
+ * The thumbnail of a reward resource, relative to a region's asset root, or
+ * `null` for a type that has none (frames, stamps…): those stay text.
+ */
+export function resolveEventRewardIconPath(resourceType: string, resourceId: number | null): string | null {
+  switch (resourceType) {
+    case "jewel":
+    case "paid_jewel":
+      return "startapp/thumbnail/common_material/jewel.png"
+    case "coin":
+    case "virtual_coin":
+      return `startapp/thumbnail/common_material/${resourceType}.png`
+    case "material":
+      return resourceId != null && resourceId > 0 ? `startapp/thumbnail/material/material${resourceId}.png` : null
+    case "skill_practice_ticket":
+    case "practice_ticket":
+      return resourceId != null && resourceId > 0 ? `startapp/thumbnail/${resourceType}/ticket${resourceId}.png` : null
+    case "boost_item":
+      return resourceId != null && resourceId > 0 ? `startapp/thumbnail/boost_item/boost_item${resourceId}.png` : null
+    default:
+      return null
+  }
+}
+
 export type EventRewardsIndex = {
   honors: Map<number, EventRewardHonor>
   /** resourceBoxId → contents, restricted to event ranking reward boxes. */
   boxes: Map<number, EventRewardResource[]>
+  /** `${resourceType}:${resourceId}` → the resource's own name ("Wish Piece"), where a master table has one. */
+  names: Map<string, string>
   /** False when the region ships neither box file (cn): contents are unknown. */
   hasBoxData: boolean
 }
 
 export type EventRankingReward =
   | { kind: "honor"; key: string; honor: EventRewardHonor; level: number | null; quantity: number }
-  | { kind: "resource"; key: string; resourceType: string; resourceId: number | null; quantity: number }
+  | {
+      kind: "resource"
+      key: string
+      resourceType: string
+      resourceId: number | null
+      quantity: number
+      /** The resource's own name, or `null` when only its type is known. */
+      name: string | null
+      /** See `resolveEventRewardIconPath`. */
+      iconPath: string | null
+    }
 
 export type EventRankingRewardRow = EventRankingRewardRange & {
   rewards: EventRankingReward[]
@@ -177,12 +222,26 @@ function collectFlatBoxResources(boxes: Map<number, EventRewardResource[]>, rawD
   }
 }
 
+function buildResourceNames(files: Record<string, unknown>): Map<string, string> {
+  const names = new Map<string, string>()
+  for (const [resourceType, file] of Object.entries(EVENT_REWARD_NAME_FILES)) {
+    for (const record of normalizeCatalogRecords(files[file])) {
+      const id = normalizeCatalogNumber(record.id)
+      const name = normalizeCatalogString(record.name)
+      if (id != null && name) {
+        names.set(`${resourceType}:${id}`, name)
+      }
+    }
+  }
+  return names
+}
+
 export function buildEventRewardsIndex(files: Record<string, unknown>): EventRewardsIndex {
   const honors = buildHonors(files.honors, buildHonorGroups(files.honorGroups))
   const boxes = new Map<number, EventRewardResource[]>()
   collectEmbeddedBoxResources(boxes, files.resourceBoxes)
   collectFlatBoxResources(boxes, files.resourceBoxDetails)
-  return { honors, boxes, hasBoxData: boxes.size > 0 }
+  return { honors, boxes, names: buildResourceNames(files), hasBoxData: boxes.size > 0 }
 }
 
 export function resolveEventRankingRewards(
@@ -208,6 +267,8 @@ export function resolveEventRankingRewards(
           resourceType: resource.resourceType,
           resourceId: resource.resourceId,
           quantity: resource.quantity,
+          name: index.names.get(`${resource.resourceType}:${resource.resourceId}`) ?? null,
+          iconPath: resolveEventRewardIconPath(resource.resourceType, resource.resourceId),
         })
       })
     }

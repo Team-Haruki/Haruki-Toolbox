@@ -184,6 +184,7 @@ export default {
         "material": "素材",
         "boost_item": "體力道具",
         "stamp": "表情",
+        "player_frame": "頭像框",
         "honor_background": "稱號背景",
         "honor_word": "稱號文字",
         "virtual_item": "虛擬道具",

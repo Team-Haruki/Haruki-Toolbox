@@ -2111,9 +2111,91 @@ export default {
       "cropAspect": "裁剪比例",
       "cropFree": "自由",
       "undo": "撤销上一步",
+      "redo": "重做",
       "reset": "还原为原图",
       "saveOriginal": "保存原图",
-      "saveEdited": "保存编辑后的图片",
+      "export": "导出",
+      "apply": "应用",
+      "done": "完成",
+      "moveSelection": "移动选区",
+      "resizeSelection": "调整选区",
+      "moveText": "移动文字",
+      "resetValue": "归零",
+      "straighten": "校正",
+      "angle": "角度",
+      "adjust": "调整",
+      "adjustments": {
+        "brightness": "亮度",
+        "contrast": "对比度",
+        "saturation": "饱和度",
+        "temperature": "色温"
+      },
+      "look": "滤镜",
+      "looks": {
+        "none": "无",
+        "grayscale": "黑白",
+        "sepia": "怀旧",
+        "invert": "反色"
+      },
+      "mask": "遮挡",
+      "maskKind": "遮挡方式",
+      "maskKinds": {
+        "pixelate": "马赛克",
+        "blur": "模糊"
+      },
+      "strength": "强度",
+      "draw": "标注",
+      "drawTool": "标注工具",
+      "drawTools": {
+        "pen": "画笔",
+        "arrow": "箭头",
+        "rect": "矩形",
+        "ellipse": "椭圆"
+      },
+      "color": "颜色",
+      "colors": {
+        "red": "红色",
+        "yellow": "黄色",
+        "green": "绿色",
+        "blue": "蓝色",
+        "white": "白色",
+        "black": "黑色"
+      },
+      "lineWidth": "粗细",
+      "lineWidths": {
+        "small": "细",
+        "medium": "中",
+        "large": "粗"
+      },
+      "text": "文字",
+      "textPlaceholder": "输入文字",
+      "textSize": "字号",
+      "textStyle": "样式",
+      "bold": "粗体",
+      "italic": "斜体",
+      "textAlign": "对齐",
+      "textAligns": {
+        "left": "左对齐",
+        "center": "居中",
+        "right": "右对齐"
+      },
+      "textFont": "字体",
+      "textFonts": {
+        "sans": "黑体",
+        "serif": "宋体",
+        "mono": "等宽"
+      },
+      "textEffect": "效果",
+      "textEffects": {
+        "outline": "描边",
+        "plate": "底色",
+        "none": "无"
+      },
+      "textRotation": "旋转",
+      "exportFormat": "格式",
+      "exportQuality": "质量",
+      "exportSize": "尺寸",
+      "exportFailed": "导出失败",
       "zoom": "缩放",
       "zoomIn": "放大",
       "zoomOut": "缩小",

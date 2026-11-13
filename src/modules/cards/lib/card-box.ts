@@ -189,6 +189,25 @@ export function groupCardsByCharacter(
   return [...groups.values()].sort((a, b) => a.key - b.key)
 }
 
+/**
+ * The part of a group shown at once when groups page their own cards: `page`
+ * brought into range, how many pages there are, and the slice of the group's
+ * cards on that page. Without a `size` the whole group is one page.
+ */
+export function resolveGroupPage(
+  count: number,
+  size: number | null,
+  page: number,
+): { page: number; totalPages: number; start: number; end: number } {
+  if (size == null || !(size > 0) || count <= size) {
+    return { page: 1, totalPages: 1, start: 0, end: count }
+  }
+  const totalPages = Math.ceil(count / size)
+  const current = Math.min(totalPages, Math.max(1, Number.isFinite(page) ? Math.floor(page) : 1))
+  const start = (current - 1) * size
+  return { page: current, totalPages, start, end: Math.min(count, start + size) }
+}
+
 /** Groups cards into per-attribute sections following the canonical attr order. */
 export function groupCardsByAttr(
   cards: readonly CatalogMasterCard[],

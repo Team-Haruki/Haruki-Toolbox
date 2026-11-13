@@ -1,53 +1,43 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from "vue"
-import { useEventListener, useScrollLock } from "@vueuse/core"
+import { computed, nextTick, onBeforeUnmount, ref, shallowRef, useTemplateRef, watch } from "vue"
+import { useElementSize, useEventListener, useScrollLock } from "@vueuse/core"
 import { useI18n } from "vue-i18n"
+import { LucideExternalLink, LucideLoader2, LucideTriangleAlert, LucideX, LucideZoomIn, LucideZoomOut } from "lucide-vue-next"
 import {
-  LucideCheck,
-  LucideCrop,
-  LucideDownload,
-  LucideExternalLink,
-  LucideFlipHorizontal2,
-  LucideFlipVertical2,
-  LucideImageDown,
-  LucideListRestart,
-  LucideLoader2,
-  LucideRotateCcw,
-  LucideRotateCw,
-  LucideTriangleAlert,
-  LucideUndo2,
-  LucideX,
-  LucideZoomIn,
-  LucideZoomOut,
-} from "lucide-vue-next"
-import {
-  IMAGE_VIEW_FIT,
+  EMPTY_IMAGE_EDIT_HISTORY,
   IMAGE_ZOOM_STEP,
   MAX_IMAGE_ZOOM,
   MIN_IMAGE_ZOOM,
-  clampImagePan,
+  canRedoImageEdit,
+  canUndoImageEdit,
+  fitImageSize,
   formatImageZoom,
-  zoomImageView,
-  type ImageView,
-} from "@/lib/image-view"
-import {
-  CROP_ASPECTS,
-  CROP_HANDLES,
-  adjustCropRect,
-  adjustCropRectWithAspect,
-  fitCropRectToAspect,
   initialCropRect,
-  resolveCropAspectRatio,
-  isFullImageRect,
-  resolveEditedFileName,
-  resolveEditedImageSize,
+  loadImageSource,
+  pushImageEdit,
+  redoImageEdit,
+  resetImageEdit,
   resolveImageFileName,
-  type CropAspectKey,
-  type CropHandle,
+  saveBlob,
+  undoImageEdit,
+  type ImageEditHistory,
   type ImageEditOp,
   type ImageRect,
-  type ImageSize,
-} from "@/lib/image-edit"
+} from "image-edit-kit"
+import { initialMaskRect, resolveHistoryShortcut, type ImageLightboxMode } from "@/lib/image-lightbox"
+import { useImageEditCanvas } from "./image-lightbox/composables/useImageEditCanvas"
+import { useImageStageView } from "./image-lightbox/composables/useImageStageView"
+import LightboxAdjustMode from "./image-lightbox/LightboxAdjustMode.vue"
+import LightboxCropMode from "./image-lightbox/LightboxCropMode.vue"
+import LightboxDrawMode from "./image-lightbox/LightboxDrawMode.vue"
+import LightboxExportMode from "./image-lightbox/LightboxExportMode.vue"
+import LightboxMainToolbar from "./image-lightbox/LightboxMainToolbar.vue"
+import LightboxMaskMode from "./image-lightbox/LightboxMaskMode.vue"
+import LightboxModeShell from "./image-lightbox/LightboxModeShell.vue"
+import LightboxRegionOverlay from "./image-lightbox/LightboxRegionOverlay.vue"
+import LightboxStraightenMode from "./image-lightbox/LightboxStraightenMode.vue"
+import LightboxTextMode from "./image-lightbox/LightboxTextMode.vue"
+import LightboxToolButton from "./image-lightbox/LightboxToolButton.vue"
 
 export type ImageLightboxItem = {
   /** Tab label (Normal / Trained, Banner / Logo…). */
@@ -60,15 +50,19 @@ export type ImageLightboxItem = {
 /**
  * Full-screen image viewer and light editor. It is its own layer over the
  * page, not a framed dialog: the picture fills the screen, with the item tabs
- * and close button on top and one toolbar below — rotate either way, mirror
- * either way, crop, undo / reset, save the original file, save the picture
- * as edited (PNG). The picture zooms (wheel, the buttons, a pinch, a double
- * click) and drags around once it is larger than the screen.
+ * and close button on top and one bar of tools below. The picture zooms
+ * (wheel, the buttons, a pinch, a double click) and drags around once it is
+ * larger than the screen.
+ *
+ * Rotating and mirroring apply at once. Crop, straighten, adjust, mask, draw,
+ * text and export are modes: each replaces the bar with its own controls
+ * (`image-lightbox/Lightbox*Mode.vue`), with a panel above it when they need
+ * more than a row, and is previewed on the picture until it is confirmed.
  *
  * The picture is fetched once (the asset hosts allow cross-origin reads) and
- * every edit is replayed from it onto a canvas, so saving always starts from
- * the original pixels. ← / → switch items, Escape leaves the crop, then
- * closes.
+ * every edit is an operation replayed from it by image-edit-kit, so undo,
+ * redo and saving always start from the original pixels. ← / → switch items,
+ * Escape leaves the mode, then closes.
  */
 const props = withDefaults(defineProps<{
   items: readonly ImageLightboxItem[]
@@ -85,10 +79,12 @@ const index = defineModel<number>("index", { default: 0 })
 
 const { t } = useI18n()
 
-const layerRef = ref<HTMLElement | null>(null)
-const canvasRef = ref<HTMLCanvasElement | null>(null)
-const frameRef = ref<HTMLElement | null>(null)
-const stageRef = ref<HTMLElement | null>(null)
+const layer = useTemplateRef<HTMLElement>("layer")
+const stage = useTemplateRef<HTMLElement>("stage")
+const canvas = useTemplateRef<HTMLCanvasElement>("canvas")
+const plainFrame = useTemplateRef<HTMLElement>("plainFrame")
+const editFrame = useTemplateRef<HTMLElement>("editFrame")
+const drawMode = useTemplateRef<InstanceType<typeof LightboxDrawMode>>("drawMode")
 
 const current = computed(() => props.items[Math.min(Math.max(0, index.value), Math.max(0, props.items.length - 1))] ?? null)
 const candidates = computed(() => (current.value?.sources ?? []).filter((url): url is string => typeof url === "string" && url !== ""))
@@ -103,19 +99,18 @@ const state = ref<LoadState>("idle")
 const source = shallowRef<ImageBitmap | null>(null)
 const originalBlob = shallowRef<Blob | null>(null)
 const originalUrl = ref<string | null>(null)
-const ops = ref<ImageEditOp[]>([])
-const cropRect = ref<ImageRect | null>(null)
-const saving = ref(false)
-let loadToken = 0
+const history = shallowRef<ImageEditHistory>(EMPTY_IMAGE_EDIT_HISTORY)
+const mode = ref<ImageLightboxMode>("none")
+/** The rectangle selected on the picture while cropping or masking. */
+const region = ref<ImageRect | null>(null)
+const regionRatio = ref<number | null>(null)
+let loading: AbortController | null = null
 
-const sourceSize = computed<ImageSize | null>(() => (source.value ? { width: source.value.width, height: source.value.height } : null))
-const editedSize = computed<ImageSize | null>(() => (sourceSize.value ? resolveEditedImageSize(sourceSize.value, ops.value) : null))
-const cropping = computed(() => cropRect.value != null)
-const edited = computed(() => ops.value.length > 0)
-const busy = computed(() => state.value !== "ready" || saving.value)
-const cropApplicable = computed(() => (
-  cropRect.value != null && editedSize.value != null && !isFullImageRect(cropRect.value, editedSize.value)
-))
+const { base, baseSize, displaySize, draft } = useImageEditCanvas({ canvas, source, ops: () => history.value.ops })
+
+const ready = computed(() => state.value === "ready")
+const edited = computed(() => history.value.ops.length > 0)
+const originalName = computed(() => resolveImageFileName(originalUrl.value))
 
 function releaseSource() {
   source.value?.close()
@@ -125,346 +120,117 @@ function releaseSource() {
 }
 
 async function load() {
-  const token = ++loadToken
+  loading?.abort()
+  const controller = new AbortController()
+  loading = controller
   releaseSource()
-  ops.value = []
-  cropRect.value = null
+  leaveMode()
+  history.value = EMPTY_IMAGE_EDIT_HISTORY
   if (!open.value || candidates.value.length === 0) {
     state.value = candidates.value.length === 0 && open.value ? "error" : "idle"
     return
   }
   state.value = "loading"
-  for (const url of candidates.value) {
-    try {
-      const response = await fetch(url)
-      if (!response.ok) {
-        continue
-      }
-      const blob = await response.blob()
-      const bitmap = await createImageBitmap(blob)
-      if (token !== loadToken) {
-        bitmap.close()
-        return
-      }
-      source.value = bitmap
-      originalBlob.value = blob
-      originalUrl.value = url
-      state.value = "ready"
-      return
-    } catch {
-      // Network or decode failure: try the next candidate.
-    }
-    if (token !== loadToken) {
-      return
-    }
-  }
-  state.value = "plain"
-}
-
-/** The original with every operation so far replayed onto it. */
-function renderEdited(bitmap: ImageBitmap, operations: readonly ImageEditOp[]): HTMLCanvasElement {
-  let canvas = document.createElement("canvas")
-  canvas.width = bitmap.width
-  canvas.height = bitmap.height
-  canvas.getContext("2d")?.drawImage(bitmap, 0, 0)
-
-  for (const op of operations) {
-    const next = document.createElement("canvas")
-    const context = next.getContext("2d")
-    if (!context) {
-      break
-    }
-    if (op.kind === "rotate") {
-      next.width = canvas.height
-      next.height = canvas.width
-      context.translate(next.width / 2, next.height / 2)
-      context.rotate((op.turns * Math.PI) / 2)
-      context.drawImage(canvas, -canvas.width / 2, -canvas.height / 2)
-    } else if (op.kind === "flip") {
-      next.width = canvas.width
-      next.height = canvas.height
-      if (op.axis === "horizontal") {
-        context.translate(next.width, 0)
-        context.scale(-1, 1)
-      } else {
-        context.translate(0, next.height)
-        context.scale(1, -1)
-      }
-      context.drawImage(canvas, 0, 0)
-    } else {
-      next.width = op.rect.width
-      next.height = op.rect.height
-      context.drawImage(canvas, op.rect.x, op.rect.y, op.rect.width, op.rect.height, 0, 0, op.rect.width, op.rect.height)
-    }
-    canvas = next
-  }
-  return canvas
-}
-
-function paint() {
-  const target = canvasRef.value
-  const bitmap = source.value
-  if (!target || !bitmap) {
+  const loaded = await loadImageSource(candidates.value, { signal: controller.signal })
+  if (controller.signal.aborted) {
+    loaded?.bitmap.close()
     return
   }
-  const rendered = renderEdited(bitmap, ops.value)
-  target.width = rendered.width
-  target.height = rendered.height
-  target.getContext("2d")?.drawImage(rendered, 0, 0)
+  if (!loaded) {
+    state.value = "plain"
+    return
+  }
+  source.value = loaded.bitmap
+  originalBlob.value = loaded.blob
+  originalUrl.value = loaded.url
+  state.value = "ready"
 }
-
-watch([source, ops, canvasRef], () => {
-  void nextTick(paint)
-}, { deep: true })
 
 watch([open, () => candidates.value.join("\n")], () => {
   void load()
 })
 
-// A new picture, or one whose shape just changed, starts from the fit view.
-watch([source, () => `${editedSize.value?.width}x${editedSize.value?.height}`], resetView)
+// ---- Zoom and pan; while drawing, one pointer belongs to the mode.
+const stageView = useImageStageView({
+  stage,
+  frame: computed(() => (state.value === "plain" ? plainFrame.value : editFrame.value)),
+  enabled: () => state.value === "ready" || state.value === "plain",
+  doubleClickZoom: () => mode.value === "none" || mode.value === "straighten" || mode.value === "adjust" || mode.value === "export",
+  drag: () => (mode.value === "draw" ? drawMode.value?.drag ?? null : null),
+})
+const { view, zoomed, panning } = stageView
 
-// ---- Zoom and pan. `scale` 1 fits the stage; the offset is in screen pixels.
-const view = ref<ImageView>(IMAGE_VIEW_FIT)
-const zoomed = computed(() => view.value.scale > MIN_IMAGE_ZOOM)
-const viewStyle = computed(() => ({
-  transform: `translate(${view.value.x}px, ${view.value.y}px) scale(${view.value.scale})`,
+// The picture is sized from the room the stage really has: a mode's panel takes some of it away.
+const { width: stageWidth, height: stageHeight } = useElementSize(stage)
+/** Kept clear above and below the picture, in screen pixels. */
+const STAGE_MARGIN = 8
+const stageRoom = computed(() => (stageWidth.value > 0 && stageHeight.value > STAGE_MARGIN * 2
+  ? { maxWidth: stageWidth.value, maxHeight: stageHeight.value - STAGE_MARGIN * 2 }
+  : null))
+/** The picture's size on screen at scale 1: as large as fits, never enlarged. */
+const frameSize = computed(() => (displaySize.value && stageRoom.value ? fitImageSize(displaySize.value, stageRoom.value) : null))
+const frameStyle = computed(() => ({
+  width: `${frameSize.value?.width ?? 0}px`,
+  height: `${frameSize.value?.height ?? 0}px`,
+  transform: stageView.viewTransform.value,
 }))
 
-function viewSizes() {
-  const frame = frameRef.value
-  const stage = stageRef.value
-  if (!frame || !stage) {
-    return null
-  }
-  return {
-    frame: { width: frame.offsetWidth, height: frame.offsetHeight },
-    stage: { width: stage.clientWidth, height: stage.clientHeight },
-    stageRect: stage.getBoundingClientRect(),
-  }
-}
+// A new picture, or one whose shape just changed, starts from the fit view.
+watch([source, () => `${baseSize.value?.width}x${baseSize.value?.height}`], stageView.resetView)
+// A draft that changes the size, or a panel that changes the stage, must not leave the picture off screen.
+watch([() => `${frameSize.value?.width}x${frameSize.value?.height}`, stageWidth, stageHeight], () => {
+  void nextTick(stageView.clampView)
+})
 
-/** Zooms to `scale`, about a screen point when given (the pointer), else about the centre. */
-function zoomTo(scale: number, clientX?: number, clientY?: number) {
-  const sizes = viewSizes()
-  if (!sizes) {
-    return
-  }
-  const anchor = clientX == null || clientY == null
-    ? { x: 0, y: 0 }
-    : {
-        x: clientX - (sizes.stageRect.left + sizes.stageRect.width / 2),
-        y: clientY - (sizes.stageRect.top + sizes.stageRect.height / 2),
-      }
-  view.value = zoomImageView(view.value, scale, anchor, sizes.frame, sizes.stage)
-}
-
-function resetView() {
-  view.value = IMAGE_VIEW_FIT
-}
-
-function handleWheel(event: WheelEvent) {
-  if (state.value !== "ready" && state.value !== "plain") {
-    return
-  }
-  zoomTo(view.value.scale * Math.exp(-event.deltaY * 0.0015), event.clientX, event.clientY)
-}
-
-function handleDoubleClick(event: MouseEvent) {
-  if (cropping.value) {
-    return
-  }
-  if (zoomed.value) {
-    resetView()
-  } else {
-    zoomTo(2, event.clientX, event.clientY)
-  }
-}
-
-// One pointer drags the picture; two pinch it.
-const pointers = new Map<number, { x: number; y: number }>()
-let panStart: { x: number; y: number; view: ImageView } | null = null
-let pinchStart: { distance: number; scale: number } | null = null
-const panning = ref(false)
-
-function pinchDistance(): number {
-  const [first, second] = [...pointers.values()]
-  return first && second ? Math.hypot(first.x - second.x, first.y - second.y) : 0
-}
-
-function stagePointerDown(event: PointerEvent) {
-  if (event.pointerType === "mouse" && event.button !== 0) {
-    return
-  }
-  pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
-  ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
-  if (pointers.size === 2) {
-    panStart = null
-    pinchStart = { distance: pinchDistance(), scale: view.value.scale }
-  } else if (pointers.size === 1) {
-    panStart = { x: event.clientX, y: event.clientY, view: view.value }
-    panning.value = zoomed.value
-  }
-}
-
-function stagePointerMove(event: PointerEvent) {
-  if (!pointers.has(event.pointerId)) {
-    return
-  }
-  pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
-  if (pinchStart && pointers.size === 2) {
-    const [first, second] = [...pointers.values()]
-    const distance = pinchDistance()
-    if (pinchStart.distance > 0 && distance > 0) {
-      zoomTo(pinchStart.scale * (distance / pinchStart.distance), (first.x + second.x) / 2, (first.y + second.y) / 2)
-    }
-    return
-  }
-  const sizes = viewSizes()
-  if (panStart && sizes && zoomed.value) {
-    view.value = clampImagePan({
-      scale: view.value.scale,
-      x: panStart.view.x + (event.clientX - panStart.x),
-      y: panStart.view.y + (event.clientY - panStart.y),
-    }, sizes.frame, sizes.stage)
-  }
-}
-
-function stagePointerUp(event: PointerEvent) {
-  pointers.delete(event.pointerId)
-  pinchStart = null
-  const remaining = [...pointers.values()][0]
-  panStart = remaining ? { x: remaining.x, y: remaining.y, view: view.value } : null
-  panning.value = false
-}
-
+// ---- Edits and modes.
 function push(op: ImageEditOp) {
-  ops.value = [...ops.value, op]
+  history.value = pushImageEdit(history.value, op)
 }
 
 function undo() {
-  ops.value = ops.value.slice(0, -1)
+  history.value = undoImageEdit(history.value)
+}
+
+function redo() {
+  history.value = redoImageEdit(history.value)
 }
 
 function reset() {
-  ops.value = []
+  history.value = resetImageEdit(history.value)
 }
 
-// The selection's shape: free, or locked to one of the usual ratios.
-const cropAspect = ref<CropAspectKey>("free")
-
-function startCrop() {
-  if (editedSize.value) {
-    cropAspect.value = "free"
-    cropRect.value = initialCropRect(editedSize.value)
-  }
+function setDraft(ops: readonly ImageEditOp[]) {
+  draft.value = ops
 }
 
-function selectCropAspect(key: CropAspectKey) {
-  cropAspect.value = key
-  const ratio = resolveCropAspectRatio(key)
-  if (ratio != null && cropRect.value && editedSize.value) {
-    cropRect.value = fitCropRectToAspect(cropRect.value, ratio, editedSize.value)
-  }
-}
-
-function applyCrop() {
-  if (cropRect.value && cropApplicable.value) {
-    push({ kind: "crop", rect: cropRect.value })
-  }
-  cropRect.value = null
-}
-
-// Dragging the selection: pointer movement in screen pixels, scaled to image
-// pixels by how large the canvas is drawn.
-let drag: { handle: CropHandle; startX: number; startY: number; rect: ImageRect; scale: number } | null = null
-
-function beginDrag(handle: CropHandle, event: PointerEvent) {
-  const frame = frameRef.value
-  if (!cropRect.value || !editedSize.value || !frame) {
+function enterMode(next: ImageLightboxMode) {
+  const size = baseSize.value
+  if (!ready.value || !size) {
     return
   }
-  const width = frame.getBoundingClientRect().width
-  if (width <= 0) {
-    return
-  }
-  event.preventDefault()
-  ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
-  drag = { handle, startX: event.clientX, startY: event.clientY, rect: cropRect.value, scale: editedSize.value.width / width }
+  draft.value = []
+  regionRatio.value = null
+  region.value = next === "crop" ? initialCropRect(size) : next === "mask" ? initialMaskRect(size) : null
+  mode.value = next
 }
 
-function moveDrag(event: PointerEvent) {
-  if (!drag || !editedSize.value) {
-    return
-  }
-  const dx = (event.clientX - drag.startX) * drag.scale
-  const dy = (event.clientY - drag.startY) * drag.scale
-  const ratio = resolveCropAspectRatio(cropAspect.value)
-  cropRect.value = ratio == null
-    ? adjustCropRect(drag.rect, drag.handle, dx, dy, editedSize.value)
-    : adjustCropRectWithAspect(drag.rect, drag.handle, dx, dy, editedSize.value, ratio)
+function leaveMode() {
+  stageView.cancelDrag()
+  mode.value = "none"
+  region.value = null
+  regionRatio.value = null
+  draft.value = []
 }
 
-function endDrag() {
-  drag = null
+function applyOps(ops: readonly ImageEditOp[]) {
+  history.value = ops.reduce((current, op) => pushImageEdit(current, op), history.value)
+  leaveMode()
 }
-
-const cropStyle = computed(() => {
-  const rect = cropRect.value
-  const size = editedSize.value
-  if (!rect || !size) {
-    return undefined
-  }
-  return {
-    left: `${(rect.x / size.width) * 100}%`,
-    top: `${(rect.y / size.height) * 100}%`,
-    width: `${(rect.width / size.width) * 100}%`,
-    height: `${(rect.height / size.height) * 100}%`,
-  }
-})
-
-const HANDLE_CLASS: Record<Exclude<CropHandle, "move">, string> = {
-  nw: "left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize",
-  n: "left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize",
-  ne: "right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-nesw-resize",
-  e: "right-0 top-1/2 translate-x-1/2 -translate-y-1/2 cursor-ew-resize",
-  se: "right-0 bottom-0 translate-x-1/2 translate-y-1/2 cursor-nwse-resize",
-  s: "left-1/2 bottom-0 -translate-x-1/2 translate-y-1/2 cursor-ns-resize",
-  sw: "left-0 bottom-0 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize",
-  w: "left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize",
-}
-
-function download(blob: Blob, name: string) {
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement("a")
-  link.href = url
-  link.download = name
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
-}
-
-const originalName = computed(() => resolveImageFileName(originalUrl.value))
 
 function saveOriginal() {
   if (originalBlob.value) {
-    download(originalBlob.value, originalName.value)
+    saveBlob(originalBlob.value, originalName.value)
   }
-}
-
-function saveEdited() {
-  const bitmap = source.value
-  if (!bitmap || saving.value) {
-    return
-  }
-  saving.value = true
-  renderEdited(bitmap, ops.value).toBlob((blob) => {
-    saving.value = false
-    if (blob) {
-      download(blob, resolveEditedFileName(originalName.value))
-    }
-  }, "image/png")
 }
 
 function selectItem(next: number) {
@@ -486,48 +252,81 @@ watch(open, async (value) => {
   if (value) {
     previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
     await nextTick()
-    layerRef.value?.focus({ preventScroll: true })
+    layer.value?.focus({ preventScroll: true })
   } else {
-    loadToken += 1
+    loading?.abort()
     releaseSource()
+    leaveMode()
+    stageView.releasePointers()
     state.value = "idle"
     previousFocus?.focus({ preventScroll: true })
     previousFocus = null
   }
 })
 
+// A mode swaps the bar's buttons: the one that had focus is gone, so focus goes back to the layer.
+watch(mode, async () => {
+  await nextTick()
+  if (open.value && layer.value && !layer.value.contains(document.activeElement)) {
+    layer.value.focus({ preventScroll: true })
+  }
+})
+
+function isTyping(): boolean {
+  const active = document.activeElement
+  return active instanceof HTMLTextAreaElement || (active instanceof HTMLInputElement && active.type !== "range")
+}
+
 function handleKeydown(event: KeyboardEvent) {
-  if (!open.value) {
+  // A key pressed inside an input method belongs to it (Escape drops its candidate).
+  if (!open.value || event.isComposing) {
     return
   }
   if (event.key === "Escape") {
     event.preventDefault()
-    if (cropping.value) {
-      cropRect.value = null
-    } else {
+    if (mode.value === "none") {
       close()
+    } else {
+      leaveMode()
     }
     return
   }
   if (event.key === "Tab") {
     // Keep Tab inside the layer.
-    const focusable = Array.from(layerRef.value?.querySelectorAll<HTMLElement>("button:not(:disabled), a[href]") ?? [])
-    if (focusable.length === 0) {
+    const root = layer.value
+    // Controls hidden at this width (the zoom buttons on a phone) cannot take focus.
+    const focusable = Array.from(root?.querySelectorAll<HTMLElement>("button:not(:disabled), a[href], input:not(:disabled), textarea:not(:disabled), [tabindex='0']") ?? [])
+      .filter((element) => element.getClientRects().length > 0)
+    if (!root || focusable.length === 0) {
       return
     }
     const first = focusable[0]
     const last = focusable[focusable.length - 1]
     const active = document.activeElement
-    if (event.shiftKey && (active === first || active === layerRef.value)) {
+    const outside = !root.contains(active)
+    if (event.shiftKey && (outside || active === first || active === root)) {
       event.preventDefault()
       last.focus()
-    } else if (!event.shiftKey && active === last) {
+    } else if (!event.shiftKey && (outside || active === last)) {
       event.preventDefault()
       first.focus()
     }
     return
   }
-  if (cropping.value || props.items.length < 2 || event.altKey || event.ctrlKey || event.metaKey) {
+  const shortcut = resolveHistoryShortcut(event)
+  if (shortcut) {
+    // Only where the bar offers undo: a mode's unconfirmed draft is not a step.
+    if (ready.value && !isTyping() && (mode.value === "none" || mode.value === "draw")) {
+      event.preventDefault()
+      if (shortcut === "undo") {
+        undo()
+      } else {
+        redo()
+      }
+    }
+    return
+  }
+  if (mode.value !== "none" || props.items.length < 2 || event.altKey || event.ctrlKey || event.metaKey) {
     return
   }
   const count = props.items.length
@@ -543,30 +342,26 @@ function handleKeydown(event: KeyboardEvent) {
 useEventListener(window, "keydown", handleKeydown)
 
 onBeforeUnmount(() => {
-  loadToken += 1
+  loading?.abort()
   releaseSource()
   scrollLocked.value = false
 })
 
 const heading = computed(() => props.title ?? current.value?.alt ?? current.value?.label ?? "")
-// Each button names its own size and padding: two utilities for the same
-// property on one element would leave the winner to the stylesheet's order.
-const TOOL_BASE_CLASS = "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-white/70 disabled:pointer-events-none disabled:opacity-40"
-const TOOL_QUIET_CLASS = "text-white/90 hover:bg-white/15 hover:text-white"
-const toolClass = `${TOOL_BASE_CLASS} ${TOOL_QUIET_CLASS} h-10 px-3 text-sm`
-const iconToolClass = `${TOOL_BASE_CLASS} ${TOOL_QUIET_CLASS} size-10`
-const smallIconToolClass = `${TOOL_BASE_CLASS} ${TOOL_QUIET_CLASS} size-8`
-const zoomReadoutClass = `${TOOL_BASE_CLASS} ${TOOL_QUIET_CLASS} h-8 min-w-14 px-2 text-xs tabular-nums`
-const aspectToolClass = `${TOOL_BASE_CLASS} h-8 px-2.5 text-xs tabular-nums`
-// The one action to finish with: dark text on a white pill.
-const primaryToolClass = `${TOOL_BASE_CLASS} h-10 bg-white px-3 text-sm text-black hover:bg-white/90`
+const pictureLabel = computed(() => current.value?.alt ?? current.value?.label ?? heading.value)
+const stageCursor = computed(() => {
+  if (mode.value === "draw") {
+    return "cursor-crosshair"
+  }
+  return zoomed.value ? (panning.value ? "cursor-grabbing" : "cursor-grab") : ""
+})
 </script>
 
 <template>
   <Teleport to="body">
     <div
       v-if="open"
-      ref="layerRef"
+      ref="layer"
       role="dialog"
       aria-modal="true"
       :aria-label="heading || t('catalog.lightbox.description')"
@@ -574,14 +369,16 @@ const primaryToolClass = `${TOOL_BASE_CLASS} h-10 bg-white px-3 text-sm text-bla
       class="fixed inset-0 z-50 flex flex-col bg-black text-white outline-none"
       data-testid="image-viewer"
       :data-state="state"
+      :data-mode="mode"
+      :data-ops="history.ops.length"
     >
       <!-- Top: what this is, the item tabs, and the way out. -->
       <div class="flex shrink-0 items-center gap-2 px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-4">
         <div class="min-w-0 flex-1">
           <p class="truncate text-sm font-semibold">{{ heading }}</p>
           <p v-if="description" class="truncate text-[11px] text-white/60">{{ description }}</p>
-          <p v-else-if="editedSize" class="text-[11px] tabular-nums text-white/60" data-testid="image-viewer-size">
-            {{ editedSize.width }} × {{ editedSize.height }}
+          <p v-else-if="displaySize" class="text-[11px] tabular-nums text-white/60" data-testid="image-viewer-size">
+            {{ displaySize.width }} × {{ displaySize.height }}
           </p>
         </div>
         <div
@@ -599,42 +396,39 @@ const primaryToolClass = `${TOOL_BASE_CLASS} h-10 bg-white px-3 text-sm text-bla
               itemIndex === index ? 'bg-white text-black' : 'text-white/80 hover:text-white',
             ]"
             :aria-pressed="itemIndex === index"
-            :disabled="cropping"
+            :disabled="mode !== 'none'"
             @click="selectItem(itemIndex)"
           >
             {{ item.label }}
           </button>
         </div>
         <div class="hidden shrink-0 items-center rounded-full bg-white/10 p-0.5 sm:flex" role="group" :aria-label="t('catalog.lightbox.zoom')">
-          <button type="button" :class="smallIconToolClass" :disabled="view.scale <= MIN_IMAGE_ZOOM" :aria-label="t('catalog.lightbox.zoomOut')" :title="t('catalog.lightbox.zoomOut')" data-testid="image-viewer-zoom-out" @click="zoomTo(view.scale / IMAGE_ZOOM_STEP)">
+          <LightboxToolButton variant="small-icon" :disabled="view.scale <= MIN_IMAGE_ZOOM" :aria-label="t('catalog.lightbox.zoomOut')" :title="t('catalog.lightbox.zoomOut')" data-testid="image-viewer-zoom-out" @click="stageView.zoomTo(view.scale / IMAGE_ZOOM_STEP)">
             <LucideZoomOut class="size-4" />
-          </button>
-          <button type="button" :class="zoomReadoutClass" :disabled="!zoomed" :aria-label="t('catalog.lightbox.zoomReset')" :title="t('catalog.lightbox.zoomReset')" data-testid="image-viewer-zoom-reset" @click="resetView">
+          </LightboxToolButton>
+          <LightboxToolButton variant="readout" :disabled="!zoomed" :aria-label="t('catalog.lightbox.zoomReset')" :title="t('catalog.lightbox.zoomReset')" data-testid="image-viewer-zoom-reset" @click="stageView.resetView">
             {{ formatImageZoom(view.scale) }}
-          </button>
-          <button type="button" :class="smallIconToolClass" :disabled="view.scale >= MAX_IMAGE_ZOOM" :aria-label="t('catalog.lightbox.zoomIn')" :title="t('catalog.lightbox.zoomIn')" data-testid="image-viewer-zoom-in" @click="zoomTo(view.scale * IMAGE_ZOOM_STEP)">
+          </LightboxToolButton>
+          <LightboxToolButton variant="small-icon" :disabled="view.scale >= MAX_IMAGE_ZOOM" :aria-label="t('catalog.lightbox.zoomIn')" :title="t('catalog.lightbox.zoomIn')" data-testid="image-viewer-zoom-in" @click="stageView.zoomTo(view.scale * IMAGE_ZOOM_STEP)">
             <LucideZoomIn class="size-4" />
-          </button>
+          </LightboxToolButton>
         </div>
-        <button type="button" :class="iconToolClass" :aria-label="t('common.close')" :title="t('common.close')" data-testid="image-viewer-close" @click="close">
+        <LightboxToolButton :aria-label="t('common.close')" :title="t('common.close')" data-testid="image-viewer-close" @click="close">
           <LucideX class="size-5" />
-        </button>
+        </LightboxToolButton>
       </div>
 
       <!-- Stage: the picture, as large as fits; zoomed, it drags around. -->
       <div
-        ref="stageRef"
-        :class="[
-          'relative flex min-h-0 flex-1 touch-none items-center justify-center overflow-hidden select-none',
-          zoomed ? (panning ? 'cursor-grabbing' : 'cursor-grab') : '',
-        ]"
+        ref="stage"
+        :class="['relative flex min-h-0 flex-1 touch-none items-center justify-center overflow-hidden select-none', stageCursor]"
         data-testid="image-viewer-stage"
-        @wheel.prevent="handleWheel"
-        @dblclick="handleDoubleClick"
-        @pointerdown="stagePointerDown"
-        @pointermove="stagePointerMove"
-        @pointerup="stagePointerUp"
-        @pointercancel="stagePointerUp"
+        @wheel.prevent="stageView.onWheel"
+        @dblclick="stageView.onDoubleClick"
+        @pointerdown="stageView.onPointerDown"
+        @pointermove="stageView.onPointerMove"
+        @pointerup="stageView.onPointerUp"
+        @pointercancel="stageView.onPointerCancel"
       >
         <div v-if="state === 'loading'" class="flex items-center gap-2 text-sm text-white/70">
           <LucideLoader2 class="size-6 animate-spin" aria-hidden="true" />
@@ -654,141 +448,112 @@ const primaryToolClass = `${TOOL_BASE_CLASS} h-10 bg-white px-3 text-sm text-bla
             {{ t("catalog.lightbox.openInNewTab") }}
           </a>
         </div>
-        <div v-else-if="state === 'plain'" ref="frameRef" class="inline-flex max-h-full max-w-full will-change-transform" :style="viewStyle">
+        <div
+          v-else-if="state === 'plain'"
+          ref="plainFrame"
+          class="inline-flex max-h-full max-w-full will-change-transform"
+          :style="{ transform: stageView.viewTransform.value }"
+        >
           <img
             :src="candidates[0]"
-            :alt="current?.alt ?? current?.label ?? heading"
-            class="max-h-full max-w-full object-contain"
+            :alt="pictureLabel"
+            class="max-w-full object-contain"
             draggable="false"
-            :style="{ maxHeight: 'calc(100dvh - 9.5rem)' }"
+            :style="{ maxHeight: stageRoom ? `${stageRoom.maxHeight}px` : '100%' }"
             @error="state = 'error'"
           >
         </div>
-        <!-- The frame is exactly the drawn picture, so the crop overlay's percentages are the picture's. -->
+        <!-- The frame is exactly the drawn picture, so the selection overlay's percentages are the picture's. -->
         <div
-          v-show="state === 'ready'"
-          :ref="(element) => { if (state !== 'plain') frameRef = element as HTMLElement | null }"
-          class="relative inline-flex max-h-full max-w-full overflow-hidden will-change-transform"
-          :style="viewStyle"
+          v-show="ready && frameSize"
+          ref="editFrame"
+          class="relative shrink-0 overflow-hidden will-change-transform"
+          :style="frameStyle"
           data-testid="image-viewer-frame"
         >
-          <canvas
-            ref="canvasRef"
-            class="block max-h-full max-w-full object-contain"
-            :style="{ maxHeight: 'calc(100dvh - 9.5rem)' }"
-            role="img"
-            :aria-label="current?.alt ?? current?.label ?? heading"
-          />
-          <div v-if="cropRect" class="absolute inset-0 touch-none" data-testid="image-viewer-crop">
-            <div
-              class="absolute cursor-move shadow-[0_0_0_9999px_rgb(0_0_0/0.6)] ring-1 ring-white"
-              :style="cropStyle"
-              @pointerdown.stop="beginDrag('move', $event)"
-              @pointermove="moveDrag"
-              @pointerup="endDrag"
-              @pointercancel="endDrag"
-            >
-              <span class="pointer-events-none absolute inset-x-0 top-1/3 border-t border-white/40" aria-hidden="true" />
-              <span class="pointer-events-none absolute inset-x-0 top-2/3 border-t border-white/40" aria-hidden="true" />
-              <span class="pointer-events-none absolute inset-y-0 left-1/3 border-l border-white/40" aria-hidden="true" />
-              <span class="pointer-events-none absolute inset-y-0 left-2/3 border-l border-white/40" aria-hidden="true" />
-              <span
-                v-for="handle in CROP_HANDLES"
-                :key="handle"
-                :class="['absolute size-4 rounded-full border-2 border-black/40 bg-white pointer-coarse:size-6', HANDLE_CLASS[handle]]"
-                :data-handle="handle"
-                @pointerdown.stop="beginDrag(handle, $event)"
-                @pointermove="moveDrag"
-                @pointerup="endDrag"
-                @pointercancel="endDrag"
-              />
-            </div>
+          <!-- The picture is named on a wrapper: a canvas takes no role of its own, and inside an image it is presentational. -->
+          <div class="size-full" role="img" :aria-label="pictureLabel">
+            <canvas ref="canvas" class="block size-full" />
           </div>
+          <LightboxRegionOverlay
+            v-if="region && baseSize && (mode === 'crop' || mode === 'mask')"
+            v-model:rect="region"
+            :size="baseSize"
+            :ratio="regionRatio"
+            :variant="mode"
+            :data-testid="mode === 'crop' ? 'image-viewer-crop' : 'image-viewer-mask'"
+          />
         </div>
       </div>
 
-      <!-- Tools: one row, scrolling sideways on a phone. -->
+      <!-- Tools: one row, scrolling sideways on a phone; a mode puts its panel above it. -->
       <div class="shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4">
-        <div
-          class="mx-auto flex w-fit max-w-full items-center gap-0.5 overflow-x-auto rounded-full bg-white/10 p-1 backdrop-blur-md"
-          role="toolbar"
-          :aria-label="t('catalog.lightbox.tools')"
-        >
-          <template v-if="cropping">
-            <div class="flex shrink-0 items-center" role="group" :aria-label="t('catalog.lightbox.cropAspect')">
-              <button
-                v-for="aspect in CROP_ASPECTS"
-                :key="aspect.key"
-                type="button"
-                :class="[
-                  aspectToolClass,
-                  cropAspect === aspect.key ? 'bg-white/25 text-white' : 'text-white/70 hover:bg-white/15 hover:text-white',
-                ]"
-                :aria-pressed="cropAspect === aspect.key"
-                :data-aspect="aspect.key"
-                @click="selectCropAspect(aspect.key)"
-              >
-                {{ aspect.key === "free" ? t("catalog.lightbox.cropFree") : aspect.key }}
-              </button>
-            </div>
-            <span class="mx-1 h-5 w-px shrink-0 bg-white/20" aria-hidden="true" />
-            <p class="shrink-0 px-2 text-xs tabular-nums text-white/70" data-testid="image-viewer-crop-size">
-              {{ cropRect?.width }} × {{ cropRect?.height }}
-            </p>
-            <button type="button" :class="toolClass" @click="cropRect = null">
-              <LucideX class="size-4" aria-hidden="true" />
-              {{ t("common.cancel") }}
-            </button>
-            <button type="button" :class="primaryToolClass" :disabled="!cropApplicable" data-testid="image-viewer-crop-apply" @click="applyCrop">
-              <LucideCheck class="size-4" aria-hidden="true" />
-              {{ t("catalog.lightbox.applyCrop") }}
-            </button>
-          </template>
-          <a
-            v-else-if="state === 'plain' && candidates[0]"
-            :href="candidates[0]"
-            target="_blank"
-            rel="noopener noreferrer"
-            :class="toolClass"
-          >
+        <LightboxModeShell v-if="state === 'plain' && candidates[0]" :label="t('catalog.lightbox.tools')" plain>
+          <LightboxToolButton variant="text" :href="candidates[0]">
             <LucideExternalLink class="size-4" aria-hidden="true" />
             {{ t("catalog.lightbox.openInNewTab") }}
-          </a>
-          <template v-else>
-            <button type="button" :class="iconToolClass" :disabled="busy" :aria-label="t('catalog.lightbox.rotateLeft')" :title="t('catalog.lightbox.rotateLeft')" data-testid="image-viewer-rotate-left" @click="push({ kind: 'rotate', turns: -1 })">
-              <LucideRotateCcw class="size-4.5" />
-            </button>
-            <button type="button" :class="iconToolClass" :disabled="busy" :aria-label="t('catalog.lightbox.rotateRight')" :title="t('catalog.lightbox.rotateRight')" data-testid="image-viewer-rotate-right" @click="push({ kind: 'rotate', turns: 1 })">
-              <LucideRotateCw class="size-4.5" />
-            </button>
-            <button type="button" :class="iconToolClass" :disabled="busy" :aria-label="t('catalog.lightbox.flipHorizontal')" :title="t('catalog.lightbox.flipHorizontal')" data-testid="image-viewer-flip-horizontal" @click="push({ kind: 'flip', axis: 'horizontal' })">
-              <LucideFlipHorizontal2 class="size-4.5" />
-            </button>
-            <button type="button" :class="iconToolClass" :disabled="busy" :aria-label="t('catalog.lightbox.flipVertical')" :title="t('catalog.lightbox.flipVertical')" data-testid="image-viewer-flip-vertical" @click="push({ kind: 'flip', axis: 'vertical' })">
-              <LucideFlipVertical2 class="size-4.5" />
-            </button>
-            <button type="button" :class="iconToolClass" :disabled="busy" :aria-label="t('catalog.lightbox.crop')" :title="t('catalog.lightbox.crop')" data-testid="image-viewer-crop-start" @click="startCrop">
-              <LucideCrop class="size-4.5" />
-            </button>
-            <span class="mx-1 h-5 w-px shrink-0 bg-white/20" aria-hidden="true" />
-            <button type="button" :class="iconToolClass" :disabled="busy || !edited" :aria-label="t('catalog.lightbox.undo')" :title="t('catalog.lightbox.undo')" data-testid="image-viewer-undo" @click="undo">
-              <LucideUndo2 class="size-4.5" />
-            </button>
-            <button type="button" :class="iconToolClass" :disabled="busy || !edited" :aria-label="t('catalog.lightbox.reset')" :title="t('catalog.lightbox.reset')" data-testid="image-viewer-reset" @click="reset">
-              <LucideListRestart class="size-4.5" />
-            </button>
-            <span class="mx-1 h-5 w-px shrink-0 bg-white/20" aria-hidden="true" />
-            <button type="button" :class="toolClass" :disabled="state !== 'ready'" data-testid="image-viewer-save-original" @click="saveOriginal">
-              <LucideDownload class="size-4" aria-hidden="true" />
-              {{ t("catalog.lightbox.saveOriginal") }}
-            </button>
-            <button type="button" :class="edited ? primaryToolClass : toolClass" :disabled="busy || !edited" data-testid="image-viewer-save-edited" @click="saveEdited">
-              <LucideLoader2 v-if="saving" class="size-4 animate-spin" aria-hidden="true" />
-              <LucideImageDown v-else class="size-4" aria-hidden="true" />
-              {{ t("catalog.lightbox.saveEdited") }}
-            </button>
-          </template>
-        </div>
+          </LightboxToolButton>
+        </LightboxModeShell>
+        <LightboxCropMode
+          v-else-if="mode === 'crop' && region && baseSize"
+          v-model:rect="region"
+          v-model:ratio="regionRatio"
+          :size="baseSize"
+          @apply="applyOps"
+          @cancel="leaveMode"
+        />
+        <LightboxStraightenMode v-else-if="mode === 'straighten'" @draft="setDraft" @apply="applyOps" @cancel="leaveMode" />
+        <LightboxAdjustMode v-else-if="mode === 'adjust'" @draft="setDraft" @apply="applyOps" @cancel="leaveMode" />
+        <LightboxMaskMode
+          v-else-if="mode === 'mask' && region && baseSize"
+          v-model:rect="region"
+          :size="baseSize"
+          @draft="setDraft"
+          @apply="applyOps"
+          @cancel="leaveMode"
+        />
+        <LightboxDrawMode
+          v-else-if="mode === 'draw' && baseSize"
+          ref="drawMode"
+          :size="baseSize"
+          :frame="editFrame"
+          :shown-width="frameSize?.width ?? null"
+          :can-undo="canUndoImageEdit(history)"
+          @draft="setDraft"
+          @commit="push"
+          @undo="undo"
+          @done="leaveMode"
+        />
+        <LightboxTextMode
+          v-else-if="mode === 'text' && baseSize"
+          :size="baseSize"
+          :frame="editFrame"
+          @draft="setDraft"
+          @apply="applyOps"
+          @cancel="leaveMode"
+        />
+        <LightboxExportMode
+          v-else-if="mode === 'export' && base && baseSize"
+          :source="base"
+          :size="baseSize"
+          :edited="edited"
+          :original-name="originalName"
+          @cancel="leaveMode"
+          @saved="leaveMode"
+        />
+        <LightboxMainToolbar
+          v-else
+          :ready="ready"
+          :edited="edited"
+          :can-undo="canUndoImageEdit(history)"
+          :can-redo="canRedoImageEdit(history)"
+          @op="push"
+          @mode="enterMode"
+          @undo="undo"
+          @redo="redo"
+          @reset="reset"
+          @save-original="saveOriginal"
+        />
       </div>
     </div>
   </Teleport>

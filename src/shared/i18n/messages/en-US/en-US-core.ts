@@ -2111,9 +2111,91 @@ export default {
       "cropAspect": "Crop shape",
       "cropFree": "Free",
       "undo": "Undo the last step",
+      "redo": "Redo",
       "reset": "Back to the original",
       "saveOriginal": "Save original",
-      "saveEdited": "Save edited image",
+      "export": "Export",
+      "apply": "Apply",
+      "done": "Done",
+      "moveSelection": "Move selection",
+      "resizeSelection": "Resize selection",
+      "moveText": "Move text",
+      "resetValue": "Reset to 0",
+      "straighten": "Straighten",
+      "angle": "Angle",
+      "adjust": "Adjust",
+      "adjustments": {
+        "brightness": "Brightness",
+        "contrast": "Contrast",
+        "saturation": "Saturation",
+        "temperature": "Warmth"
+      },
+      "look": "Look",
+      "looks": {
+        "none": "None",
+        "grayscale": "B&W",
+        "sepia": "Sepia",
+        "invert": "Invert"
+      },
+      "mask": "Mask",
+      "maskKind": "Mask style",
+      "maskKinds": {
+        "pixelate": "Mosaic",
+        "blur": "Blur"
+      },
+      "strength": "Strength",
+      "draw": "Draw",
+      "drawTool": "Drawing tool",
+      "drawTools": {
+        "pen": "Pen",
+        "arrow": "Arrow",
+        "rect": "Rectangle",
+        "ellipse": "Ellipse"
+      },
+      "color": "Color",
+      "colors": {
+        "red": "Red",
+        "yellow": "Yellow",
+        "green": "Green",
+        "blue": "Blue",
+        "white": "White",
+        "black": "Black"
+      },
+      "lineWidth": "Line width",
+      "lineWidths": {
+        "small": "Thin",
+        "medium": "Medium",
+        "large": "Thick"
+      },
+      "text": "Text",
+      "textPlaceholder": "Enter text",
+      "textSize": "Text size",
+      "textStyle": "Style",
+      "bold": "Bold",
+      "italic": "Italic",
+      "textAlign": "Alignment",
+      "textAligns": {
+        "left": "Align left",
+        "center": "Center",
+        "right": "Align right"
+      },
+      "textFont": "Font",
+      "textFonts": {
+        "sans": "Sans",
+        "serif": "Serif",
+        "mono": "Mono"
+      },
+      "textEffect": "Effect",
+      "textEffects": {
+        "outline": "Outline",
+        "plate": "Plate",
+        "none": "None"
+      },
+      "textRotation": "Rotate",
+      "exportFormat": "Format",
+      "exportQuality": "Quality",
+      "exportSize": "Size",
+      "exportFailed": "Export failed",
       "zoom": "Zoom",
       "zoomIn": "Zoom in",
       "zoomOut": "Zoom out",

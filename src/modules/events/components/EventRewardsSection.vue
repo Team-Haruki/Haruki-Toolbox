@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import CatalogDetailSection from "@/shared/components/catalog/CatalogDetailSection.vue"
 import CatalogErrorState from "@/shared/components/catalog/CatalogErrorState.vue"
+import SekaiAssetImage from "@/shared/components/SekaiAssetImage.vue"
+import { resolveSekaiGameAssetUrl } from "@/shared/sekai/data-sources"
 import { resolveSekaiEnumLabel } from "@/shared/sekai/labels"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import { useEventRewards } from "@/modules/events/composables/useEventRewards"
@@ -77,9 +79,41 @@ function honorView(reward: Extract<EventRankingReward, { kind: "honor" }>): Rank
   }, { region: props.region, assetEndpoint: props.assetEndpoint })
 }
 
-function resourceLabel(reward: Extract<EventRankingReward, { kind: "resource" }>): string {
-  const name = resolveSekaiEnumLabel({ t, te }, "eventCatalog.rewards.resourceType", reward.resourceType)
-  return reward.quantity > 1 ? `${name} ×${reward.quantity.toLocaleString()}` : name
+type ResourceReward = Extract<EventRankingReward, { kind: "resource" }>
+
+/** The resource's own name ("Wish Piece") where the master data has one, else its type ("Material"). */
+function resourceName(reward: ResourceReward): string {
+  return reward.name ?? resolveSekaiEnumLabel({ t, te }, "eventCatalog.rewards.resourceType", reward.resourceType)
+}
+
+function resourceQuantity(reward: ResourceReward): string {
+  return `×${reward.quantity.toLocaleString()}`
+}
+
+/** Read out and shown on hover: the thumbnail alone does not say what the item is. */
+function resourceLabel(reward: ResourceReward): string {
+  return reward.quantity > 1 ? `${resourceName(reward)} ${resourceQuantity(reward)}` : resourceName(reward)
+}
+
+// A thumbnail that did not load (an item newer than the asset mirror) falls
+// back to the name. Failures are kept by URL: another region or asset host
+// is another picture.
+const missingIcons = ref(new Set<string>())
+
+function resourceIconUrl(reward: ResourceReward): string | null {
+  return reward.iconPath ? resolveSekaiGameAssetUrl(props.region, reward.iconPath, props.assetEndpoint) : null
+}
+
+function resourceIcon(reward: ResourceReward): string | null {
+  const url = resourceIconUrl(reward)
+  return url && !missingIcons.value.has(url) ? url : null
+}
+
+function markIconMissing(reward: ResourceReward) {
+  const url = resourceIconUrl(reward)
+  if (url) {
+    missingIcons.value = new Set(missingIcons.value).add(url)
+  }
 }
 </script>
 
@@ -138,6 +172,25 @@ function resourceLabel(reward: Extract<EventRankingReward, { kind: "resource" }>
                 :aria-label="reward.honor.name"
               >
                 <HonorBadge :honor="honorView(reward)" variant="reward" />
+              </span>
+              <span
+                v-else-if="resourceIcon(reward)"
+                class="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-muted py-0.5 pl-0.5 pr-2.5 text-xs font-medium tabular-nums text-foreground"
+                :title="resourceLabel(reward)"
+                role="img"
+                :aria-label="resourceLabel(reward)"
+                data-testid="event-reward-resource"
+              >
+                <span class="relative size-7 shrink-0 overflow-hidden rounded-md">
+                  <SekaiAssetImage
+                    :sources="[resourceIcon(reward)]"
+                    alt=""
+                    fit="contain"
+                    :shimmer="false"
+                    @exhausted="markIconMissing(reward)"
+                  />
+                </span>
+                {{ resourceQuantity(reward) }}
               </span>
               <Badge v-else variant="muted" size="sm" class="tabular-nums">{{ resourceLabel(reward) }}</Badge>
             </template>
