@@ -126,16 +126,15 @@ async function disposeKernel() {
 }
 
 function applySize() {
-  const host = hostRef.value
-  if (host != null && kernel != null) {
-    const { width, height } = host.getBoundingClientRect()
+  const canvas = canvasRef.value
+  if (canvas != null && kernel != null) {
+    // The canvas's own box (inside the frame's border), so its buffer maps 1:1 onto it.
+    const width = canvas.clientWidth
+    const height = canvas.clientHeight
     if (width > 0 && height > 0) {
-      // The engine multiplies by min(devicePixelRatio, 2). Supersample on
-      // low-DPR displays so the backing store always ends up ~2x the CSS
-      // size — at 1x the world-space toon outlines alias into heavy edges
-      // (the capture service renders at scale 2 for the same reason).
-      const superSample = Math.max(1, Math.min(2, 2 / (window.devicePixelRatio || 1)))
-      kernel.resize(width * superSample, height * superSample)
+      // CSS pixels: the kernel draws at the device pixel ratio, supersampled offscreen, and widens the outline when
+      // the viewer is small.
+      kernel.resize(width, height)
     }
   }
 }
