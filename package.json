@@ -30,6 +30,7 @@
     "clsx": "^2.1.1",
     "fast-uri": "^4.2.1",
     "haruki-sekai-deck-recommend-cpp": "0.5.1",
+    "image-edit-kit": "https://github.com/seiunx-dev/image-edit-kit/releases/download/v0.1.0/image-edit-kit-0.1.0.tgz",
     "lucide-vue-next": "^1.0.0",
     "nanoid": "^6.0.2",
     "pinia": "^4.0.3",

@@ -2111,9 +2111,88 @@ export default {
       "cropAspect": "裁剪比例",
       "cropFree": "自由",
       "undo": "撤銷上一步",
+      "redo": "重做",
       "reset": "還原為原圖",
       "saveOriginal": "儲存原圖",
-      "saveEdited": "儲存編輯後的圖片",
+      "export": "匯出",
+      "apply": "應用",
+      "done": "完成",
+      "resetValue": "歸零",
+      "straighten": "校正",
+      "angle": "角度",
+      "adjust": "調整",
+      "adjustments": {
+        "brightness": "亮度",
+        "contrast": "對比度",
+        "saturation": "飽和度",
+        "temperature": "色溫"
+      },
+      "look": "濾鏡",
+      "looks": {
+        "none": "無",
+        "grayscale": "黑白",
+        "sepia": "懷舊",
+        "invert": "反色"
+      },
+      "mask": "遮擋",
+      "maskKind": "遮擋方式",
+      "maskKinds": {
+        "pixelate": "馬賽克",
+        "blur": "模糊"
+      },
+      "strength": "強度",
+      "draw": "標註",
+      "drawTool": "標註工具",
+      "drawTools": {
+        "pen": "畫筆",
+        "arrow": "箭頭",
+        "rect": "矩形",
+        "ellipse": "橢圓"
+      },
+      "color": "顏色",
+      "colors": {
+        "red": "紅色",
+        "yellow": "黃色",
+        "green": "綠色",
+        "blue": "藍色",
+        "white": "白色",
+        "black": "黑色"
+      },
+      "lineWidth": "粗細",
+      "lineWidths": {
+        "small": "細",
+        "medium": "中",
+        "large": "粗"
+      },
+      "text": "文字",
+      "textPlaceholder": "輸入文字",
+      "textSize": "字號",
+      "textStyle": "樣式",
+      "bold": "粗體",
+      "italic": "斜體",
+      "textAlign": "對齊",
+      "textAligns": {
+        "left": "左對齊",
+        "center": "居中",
+        "right": "右對齊"
+      },
+      "textFont": "字型",
+      "textFonts": {
+        "sans": "黑體",
+        "serif": "宋體",
+        "mono": "等寬"
+      },
+      "textEffect": "效果",
+      "textEffects": {
+        "outline": "描邊",
+        "plate": "底色",
+        "none": "無"
+      },
+      "textRotation": "旋轉",
+      "exportFormat": "格式",
+      "exportQuality": "質量",
+      "exportSize": "尺寸",
+      "exportFailed": "匯出失敗",
       "zoom": "縮放",
       "zoomIn": "放大",
       "zoomOut": "縮小",
