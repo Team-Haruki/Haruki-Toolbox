@@ -142,7 +142,7 @@ function setArtMode(value: AcceptableValue | AcceptableValue[] | undefined) {
 </script>
 
 <template>
-  <CatalogPageShell :title="t('cards.list.title')">
+  <CatalogPageShell :title="t('cards.list.title')" :description="t('cards.list.description')">
     <template #actions>
       <Button as-child variant="outline" size="sm" class="gap-1.5">
         <RouterLink :to="{ name: 'cards.box' }">

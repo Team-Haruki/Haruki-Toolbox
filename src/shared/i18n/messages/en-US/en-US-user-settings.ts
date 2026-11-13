@@ -95,6 +95,8 @@ export default {
       "action": "View the official QQ bot authorization guide"
     },
     "sections": {
+      "accountDescription": "Identity, sign-in and security",
+      "harukiBotDescription": "Let HarukiBot look up your game data",
       "accountTitle": "Account settings",
       "harukiBotTitle": "HarukiBot data authorization"
     },
@@ -163,6 +165,7 @@ export default {
       }
     },
     "kratosFlow": {
+      "description": "You return to account settings after saving",
       "hints": {
         "lastSignInMethod": "This is the only sign-in method. Set a password or add another method before removing it."
       },
@@ -284,6 +287,7 @@ export default {
     "sessions": {
       "title": "Signed-in devices",
       "page": {
+        "description": "See and sign out the devices that are signed in",
         "title": "Signed-in devices",
         "refresh": "Refresh",
         "currentSession": "This device",
@@ -423,6 +427,7 @@ export default {
       }
     },
     "oauthAuthorizations": {
+      "description": "See and revoke third-party apps' access",
       "title": "Authorized applications",
       "refresh": "Refresh",
       "count": "{count} applications",
@@ -462,6 +467,7 @@ export default {
       }
     },
     "gameBinding": {
+      "description": "Manage the game accounts bound to your toolbox account",
       "title": "Game account management",
       "alert": {
         "line1": "A game account on a given server can be bound by only one toolbox user",

@@ -1110,7 +1110,7 @@ export default {
   },
   "sekaiStation": {
     "title": "协力车站",
-    "description": "国服协力房间号。",
+    "description": "实时汇总国服协力房间号。",
     "viewOnSekaiStation": "在Sekai Station中查看",
     "notConfigured": "协力车站暂不可用",
     "connection": {

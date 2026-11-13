@@ -364,6 +364,7 @@ export default {
     }
   },
   "storyPlayer": {
+    "description": "線上閱讀遊戲劇情，畫面與語音來自日服",
     "beta": {
       "title": "測試中",
       "body": "遇到問題或與遊戲內不符，可在{tickets}反饋",

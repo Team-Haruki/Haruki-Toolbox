@@ -54,6 +54,7 @@ export default {
       "allPriorities": "All priorities"
     },
     "list": {
+      "description": "Follow progress and add details when needed",
       "title": "My tickets",
       "createButton": "Create ticket",
       "filterLabel": "Filter by status",
@@ -85,6 +86,7 @@ export default {
       }
     },
     "create": {
+      "description": "Report bugs, account issues or ideas",
       "backButton": "Back to ticket list",
       "title": "Create ticket",
       "submit": "Submit ticket",

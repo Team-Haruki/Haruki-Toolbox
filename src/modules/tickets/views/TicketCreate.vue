@@ -39,7 +39,7 @@ const MESSAGE_ID = TICKET_CREATE_FIELD_IDS.message
 <template>
   <div class="@container mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 py-1 sm:py-2" data-testid="ticket-create">
     <PageHeader
-      :title="t('tickets.create.title')"
+      :title="t('tickets.create.title')" :description="t('tickets.create.description')"
       :back="{ name: 'tickets.list' }"
       :back-label="t('tickets.create.backButton')"
     />

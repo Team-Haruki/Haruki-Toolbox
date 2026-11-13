@@ -3,6 +3,7 @@
 export default {
   "navigationPages": {
     "friendGroups": {
+      "description": "Player group chats for Project SEKAI",
       "title": "Recommended groups",
       "loading": "Loading...",
       "empty": "No recommended groups",
@@ -15,6 +16,7 @@ export default {
       }
     },
     "friendLinks": {
+      "description": "Other useful SEKAI sites",
       "title": "Friend links",
       "loading": "Loading...",
       "empty": "No friend links yet",

@@ -1110,7 +1110,7 @@ export default {
   },
   "sekaiStation": {
     "title": "協力車站",
-    "description": "國服協力房間號。",
+    "description": "即時彙總國服協力房間號。",
     "viewOnSekaiStation": "在Sekai Station中檢視",
     "notConfigured": "協力車站暫不可用",
     "connection": {

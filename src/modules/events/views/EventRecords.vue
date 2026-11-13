@@ -294,7 +294,7 @@ const { refreshing, refresh: reloadAll } = useSuiteRefresh([
   <div class="mx-auto flex w-full min-w-0 max-w-6xl flex-1 flex-col gap-4">
     <!-- Top-aligned like every other page: a short state (error, empty) must
     not float the title to the middle of the viewport. -->
-    <PageHeader :title="t('eventRecords.title')">
+    <PageHeader :title="t('eventRecords.title')" :description="t('eventRecords.description')">
       <template #actions>
         <div class="flex flex-col items-start gap-1.5 sm:items-end">
           <GameAccountSelect capability="suite" />

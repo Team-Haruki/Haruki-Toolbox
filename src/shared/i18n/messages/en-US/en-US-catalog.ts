@@ -386,6 +386,7 @@ export default {
   // storyPlayer — owned by the story module (src/modules/story)
   // ---------------------------------------------------------------------
   "storyPlayer": {
+    "description": "Read the game stories; visuals and voices come from the JP server",
     "beta": {
       "title": "In testing",
       "body": "If something breaks or doesn't match the game, report it in {tickets}",

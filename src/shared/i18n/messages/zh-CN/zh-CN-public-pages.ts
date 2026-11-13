@@ -3,6 +3,7 @@
 export default {
   "navigationPages": {
     "friendGroups": {
+      "description": "PJSK 相关的玩家交流群",
       "title": "推荐群聊",
       "loading": "载入中...",
       "empty": "暂无推荐群聊",
@@ -15,6 +16,7 @@ export default {
       }
     },
     "friendLinks": {
+      "description": "其他好用的 Sekai 站点",
       "title": "友情链接",
       "loading": "载入中...",
       "empty": "暂无友情链接",

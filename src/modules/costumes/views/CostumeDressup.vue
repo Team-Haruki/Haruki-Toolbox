@@ -355,7 +355,10 @@ watch(() => route.query, () => {
 <template>
   <div class="mx-auto flex w-full min-w-0 max-w-7xl flex-1 flex-col gap-4">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <h1 class="text-2xl font-bold">{{ t("costumes.dressup.title") }}</h1>
+      <div>
+        <h1 class="text-2xl font-bold">{{ t("costumes.dressup.title") }}</h1>
+        <p class="text-sm text-muted-foreground">{{ t("costumes.dressup.description") }}</p>
+      </div>
       <!-- The shared catalog selector: names the server in use and the
            "following" state exactly like /cards, /events, /gachas, /music. -->
       <CatalogRegionSelect />

@@ -379,7 +379,7 @@ const langOptions = computed(() => [
 
 <template>
   <div class="flex w-full flex-col gap-3 p-3 sm:p-4">
-    <PageHeader :title="t('storyPlayer.title')">
+    <PageHeader :title="t('storyPlayer.title')" :description="t('storyPlayer.description')">
       <template #actions>
         <div class="flex items-center gap-2 pr-1">
           <Switch :id="voiceSwitchId" v-model="voiceOn" />

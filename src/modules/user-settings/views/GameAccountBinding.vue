@@ -85,7 +85,7 @@ const {
   <div class="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-0 py-4">
     <PageHeader
       size="compact"
-      :title="t('userSettings.gameBinding.title')"
+      :title="t('userSettings.gameBinding.title')" :description="t('userSettings.gameBinding.description')"
     >
       <template #actions>
         <Button @click="startAdd">

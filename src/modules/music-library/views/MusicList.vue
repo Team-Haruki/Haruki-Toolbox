@@ -203,7 +203,7 @@ function handleViewUpdate(value: string) {
 </script>
 
 <template>
-  <CatalogPageShell :title="t('musicLibrary.list.title')" class="py-4">
+  <CatalogPageShell :title="t('musicLibrary.list.title')" :description="t('musicLibrary.list.description')" class="py-4">
     <template #toolbar>
       <div class="flex min-w-0 flex-1 flex-col gap-1">
         <CatalogSearchField

@@ -386,6 +386,7 @@ export default {
   // storyPlayer — owned by the story module (src/modules/story)
   // ---------------------------------------------------------------------
   "storyPlayer": {
+    "description": "在线阅读游戏剧情，画面与语音来自日服",
     "beta": {
       "title": "测试中",
       "body": "遇到问题或与游戏内不符，可在{tickets}反馈",

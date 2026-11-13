@@ -387,6 +387,7 @@ export default {
       "invalidRegistrationReturnToDescription": "An unexpected return target was detected. A safe registration flow has been started."
     },
     "login": {
+      "description": "Sign in with your email and password",
       "title": "Sign in to Haruki Toolbox",
       "titleMfa": "Two-step verification",
       "titleRefresh": "Confirm it’s you",
@@ -422,6 +423,7 @@ export default {
       }
     },
     "register": {
+      "description": "Create a Haruki Toolbox account",
       "title": "Register account",
       "usernameLabel": "Username",
       "emailLabel": "Email",
@@ -437,6 +439,7 @@ export default {
       "otherMethods": "Other ways to sign up"
     },
     "resetPassword": {
+      "description": "Reset your account password",
       "title": "Reset password",
       "emailLabel": "Email",
       "newPasswordLabel": "New password",
@@ -445,6 +448,7 @@ export default {
       "submit": "Confirm reset"
     },
     "verification": {
+      "description": "Verify your email to activate the account",
       "title": "Verify email",
       "submit": "Submit verification",
       "continue": "Continue"
@@ -511,6 +515,7 @@ export default {
       }
     },
     "live": {
+      "optInHint": "Load the game data to see the current event, limited gachas and new songs",
       "title": "On now",
       "optInTitle": "See what is on in the game",
       "load": "Load game data",
@@ -533,11 +538,35 @@ export default {
       "error": "The game data failed to load. Try again later."
     },
     "trays": {
+      "catalog": {
+        "hint": "Reference for everything in the game"
+      },
+      "player": {
+        "hint": "Your own account, once uploaded"
+      },
+      "event": {
+        "hint": "Decks, points and rankings during an event"
+      },
       "community": {
+        "hint": "Find a room, a group, or us",
         "title": "Co-op and community"
       }
     },
     "tools": {
+      "sponsors": "The people who keep the toolbox running",
+      "about": "About the project and the team",
+      "friendLinks": "Other useful SEKAI sites",
+      "friendGroups": "Player group chats",
+      "storyPlayer": "Read the game stories in your browser",
+      "gachas": "Gacha banners and the cards in them",
+      "events": "Past and current events with bonuses and rewards",
+      "cards": "Cards, skills and artwork",
+      "musicLibrary": "Songs, difficulties and release details",
+      "training": "Training progress per character",
+      "eventRecords": "Events you played and how you placed",
+      "cardBox": "Card collection progress",
+      "playerProfile": "Your in-game profile",
+      "uploadData": "Sync your game account data to the toolbox",
       "deckRecommend": "Best event deck from your cards",
       "rankBorder": "Border lines and pace per tier",
       "ptCalculator": "Bonus, boost and score per game for a target pt",
@@ -548,6 +577,7 @@ export default {
       "tickets": "Report bugs, account issues or ideas"
     },
     "aboutBanner": {
+      "desc": "About Project Haruki and how to sponsor it",
       "badge": "About & Support",
       "title": "Your support is our motivation to keep going"
     },
@@ -609,6 +639,7 @@ export default {
     }
   },
   "cardBox": {
+    "description": "Your card collection progress",
     "title": "My cards",
     "entryLink": "My cards",
     "noAccountHint": "Select or bind a game account first",
@@ -657,6 +688,7 @@ export default {
     }
   },
   "eventRecords": {
+    "description": "Events you played and how you placed",
     "title": "Event records",
     "idle": "Select or bind a game account first",
     "loading": "Loading uploaded data and event data…",
@@ -720,6 +752,7 @@ export default {
     }
   },
   "musicProgress": {
+    "description": "Song clears and rewards still available",
     "title": "Music progress",
     "rewards": {
       "title": "Obtainable rewards",
@@ -847,6 +880,7 @@ export default {
   },
   "costumes": {
     "dressup": {
+      "description": "Mix outfits, headwear and hair with a 3D preview",
       "title": "Costume dressup",
       "region": "Server",
       "character": "Character",
@@ -895,6 +929,7 @@ export default {
       "unknown": "Other"
     },
     "list": {
+      "description": "Gacha banners and their rates",
       "title": "Gacha catalog",
       "searchPlaceholder": "Search by name or ID...",
       "typeLabel": "Type",
@@ -956,6 +991,7 @@ export default {
     }
   },
   "playerProfile": {
+    "description": "Your in-game profile",
     "title": "My profile",
     "source": {
       "realtime": "Live data",
@@ -1037,6 +1073,7 @@ export default {
   },
   "training": {
     "layout": {
+      "description": "Training progress per character",
       "title": "Character training",
       "refresh": "Refresh"
     },
@@ -1418,6 +1455,7 @@ export default {
       "title": "Event song from {name}'s box #{count}"
     },
     "list": {
+      "description": "Songs, difficulties and release details",
       "title": "Music library",
       "filters": {
         "region": "Server",
@@ -1555,6 +1593,7 @@ export default {
       "retry": "Retry"
     },
     "list": {
+      "description": "Cards, skills and artwork",
       "title": "Card catalog",
       "searchPlaceholder": "Search card title…",
       "sortLabel": "Sort",
@@ -1664,6 +1703,7 @@ export default {
       "mysterious": "Mysterious"
     },
     "list": {
+      "description": "Past and current events with bonuses and rewards",
       "title": "Event catalog",
       "regionLabel": "Server",
       "searchLabel": "Search",

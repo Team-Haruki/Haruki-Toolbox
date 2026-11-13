@@ -387,6 +387,7 @@ export default {
       "invalidRegistrationReturnToDescription": "检测到异常跳转目标，已为您重新发起安全注册流程"
     },
     "login": {
+      "description": "使用邮箱和密码登录",
       "title": "登录到 Haruki 工具箱",
       "titleMfa": "两步验证",
       "titleRefresh": "确认是你本人",
@@ -422,6 +423,7 @@ export default {
       }
     },
     "register": {
+      "description": "创建 Haruki 工具箱账号",
       "title": "注册账号",
       "usernameLabel": "用户名",
       "emailLabel": "邮箱",
@@ -437,6 +439,7 @@ export default {
       "otherMethods": "其他注册方式"
     },
     "resetPassword": {
+      "description": "重置账号密码",
       "title": "重置密码",
       "emailLabel": "邮箱",
       "newPasswordLabel": "新密码",
@@ -445,6 +448,7 @@ export default {
       "submit": "确认重置"
     },
     "verification": {
+      "description": "验证邮箱以激活账号",
       "title": "验证邮箱",
       "submit": "提交验证",
       "continue": "继续"
@@ -511,6 +515,7 @@ export default {
       }
     },
     "live": {
+      "optInHint": "加载游戏数据后展示当前活动、限时招募和新歌",
       "title": "正在进行",
       "optInTitle": "看看游戏里正在进行什么",
       "load": "加载游戏数据",
@@ -533,11 +538,35 @@ export default {
       "error": "游戏数据加载失败，稍后再试"
     },
     "trays": {
+      "catalog": {
+        "hint": "游戏内容资料库"
+      },
+      "player": {
+        "hint": "上传后查看自己的账号"
+      },
+      "event": {
+        "hint": "活动期间组卡、算分、看榜"
+      },
       "community": {
+        "hint": "找车、找群、找我们",
         "title": "联机与社区"
       }
     },
     "tools": {
+      "sponsors": "感谢支持工具箱的各位",
+      "about": "项目介绍与开发团队",
+      "friendLinks": "其他好用的 Sekai 站点",
+      "friendGroups": "玩家交流群",
+      "storyPlayer": "在线阅读游戏剧情",
+      "gachas": "历届卡池与出现的卡牌",
+      "events": "历届活动与加成、奖励",
+      "cards": "卡牌、技能与卡面",
+      "musicLibrary": "歌曲、难度与收录信息",
+      "training": "各角色的养成进度",
+      "eventRecords": "参加过的活动与成绩",
+      "cardBox": "卡牌收集进度",
+      "playerProfile": "账号的游戏档案",
+      "uploadData": "把游戏账号数据同步到工具箱",
       "deckRecommend": "用你的卡牌算最优卡组",
       "rankBorder": "各档位榜线与涨速",
       "ptCalculator": "按目标 Pt 算每局加成、体力和分数",
@@ -548,6 +577,7 @@ export default {
       "tickets": "反馈 Bug、账号问题或建议"
     },
     "aboutBanner": {
+      "desc": "了解 Project Haruki 和赞助方式",
       "badge": "关于 & 赞助",
       "title": "您的帮助是我们继续下去的动力"
     },
@@ -609,6 +639,7 @@ export default {
     }
   },
   "cardBox": {
+    "description": "账号的卡牌收集进度",
     "title": "我的卡牌",
     "entryLink": "我的卡牌",
     "noAccountHint": "先选择或绑定一个游戏账号",
@@ -657,6 +688,7 @@ export default {
     }
   },
   "eventRecords": {
+    "description": "参加过的活动与成绩",
     "title": "活动记录",
     "idle": "先选择或绑定一个游戏账号",
     "loading": "正在加载上传的数据与活动数据…",
@@ -720,6 +752,7 @@ export default {
     }
   },
   "musicProgress": {
+    "description": "打歌进度与可获取奖励",
     "title": "打歌进度",
     "rewards": {
       "title": "可获取资源",
@@ -847,6 +880,7 @@ export default {
   },
   "costumes": {
     "dressup": {
+      "description": "搭配服装、头饰和发型，带 3D 预览",
       "title": "服装搭配",
       "region": "区服",
       "character": "角色",
@@ -895,6 +929,7 @@ export default {
       "unknown": "其他"
     },
     "list": {
+      "description": "历届卡池与出率",
       "title": "卡池图鉴",
       "searchPlaceholder": "按名称或 ID 搜索…",
       "typeLabel": "类型",
@@ -956,6 +991,7 @@ export default {
     }
   },
   "playerProfile": {
+    "description": "账号的游戏档案",
     "title": "我的档案",
     "source": {
       "realtime": "实时数据",
@@ -1037,6 +1073,7 @@ export default {
   },
   "training": {
     "layout": {
+      "description": "各角色的养成进度",
       "title": "角色养成",
       "refresh": "刷新"
     },
@@ -1418,6 +1455,7 @@ export default {
       "title": "{name}的第{count}箱活动曲"
     },
     "list": {
+      "description": "歌曲、难度与收录信息",
       "title": "曲库",
       "filters": {
         "region": "区服",
@@ -1555,6 +1593,7 @@ export default {
       "retry": "重试"
     },
     "list": {
+      "description": "卡牌、技能与卡面",
       "title": "卡牌一览",
       "searchPlaceholder": "搜索卡牌称号…",
       "sortLabel": "排序",
@@ -1664,6 +1703,7 @@ export default {
       "mysterious": "神秘"
     },
     "list": {
+      "description": "历届活动与加成、奖励",
       "title": "活动图鉴",
       "regionLabel": "区服",
       "searchLabel": "搜索",

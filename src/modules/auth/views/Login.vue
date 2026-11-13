@@ -300,6 +300,7 @@ function setFieldValue(name: string, value: string) {
 <template>
   <AuthPageShell
     :title="loginTitle"
+    :description="loginStep === 'mfa' || loginStep === 'refresh' ? undefined : t('auth.login.description')"
     :loading="loading"
     :load-error="loadError"
     @restart="restartFlow"

@@ -73,7 +73,7 @@ function setFieldValue(name: string, value: string) {
 
 <template>
   <AuthPageShell
-    :title="t('auth.register.title')"
+    :title="t('auth.register.title')" :description="t('auth.register.description')"
     :loading="loading"
     :load-error="loadError"
     @restart="restartFlow"

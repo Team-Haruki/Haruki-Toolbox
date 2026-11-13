@@ -2,6 +2,7 @@
 // Namespaces: deckRecommend, eventPlanner
 export default {
   "deckRecommend": {
+    "description": "用你的卡牌算活动最优卡组",
     "title": "组卡推荐",
     "select": {
       "loading": "正在准备数据..."

@@ -54,6 +54,7 @@ export default {
       "allPriorities": "全部优先级"
     },
     "list": {
+      "description": "查看处理进度，需要时补充说明",
       "title": "我的工单",
       "createButton": "创建工单",
       "filterLabel": "按状态筛选",
@@ -85,6 +86,7 @@ export default {
       }
     },
     "create": {
+      "description": "反馈 Bug、账号问题或建议",
       "backButton": "返回工单列表",
       "title": "创建工单",
       "submit": "提交工单",

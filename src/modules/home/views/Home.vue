@@ -189,7 +189,10 @@ const searchShortcut = computed(() =>
             </div>
             <p class="text-sm font-semibold text-foreground mt-1.5 leading-snug">
               {{ t("home.aboutBanner.title") }}
-              <span class="inline-block text-muted-foreground transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true">→</span>
+            </p>
+            <p class="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+              <span>{{ t("home.aboutBanner.desc") }}</span>
+              <span class="inline-block transition-transform duration-300 group-hover:translate-x-1">→</span>
             </p>
           </div>
         </div>

@@ -39,6 +39,7 @@ function tileStatus(url: string): HomeToolStatus | undefined {
         <span class="home-tray-marker size-2 rounded-[3px]" aria-hidden="true" />
         {{ t(tray.titleKey) }}
       </h2>
+      <p class="text-xs text-muted-foreground">{{ t(tray.hintKey) }}</p>
       <p
         v-if="notice"
         class="ml-auto inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
@@ -69,7 +70,7 @@ function tileStatus(url: string): HomeToolStatus | undefined {
           </span>
           <span class="flex min-w-0 flex-1 flex-col gap-0.5">
             <span class="text-[15px] font-semibold leading-snug">{{ t(tool.titleKey) }}</span>
-            <span v-if="tool.descriptionKey" class="text-xs leading-snug text-muted-foreground">{{ t(tool.descriptionKey) }}</span>
+            <span class="text-xs leading-snug text-muted-foreground">{{ t(tool.descriptionKey) }}</span>
             <span
               v-if="tileStatus(tool.url)"
               class="mt-auto inline-flex items-center gap-1 self-start rounded-full bg-background/70 px-2 py-0.5 text-[11px] font-medium text-muted-foreground backdrop-blur-sm"
@@ -91,14 +92,14 @@ function tileStatus(url: string): HomeToolStatus | undefined {
         <li v-for="tool in tray.tools" :key="tool.url" class="flex border-b border-r">
           <RouterLink
             :to="tool.url"
-            :title="tool.descriptionKey ? t(tool.descriptionKey) : undefined"
-            class="home-tray-cell group flex min-w-0 flex-1 items-center gap-3 p-3.5 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:p-4"
+            class="home-tray-cell group flex min-w-0 flex-1 flex-col gap-2.5 p-3.5 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:flex-row sm:items-start sm:gap-3 sm:p-4"
           >
             <span class="home-tray-well flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors" aria-hidden="true">
               <component :is="tool.icon" class="size-4.5" />
             </span>
             <span class="flex min-w-0 flex-1 flex-col gap-0.5">
               <span class="text-sm font-semibold leading-snug">{{ t(tool.titleKey) }}</span>
+              <span class="text-xs leading-snug text-muted-foreground">{{ t(tool.descriptionKey) }}</span>
               <span
                 v-if="tileStatus(tool.url)"
                 class="mt-1.5 inline-flex items-center gap-1 self-start rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground"

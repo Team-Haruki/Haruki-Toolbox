@@ -387,6 +387,7 @@ export default {
       "invalidRegistrationReturnToDescription": "檢測到異常跳轉目標，已為您重新發起安全註冊流程"
     },
     "login": {
+      "description": "使用信箱和密碼登入",
       "title": "登入到 Haruki 工具箱",
       "titleMfa": "兩步驗證",
       "titleRefresh": "確認是你本人",
@@ -422,6 +423,7 @@ export default {
       }
     },
     "register": {
+      "description": "建立 Haruki 工具箱帳號",
       "title": "註冊帳號",
       "usernameLabel": "使用者名稱",
       "emailLabel": "信箱",
@@ -437,6 +439,7 @@ export default {
       "otherMethods": "其他註冊方式"
     },
     "resetPassword": {
+      "description": "重置帳號密碼",
       "title": "重置密碼",
       "emailLabel": "信箱",
       "newPasswordLabel": "新密碼",
@@ -445,6 +448,7 @@ export default {
       "submit": "確認重置"
     },
     "verification": {
+      "description": "驗證信箱以啟用帳號",
       "title": "驗證信箱",
       "submit": "提交驗證",
       "continue": "繼續"
@@ -511,6 +515,7 @@ export default {
       }
     },
     "live": {
+      "optInHint": "載入遊戲資料後展示當前活動、限時招募和新歌",
       "title": "正在進行",
       "optInTitle": "看看遊戲里正在進行什麼",
       "load": "載入遊戲資料",
@@ -533,11 +538,35 @@ export default {
       "error": "遊戲資料載入失敗，稍後再試"
     },
     "trays": {
+      "catalog": {
+        "hint": "遊戲內容資料庫"
+      },
+      "player": {
+        "hint": "上傳後檢視自己的帳號"
+      },
+      "event": {
+        "hint": "活動期間組卡、算分、看榜"
+      },
       "community": {
+        "hint": "找車、找群、找我們",
         "title": "聯機與社群"
       }
     },
     "tools": {
+      "sponsors": "感謝支援工具箱的各位",
+      "about": "專案介紹與開發團隊",
+      "friendLinks": "其他好用的 Sekai 站點",
+      "friendGroups": "玩家交流群",
+      "storyPlayer": "線上閱讀遊戲劇情",
+      "gachas": "歷屆卡池與出現的卡牌",
+      "events": "歷屆活動與加成、獎勵",
+      "cards": "卡牌、技能與卡面",
+      "musicLibrary": "歌曲、難度與收錄資訊",
+      "training": "各角色的養成進度",
+      "eventRecords": "參加過的活動與成績",
+      "cardBox": "卡牌收集進度",
+      "playerProfile": "帳號的遊戲檔案",
+      "uploadData": "把遊戲帳號資料同步到工具箱",
       "deckRecommend": "用你的卡牌算最優卡組",
       "rankBorder": "各檔位榜線與漲速",
       "ptCalculator": "按目標 Pt 算每局加成、體力和分數",
@@ -548,6 +577,7 @@ export default {
       "tickets": "反饋 Bug、帳號問題或建議"
     },
     "aboutBanner": {
+      "desc": "瞭解 Project Haruki 和贊助方式",
       "badge": "關於 & 贊助",
       "title": "您的幫助是我們繼續下去的動力"
     },
@@ -609,6 +639,7 @@ export default {
     }
   },
   "cardBox": {
+    "description": "帳號的卡牌收集進度",
     "title": "我的卡牌",
     "entryLink": "我的卡牌",
     "noAccountHint": "先選擇或綁定一個遊戲帳號",
@@ -657,6 +688,7 @@ export default {
     }
   },
   "eventRecords": {
+    "description": "參加過的活動與成績",
     "title": "活動記錄",
     "idle": "先選擇或綁定一個遊戲帳號",
     "loading": "正在載入上傳的資料與活動資料…",
@@ -720,6 +752,7 @@ export default {
     }
   },
   "musicProgress": {
+    "description": "打歌進度與可獲取獎勵",
     "title": "打歌進度",
     "rewards": {
       "title": "可獲取資源",
@@ -847,6 +880,7 @@ export default {
   },
   "costumes": {
     "dressup": {
+      "description": "搭配服裝、頭飾和髮型，帶 3D 預覽",
       "title": "服裝搭配",
       "region": "區服",
       "character": "角色",
@@ -895,6 +929,7 @@ export default {
       "unknown": "其他"
     },
     "list": {
+      "description": "歷屆卡池與出率",
       "title": "卡池圖鑑",
       "searchPlaceholder": "按名稱或 ID 搜尋…",
       "typeLabel": "類型",
@@ -956,6 +991,7 @@ export default {
     }
   },
   "playerProfile": {
+    "description": "帳號的遊戲檔案",
     "title": "我的檔案",
     "source": {
       "realtime": "即時資料",
@@ -1037,6 +1073,7 @@ export default {
   },
   "training": {
     "layout": {
+      "description": "各角色的養成進度",
       "title": "角色養成",
       "refresh": "重新整理"
     },
@@ -1418,6 +1455,7 @@ export default {
       "title": "{name}的第{count}箱活動曲"
     },
     "list": {
+      "description": "歌曲、難度與收錄資訊",
       "title": "曲庫",
       "filters": {
         "region": "區服",
@@ -1555,6 +1593,7 @@ export default {
       "retry": "重試"
     },
     "list": {
+      "description": "卡牌、技能與卡面",
       "title": "卡牌一覽",
       "searchPlaceholder": "搜尋卡牌稱號…",
       "sortLabel": "排序",
@@ -1664,6 +1703,7 @@ export default {
       "mysterious": "神秘"
     },
     "list": {
+      "description": "歷屆活動與加成、獎勵",
       "title": "活動圖鑑",
       "regionLabel": "區服",
       "searchLabel": "搜尋",

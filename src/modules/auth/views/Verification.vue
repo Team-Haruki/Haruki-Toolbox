@@ -64,7 +64,7 @@ const continuePath = computed(() =>
 
 <template>
   <AuthPageShell
-    :title="t('auth.verification.title')"
+    :title="t('auth.verification.title')" :description="t('auth.verification.description')"
     :loading="loading"
     :load-error="loadError"
     @restart="restartFlow"

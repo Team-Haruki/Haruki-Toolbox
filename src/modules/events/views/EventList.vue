@@ -135,7 +135,7 @@ const offline = computed(() => list.eventsIndex.warning.value != null)
 </script>
 
 <template>
-  <CatalogPageShell :title="t('events.list.title')">
+  <CatalogPageShell :title="t('events.list.title')" :description="t('events.list.description')">
     <template #toolbar>
       <div class="flex w-full items-center gap-2">
         <CatalogSearchField

@@ -21,12 +21,15 @@ import PageHeader from "@/shared/components/PageHeader.vue"
 
 withDefaults(defineProps<{
   title: string
+  /** One short line under the title; omitted where the title is the whole message (a second factor, an error). */
+  description?: string
   loading?: boolean
   /** Why the flow could not be loaded, in the user's language; "" when it loaded. */
   loadError?: string
   /** Label of the button under a load error; "Start again" by default. */
   retryLabel?: string | null
 }>(), {
+  description: undefined,
   loading: false,
   loadError: "",
   retryLabel: null,
@@ -41,7 +44,7 @@ const { t } = useI18n()
   <div class="flex w-full flex-1 flex-col items-center px-0 py-4 sm:justify-center">
     <!-- Centred on a screen with room for it; on a phone the column starts at the top. -->
     <div class="flex w-full max-w-md min-w-0 flex-col gap-4" data-kratos-page>
-      <PageHeader :title="title" class="px-1" />
+      <PageHeader :title="title" :description="description" class="px-1" />
       <section class="min-w-0 overflow-hidden rounded-xl border bg-card">
         <p
           v-if="loading"

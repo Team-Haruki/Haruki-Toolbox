@@ -1110,7 +1110,7 @@ export default {
   },
   "sekaiStation": {
     "title": "Sekai Station",
-    "description": "CN-server Multi Live room numbers.",
+    "description": "Live CN-server Multi Live room numbers.",
     "viewOnSekaiStation": "View on Sekai Station",
     "notConfigured": "Sekai Station is temporarily unavailable",
     "connection": {

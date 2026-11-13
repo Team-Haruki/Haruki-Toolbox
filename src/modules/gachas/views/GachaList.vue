@@ -130,7 +130,7 @@ function showUnreleased() {
 </script>
 
 <template>
-  <CatalogPageShell :title="t('gachas.list.title')">
+  <CatalogPageShell :title="t('gachas.list.title')" :description="t('gachas.list.description')">
     <template #toolbar>
       <CatalogSearchField
         v-model="state.q"

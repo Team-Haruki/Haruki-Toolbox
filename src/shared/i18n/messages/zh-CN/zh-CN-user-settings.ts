@@ -95,6 +95,8 @@ export default {
       "action": "查看 QQ 官方 Bot 授权流程"
     },
     "sections": {
+      "accountDescription": "身份、登录与安全设置",
+      "harukiBotDescription": "让 HarukiBot 能查询你的游戏数据",
       "accountTitle": "账号设置",
       "harukiBotTitle": "HarukiBot数据授权"
     },
@@ -163,6 +165,7 @@ export default {
       }
     },
     "kratosFlow": {
+      "description": "保存后返回账号设置",
       "hints": {
         "lastSignInMethod": "这是唯一的登录方式，先设置密码或添加其他登录方式才能移除"
       },
@@ -284,6 +287,7 @@ export default {
     "sessions": {
       "title": "登录设备",
       "page": {
+        "description": "查看并下线已登录的设备",
         "title": "登录设备",
         "refresh": "刷新",
         "currentSession": "当前设备",
@@ -423,6 +427,7 @@ export default {
       }
     },
     "oauthAuthorizations": {
+      "description": "查看并撤销第三方应用的访问授权",
       "title": "已授权的应用",
       "refresh": "刷新",
       "count": "共 {count} 个应用",
@@ -462,6 +467,7 @@ export default {
       }
     },
     "gameBinding": {
+      "description": "管理绑定到工具箱的游戏账号",
       "title": "游戏账号管理",
       "alert": {
         "line1": "同一区服的同一个游戏账号只能被一个工具箱用户绑定",

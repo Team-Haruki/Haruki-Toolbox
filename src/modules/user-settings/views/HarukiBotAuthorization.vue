@@ -16,7 +16,7 @@ const { t } = useI18n()
   <div class="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-0 py-4">
     <PageHeader
       size="compact"
-      :title="t('userSettings.sections.harukiBotTitle')"
+      :title="t('userSettings.sections.harukiBotTitle')" :description="t('userSettings.sections.harukiBotDescription')"
     />
 
     <!-- Your own QQ first. The official-bot guide sits right above the list

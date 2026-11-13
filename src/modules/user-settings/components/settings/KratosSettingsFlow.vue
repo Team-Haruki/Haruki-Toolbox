@@ -643,6 +643,7 @@ const isLeavingForKratos = computed(() => redirect.status.value === "probing" ||
     <PageHeader
       size="compact"
       :title="pageTitle"
+      :description="t('userSettings.kratosFlow.description')"
       :back="isLeavingForKratos ? null : { name: 'user.settings' }"
       :back-label="t('userSettings.kratosFlow.redirect.backToSettings')"
     />

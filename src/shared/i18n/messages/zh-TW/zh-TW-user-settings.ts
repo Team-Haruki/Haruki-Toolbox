@@ -95,6 +95,8 @@ export default {
       "action": "檢視 QQ 官方 Bot 授權流程"
     },
     "sections": {
+      "accountDescription": "身份、登入與安全設定",
+      "harukiBotDescription": "讓 HarukiBot 能查詢你的遊戲資料",
       "accountTitle": "帳號設定",
       "harukiBotTitle": "HarukiBot資料授權"
     },
@@ -163,6 +165,7 @@ export default {
       }
     },
     "kratosFlow": {
+      "description": "儲存後返回帳號設定",
       "hints": {
         "lastSignInMethod": "這是唯一的登入方式，先設定密碼或新增其他登入方式才能移除"
       },
@@ -284,6 +287,7 @@ export default {
     "sessions": {
       "title": "登入裝置",
       "page": {
+        "description": "檢視並下線已登入的裝置",
         "title": "登入裝置",
         "refresh": "重新整理",
         "currentSession": "當前裝置",
@@ -423,6 +427,7 @@ export default {
       }
     },
     "oauthAuthorizations": {
+      "description": "檢視並撤銷第三方應用的訪問授權",
       "title": "已授權的應用",
       "refresh": "重新整理",
       "count": "共 {count} 個應用",
@@ -462,6 +467,7 @@ export default {
       }
     },
     "gameBinding": {
+      "description": "管理綁定到工具箱的遊戲帳號",
       "title": "遊戲帳號管理",
       "alert": {
         "line1": "同一區服的同一個遊戲帳號只能被一個工具箱使用者綁定",

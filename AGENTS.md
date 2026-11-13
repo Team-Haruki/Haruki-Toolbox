@@ -153,7 +153,7 @@ Barrel rules:
 - Use existing composables and UI patterns before creating new abstractions.
 - Keep forms, dialogs, and toasts consistent with surrounding modules.
 - Copy is kept short; users have said the site explains too much. Text earns its place only if it tells the reader something the title, the label and the control do not already say:
-  - A page has at most one line under its title, and none when the title says it. A section heading has no description unless reading it changes what the user does.
+  - A page keeps one short line under its title saying what it is for (a phrase, not a list of its features), and each tool on the home page keeps its one-line description: the owner wants those. A section heading inside a page has no description unless reading it changes what the user does.
   - A field or a settings row has help text only when a wrong choice is likely or costly; otherwise the label (and an example in the placeholder) is enough. Never describe how a standard control works ("click to…", "you can…", "supports…").
   - Detail that only some users need some of the time goes behind something they open (a fold the page already has, a tooltip on the value it explains), not into always-visible text.
   - An empty or failed state is one sentence that says what to do next, plus the action.

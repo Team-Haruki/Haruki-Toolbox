@@ -172,7 +172,7 @@ onMounted(() => {
   <div class="@container mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-0 py-4">
     <PageHeader
       size="compact"
-      :title="t('userSettings.sessions.page.title')"
+      :title="t('userSettings.sessions.page.title')" :description="t('userSettings.sessions.page.description')"
       :back="{ name: 'user.settings' }"
       :back-label="t('userSettings.kratosFlow.redirect.backToSettings')"
     >

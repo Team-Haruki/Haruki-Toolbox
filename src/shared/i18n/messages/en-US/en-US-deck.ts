@@ -2,6 +2,7 @@
 // Namespaces: deckRecommend, eventPlanner
 export default {
   "deckRecommend": {
+    "description": "The best event deck from the cards you own",
     "title": "Deck recommendation",
     "select": {
       "loading": "Preparing data..."
