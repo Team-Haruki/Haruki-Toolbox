@@ -4,7 +4,7 @@ import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-d
 
 import { computed, onMounted, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
-import { CloudUpload, Eraser, Gamepad2, HardDrive, History, Layers, RefreshCw } from "lucide-vue-next"
+import { CloudUpload, Download, Eraser, Gamepad2, HardDrive, History, Layers, RefreshCw } from "lucide-vue-next"
 import { toast } from "vue-sonner"
 import { Button } from "@/components/ui/button"
 import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
@@ -27,7 +27,9 @@ import {
   clearDeckRecommendUserDataCache,
   readDeckRecommendProfileCache,
 } from "@/modules/deck-recommend/lib/user-data-cache"
+import { downloadFile } from "@/lib/download-file"
 import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
+import { fetchUserSuiteExport } from "@/shared/sekai/user-snapshot/export"
 import { clearUserSuiteSubsetCache, summarizeUserSuiteSubsetCache } from "@/shared/sekai/user-snapshot/cache"
 import { useUserStore } from "@/shared/stores/user"
 import {
@@ -61,6 +63,7 @@ const selectedAccountKey = ref("")
 const selectedDataMode = ref<DeckRecommendUserCacheDataType>("suite")
 const refreshing = ref(false)
 const clearing = ref(false)
+const exporting = ref(false)
 const cacheUpdatedAt = ref<number | null>(null)
 const cacheUploadTime = ref<number | null>(null)
 const lastCacheHit = ref<boolean | null>(null)
@@ -106,6 +109,11 @@ const canRefresh = computed(() =>
 
 const canClear = computed(() =>
   Boolean(userStore.userId) && !refreshing.value && !clearing.value,
+)
+
+// A profile is a live view of the game server, not an upload to keep a copy of.
+const canExport = computed(() =>
+  Boolean(userStore.userId && selectedAccount.value) && selectedDataMode.value === "suite",
 )
 
 const dataModeOptions = computed<Array<{ value: DeckRecommendUserCacheDataType; label: string }>>(() => {
@@ -207,6 +215,34 @@ async function refreshUserData() {
     })
   } finally {
     refreshing.value = false
+  }
+}
+
+async function exportSuite() {
+  const account = selectedAccount.value
+  if (!userStore.userId || !account || exporting.value) {
+    return
+  }
+
+  missingDataType.value = null
+  exporting.value = true
+  try {
+    const file = await fetchUserSuiteExport({
+      toolboxUserId: userStore.userId,
+      server: account.server,
+      gameUserId: account.uid,
+    })
+    downloadFile(file.fileName, file.json, "application/json")
+    toast.success(t("homeSettings.userData.toast.exported"))
+  } catch (error) {
+    if (selectedAccount.value?.key !== account.key || selectedDataMode.value !== "suite") return
+    missingDataType.value = getMissingUploadDataType(error)
+    if (missingDataType.value) return
+    toast.error(t("homeSettings.userData.toast.exportFailed"), {
+      description: error instanceof Error ? error.message : String(error),
+    })
+  } finally {
+    exporting.value = false
   }
 }
 
@@ -387,6 +423,19 @@ const cacheFacts = computed<SettingsFact[]>(() => [
         >
           <RefreshCw class="size-3.5" :class="{ 'animate-spin': refreshing }" />
           {{ refreshing ? t("homeSettings.userData.refreshing") : t("homeSettings.userData.refresh") }}
+        </Button>
+
+        <Button
+          v-if="canExport"
+          type="button"
+          size="sm"
+          variant="outline"
+          :disabled="exporting"
+          data-testid="user-data-export"
+          @click="exportSuite"
+        >
+          <Download class="size-3.5" :class="{ 'animate-pulse': exporting }" />
+          {{ exporting ? t("homeSettings.userData.exporting") : t("homeSettings.userData.export") }}
         </Button>
 
         <Button

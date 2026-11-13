@@ -1925,6 +1925,8 @@ export default {
       "notChecked": "Not checked",
       "refresh": "Refresh user data",
       "refreshing": "Refreshing...",
+      "export": "Export account data",
+      "exporting": "Exporting...",
       "clear": "Clear user data cache",
       "clearDialog": {
         "title": "Clear user data cache?",
@@ -1935,6 +1937,8 @@ export default {
         "alreadyCurrent": "User data is already current",
         "refreshed": "User data refreshed",
         "refreshFailed": "Failed to refresh user data",
+        "exported": "Account data exported",
+        "exportFailed": "Failed to export account data",
         "cleared": "User data cache cleared",
         "clearFailed": "Failed to clear user data cache"
       }

@@ -349,7 +349,7 @@ const { edgeClass: updateLogEdgeClass } = useScrollEdges(updateLogScroller)
         <span class="text-xs text-muted-foreground">{{ scopeLabel }}</span>
       </div>
       <!-- Wider than a phone: the whole table (header included) scrolls sideways, with an edge fade. -->
-      <div :class="['relative min-w-0', updateLogEdgeClass]">
+      <div :class="['rank-border-update-log-frame relative min-w-0', updateLogEdgeClass]">
         <div ref="updateLogScroller" class="rank-border-update-log">
           <div class="rank-border-update-log__table">
             <div class="rank-border-update-log__header">
@@ -412,10 +412,25 @@ const { edgeClass: updateLogEdgeClass } = useScrollEdges(updateLogScroller)
     overflow: hidden;
   }
 
+  /* The height has to reach the rows through every box in between. The frame
+     (it carries the edge fade) and the table would otherwise take their
+     content's height, up to 24rem: taller than the heatmap, so the section
+     clipped the last rows where no scrolling could bring them back. */
+  .rank-border-update-section .rank-border-update-log-frame {
+    display: grid;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+  }
+
   .rank-border-update-section .rank-border-update-log {
     height: auto;
     max-height: none;
     min-height: 0;
+  }
+
+  .rank-border-update-section .rank-border-update-log__table {
+    height: 100%;
+    max-height: none;
   }
 
 }
