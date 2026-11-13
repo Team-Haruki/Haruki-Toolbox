@@ -173,7 +173,7 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
     const optionalFiles = mergeFileLists([], options.optionalFiles ?? [])
     const force = options.force === true
     const musicMetas = options.musicMetas !== false
-    if (!force && isRegionVerificationFresh(region, requestedFiles, musicMetas)) {
+    if (!force && isRegionVerificationFresh(region, requestedFiles, optionalFiles, musicMetas)) {
       return
     }
 
@@ -201,6 +201,7 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
   function isRegionVerificationFresh(
     region: SekaiRegion,
     requestedFiles: readonly string[],
+    optionalFiles: readonly string[],
     musicMetas: boolean,
   ): boolean {
     const verification = remoteVerifications.get(region)
@@ -213,10 +214,12 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
       return false
     }
 
-    // Optional files a dump never ships are not in the listing; they must
-    // not turn every ensure into a new worker round-trip within the TTL.
+    // Optional files a dump never ships (or whose download was skipped) are
+    // not in the listing; they must not turn every ensure into a new worker
+    // round-trip within the TTL. That holds for the files this request
+    // calls optional as much as for the ones that always are.
     const state = regionStates.value[region]
-    return Boolean(state.masterFetchVersion) && isMasterCacheCovering(state.files, requestedFiles)
+    return Boolean(state.masterFetchVersion) && isMasterCacheCovering(state.files, requestedFiles, optionalFiles)
   }
 
   async function checkRegionRemoteVersion(region: SekaiRegion) {

@@ -18,6 +18,7 @@ import {
   moveTextAt,
   realignTextAt,
   resolveAppendedOps,
+  resolveArrowNudge,
   resolveDrawWidths,
   resizeTextAt,
   resolveExportFileName,
@@ -100,6 +101,14 @@ describe("draw", () => {
   it("derives three line widths from the picture's long side", () => {
     expect(resolveDrawWidths(icon)).toEqual({ small: 2, medium: 4, large: 8 })
     expect(resolveDrawWidths(cardArt)).toEqual({ small: 10, medium: 20, large: 40 })
+  })
+
+  it("turns an arrow key into a move sized to the picture, or one pixel when fine", () => {
+    expect(resolveArrowNudge("ArrowRight", false, cardArt)).toEqual({ x: 41, y: 0 })
+    expect(resolveArrowNudge("ArrowUp", false, cardArt)).toEqual({ x: 0, y: -41 })
+    expect(resolveArrowNudge("ArrowLeft", true, cardArt)).toEqual({ x: -1, y: 0 })
+    expect(resolveArrowNudge("ArrowDown", false, { width: 40, height: 30 })).toEqual({ x: 0, y: 1 })
+    expect(resolveArrowNudge("Enter", false, cardArt)).toBeNull()
   })
 
   it("sizes lines by how wide the picture is shown when that is known", () => {

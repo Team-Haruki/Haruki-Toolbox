@@ -41,7 +41,7 @@ const files: Record<string, unknown> = {
   gameCharacterUnits: CHARACTERS.map((character) => ({ id: character.id, gameCharacterId: character.id, unit: character.unit, colorCode: "#33ccbb" })),
 }
 
-async function openCardBox(page: Page) {
+async function openCardBox(page: Page, path = "/cards/box") {
   await page.clock.setFixedTime(new Date(NOW))
   await page.addInitScript(() => {
     if (!localStorage.getItem("settings")) {
@@ -76,7 +76,7 @@ async function openCardBox(page: Page) {
       : name ? files[name] : []
     return route.fulfill({ contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: JSON.stringify(body) })
   })
-  await page.goto("/cards/box")
+  await page.goto(path)
   await expect(page.locator("section[id^='card-box-character-']").first()).toBeVisible({ timeout: 30_000 })
 }
 
@@ -136,6 +136,20 @@ test.describe("on a phone", () => {
     await expect(section.getByRole("button").first()).toHaveAttribute("aria-expanded", "true")
     await expect(tiles(section)).toHaveCount(40)
     await expect(section.getByRole("button").first()).toBeInViewport()
+  })
+
+  test("a character picked from the roster is open when it clears a filter to another one", async ({ page }) => {
+    // One character filtered: a single section, nothing to close yet.
+    await openCardBox(page, "/cards/box?chars=1")
+    await expect(sections(page)).toHaveCount(1)
+
+    await page.getByRole("button", { name: "初音ミク", exact: true }).click()
+    await expect(sections(page)).toHaveCount(CHARACTERS.length)
+    // The others close as on any first visit; the one asked for stays open.
+    const target = page.locator("#card-box-character-21")
+    await expect(target.getByRole("button").first()).toHaveAttribute("aria-expanded", "true")
+    await expect(tiles(target)).toHaveCount(60)
+    await expect(page.locator("#card-box-character-2").getByRole("button").first()).toHaveAttribute("aria-expanded", "false")
   })
 
   test("the ungrouped card box pages the whole list", async ({ page }) => {

@@ -356,13 +356,15 @@ const allCollapsed = computed(() =>
 // its cards: 26 open characters would be the long document paging avoids.
 // Once per grouping; what the user opens or closes afterwards is theirs.
 const autoCollapsed = new Set<CardBoxGroupMode>()
+/** The section the roster was just asked for: it stays open through the first collapse. */
+let rosterTargetKey: string | null = null
 watch([isNarrow, groupMode, () => currentSectionKeys.value.join(",")], () => {
   const mode = groupMode.value
   if (!isNarrow.value || autoCollapsed.has(mode) || currentSectionKeys.value.length < 2) {
     return
   }
   autoCollapsed.add(mode)
-  collapsedKeys.value = new Set([...collapsedKeys.value, ...currentSectionKeys.value])
+  collapsedKeys.value = new Set([...collapsedKeys.value, ...currentSectionKeys.value.filter((key) => key !== rosterTargetKey)])
 }, { immediate: true })
 
 function toggleSection(key: string) {
@@ -399,6 +401,7 @@ function handleRosterSelect(characterId: number) {
   }
 
   const key = sectionKey("character", characterId)
+  rosterTargetKey = key
   if (collapsedKeys.value.has(key)) {
     toggleSection(key)
   }

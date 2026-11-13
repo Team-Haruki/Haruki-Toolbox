@@ -54,6 +54,15 @@ const widthStep = ref<SizeStep>("medium")
 const widths = computed(() => resolveDrawWidths(props.size, props.shownWidth))
 
 let points: ImagePoint[] = []
+/** A drag that began beside the picture draws nothing: its point would land on the picture's edge. */
+let drawing = false
+
+function onPicture(event: PointerEvent): boolean {
+  const bounds = props.frame?.getBoundingClientRect()
+  return bounds != null
+    && event.clientX >= bounds.left && event.clientX <= bounds.right
+    && event.clientY >= bounds.top && event.clientY <= bounds.bottom
+}
 
 function sample(event: PointerEvent): ImagePoint | null {
   const frame = props.frame
@@ -67,7 +76,7 @@ function currentOp(): ImageEditOp | null {
 }
 
 function extend(event: PointerEvent) {
-  const point = sample(event)
+  const point = drawing ? sample(event) : null
   if (!point) {
     return
   }
@@ -79,11 +88,13 @@ function extend(event: PointerEvent) {
 const drag: StageDrag = {
   start(event) {
     points = []
+    drawing = onPicture(event)
     extend(event)
   },
   move: extend,
   end() {
-    const op = currentOp()
+    const op = drawing ? currentOp() : null
+    drawing = false
     points = []
     emit("draft", [])
     if (op) {
@@ -91,6 +102,7 @@ const drag: StageDrag = {
     }
   },
   cancel() {
+    drawing = false
     points = []
     emit("draft", [])
   },

@@ -347,6 +347,80 @@ test("a mask and each drawn line add an operation", async ({ page }) => {
   await expect(viewer.viewer).toHaveAttribute("data-ops", "2")
 })
 
+test("a press beside the picture draws nothing", async ({ page }) => {
+  const viewer = await openViewer(page)
+
+  await page.getByTestId("image-viewer-draw-start").click()
+  const frame = await viewer.frame.boundingBox()
+  const stage = await page.getByTestId("image-viewer-stage").boundingBox()
+  if (!frame || !stage) throw new Error("the picture is not on screen")
+  // The picture is wider than it is tall: the stage has room above it.
+  expect(frame.y - stage.y).toBeGreaterThan(20)
+  await page.mouse.click(frame.x + frame.width / 2, stage.y + (frame.y - stage.y) / 2)
+  await expect(viewer.viewer).toHaveAttribute("data-ops", "0")
+  // A drag that starts there and crosses the picture draws nothing either.
+  await page.mouse.move(frame.x + frame.width / 2, stage.y + 4)
+  await page.mouse.down()
+  await page.mouse.move(frame.x + frame.width / 2, frame.y + frame.height / 2, { steps: 4 })
+  await page.mouse.up()
+  await expect(viewer.viewer).toHaveAttribute("data-ops", "0")
+  // On the picture a click still leaves a dot.
+  await page.mouse.click(frame.x + frame.width / 2, frame.y + frame.height / 2)
+  await expect(viewer.viewer).toHaveAttribute("data-ops", "1")
+})
+
+test("the selection and its handles move with the arrow keys", async ({ page }) => {
+  await openViewer(page)
+
+  await page.getByTestId("image-viewer-crop-start").click()
+  const size = page.getByTestId("image-viewer-crop-size")
+  const selection = page.locator("[data-region-selection]")
+  await expect(size).toHaveText("320 × 160")
+  const before = await selection.boundingBox()
+  if (!before) throw new Error("the selection is not on screen")
+
+  // The whole selection: it moves, its size stays.
+  await page.locator("[data-region-move]").focus()
+  await page.keyboard.press("ArrowRight")
+  await expect.poll(async () => ((await selection.boundingBox())?.x ?? 0) - before.x).toBeGreaterThan(1)
+  await expect(size).toHaveText("320 × 160")
+
+  // A corner: the selection shrinks from that corner, a hundredth of the long side a press, one pixel with Shift.
+  await page.locator('[data-handle="se"]').focus()
+  await page.keyboard.press("ArrowLeft")
+  await expect(size).toHaveText("316 × 160")
+  await page.keyboard.press("Shift+ArrowUp")
+  await expect(size).toHaveText("316 × 159")
+
+  // A locked shape holds from the keyboard too.
+  await page.locator('[data-aspect="1:1"]').click()
+  await page.locator('[data-handle="se"]').focus()
+  await page.keyboard.press("ArrowLeft")
+  const [width, height] = ((await size.textContent()) ?? "").split("×").map((part) => Number(part.trim()))
+  expect(width).toBe(height)
+  expect(width).toBeLessThan(159)
+})
+
+test("a text moves with the arrow keys once its frame has focus", async ({ page }) => {
+  await openViewer(page)
+
+  await page.getByTestId("image-viewer-text-start").click()
+  await page.getByTestId("image-viewer-text-input").fill("Miku")
+  const box = page.getByTestId("image-viewer-text-box")
+  const before = await box.boundingBox()
+  if (!before) throw new Error("the text is not on screen")
+  await box.focus()
+  await page.keyboard.press("ArrowDown")
+  await page.keyboard.press("ArrowDown")
+  await expect.poll(async () => ((await box.boundingBox())?.y ?? 0) - before.y).toBeGreaterThan(2)
+  expect(Math.abs(((await box.boundingBox())?.x ?? 0) - before.x)).toBeLessThan(1)
+  // The typing field still takes the arrow keys for itself.
+  await page.getByTestId("image-viewer-text-input").focus()
+  const moved = await box.boundingBox()
+  await page.keyboard.press("ArrowDown")
+  expect((await box.boundingBox())?.y).toBe(moved?.y)
+})
+
 test("a text needs something typed before it can be added", async ({ page }) => {
   const viewer = await openViewer(page)
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from "vue"
+import { useI18n } from "vue-i18n"
 import {
   CROP_HANDLES,
   adjustCropRect,
@@ -8,12 +9,15 @@ import {
   type ImageRect,
   type ImageSize,
 } from "image-edit-kit"
+import { resolveArrowNudge } from "@/lib/image-lightbox"
 
 /**
  * A rectangle selected on the picture: eight handles and the selection
  * itself to drag. It covers the frame exactly, so its percentages are the
  * picture's, whatever the zoom. The crop darkens what it would drop and
- * shows thirds; a mask leaves the picture as it is.
+ * shows thirds; a mask leaves the picture as it is. From the keyboard the
+ * selection and each handle take focus and the arrow keys move them (Shift
+ * for a single pixel), through the same geometry as a drag.
  */
 const props = withDefaults(defineProps<{
   /** The picture's size, in the pixels `rect` is in. */
@@ -27,6 +31,8 @@ const props = withDefaults(defineProps<{
 })
 
 const rect = defineModel<ImageRect>("rect", { required: true })
+
+const { t } = useI18n()
 
 const root = useTemplateRef<HTMLElement>("root")
 
@@ -49,13 +55,36 @@ function moveDrag(event: PointerEvent) {
   }
   const dx = (event.clientX - drag.startX) * drag.scale
   const dy = (event.clientY - drag.startY) * drag.scale
-  rect.value = props.ratio == null
-    ? adjustCropRect(drag.rect, drag.handle, dx, dy, props.size)
-    : adjustCropRectWithAspect(drag.rect, drag.handle, dx, dy, props.size, props.ratio)
+  rect.value = adjust(drag.rect, drag.handle, dx, dy)
 }
 
 function endDrag() {
   drag = null
+}
+
+function adjust(from: ImageRect, handle: CropHandle, dx: number, dy: number): ImageRect {
+  return props.ratio == null
+    ? adjustCropRect(from, handle, dx, dy, props.size)
+    : adjustCropRectWithAspect(from, handle, dx, dy, props.size, props.ratio)
+}
+
+function nudge(handle: CropHandle, event: KeyboardEvent) {
+  const move = resolveArrowNudge(event.key, event.shiftKey, props.size)
+  if (!move) {
+    return
+  }
+  event.preventDefault()
+  if (props.ratio != null && handle.length === 2) {
+    // A corner of a locked shape follows the larger of its two movements, so
+    // a key along one axis alone would never shrink it: the key pulls the
+    // corner outwards or inwards along both.
+    const horizontal = handle.includes("e") ? 1 : -1
+    const vertical = handle.includes("s") ? 1 : -1
+    const outwards = move.x * horizontal + move.y * vertical
+    rect.value = adjust(rect.value, handle, outwards * horizontal, (outwards / props.ratio) * vertical)
+    return
+  }
+  rect.value = adjust(rect.value, handle, move.x, move.y)
 }
 
 const selectionStyle = computed(() => ({
@@ -97,11 +126,26 @@ const HANDLE_CLASS: Record<Exclude<CropHandle, "move">, string> = {
         <span class="pointer-events-none absolute inset-y-0 left-1/3 border-l border-white/40" aria-hidden="true" />
         <span class="pointer-events-none absolute inset-y-0 left-2/3 border-l border-white/40" aria-hidden="true" />
       </template>
+      <!-- The keyboard's hold on the whole selection; the pointer drags the selection itself. -->
+      <span
+        class="absolute inset-0 outline-none focus-visible:ring-2 focus-visible:ring-white"
+        role="button"
+        tabindex="0"
+        :aria-label="t('catalog.lightbox.moveSelection')"
+        aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight"
+        data-region-move
+        @keydown="nudge('move', $event)"
+      />
       <span
         v-for="handle in CROP_HANDLES"
         :key="handle"
-        :class="['absolute size-4 rounded-full border-2 border-black/40 bg-white pointer-coarse:size-6', HANDLE_CLASS[handle]]"
+        :class="['absolute size-4 rounded-full border-2 border-black/40 bg-white outline-none focus-visible:ring-2 focus-visible:ring-white pointer-coarse:size-6', HANDLE_CLASS[handle]]"
         :data-handle="handle"
+        role="button"
+        tabindex="0"
+        :aria-label="`${t('catalog.lightbox.resizeSelection')} ${handle.toUpperCase()}`"
+        aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight"
+        @keydown="nudge(handle, $event)"
         @pointerdown.stop="beginDrag(handle, $event)"
         @pointermove="moveDrag"
         @pointerup="endDrag"

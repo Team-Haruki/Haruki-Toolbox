@@ -127,6 +127,27 @@ export type DrawTool = (typeof DRAW_TOOLS)[number]
 export const SIZE_STEPS = ["small", "medium", "large"] as const
 export type SizeStep = (typeof SIZE_STEPS)[number]
 
+const ARROW_DIRECTIONS: Record<string, ImagePoint> = {
+  ArrowLeft: { x: -1, y: 0 },
+  ArrowRight: { x: 1, y: 0 },
+  ArrowUp: { x: 0, y: -1 },
+  ArrowDown: { x: 0, y: 1 },
+}
+
+/**
+ * The move an arrow key stands for on a picture of this size, in image
+ * pixels: a hundredth of the long side, or a single pixel when `fine` (Shift
+ * held). `null` for any other key.
+ */
+export function resolveArrowNudge(key: string, fine: boolean, size: ImageSize): ImagePoint | null {
+  const direction = ARROW_DIRECTIONS[key]
+  if (!direction) {
+    return null
+  }
+  const step = fine ? 1 : Math.max(1, Math.round(Math.max(size.width, size.height) / 100))
+  return { x: direction.x * step, y: direction.y * step }
+}
+
 /** How wide the three lines look on screen, in CSS pixels, with the picture fitted to the stage. */
 export const DRAW_SCREEN_WIDTHS: Record<SizeStep, number> = { small: 3, medium: 6, large: 12 }
 

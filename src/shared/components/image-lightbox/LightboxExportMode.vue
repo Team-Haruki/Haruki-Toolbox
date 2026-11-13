@@ -91,6 +91,8 @@ async function refreshEncoded() {
 
 watchDebounced(settingsKey, () => void refreshEncoded(), { debounce: 300, immediate: true })
 
+let mounted = true
+
 async function save() {
   if (saving.value) {
     return
@@ -98,6 +100,10 @@ async function save() {
   saving.value = true
   try {
     const image = current.value ?? await encode()
+    // Closed while encoding: the export was dismissed, nothing is downloaded.
+    if (!mounted) {
+      return
+    }
     saveBlob(image.blob, resolveExportFileName(props.originalName, image.format, props.edited || resizeOps.value.length > 0))
     emit("saved")
   } catch {
@@ -106,8 +112,6 @@ async function save() {
     saving.value = false
   }
 }
-
-let mounted = true
 
 onMounted(async () => {
   const available = await listEncodableImageFormats()

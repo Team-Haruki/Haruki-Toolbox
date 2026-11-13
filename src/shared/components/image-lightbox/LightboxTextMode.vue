@@ -20,6 +20,7 @@ import {
   initialTextAt,
   moveTextAt,
   realignTextAt,
+  resolveArrowNudge,
   resizeTextAt,
   resolveHandleRotation,
   resolveTextSizeRange,
@@ -36,7 +37,8 @@ import LightboxToolButton from "./LightboxToolButton.vue"
  * alignment, a typeface, something to keep it readable on any picture (an
  * outline or a plate), a size anywhere in a range and a rotation. It is previewed on the
  * picture as it is typed and starts in the middle; the frame around it moves
- * it, and the round handle above the frame turns it.
+ * it (a drag, or the arrow keys once it has focus), and the round handle
+ * above the frame turns it.
  */
 const props = defineProps<{
   size: ImageSize
@@ -149,6 +151,14 @@ function endDrag() {
   drag = null
 }
 
+function nudge(event: KeyboardEvent) {
+  const move = resolveArrowNudge(event.key, event.shiftKey, props.size)
+  if (move) {
+    event.preventDefault()
+    at.value = moveTextAt(at.value, move.x, move.y, props.size)
+  }
+}
+
 let turning = false
 
 function beginTurn(event: PointerEvent) {
@@ -185,9 +195,14 @@ onMounted(() => {
   <Teleport v-if="frame && boxStyle" :to="frame">
     <div
       ref="box"
-      class="absolute box-content -translate-x-1.5 -translate-y-1.5 cursor-move touch-none rounded-sm p-1.5 outline-1 outline-dashed outline-white/90 [filter:drop-shadow(0_0_1px_rgb(0_0_0/0.9))]"
+      class="absolute box-content -translate-x-1.5 -translate-y-1.5 cursor-move touch-none rounded-sm p-1.5 outline-1 outline-dashed outline-white/90 [filter:drop-shadow(0_0_1px_rgb(0_0_0/0.9))] focus-visible:outline-2 focus-visible:outline-solid"
       :style="boxStyle"
+      role="button"
+      tabindex="0"
+      :aria-label="t('catalog.lightbox.moveText')"
+      aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight"
       data-testid="image-viewer-text-box"
+      @keydown="nudge"
       @pointerdown.stop="beginDrag"
       @pointermove="moveDrag"
       @pointerup="endDrag"
@@ -293,7 +308,7 @@ onMounted(() => {
           :max="sizeRange.max"
           :readout="String(fontSize)"
           :reset-to="sizeRange.initial"
-          :reset-label="t('catalog.lightbox.resetValue')"
+          :reset-label="t('common.reset')"
           data-testid="image-viewer-text-size"
         />
         <LightboxSlider

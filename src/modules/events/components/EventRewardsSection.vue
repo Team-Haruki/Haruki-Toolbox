@@ -95,18 +95,24 @@ function resourceLabel(reward: ResourceReward): string {
   return reward.quantity > 1 ? `${resourceName(reward)} ${resourceQuantity(reward)}` : resourceName(reward)
 }
 
-// A thumbnail that did not load (an item newer than the asset mirror) falls back to the name.
+// A thumbnail that did not load (an item newer than the asset mirror) falls
+// back to the name. Failures are kept by URL: another region or asset host
+// is another picture.
 const missingIcons = ref(new Set<string>())
 
+function resourceIconUrl(reward: ResourceReward): string | null {
+  return reward.iconPath ? resolveSekaiGameAssetUrl(props.region, reward.iconPath, props.assetEndpoint) : null
+}
+
 function resourceIcon(reward: ResourceReward): string | null {
-  return reward.iconPath && !missingIcons.value.has(reward.iconPath)
-    ? resolveSekaiGameAssetUrl(props.region, reward.iconPath, props.assetEndpoint)
-    : null
+  const url = resourceIconUrl(reward)
+  return url && !missingIcons.value.has(url) ? url : null
 }
 
 function markIconMissing(reward: ResourceReward) {
-  if (reward.iconPath) {
-    missingIcons.value = new Set(missingIcons.value).add(reward.iconPath)
+  const url = resourceIconUrl(reward)
+  if (url) {
+    missingIcons.value = new Set(missingIcons.value).add(url)
   }
 }
 </script>
