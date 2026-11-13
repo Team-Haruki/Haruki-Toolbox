@@ -19,11 +19,15 @@ function overridesHair(head: HeadChoice, hairId: number | null, rules: HeadHairR
 }
 
 /**
- * Whether a head can be worn with the hair worn now without changing it: not a full head set, not a pair the unit
- * forbids. The unset head always can.
+ * Whether a head goes with the hair worn now, leaving it as it is: one the hair can be worn with (not a full head set,
+ * not a pair the unit forbids), or one that overrides the hair with this very hair (a full head set of the worn
+ * hair's own costume, costume3dModelDefaultHairs). The unset head always does.
  */
 export function fitsWornHair(head: HeadChoice, hairId: number | null, rules: HeadHairRules): boolean {
-  return !overridesHair(head, hairId, rules)
+  if (!overridesHair(head, hairId, rules)) {
+    return true
+  }
+  return hairId != null && rules.defaultHairs.get(head.id) === hairId
 }
 
 /**

@@ -24,6 +24,10 @@ describe("fitsWornHair", () => {
     expect(fitsWornHair(accessory, 300, rules)).toBe(true)
     expect(fitsWornHair(set, 221, rules)).toBe(false)
   })
+
+  it("keeps a full head set that brings the hair worn now (its own costume's hairstyle)", () => {
+    expect(fitsWornHair(set, 140161, rules)).toBe(true)
+  })
 })
 
 describe("hairForHead", () => {
