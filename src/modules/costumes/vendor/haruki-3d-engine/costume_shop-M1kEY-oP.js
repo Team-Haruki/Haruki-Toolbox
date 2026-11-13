@@ -1,4 +1,4 @@
-import { C as e } from "./mirrorContent-BoiY5-sQ.js";
+import { C as e } from "./mirrorContent-DORk7s5d.js";
 //#region src/original/roleParts.ts
 async function t(t, n) {
 	let r = /^(\d+):(.+)$/.exec(String(n).trim());

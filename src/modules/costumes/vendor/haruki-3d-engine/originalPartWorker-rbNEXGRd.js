@@ -1,4 +1,4 @@
-import { D as e, E as t, O as n, T as r, c as i, k as a, s as o, w as s } from "./mirrorContent-BoiY5-sQ.js";
+import { D as e, E as t, O as n, T as r, c as i, k as a, s as o, w as s } from "./mirrorContent-DORk7s5d.js";
 new TextEncoder();
 var c = 4096;
 function l(e, t, n) {
@@ -639,13 +639,14 @@ function z(e) {
 var B = class {
 	host;
 	cacheBytes;
+	read;
 	catalogPromise = null;
 	open = /* @__PURE__ */ new Map();
 	sizes = /* @__PURE__ */ new Map();
 	byCabName = /* @__PURE__ */ new Map();
 	total = 0;
-	constructor(e, t = 384 * 1024 * 1024) {
-		this.host = e, this.cacheBytes = t;
+	constructor(e, n = 384 * 1024 * 1024, r = (e, n) => new t(e, n)) {
+		this.host = e, this.cacheBytes = n, this.read = r;
 	}
 	catalog() {
 		if (!this.catalogPromise) {
@@ -667,20 +668,21 @@ var B = class {
 		return await Promise.all(t.assetBundle.m_Dependencies.map((e) => this.load(e))), t;
 	}
 	loadOne(e) {
-		let n = this.open.get(e);
-		return n ? (this.open.delete(e), this.open.set(e, n), n) : (n = (async () => {
-			let n = await this.catalog(), r = n.bundles.get(e);
-			F(r, `original bundle ${e} is not in the AssetBundleInfo`);
-			let i = new t(e, R(await this.host.bundle(r, n.version), e));
+		let t = this.open.get(e);
+		return t ? (this.open.delete(e), this.open.set(e, t), t) : (t = (async () => {
+			let t = await this.catalog(), n = t.bundles.get(e);
+			F(n, `original bundle ${e} is not in the AssetBundleInfo`);
+			let r = R(await this.host.bundle(n, t.version), e), i = this.read(e, r);
 			return this.byCabName.set(i.cabName, i), this.sizes.set(e, i.size), this.total += i.size, this.evict(e), i;
-		})(), this.open.set(e, n), n.catch(() => this.open.delete(e)), n);
+		})(), this.open.set(e, t), t.catch(() => this.open.delete(e)), t);
 	}
 	evict(e) {
 		for (let t of this.open.keys()) {
 			if (this.total <= this.cacheBytes) break;
-			if (t === e || t === "shader/live") continue;
-			let n = this.sizes.get(t) ?? 0;
-			this.open.get(t).then((e) => this.byCabName.delete(e.cabName)), this.open.delete(t), this.sizes.delete(t), this.total -= n;
+			let n = this.sizes.get(t);
+			t === e || t === "shader/live" || n === void 0 || (this.open.get(t).then((e) => {
+				this.byCabName.get(e.cabName) === e && this.byCabName.delete(e.cabName);
+			}), this.open.delete(t), this.sizes.delete(t), this.total -= n);
 		}
 	}
 }, V = /* @__PURE__ */ new Map();

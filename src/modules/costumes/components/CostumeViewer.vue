@@ -8,7 +8,7 @@ import { useSettingsStore } from "@/shared/stores/settings"
 import type { SekaiRegion } from "@/types"
 import type { Haruki3DKernel } from "../vendor/haruki-3d-engine/haruki-3d-engine-costume-shop.js"
 import { costumeLoadTracker, loadCostumeContent, loadCostumeEngine, resolveCostumeContentBaseUrl } from "../lib/costume-content"
-import { formatMegabytes, loadProgressSince, type CostumeLoadProgress } from "../lib/costume-load-progress"
+import { formatMegabytes, type CostumeLoadProgress } from "../lib/costume-load-progress"
 import type { CostumeMotionType } from "../lib/costume-motions"
 
 export type CostumeViewerRecipe = {
@@ -62,10 +62,10 @@ let stopLoadProgress: (() => void) | null = null
 function watchLoadProgress() {
   stopLoadProgress?.()
   const tracker = costumeLoadTracker(contentBaseUrl.value)
-  const start = tracker.snapshot()
+  const start = tracker.mark()
   loadProgress.value = null
-  stopLoadProgress = tracker.subscribe((counts) => {
-    const progress = loadProgressSince(start, counts)
+  stopLoadProgress = tracker.subscribe(() => {
+    const progress = tracker.progressSince(start)
     loadProgress.value = progress.requested > 0 ? progress : null
   })
 }
@@ -86,7 +86,11 @@ let kernelBaseUrl: string | null = null
 let resizeObserver: ResizeObserver | null = null
 let loadGeneration = 0
 
-async function ensureKernel(): Promise<Haruki3DKernel | null> {
+/**
+ * The kernel for the current content root, created when the root changed. `generation` is the load asking: a newer
+ * load started while this one waited takes over, so a stale call neither creates nor replaces the kernel.
+ */
+async function ensureKernel(generation: number): Promise<Haruki3DKernel | null> {
   const canvas = canvasRef.value
   if (canvas == null) {
     return null
@@ -98,8 +102,11 @@ async function ensureKernel(): Promise<Haruki3DKernel | null> {
   }
 
   await disposeKernel()
+  if (generation !== loadGeneration) {
+    return null
+  }
   const [engine, content] = await Promise.all([loadCostumeEngine(), loadCostumeContent(baseUrl)])
-  if (canvasRef.value !== canvas) {
+  if (generation !== loadGeneration || canvasRef.value !== canvas) {
     return null
   }
   // The game's own backdrop (the character archive costume viewer's) unless the caller asks for the plain frame.
@@ -145,7 +152,7 @@ async function loadRecipe() {
   errorMessage.value = null
   watchLoadProgress()
   try {
-    const activeKernel = await ensureKernel()
+    const activeKernel = await ensureKernel(generation)
     if (activeKernel == null || generation !== loadGeneration) {
       return
     }

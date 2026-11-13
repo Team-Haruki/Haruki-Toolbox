@@ -8,7 +8,6 @@ import {
   BundleLoadTracker,
   fetchWithHostFallback,
   formatMegabytes,
-  loadProgressSince,
   trackBundleLoads,
 } from "./costume-load-progress"
 
@@ -23,7 +22,7 @@ describe("trackBundleLoads", () => {
   it("fetches the bundles a content names by URL and counts each download", async () => {
     const tracker = new BundleLoadTracker()
     const seen: number[] = []
-    tracker.subscribe((counts) => seen.push(counts.done))
+    tracker.subscribe(() => seen.push(tracker.progressSince(0).done))
     const fetched: string[] = []
     const tracked = trackBundleLoads(
       content((b) => `https://cdn.example/${b.bundleName}.bundle`),
@@ -37,7 +36,7 @@ describe("trackBundleLoads", () => {
     const bytes = await tracked.provideBundle(bundle("shader/live", 3), context())
     expect(new Uint8Array(bytes as ArrayBuffer)).toEqual(new Uint8Array([1, 2, 3]))
     expect(fetched).toEqual(["https://cdn.example/shader/live.bundle"])
-    expect(tracker.snapshot()).toEqual({ requested: 1, done: 1, bytesRequested: 3, bytesDone: 3 })
+    expect(tracker.progressSince(0)).toEqual({ requested: 1, done: 1, bytesRequested: 3, bytesDone: 3, fraction: 1 })
     expect(seen).toEqual([0, 1])
     expect(tracked.assetBundleInfo).toBe("catalog")
   })
@@ -49,13 +48,13 @@ describe("trackBundleLoads", () => {
       throw new Error("not fetched")
     })
     expect(await passthrough.provideBundle(bundle("a", 1), context())).toBe(raw)
-    expect(tracker.snapshot().requested).toBe(0)
+    expect(tracker.progressSince(0).requested).toBe(0)
 
     const failing = trackBundleLoads(content(() => "https://cdn.example/b.bundle"), tracker, async () =>
       new Response("missing", { status: 404 }),
     )
     await expect(failing.provideBundle(bundle("b", 5), context())).rejects.toThrow("HTTP 404")
-    expect(tracker.snapshot()).toEqual({ requested: 1, done: 1, bytesRequested: 5, bytesDone: 5 })
+    expect(tracker.progressSince(0)).toEqual({ requested: 1, done: 1, bytesRequested: 5, bytesDone: 5, fraction: 1 })
   })
 
   it("stops telling a listener once it unsubscribes", () => {
@@ -64,26 +63,34 @@ describe("trackBundleLoads", () => {
     const stop = tracker.subscribe(() => {
       calls += 1
     })
-    tracker.begin(1)
+    const id = tracker.begin(1)
     stop()
-    tracker.finish(1)
+    tracker.finish(id)
     expect(calls).toBe(1)
   })
 })
 
-describe("loadProgressSince", () => {
-  it("measures one load from its start, by bytes when sizes are known", () => {
-    const start = { requested: 4, done: 4, bytesRequested: 100, bytesDone: 100 }
-    expect(loadProgressSince(start, start).fraction).toBeNull()
-    expect(loadProgressSince(start, { requested: 6, done: 5, bytesRequested: 400, bytesDone: 175 })).toEqual({
-      requested: 2,
-      done: 1,
-      bytesRequested: 300,
-      bytesDone: 75,
-      fraction: 0.25,
-    })
-    // Without sizes, by bundles.
-    expect(loadProgressSince(start, { requested: 8, done: 6, bytesRequested: 100, bytesDone: 100 }).fraction).toBe(0.5)
+describe("BundleLoadTracker.progressSince", () => {
+  it("counts only the requests made since the mark, by bytes when sizes are known", () => {
+    const tracker = new BundleLoadTracker()
+    const earlier = tracker.begin(100)
+    const mark = tracker.mark()
+    expect(tracker.progressSince(mark).fraction).toBeNull()
+    const own = tracker.begin(10)
+    tracker.begin(30)
+    // A download of the earlier load finishing now does not advance this one.
+    tracker.finish(earlier)
+    expect(tracker.progressSince(mark)).toEqual({ requested: 2, done: 0, bytesRequested: 40, bytesDone: 0, fraction: 0 })
+    tracker.finish(own)
+    tracker.finish(own)
+    expect(tracker.progressSince(mark)).toEqual({ requested: 2, done: 1, bytesRequested: 40, bytesDone: 10, fraction: 0.25 })
+  })
+
+  it("goes by bundles when the catalog gives no sizes", () => {
+    const tracker = new BundleLoadTracker()
+    tracker.finish(tracker.begin(0))
+    tracker.begin(0)
+    expect(tracker.progressSince(0).fraction).toBe(0.5)
   })
 })
 

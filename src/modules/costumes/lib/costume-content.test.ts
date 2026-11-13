@@ -60,7 +60,7 @@ describe("loadCostumeContent", () => {
     const bundle = { bundleName: "shader/live", hash: "h", fileSize: 2 } as HarukiOriginalAssetBundleElement
     const bytes = await content.provideBundle(bundle, { version: "1", signal: new AbortController().signal })
     expect(new Uint8Array(bytes as ArrayBuffer)).toEqual(new Uint8Array([7, 7]))
-    expect(tracker.snapshot()).toEqual({ requested: 1, done: 1, bytesRequested: 2, bytesDone: 2 })
+    expect(tracker.progressSince(0)).toEqual({ requested: 1, done: 1, bytesRequested: 2, bytesDone: 2, fraction: 1 })
     expect(requested.filter((path) => path.endsWith("current.json"))).toHaveLength(1)
   })
 

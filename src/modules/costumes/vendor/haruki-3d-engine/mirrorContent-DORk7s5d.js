@@ -998,7 +998,7 @@ var Dt = 1, Ot = class {
 			contentId: this.id
 		};
 		if (typeof Worker > "u") {
-			this.inPlace ??= import("./originalPartWorker-BcFgzrqK.js").then((e) => (e.registerOriginalHost(this.id, this.host), e));
+			this.inPlace ??= import("./originalPartWorker-rbNEXGRd.js").then((e) => (e.registerOriginalHost(this.id, this.host), e));
 			try {
 				return {
 					id: 0,
@@ -1040,7 +1040,7 @@ var Dt = 1, Ot = class {
 	createWorker() {
 		let e = new Worker(new URL(
 			/* @vite-ignore */
-			"" + new URL("assets/originalPartWorker-DTJe20y4.js", import.meta.url).href,
+			"" + new URL("assets/originalPartWorker-CQRd1cI3.js", import.meta.url).href,
 			"" + import.meta.url
 		), { type: "module" });
 		return e.onmessage = (t) => {

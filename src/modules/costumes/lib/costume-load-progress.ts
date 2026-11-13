@@ -5,24 +5,42 @@ import type {
   HarukiOriginalBytesSource,
 } from "../vendor/haruki-3d-engine/haruki-3d-engine-costume-shop.js"
 
-/** Bundle downloads of one content since it was created; counts only grow. */
-export type CostumeLoadCounts = {
-  requested: number
-  done: number
-  /** Catalog sizes (`fileSize`) of the requested / finished bundles. */
-  bytesRequested: number
-  bytesDone: number
-}
+type Listener = () => void
 
-type Listener = (counts: CostumeLoadCounts) => void
-
-/** Counts the bundles a content downloads, for a load's progress bar. */
+/**
+ * The bundle downloads of one content, in request order, so a load's progress counts only the requests made after it
+ * started: a download still running from an earlier load does not advance it when it finishes.
+ */
 export class BundleLoadTracker {
-  private counts: CostumeLoadCounts = { requested: 0, done: 0, bytesRequested: 0, bytesDone: 0 }
+  private readonly requests: { bytes: number; done: boolean }[] = []
   private readonly listeners = new Set<Listener>()
 
-  snapshot(): CostumeLoadCounts {
-    return { ...this.counts }
+  /** Where a load starts: its requests are the ones made from now on. */
+  mark(): number {
+    return this.requests.length
+  }
+
+  /** The downloads requested since `mark`. */
+  progressSince(mark: number): CostumeLoadProgress {
+    let requested = 0
+    let done = 0
+    let bytesRequested = 0
+    let bytesDone = 0
+    for (const request of this.requests.slice(mark)) {
+      requested += 1
+      bytesRequested += request.bytes
+      if (request.done) {
+        done += 1
+        bytesDone += request.bytes
+      }
+    }
+    let fraction: number | null = null
+    if (bytesRequested > 0) {
+      fraction = bytesDone / bytesRequested
+    } else if (requested > 0) {
+      fraction = done / requested
+    }
+    return { requested, done, bytesRequested, bytesDone, fraction }
   }
 
   subscribe(listener: Listener): () => void {
@@ -32,19 +50,24 @@ export class BundleLoadTracker {
     }
   }
 
-  begin(bytes: number) {
-    this.update({ requested: this.counts.requested + 1, bytesRequested: this.counts.bytesRequested + bytes })
+  /** A download starts. -> its id, for `finish`. */
+  begin(bytes: number): number {
+    this.requests.push({ bytes, done: false })
+    this.notify()
+    return this.requests.length - 1
   }
 
-  finish(bytes: number) {
-    this.update({ done: this.counts.done + 1, bytesDone: this.counts.bytesDone + bytes })
+  finish(id: number) {
+    const request = this.requests[id]
+    if (request && !request.done) {
+      request.done = true
+      this.notify()
+    }
   }
 
-  private update(change: Partial<CostumeLoadCounts>) {
-    this.counts = { ...this.counts, ...change }
-    const counts = this.snapshot()
+  private notify() {
     for (const listener of this.listeners) {
-      listener(counts)
+      listener()
     }
   }
 }
@@ -73,7 +96,7 @@ export function trackBundleLoads(
         return source
       }
       const bytes = Math.max(0, bundle.fileSize || 0)
-      tracker.begin(bytes)
+      const request = tracker.begin(bytes)
       try {
         const response = await fetchWithHostFallback(String(source), context.signal, fetchBundle)
         if (!response.ok) {
@@ -81,7 +104,7 @@ export function trackBundleLoads(
         }
         return await response.arrayBuffer()
       } finally {
-        tracker.finish(bytes)
+        tracker.finish(request)
       }
     },
   }
@@ -116,28 +139,15 @@ export async function fetchWithHostFallback(url: string, signal: AbortSignal | u
   return fetchImpl(twin, { signal })
 }
 
-/** One load's share of the downloads: what was requested and finished since `start`. */
+/** One load's downloads. */
 export type CostumeLoadProgress = {
   requested: number
   done: number
+  /** Catalog sizes (`fileSize`) of the requested / finished bundles. */
   bytesRequested: number
   bytesDone: number
   /** 0..1, by bytes when the catalog gives sizes, else by bundles; null before the first bundle is asked for. */
   fraction: number | null
-}
-
-export function loadProgressSince(start: CostumeLoadCounts, now: CostumeLoadCounts): CostumeLoadProgress {
-  const requested = now.requested - start.requested
-  const done = Math.min(requested, now.done - start.done)
-  const bytesRequested = now.bytesRequested - start.bytesRequested
-  const bytesDone = Math.min(bytesRequested, now.bytesDone - start.bytesDone)
-  let fraction: number | null = null
-  if (bytesRequested > 0) {
-    fraction = bytesDone / bytesRequested
-  } else if (requested > 0) {
-    fraction = done / requested
-  }
-  return { requested, done, bytesRequested, bytesDone, fraction }
 }
 
 /** Megabytes with one decimal, for the progress text. */
