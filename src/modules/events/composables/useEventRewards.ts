@@ -2,6 +2,7 @@ import { computed, type ComputedRef, type Ref } from "vue"
 import type { SekaiRegion } from "@/types"
 import { useCatalogResource, type CatalogResource } from "@/shared/sekai/use-catalog-resource"
 import {
+  EVENT_REWARD_NAME_FILES,
   buildEventRewardsIndex,
   resolveEventRankingRewards,
   type EventRankingRewardRange,
@@ -13,11 +14,14 @@ import {
  * Ranking-reward lookups (honors + resource boxes). Heavy on jp/en
  * (`resourceBoxes` is tens of thousands of rows) so it only loads when the
  * rewards section is opened; the box files are optional because the cn dump
- * ships neither and tw/kr/cn use the flat `resourceBoxDetails` table.
+ * ships neither and tw/kr/cn use the flat `resourceBoxDetails` table. The
+ * small tables that name materials and tickets are optional too: without one
+ * a reward shows its type instead of its name.
  */
 export const EVENT_REWARDS_KEY = "events/rewards"
-export const EVENT_REWARDS_FILES = ["honors", "honorGroups", "resourceBoxes", "resourceBoxDetails"] as const
-export const EVENT_REWARDS_OPTIONAL = ["honorGroups", "resourceBoxes", "resourceBoxDetails"] as const
+const EVENT_REWARD_NAME_FILE_LIST = Object.values(EVENT_REWARD_NAME_FILES)
+export const EVENT_REWARDS_FILES = ["honors", "honorGroups", "resourceBoxes", "resourceBoxDetails", ...EVENT_REWARD_NAME_FILE_LIST] as const
+export const EVENT_REWARDS_OPTIONAL = ["honorGroups", "resourceBoxes", "resourceBoxDetails", ...EVENT_REWARD_NAME_FILE_LIST] as const
 
 export type UseEventRewardsResult = CatalogResource<EventRewardsIndex> & {
   rows: ComputedRef<EventRankingRewardRow[]>

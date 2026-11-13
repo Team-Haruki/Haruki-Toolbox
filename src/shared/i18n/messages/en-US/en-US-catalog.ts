@@ -194,6 +194,7 @@ export default {
         "material": "Material",
         "boost_item": "Energy item",
         "stamp": "Stamp",
+        "player_frame": "Player frame",
         "honor_background": "Title background",
         "honor_word": "Title text",
         "virtual_item": "Virtual item",

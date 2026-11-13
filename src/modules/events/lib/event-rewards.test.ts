@@ -3,6 +3,7 @@ import {
   buildEventRewardsIndex,
   normalizeEventRankingRewardRanges,
   resolveEventRankingRewards,
+  resolveEventRewardIconPath,
 } from "./event-rewards"
 
 // jp/en shape: ids and flags present, details embedded in the box.
@@ -148,15 +149,52 @@ describe("resolveEventRankingRewards", () => {
     const rows = resolveEventRankingRewards(ranges, index)
     expect(rows[0].rewards).toEqual([
       { kind: "honor", key: "6849:0", honor: index.honors.get(8631)!, level: 1, quantity: 1 },
-      { kind: "resource", key: "6849:1", resourceType: "jewel", resourceId: null, quantity: 3000 },
-      { kind: "resource", key: "6849:2", resourceType: "material", resourceId: 205, quantity: 25 },
+      { kind: "resource", key: "6849:1", resourceType: "jewel", resourceId: null, quantity: 3000, name: null, iconPath: "startapp/thumbnail/common_material/jewel.png" },
+      { kind: "resource", key: "6849:2", resourceType: "material", resourceId: 205, quantity: 25, name: null, iconPath: "startapp/thumbnail/material/material205.png" },
     ])
   })
 
   test("unknown honors degrade to a generic resource and unknown boxes to nothing", () => {
     const rows = resolveEventRankingRewards(ranges, index)
-    expect(rows[1].rewards).toEqual([{ kind: "resource", key: "6850:0", resourceType: "honor", resourceId: 424242, quantity: 1 }])
+    expect(rows[1].rewards).toEqual([{ kind: "resource", key: "6850:0", resourceType: "honor", resourceId: 424242, quantity: 1, name: null, iconPath: null }])
     expect(rows[2].rewards).toEqual([])
     expect(rows[2].isToRankBorder).toBe(true)
+  })
+})
+
+describe("reward resources", () => {
+  test("names a resource from its own master table", () => {
+    const index = buildEventRewardsIndex({
+      honors: HONORS,
+      honorGroups: HONOR_GROUPS,
+      resourceBoxes: JP_BOXES,
+      resourceBoxDetails: [],
+      materials: [{ id: 205, name: "Wish Piece" }, { id: 206 }, { name: "No id" }],
+      skillPracticeTickets: [{ id: 3, name: "Skill Score (Advanced)" }],
+    })
+    expect(index.names.get("material:205")).toBe("Wish Piece")
+    expect(index.names.get("skill_practice_ticket:3")).toBe("Skill Score (Advanced)")
+    expect(index.names.size).toBe(2)
+    const rows = resolveEventRankingRewards(normalizeEventRankingRewardRanges(JP_RANGES), index)
+    expect(rows[0].rewards[2]).toMatchObject({ resourceType: "material", name: "Wish Piece" })
+    expect(rows[0].rewards[1]).toMatchObject({ resourceType: "jewel", name: null })
+  })
+
+  test("finds the thumbnail of each kind of resource", () => {
+    expect(resolveEventRewardIconPath("jewel", null)).toBe("startapp/thumbnail/common_material/jewel.png")
+    expect(resolveEventRewardIconPath("paid_jewel", null)).toBe("startapp/thumbnail/common_material/jewel.png")
+    expect(resolveEventRewardIconPath("coin", null)).toBe("startapp/thumbnail/common_material/coin.png")
+    expect(resolveEventRewardIconPath("virtual_coin", null)).toBe("startapp/thumbnail/common_material/virtual_coin.png")
+    expect(resolveEventRewardIconPath("material", 91)).toBe("startapp/thumbnail/material/material91.png")
+    expect(resolveEventRewardIconPath("skill_practice_ticket", 3)).toBe("startapp/thumbnail/skill_practice_ticket/ticket3.png")
+    expect(resolveEventRewardIconPath("practice_ticket", 1)).toBe("startapp/thumbnail/practice_ticket/ticket1.png")
+    expect(resolveEventRewardIconPath("boost_item", 2)).toBe("startapp/thumbnail/boost_item/boost_item2.png")
+  })
+
+  test("has no thumbnail for a resource without an id or of an undrawn type", () => {
+    expect(resolveEventRewardIconPath("material", null)).toBeNull()
+    expect(resolveEventRewardIconPath("skill_practice_ticket", 0)).toBeNull()
+    expect(resolveEventRewardIconPath("boost_item", null)).toBeNull()
+    expect(resolveEventRewardIconPath("player_frame", 10001)).toBeNull()
   })
 })
