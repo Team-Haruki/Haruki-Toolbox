@@ -109,6 +109,10 @@ function s(e, t) {
 			};
 			return r || e.renderFrame(), n;
 		},
+		async captureImage(t) {
+			if (m(), !e.captureImage) throw Error("this engine cannot capture an image");
+			return e.captureImage(t);
+		},
 		async setBackground(n) {
 			m(), await e.setBackgroundMode?.(n, t), !r && !i && e.renderFrame();
 		},

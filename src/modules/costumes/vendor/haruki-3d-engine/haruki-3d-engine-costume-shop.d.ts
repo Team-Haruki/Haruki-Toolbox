@@ -184,6 +184,11 @@ export interface Haruki3DKernel {
   setViewHeightOffset(metres: number): HarukiViewFraming
   setBackground(background: "transparent" | "archive"): Promise<void>
   /**
+   * The current frame as a PNG rendered off screen `height` pixels high (default 2048; the width follows the canvas),
+   * supersampled, the outline at the game's width, the background as set. The canvas is not touched.
+   */
+  captureImage(options?: { height?: number }): Promise<Blob>
+  /**
    * "all": the whole character; "head_optional": only the worn head accessory, taken off the character and framed on
    * its own (kept across load()). Redraws when paused.
    */

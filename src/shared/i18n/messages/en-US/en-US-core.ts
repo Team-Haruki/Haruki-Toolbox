@@ -899,6 +899,8 @@ export default {
       "zoomIn": "Zoom in",
       "zoomOut": "Zoom out",
       "copyLink": "Copy link",
+      "saveImage": "Save image",
+      "saveImageFailed": "Could not save the image",
       "linkCopied": "Link copied",
       "colorCount": "{count} colors",
       "linkCopyFailed": "Could not copy. Copy the address bar instead.",

@@ -5,6 +5,7 @@ import { useRoute, useRouter } from "vue-router"
 import {
   LucideCrown,
   LucideImage,
+  LucideImageDown,
   LucideLink,
   LucidePersonStanding,
   LucideRefreshCcw,
@@ -46,6 +47,7 @@ import SekaiCharacterAvatar from "@/shared/components/SekaiCharacterAvatar.vue"
 import { resolveCostumeThumbnailUrl } from "@/shared/sekai/data-sources"
 import { applyCatalogRegionQuery, useCatalogRegionQuerySync, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
+import { downloadFile } from "@/lib/download-file"
 import { useSettingsStore } from "@/shared/stores/settings"
 import type { SekaiRegion } from "@/types"
 import CostumeViewer, { type CostumeViewerBackground, type CostumeViewerRecipe } from "../components/CostumeViewer.vue"
@@ -581,6 +583,28 @@ async function copyLink() {
   }
 }
 
+const savingImage = ref(false)
+
+/** Saves the stage as a PNG rendered off screen at 2048 px high, named by character and parts. */
+async function saveImage() {
+  if (savingImage.value) {
+    return
+  }
+  savingImage.value = true
+  try {
+    const blob = await viewerRef.value?.captureImage()
+    if (blob == null) {
+      return
+    }
+    const parts = [bodyId.value, headId.value, hairId.value].map((id) => id ?? 0).join("-")
+    downloadFile(`costume-${characterId.value}-${parts}.png`, blob, "image/png")
+  } catch {
+    toast.error(t("costumes.dressup.saveImageFailed"))
+  } finally {
+    savingImage.value = false
+  }
+}
+
 function selectCharacter(id: number) {
   if (id !== characterId.value && characterMap.value.has(id)) {
     characterId.value = id
@@ -791,6 +815,9 @@ watch(() => route.query, () => {
               <LucideUndo2 class="size-4" /> {{ t("costumes.dressup.resetView") }}
             </Button>
             <span class="flex-1" />
+            <Button variant="outline" size="sm" :disabled="savingImage" @click="saveImage">
+              <LucideImageDown class="size-4" /> {{ t("costumes.dressup.saveImage") }}
+            </Button>
             <Button variant="outline" size="sm" @click="copyLink">
               <LucideLink class="size-4" /> {{ t("costumes.dressup.copyLink") }}
             </Button>

@@ -314,7 +314,15 @@ function resetView() {
   applyView()
 }
 
-defineExpose({ rotateBy, zoomBy, resetView })
+/** The current view as a PNG, rendered at 2048 px high (sharp regardless of the canvas size); null while not ready. */
+async function captureImage(): Promise<Blob | null> {
+  if (status.value !== "ready" || kernel == null) {
+    return null
+  }
+  return kernel.captureImage({ height: 2048 })
+}
+
+defineExpose({ rotateBy, zoomBy, resetView, captureImage })
 
 function handleVisibilityChange() {
   if (kernel == null || status.value !== "ready") {

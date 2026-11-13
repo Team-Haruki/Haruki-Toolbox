@@ -899,6 +899,8 @@ export default {
       "zoomIn": "放大",
       "zoomOut": "缩小",
       "copyLink": "复制链接",
+      "saveImage": "保存图片",
+      "saveImageFailed": "图片保存失败",
       "linkCopied": "链接已复制",
       "colorCount": "{count} 色",
       "linkCopyFailed": "复制失败，请手动复制地址栏",
