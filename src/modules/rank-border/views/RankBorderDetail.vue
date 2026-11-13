@@ -3,7 +3,7 @@ import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { useRoute, useRouter, type RouteLocationRaw } from "vue-router"
 import { toast } from "vue-sonner"
-import { ArrowLeft, Link2, RefreshCcw } from "lucide-vue-next"
+import { ArrowLeft, Download, Link2, RefreshCcw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -28,6 +28,7 @@ import {
   useEventPlannerStore,
 } from "@/modules/deck-recommend"
 import { formatLocalizedDateTime } from "@/lib/date-time"
+import { downloadFile } from "@/lib/download-file"
 import { formatNumberCN } from "@/lib/number-format"
 import { resolveSekaiRegionLabel } from "@/lib/sekai-region"
 import { getI18nLocale } from "@/shared/i18n"
@@ -53,6 +54,7 @@ import {
   type RankBorderDetailTargetInput,
 } from "../lib/detail-link"
 import { formatDurationLabel } from "../lib/duration-label"
+import { buildRankBorderTraceCsv, rankBorderTraceFileName } from "../lib/export"
 import {
   buildProfileHonorViews,
   isLatestResult,
@@ -910,6 +912,29 @@ async function copyLink() {
   }
 }
 
+// The whole trace on the page (the player's, or the seat's when that view is
+// on), whatever window the charts are narrowed to.
+function exportTrace() {
+  const detail = params.value
+  const trace = activeTrace.value
+  const csv = buildRankBorderTraceCsv({
+    headers: {
+      time: t("rankBorder.table.latest"),
+      timestamp: t("rankBorder.export.timestamp"),
+      rank: t("rankBorder.table.rank"),
+      score: t("rankBorder.table.score"),
+      userId: t("rankBorder.export.userId"),
+    },
+    trace,
+  })
+  if (!detail || !csv) {
+    return
+  }
+  const latest = trace.reduce((newest, point) => Math.max(newest, point.timestamp), 0)
+  downloadFile(rankBorderTraceFileName(detail, detail.target, seatView.value, latest), csv, "text/csv;charset=utf-8")
+  toast.success(t("rankBorder.export.done"))
+}
+
 function updateInterval(value: unknown) {
   if (typeof value !== "string" || !/^\d+$/.test(value)) {
     return
@@ -1070,6 +1095,19 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
           <Button type="button" variant="outline" size="sm" class="h-8" @click="copyLink">
             <Link2 class="size-4" />
             <span class="hidden sm:inline">{{ t("rankBorder.actions.copyLink") }}</span>
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            class="h-8"
+            :disabled="activeTrace.length === 0"
+            :aria-label="t('rankBorder.actions.export')"
+            data-testid="rank-detail-export"
+            @click="exportTrace"
+          >
+            <Download class="size-4" />
+            <span class="hidden sm:inline">{{ t("rankBorder.actions.export") }}</span>
           </Button>
           <Button type="button" size="sm" class="h-8" :disabled="loading" @click="refresh(false)">
             <RefreshCcw :class="['size-4', loading ? 'animate-spin' : '']" />

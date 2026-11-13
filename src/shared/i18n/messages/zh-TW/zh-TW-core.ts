@@ -1872,6 +1872,8 @@ export default {
       "notChecked": "未檢查",
       "refresh": "重新整理使用者資料",
       "refreshing": "重新整理中...",
+      "export": "匯出帳號資料",
+      "exporting": "匯出中...",
       "clear": "清理使用者資料快取",
       "clearDialog": {
         "title": "清理使用者資料快取？",
@@ -1882,6 +1884,8 @@ export default {
         "alreadyCurrent": "使用者資料已是最新",
         "refreshed": "使用者資料已重新整理",
         "refreshFailed": "使用者資料重新整理失敗",
+        "exported": "帳號資料已匯出",
+        "exportFailed": "帳號資料匯出失敗",
         "cleared": "使用者資料快取已清理",
         "clearFailed": "使用者資料快取清理失敗"
       }

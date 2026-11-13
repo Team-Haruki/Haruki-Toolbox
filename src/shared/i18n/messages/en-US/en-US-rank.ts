@@ -63,7 +63,16 @@ export default {
       "copyLink": "Copy link",
       "linkCopied": "Detail link copied",
       "expandChart": "Expand chart",
-      "login": "Log in"
+      "login": "Log in",
+      "export": "Export data"
+    },
+    "export": {
+      "player": "Player",
+      "userId": "Player ID",
+      "timestamp": "Timestamp",
+      "holderGrowth": "Player growth ({interval})",
+      "seatGrowth": "Seat growth ({interval})",
+      "done": "Data exported"
     },
     "sections": {
       "query": "Query settings",

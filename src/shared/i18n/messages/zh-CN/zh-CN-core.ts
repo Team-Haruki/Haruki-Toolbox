@@ -1872,6 +1872,8 @@ export default {
       "notChecked": "未检查",
       "refresh": "刷新用户数据",
       "refreshing": "刷新中...",
+      "export": "导出账号数据",
+      "exporting": "导出中...",
       "clear": "清理用户数据缓存",
       "clearDialog": {
         "title": "清理用户数据缓存？",
@@ -1882,6 +1884,8 @@ export default {
         "alreadyCurrent": "用户数据已是最新",
         "refreshed": "用户数据已刷新",
         "refreshFailed": "用户数据刷新失败",
+        "exported": "账号数据已导出",
+        "exportFailed": "账号数据导出失败",
         "cleared": "用户数据缓存已清理",
         "clearFailed": "用户数据缓存清理失败"
       }
