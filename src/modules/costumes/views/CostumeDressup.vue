@@ -1432,14 +1432,15 @@ watch(() => route.query, () => {
                 <p v-else-if="donorItems.length === 0" class="py-3 text-center text-xs text-muted-foreground">
                   {{ t("costumes.dressup.empty") }}
                 </p>
-                <div v-else class="grid grid-cols-4 gap-1.5 sm:grid-cols-5" role="radiogroup" :aria-label="characterMap.get(shownDonor ?? 0)?.name ?? ''">
+                <!-- The rack's own tiles: one per costume, its colours as chips under it. -->
+                <div v-else class="grid grid-cols-3 gap-2 sm:grid-cols-4" role="radiogroup" :aria-label="characterMap.get(shownDonor ?? 0)?.name ?? ''">
                   <div v-for="group in donorGroups" :key="group.key" class="flex min-w-0 flex-col gap-1">
                     <button
                       type="button"
                       role="radio"
                       :aria-checked="group.options.some(isDonorOptionSelected)"
                       :title="donorActiveOption(group).colorName ? `${group.name} · ${donorActiveOption(group).colorName}` : group.name"
-                      class="group flex min-w-0 flex-col items-center gap-0.5 rounded-md text-center outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      class="group flex min-w-0 flex-col gap-1 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       @click="shownDonor != null && selectBorrowed(shownDonor, donorActiveOption(group).id)"
                     >
                       <span
@@ -1449,11 +1450,19 @@ watch(() => route.query, () => {
                         ]"
                       >
                         <SekaiAssetImage :sources="thumbnailSources(donorActiveOption(group))" :alt="group.name" fit="contain" placeholder-class="bg-transparent" />
+                        <span
+                          v-if="group.options.length > 1"
+                          class="absolute top-1 right-1 rounded bg-background/85 px-1 text-[10px] leading-4 text-muted-foreground tabular-nums shadow-sm"
+                        >
+                          {{ t("costumes.dressup.colorCount", { count: group.options.length }) }}
+                        </span>
                       </span>
-                      <span class="w-full truncate text-[10px] leading-tight text-muted-foreground">{{ group.name }}</span>
+                      <span class="truncate text-[11px] leading-tight" :class="group.options.some(isDonorOptionSelected) ? 'font-medium' : 'text-muted-foreground'">
+                        {{ group.name }}
+                      </span>
                     </button>
                     <!-- Colour variants, one tap each; the borrowed one is ringed. -->
-                    <div v-if="group.options.length > 1" class="flex flex-wrap gap-0.5" role="radiogroup" :aria-label="group.name">
+                    <div v-if="group.options.length > 1" class="flex flex-wrap gap-1" role="radiogroup" :aria-label="group.name">
                       <button
                         v-for="option in group.options"
                         :key="option.id"
@@ -1462,7 +1471,7 @@ watch(() => route.query, () => {
                         :aria-checked="isDonorOptionSelected(option)"
                         :title="option.colorName || option.name"
                         :class="[
-                          'relative size-5 shrink-0 overflow-hidden rounded bg-muted/40 ring-2 transition',
+                          'relative size-6 shrink-0 overflow-hidden rounded bg-muted/40 ring-2 transition',
                           isDonorOptionSelected(option) ? 'ring-primary' : 'ring-transparent hover:ring-border',
                         ]"
                         @click="shownDonor != null && selectBorrowed(shownDonor, option.id)"
@@ -1470,6 +1479,9 @@ watch(() => route.query, () => {
                         <SekaiAssetImage :sources="thumbnailSources(option)" :alt="option.colorName || option.name" fit="contain" placeholder-class="bg-transparent" />
                       </button>
                     </div>
+                    <span v-else-if="donorActiveOption(group).colorName" class="truncate text-[10px] leading-tight text-muted-foreground">
+                      {{ donorActiveOption(group).colorName }}
+                    </span>
                   </div>
                 </div>
                 </template>
