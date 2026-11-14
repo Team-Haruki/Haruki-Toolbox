@@ -1,153 +1,8 @@
-//#region node_modules/brotli-wasm/pkg.web/brotli_wasm.js
-var e, t = Array(32).fill(void 0);
-t.push(void 0, null, !0, !1);
-function n(e) {
-	return t[e];
-}
-var r = new TextDecoder("utf-8", {
-	ignoreBOM: !0,
-	fatal: !0
-});
-r.decode();
-var i = null;
-function a() {
-	return (i === null || i.buffer !== e.memory.buffer) && (i = new Uint8Array(e.memory.buffer)), i;
-}
-function o(e, t) {
-	return r.decode(a().subarray(e, e + t));
-}
-var s = t.length;
-function c(e) {
-	s === t.length && t.push(t.length + 1);
-	let n = s;
-	return s = t[n], t[n] = e, n;
-}
-var l = 0, u = new TextEncoder("utf-8"), d = typeof u.encodeInto == "function" ? function(e, t) {
-	return u.encodeInto(e, t);
-} : function(e, t) {
-	let n = u.encode(e);
-	return t.set(n), {
-		read: e.length,
-		written: n.length
-	};
-};
-function f(e, t, n) {
-	if (n === void 0) {
-		let n = u.encode(e), r = t(n.length);
-		return a().subarray(r, r + n.length).set(n), l = n.length, r;
-	}
-	let r = e.length, i = t(r), o = a(), s = 0;
-	for (; s < r; s++) {
-		let t = e.charCodeAt(s);
-		if (t > 127) break;
-		o[i + s] = t;
-	}
-	if (s !== r) {
-		s !== 0 && (e = e.slice(s)), i = n(i, r, r = s + e.length * 3);
-		let t = a().subarray(i + s, i + r), o = d(e, t);
-		s += o.written;
-	}
-	return l = s, i;
-}
-var p = null;
-function m() {
-	return (p === null || p.buffer !== e.memory.buffer) && (p = new Int32Array(e.memory.buffer)), p;
-}
-function h(e) {
-	e < 36 || (t[e] = s, s = e);
-}
-function g(e) {
-	let t = n(e);
-	return h(e), t;
-}
-function _(e, t) {
-	let n = t(e.length * 1);
-	return a().set(e, n / 1), l = e.length, n;
-}
-function ee(e, t) {
-	return a().subarray(e / 1, e / 1 + t);
-}
-function te(t) {
-	try {
-		let o = e.__wbindgen_add_to_stack_pointer(-16), s = _(t, e.__wbindgen_malloc), c = l;
-		e.decompress(o, s, c);
-		var n = m()[o / 4 + 0], r = m()[o / 4 + 1], i = m()[o / 4 + 2];
-		if (m()[o / 4 + 3]) throw g(i);
-		var a = ee(n, r).slice();
-		return e.__wbindgen_free(n, r * 1), a;
-	} finally {
-		e.__wbindgen_add_to_stack_pointer(16);
-	}
-}
-Object.freeze({
-	ResultSuccess: 1,
-	1: "ResultSuccess",
-	NeedsMoreInput: 2,
-	2: "NeedsMoreInput",
-	NeedsMoreOutput: 3,
-	3: "NeedsMoreOutput"
-});
-async function v(e, t) {
-	if (typeof Response == "function" && e instanceof Response) {
-		if (typeof WebAssembly.instantiateStreaming == "function") try {
-			return await WebAssembly.instantiateStreaming(e, t);
-		} catch (t) {
-			if (e.headers.get("Content-Type") != "application/wasm") console.warn("`WebAssembly.instantiateStreaming` failed because your server does not serve wasm with `application/wasm` MIME type. Falling back to `WebAssembly.instantiate` which is slower. Original error:\n", t);
-			else throw t;
-		}
-		let n = await e.arrayBuffer();
-		return await WebAssembly.instantiate(n, t);
-	} else {
-		let n = await WebAssembly.instantiate(e, t);
-		return n instanceof WebAssembly.Instance ? {
-			instance: n,
-			module: e
-		} : n;
-	}
-}
-async function y(t) {
-	if (t === void 0) throw Error("Brotli WASM URL is required.");
-	let r = {};
-	r.wbg = {}, r.wbg.__wbindgen_is_undefined = function(e) {
-		return n(e) === void 0;
-	}, r.wbg.__wbindgen_is_object = function(e) {
-		let t = n(e);
-		return typeof t == "object" && !!t;
-	}, r.wbg.__wbindgen_string_new = function(e, t) {
-		return c(o(e, t));
-	}, r.wbg.__wbindgen_error_new = function(e, t) {
-		return c(Error(o(e, t)));
-	}, r.wbg.__wbindgen_json_serialize = function(t, r) {
-		let i = n(r), a = f(JSON.stringify(i === void 0 ? null : i), e.__wbindgen_malloc, e.__wbindgen_realloc), o = l;
-		m()[t / 4 + 1] = o, m()[t / 4 + 0] = a;
-	}, r.wbg.__wbg_new_693216e109162396 = function() {
-		return c(/* @__PURE__ */ Error());
-	}, r.wbg.__wbg_stack_0ddaca5d1abfb52f = function(t, r) {
-		let i = n(r).stack, a = f(i, e.__wbindgen_malloc, e.__wbindgen_realloc), o = l;
-		m()[t / 4 + 1] = o, m()[t / 4 + 0] = a;
-	}, r.wbg.__wbg_error_09919627ac0992f5 = function(t, n) {
-		try {
-			console.error(o(t, n));
-		} finally {
-			e.__wbindgen_free(t, n);
-		}
-	}, r.wbg.__wbindgen_object_drop_ref = function(e) {
-		g(e);
-	}, r.wbg.__wbindgen_throw = function(e, t) {
-		throw Error(o(e, t));
-	}, (typeof t == "string" || typeof Request == "function" && t instanceof Request || typeof URL == "function" && t instanceof URL) && (t = fetch(t));
-	let { instance: i, module: a } = await v(await t, r);
-	return e = i.exports, y.__wbindgen_wasm_module = a, e;
-}
-//#endregion
-//#region src/runtime/brotliWasmRuntime.ts
-var b = null;
-function x(e) {
-	return b ??= y(e).then(() => ({ decompress: te })), b;
-}
+import { D as e, O as t, w as n } from "./unityPrefabRuntime-CVkNMX2o.js";
+import { D as r, O as i, c as a, k as o, l as s } from "./mirrorContent-g0uMrwDJ.js";
 new TextEncoder();
-var S = 4096;
-function C(e, t, n) {
+var c = 4096;
+function l(e, t, n) {
 	let r = t, i = r + n, a = [], o = "";
 	for (; r < i;) {
 		let t = e[r++];
@@ -162,27 +17,27 @@ function C(e, t, n) {
 			let n = e[r++] & 63, i = e[r++] & 63, o = e[r++] & 63, s = (t & 7) << 18 | n << 12 | i << 6 | o;
 			s > 65535 && (s -= 65536, a.push(s >>> 10 & 1023 | 55296), s = 56320 | s & 1023), a.push(s);
 		} else a.push(t);
-		a.length >= S && (o += String.fromCharCode(...a), a.length = 0);
+		a.length >= c && (o += String.fromCharCode(...a), a.length = 0);
 	}
 	return a.length > 0 && (o += String.fromCharCode(...a)), o;
 }
-var w = new TextDecoder(), ne = 200;
-function re(e, t, n) {
+var ee = new TextDecoder(), te = 200;
+function ne(e, t, n) {
 	let r = e.subarray(t, t + n);
-	return w.decode(r);
+	return ee.decode(r);
 }
-function ie(e, t, n) {
-	return n > ne ? re(e, t, n) : C(e, t, n);
+function u(e, t, n) {
+	return n > te ? ne(e, t, n) : l(e, t, n);
 }
 //#endregion
 //#region node_modules/@msgpack/msgpack/dist.esm/ExtData.mjs
-var T = class {
+var d = class {
 	type;
 	data;
 	constructor(e, t) {
 		this.type = e, this.data = t;
 	}
-}, E = class e extends Error {
+}, f = class e extends Error {
 	constructor(t) {
 		super(t);
 		let n = Object.create(e.prototype);
@@ -193,21 +48,21 @@ var T = class {
 		});
 	}
 };
-function D(e, t, n) {
+function p(e, t, n) {
 	let r = Math.floor(n / 4294967296), i = n;
 	e.setUint32(t, r), e.setUint32(t + 4, i);
 }
-function O(e, t) {
+function m(e, t) {
 	let n = e.getInt32(t), r = e.getUint32(t + 4);
 	return n * 4294967296 + r;
 }
-function k(e, t) {
+function re(e, t) {
 	let n = e.getUint32(t), r = e.getUint32(t + 4);
 	return n * 4294967296 + r;
 }
-var A = 4294967295, j = 17179869183;
-function M({ sec: e, nsec: t }) {
-	if (e >= 0 && t >= 0 && e <= j) if (t === 0 && e <= A) {
+var ie = 4294967295, ae = 17179869183;
+function h({ sec: e, nsec: t }) {
+	if (e >= 0 && t >= 0 && e <= ae) if (t === 0 && e <= ie) {
 		let t = /* @__PURE__ */ new Uint8Array(4);
 		return new DataView(t.buffer).setUint32(0, e), t;
 	} else {
@@ -216,20 +71,20 @@ function M({ sec: e, nsec: t }) {
 	}
 	else {
 		let n = /* @__PURE__ */ new Uint8Array(12), r = new DataView(n.buffer);
-		return r.setUint32(0, t), D(r, 4, e), n;
+		return r.setUint32(0, t), p(r, 4, e), n;
 	}
 }
-function N(e) {
+function g(e) {
 	let t = e.getTime(), n = Math.floor(t / 1e3), r = (t - n * 1e3) * 1e6, i = Math.floor(r / 1e9);
 	return {
 		sec: n + i,
 		nsec: r - i * 1e9
 	};
 }
-function P(e) {
-	return e instanceof Date ? M(N(e)) : null;
+function oe(e) {
+	return e instanceof Date ? h(g(e)) : null;
 }
-function F(e) {
+function _(e) {
 	let t = new DataView(e.buffer, e.byteOffset, e.byteLength);
 	switch (e.byteLength) {
 		case 4: return {
@@ -244,21 +99,21 @@ function F(e) {
 			};
 		}
 		case 12: return {
-			sec: O(t, 4),
+			sec: m(t, 4),
 			nsec: t.getUint32(0)
 		};
-		default: throw new E(`Unrecognized data size for timestamp (expected 4, 8, or 12): ${e.length}`);
+		default: throw new f(`Unrecognized data size for timestamp (expected 4, 8, or 12): ${e.length}`);
 	}
 }
-function I(e) {
-	let t = F(e);
+function v(e) {
+	let t = _(e);
 	return /* @__PURE__ */ new Date(t.sec * 1e3 + t.nsec / 1e6);
 }
-var L = {
+var y = {
 	type: -1,
-	encode: P,
-	decode: I
-}, R = class e {
+	encode: oe,
+	decode: v
+}, b = class e {
 	static defaultCodec = new e();
 	__brand;
 	builtInEncoders = [];
@@ -266,7 +121,7 @@ var L = {
 	encoders = [];
 	decoders = [];
 	constructor() {
-		this.register(L);
+		this.register(y);
 	}
 	register({ type: e, encode: t, decode: n }) {
 		if (e >= 0) this.encoders[e] = t, this.decoders[e] = n;
@@ -280,45 +135,45 @@ var L = {
 			let r = this.builtInEncoders[n];
 			if (r != null) {
 				let i = r(e, t);
-				if (i != null) return new T(-1 - n, i);
+				if (i != null) return new d(-1 - n, i);
 			}
 		}
 		for (let n = 0; n < this.encoders.length; n++) {
 			let r = this.encoders[n];
 			if (r != null) {
 				let i = r(e, t);
-				if (i != null) return new T(n, i);
+				if (i != null) return new d(n, i);
 			}
 		}
-		return e instanceof T ? e : null;
+		return e instanceof d ? e : null;
 	}
 	decode(e, t, n) {
 		let r = t < 0 ? this.builtInDecoders[-1 - t] : this.decoders[t];
-		return r ? r(e, t, n) : new T(t, e);
+		return r ? r(e, t, n) : new d(t, e);
 	}
 };
 //#endregion
 //#region node_modules/@msgpack/msgpack/dist.esm/utils/typedArrays.mjs
-function z(e) {
+function se(e) {
 	return e instanceof ArrayBuffer || typeof SharedArrayBuffer < "u" && e instanceof SharedArrayBuffer;
 }
-function B(e) {
-	return e instanceof Uint8Array ? e : ArrayBuffer.isView(e) ? new Uint8Array(e.buffer, e.byteOffset, e.byteLength) : z(e) ? new Uint8Array(e) : Uint8Array.from(e);
+function x(e) {
+	return e instanceof Uint8Array ? e : ArrayBuffer.isView(e) ? new Uint8Array(e.buffer, e.byteOffset, e.byteLength) : se(e) ? new Uint8Array(e) : Uint8Array.from(e);
 }
 //#endregion
 //#region node_modules/@msgpack/msgpack/dist.esm/utils/prettyByte.mjs
-function V(e) {
+function S(e) {
 	return `${e < 0 ? "-" : ""}0x${Math.abs(e).toString(16).padStart(2, "0")}`;
 }
 //#endregion
 //#region node_modules/@msgpack/msgpack/dist.esm/CachedKeyDecoder.mjs
-var H = 16, ae = 16, U = class {
+var ce = 16, le = 16, ue = class {
 	hit = 0;
 	miss = 0;
 	caches;
 	maxKeyLength;
 	maxLengthPerKey;
-	constructor(e = H, t = ae) {
+	constructor(e = ce, t = le) {
 		this.maxKeyLength = e, this.maxLengthPerKey = t, this.caches = [];
 		for (let e = 0; e < this.maxKeyLength; e++) this.caches.push([]);
 	}
@@ -345,13 +200,13 @@ var H = 16, ae = 16, U = class {
 		let r = this.find(e, t, n);
 		if (r != null) return this.hit++, r;
 		this.miss++;
-		let i = C(e, t, n), a = Uint8Array.prototype.slice.call(e, t, t + n);
+		let i = l(e, t, n), a = Uint8Array.prototype.slice.call(e, t, t + n);
 		return this.store(a, i), i;
 	}
-}, W = "array", G = "map_key", K = "map_value", q = (e) => {
+}, C = "array", w = "map_key", T = "map_value", E = (e) => {
 	if (typeof e == "string" || typeof e == "number") return e;
-	throw new E("The type of key must be string or number but " + typeof e);
-}, J = class {
+	throw new f("The type of key must be string or number but " + typeof e);
+}, D = class {
 	stack = [];
 	stackHeadPosition = -1;
 	get length() {
@@ -362,11 +217,11 @@ var H = 16, ae = 16, U = class {
 	}
 	pushArrayState(e) {
 		let t = this.getUninitializedStateFromPool();
-		t.type = W, t.position = 0, t.size = e, t.array = Array(e);
+		t.type = C, t.position = 0, t.size = e, t.array = Array(e);
 	}
 	pushMapState(e) {
 		let t = this.getUninitializedStateFromPool();
-		t.type = G, t.readCount = 0, t.size = e, t.map = {};
+		t.type = w, t.readCount = 0, t.size = e, t.map = {};
 	}
 	getUninitializedStateFromPool() {
 		return this.stackHeadPosition++, this.stackHeadPosition === this.stack.length && this.stack.push({
@@ -381,11 +236,11 @@ var H = 16, ae = 16, U = class {
 	}
 	release(e) {
 		if (this.stack[this.stackHeadPosition] !== e) throw Error("Invalid stack state. Released state is not on top of the stack.");
-		if (e.type === W) {
+		if (e.type === C) {
 			let t = e;
 			t.size = 0, t.array = void 0, t.position = 0, t.type = void 0;
 		}
-		if (e.type === G || e.type === K) {
+		if (e.type === w || e.type === T) {
 			let t = e;
 			t.size = 0, t.map = void 0, t.readCount = 0, t.type = void 0;
 		}
@@ -394,13 +249,13 @@ var H = 16, ae = 16, U = class {
 	reset() {
 		this.stack.length = 0, this.stackHeadPosition = -1;
 	}
-}, Y = -1, X = /* @__PURE__ */ new DataView(/* @__PURE__ */ new ArrayBuffer(0)), oe = new Uint8Array(X.buffer);
+}, O = -1, k = /* @__PURE__ */ new DataView(/* @__PURE__ */ new ArrayBuffer(0)), A = new Uint8Array(k.buffer);
 try {
-	X.getInt8(0);
+	k.getInt8(0);
 } catch (e) {
 	if (!(e instanceof RangeError)) throw Error("This module is not supported in the current JavaScript engine because DataView does not throw RangeError on out-of-bounds access");
 }
-var Z = /* @__PURE__ */ RangeError("Insufficient data"), se = new U(), ce = class e {
+var j = /* @__PURE__ */ RangeError("Insufficient data"), M = new ue(), N = class e {
 	extensionCodec;
 	context;
 	useBigInt64;
@@ -414,13 +269,13 @@ var Z = /* @__PURE__ */ RangeError("Insufficient data"), se = new U(), ce = clas
 	mapKeyConverter;
 	totalPos = 0;
 	pos = 0;
-	view = X;
-	bytes = oe;
-	headByte = Y;
-	stack = new J();
+	view = k;
+	bytes = A;
+	headByte = O;
+	stack = new D();
 	entered = !1;
 	constructor(e) {
-		this.extensionCodec = e?.extensionCodec ?? R.defaultCodec, this.context = e?.context, this.useBigInt64 = e?.useBigInt64 ?? !1, this.rawStrings = e?.rawStrings ?? !1, this.maxStrLength = e?.maxStrLength ?? 4294967295, this.maxBinLength = e?.maxBinLength ?? 4294967295, this.maxArrayLength = e?.maxArrayLength ?? 4294967295, this.maxMapLength = e?.maxMapLength ?? 4294967295, this.maxExtLength = e?.maxExtLength ?? 4294967295, this.keyDecoder = e?.keyDecoder === void 0 ? se : e.keyDecoder, this.mapKeyConverter = e?.mapKeyConverter ?? q;
+		this.extensionCodec = e?.extensionCodec ?? b.defaultCodec, this.context = e?.context, this.useBigInt64 = e?.useBigInt64 ?? !1, this.rawStrings = e?.rawStrings ?? !1, this.maxStrLength = e?.maxStrLength ?? 4294967295, this.maxBinLength = e?.maxBinLength ?? 4294967295, this.maxArrayLength = e?.maxArrayLength ?? 4294967295, this.maxMapLength = e?.maxMapLength ?? 4294967295, this.maxExtLength = e?.maxExtLength ?? 4294967295, this.keyDecoder = e?.keyDecoder === void 0 ? M : e.keyDecoder, this.mapKeyConverter = e?.mapKeyConverter ?? E;
 	}
 	clone() {
 		return new e({
@@ -437,16 +292,16 @@ var Z = /* @__PURE__ */ RangeError("Insufficient data"), se = new U(), ce = clas
 		});
 	}
 	reinitializeState() {
-		this.totalPos = 0, this.headByte = Y, this.stack.reset();
+		this.totalPos = 0, this.headByte = O, this.stack.reset();
 	}
 	setBuffer(e) {
-		let t = B(e);
+		let t = x(e);
 		this.bytes = t, this.view = new DataView(t.buffer, t.byteOffset, t.byteLength), this.pos = 0;
 	}
 	appendBuffer(e) {
-		if (this.headByte === Y && !this.hasRemaining(1)) this.setBuffer(e);
+		if (this.headByte === O && !this.hasRemaining(1)) this.setBuffer(e);
 		else {
-			let t = this.bytes.subarray(this.pos), n = B(e), r = new Uint8Array(t.length + n.length);
+			let t = this.bytes.subarray(this.pos), n = x(e), r = new Uint8Array(t.length + n.length);
 			r.set(t), r.set(n, t.length), this.setBuffer(r);
 		}
 	}
@@ -499,7 +354,7 @@ var Z = /* @__PURE__ */ RangeError("Insufficient data"), se = new U(), ce = clas
 				return n;
 			}
 			let { headByte: r, pos: i, totalPos: a } = this;
-			throw RangeError(`Insufficient data in parsing ${V(r)} at ${a} (${i} in the current buffer)`);
+			throw RangeError(`Insufficient data in parsing ${S(r)} at ${a} (${i} in the current buffer)`);
 		} finally {
 			this.entered = !1;
 		}
@@ -622,20 +477,20 @@ var Z = /* @__PURE__ */ RangeError("Insufficient data"), se = new U(), ce = clas
 			} else if (e === 201) {
 				let e = this.lookU32();
 				t = this.decodeExtension(e, 4);
-			} else throw new E(`Unrecognized type byte: ${V(e)}`);
+			} else throw new f(`Unrecognized type byte: ${S(e)}`);
 			this.complete();
 			let n = this.stack;
 			for (; n.length > 0;) {
 				let e = n.top();
-				if (e.type === W) if (e.array[e.position] = t, e.position++, e.position === e.size) t = e.array, n.release(e);
+				if (e.type === C) if (e.array[e.position] = t, e.position++, e.position === e.size) t = e.array, n.release(e);
 				else continue DECODE;
-				else if (e.type === G) {
-					if (t === "__proto__") throw new E("The key __proto__ is not allowed");
-					e.key = this.mapKeyConverter(t), e.type = K;
+				else if (e.type === w) {
+					if (t === "__proto__") throw new f("The key __proto__ is not allowed");
+					e.key = this.mapKeyConverter(t), e.type = T;
 					continue DECODE;
 				} else if (e.map[e.key] = t, e.readCount++, e.readCount === e.size) t = e.map, n.release(e);
 				else {
-					e.key = null, e.type = G;
+					e.key = null, e.type = w;
 					continue DECODE;
 				}
 			}
@@ -643,10 +498,10 @@ var Z = /* @__PURE__ */ RangeError("Insufficient data"), se = new U(), ce = clas
 		}
 	}
 	readHeadByte() {
-		return this.headByte === Y && (this.headByte = this.readU8()), this.headByte;
+		return this.headByte === O && (this.headByte = this.readU8()), this.headByte;
 	}
 	complete() {
-		this.headByte = Y;
+		this.headByte = O;
 	}
 	readArraySize() {
 		let e = this.readHeadByte();
@@ -655,37 +510,37 @@ var Z = /* @__PURE__ */ RangeError("Insufficient data"), se = new U(), ce = clas
 			case 221: return this.readU32();
 			default:
 				if (e < 160) return e - 144;
-				throw new E(`Unrecognized array type byte: ${V(e)}`);
+				throw new f(`Unrecognized array type byte: ${S(e)}`);
 		}
 	}
 	pushMapState(e) {
-		if (e > this.maxMapLength) throw new E(`Max length exceeded: map length (${e}) > maxMapLengthLength (${this.maxMapLength})`);
+		if (e > this.maxMapLength) throw new f(`Max length exceeded: map length (${e}) > maxMapLengthLength (${this.maxMapLength})`);
 		this.stack.pushMapState(e);
 	}
 	pushArrayState(e) {
-		if (e > this.maxArrayLength) throw new E(`Max length exceeded: array length (${e}) > maxArrayLength (${this.maxArrayLength})`);
+		if (e > this.maxArrayLength) throw new f(`Max length exceeded: array length (${e}) > maxArrayLength (${this.maxArrayLength})`);
 		this.stack.pushArrayState(e);
 	}
 	decodeString(e, t) {
 		return !this.rawStrings || this.stateIsMapKey() ? this.decodeUtf8String(e, t) : this.decodeBinary(e, t);
 	}
 	decodeUtf8String(e, t) {
-		if (e > this.maxStrLength) throw new E(`Max length exceeded: UTF-8 byte length (${e}) > maxStrLength (${this.maxStrLength})`);
-		if (this.bytes.byteLength < this.pos + t + e) throw Z;
+		if (e > this.maxStrLength) throw new f(`Max length exceeded: UTF-8 byte length (${e}) > maxStrLength (${this.maxStrLength})`);
+		if (this.bytes.byteLength < this.pos + t + e) throw j;
 		let n = this.pos + t, r;
-		return r = this.stateIsMapKey() && this.keyDecoder?.canBeCached(e) ? this.keyDecoder.decode(this.bytes, n, e) : ie(this.bytes, n, e), this.pos += t + e, r;
+		return r = this.stateIsMapKey() && this.keyDecoder?.canBeCached(e) ? this.keyDecoder.decode(this.bytes, n, e) : u(this.bytes, n, e), this.pos += t + e, r;
 	}
 	stateIsMapKey() {
-		return this.stack.length > 0 && this.stack.top().type === G;
+		return this.stack.length > 0 && this.stack.top().type === w;
 	}
 	decodeBinary(e, t) {
-		if (e > this.maxBinLength) throw new E(`Max length exceeded: bin length (${e}) > maxBinLength (${this.maxBinLength})`);
-		if (!this.hasRemaining(e + t)) throw Z;
+		if (e > this.maxBinLength) throw new f(`Max length exceeded: bin length (${e}) > maxBinLength (${this.maxBinLength})`);
+		if (!this.hasRemaining(e + t)) throw j;
 		let n = this.pos + t, r = this.bytes.subarray(n, n + e);
 		return this.pos += t + e, r;
 	}
 	decodeExtension(e, t) {
-		if (e > this.maxExtLength) throw new E(`Max length exceeded: ext length (${e}) > maxExtLength (${this.maxExtLength})`);
+		if (e > this.maxExtLength) throw new f(`Max length exceeded: ext length (${e}) > maxExtLength (${this.maxExtLength})`);
 		let n = this.view.getInt8(this.pos + t), r = this.decodeBinary(e, t + 1);
 		return this.extensionCodec.decode(r, n, this.context);
 	}
@@ -723,11 +578,11 @@ var Z = /* @__PURE__ */ RangeError("Insufficient data"), se = new U(), ce = clas
 		return this.pos += 4, e;
 	}
 	readU64() {
-		let e = k(this.view, this.pos);
+		let e = re(this.view, this.pos);
 		return this.pos += 8, e;
 	}
 	readI64() {
-		let e = O(this.view, this.pos);
+		let e = m(this.view, this.pos);
 		return this.pos += 8, e;
 	}
 	readU64AsBigInt() {
@@ -749,44 +604,201 @@ var Z = /* @__PURE__ */ RangeError("Insufficient data"), se = new U(), ce = clas
 };
 //#endregion
 //#region node_modules/@msgpack/msgpack/dist.esm/decode.mjs
-function le(e, t) {
-	return new ce(t).decode(e);
+function P(e, t) {
+	return new N(t).decode(e);
 }
-var Q = new R();
-Q.register({
-	type: 42,
-	encode() {
-		return null;
-	},
-	decode(e) {
-		if (e.length < 1) throw Error("Runtime binary array payload is empty.");
-		let t = e[0], n = e.subarray(1), r = new DataView(n.buffer, n.byteOffset, n.byteLength);
-		if (t === 1 && n.byteLength % Float32Array.BYTES_PER_ELEMENT === 0) {
-			let e = new Float32Array(n.byteLength / Float32Array.BYTES_PER_ELEMENT);
-			for (let t = 0; t < e.length; t += 1) e[t] = r.getFloat32(t * Float32Array.BYTES_PER_ELEMENT, !0);
-			return e;
+//#endregion
+//#region src/original/originalBundleStore.ts
+function F(e, t) {
+	if (!e) throw Error(t);
+}
+var I = [
+	85,
+	110,
+	105,
+	116,
+	121,
+	70,
+	83,
+	0
+], L = (e, t = 0) => I.every((n, r) => e[t + r] === n);
+function R(e, t) {
+	if (L(e)) return e;
+	let n = e[0];
+	F(e.length > 4 && (n === 16 || n === 32) && e[1] === 0 && e[2] === 0 && e[3] === 0, `original bundle ${t} is neither UnityFS nor an encrypted game bundle`);
+	let r = e.subarray(4);
+	if (n === 16 && r.length >= 128) for (let e = 0; e < 128; e++) (e & 7) < 5 && (r[e] ^= 255);
+	return F(L(r), `original bundle ${t} has header 0x${n.toString(16)} but does not decrypt to UnityFS`), r;
+}
+function z(e) {
+	let t = e.find((e) => e !== 32 && e !== 10 && e !== 13 && e !== 9) === 123 ? JSON.parse(new TextDecoder().decode(e)) : P(e);
+	return F(t && typeof t.bundles == "object" && t.bundles, "AssetBundleInfo has no bundles"), {
+		version: String(t.version ?? ""),
+		bundles: new Map(Object.entries(t.bundles))
+	};
+}
+var B = class {
+	host;
+	cacheBytes;
+	read;
+	catalogPromise = null;
+	open = /* @__PURE__ */ new Map();
+	sizes = /* @__PURE__ */ new Map();
+	byCabName = /* @__PURE__ */ new Map();
+	total = 0;
+	constructor(e, n = 384 * 1024 * 1024, r = (e, n) => new t(e, n)) {
+		this.host = e, this.cacheBytes = n, this.read = r;
+	}
+	catalog() {
+		if (!this.catalogPromise) {
+			let e = this.host.catalog().then(z);
+			this.catalogPromise = e, e.catch(() => {
+				this.catalogPromise === e && (this.catalogPromise = null);
+			});
 		}
-		if (t === 2 && n.byteLength % Uint16Array.BYTES_PER_ELEMENT === 0) {
-			let e = new Uint16Array(n.byteLength / Uint16Array.BYTES_PER_ELEMENT);
-			for (let t = 0; t < e.length; t += 1) e[t] = r.getUint16(t * Uint16Array.BYTES_PER_ELEMENT, !0);
-			return e;
+		return this.catalogPromise;
+	}
+	async has(e) {
+		return (await this.catalog()).bundles.has(e);
+	}
+	byCab(e) {
+		return this.byCabName.get(e) ?? null;
+	}
+	async load(e) {
+		let t = await this.loadOne(e);
+		return await Promise.all(t.assetBundle.m_Dependencies.map((e) => this.load(e))), t;
+	}
+	loadOne(e) {
+		let t = this.open.get(e);
+		return t ? (this.open.delete(e), this.open.set(e, t), t) : (t = (async () => {
+			let t = await this.catalog(), n = t.bundles.get(e);
+			F(n, `original bundle ${e} is not in the AssetBundleInfo`);
+			let r = R(await this.host.bundle(n, t.version), e), i = this.read(e, r);
+			return this.byCabName.set(i.cabName, i), this.sizes.set(e, i.size), this.total += i.size, this.evict(e), i;
+		})(), this.open.set(e, t), t.catch(() => this.open.delete(e)), t);
+	}
+	evict(e) {
+		for (let t of this.open.keys()) {
+			if (this.total <= this.cacheBytes) break;
+			let n = this.sizes.get(t);
+			t === e || t === "shader/live" || n === void 0 || (this.open.get(t).then((e) => {
+				this.byCabName.get(e.cabName) === e && this.byCabName.delete(e.cabName);
+			}), this.open.delete(t), this.sizes.delete(t), this.total -= n);
 		}
-		if (t === 3 && n.byteLength % Uint32Array.BYTES_PER_ELEMENT === 0) {
-			let e = new Uint32Array(n.byteLength / Uint32Array.BYTES_PER_ELEMENT);
-			for (let t = 0; t < e.length; t += 1) e[t] = r.getUint32(t * Uint32Array.BYTES_PER_ELEMENT, !0);
-			return e;
+	}
+}, V = /* @__PURE__ */ new Map();
+function H(e, t) {
+	V.set(e, t);
+}
+var de = 1, U = /* @__PURE__ */ new Map();
+function W(e, t, n, r) {
+	let i = de++;
+	return new Promise((a, o) => {
+		U.set(i, {
+			resolve: a,
+			reject: o
+		}), self.postMessage({
+			hostRequest: i,
+			contentId: e,
+			what: t,
+			element: n,
+			version: r
+		});
+	});
+}
+var G = /* @__PURE__ */ new Map();
+function K(e) {
+	let t = G.get(e);
+	return t || (t = new B(V.get(e) ?? {
+		catalog: () => W(e, "catalog"),
+		bundle: (t, n) => W(e, "bundle", t, n)
+	}), G.set(e, t)), t;
+}
+function q(e) {
+	G.delete(e), V.delete(e);
+}
+async function J(t) {
+	let n = K(t.contentId), r = {};
+	return await Promise.all(t.bundleNames.map(async (t) => {
+		if (!await n.has(t)) {
+			r[t] = null;
+			return;
 		}
-		throw Error(`Invalid runtime binary array type ${t} with ${n.byteLength} byte(s).`);
+		let i = await n.load(t);
+		r[t] = i.assetBundle.m_Container.map((e) => i.object(e.second.asset.m_PathID)).filter((t) => t?.classId === e.AnimationClip).map((e) => s(e.read()));
+	})), { clips: r };
+}
+async function Y(e) {
+	let t = await K(e.contentId).catalog(), n = r(e.common, e.character, e.characterId, e.unit, (e) => t.bundles.has(e));
+	return { roleIndex: {
+		...n,
+		masterVersion: n.masterVersion || t.version
+	} };
+}
+async function X(e) {
+	let t = await K(e.contentId).catalog(), n = i(e.common, e.gameCharacterId, e.unit);
+	return { bundleName: o(e.common, n, e.motionType, (e) => t.bundles.has(e)) };
+}
+async function Z(e) {
+	let t = K(e.contentId), [r, i] = await Promise.all([t.load(e.bundleName), e.colorBundleName ? t.load(e.colorBundleName) : Promise.resolve(null)]), o = a({
+		entry: e.entry,
+		partType: e.partType,
+		bundle: r,
+		colorBundle: i,
+		resolveBundle: (e) => t.byCab(e),
+		attachNode: e.attachNode
+	}), s = {};
+	for (let e of o.materialSlots ?? []) for (let r of e.rawMaterial.textureProperties) {
+		if (!r.uri || s[r.uri]) continue;
+		let e = /^original:([^:]+):(-?\d+)$/.exec(r.uri), i = t.byCab(e[1]);
+		if (!i) throw Error(`texture bundle ${e[1]} is not loaded`);
+		s[r.uri] = n(i, BigInt(e[2]));
+	}
+	return {
+		runtime: o,
+		textures: s
+	};
+}
+function Q(e) {
+	switch (e.kind) {
+		case "part": return Z(e);
+		case "clips": return J(e);
+		case "roleIndex": return Y(e);
+		case "motionName": return X(e);
+	}
+}
+function $(e, t = /* @__PURE__ */ new Set(), n = /* @__PURE__ */ new Set()) {
+	if (!e || typeof e != "object") return t;
+	if (ArrayBuffer.isView(e)) return e.buffer instanceof ArrayBuffer && e.byteOffset === 0 && e.byteLength === e.buffer.byteLength && e.byteLength > 0 && t.add(e.buffer), t;
+	if (n.has(e)) return t;
+	n.add(e);
+	for (let r of Array.isArray(e) ? e : Object.values(e)) $(r, t, n);
+	return t;
+}
+typeof WorkerGlobalScope < "u" && self instanceof WorkerGlobalScope && (self.onmessage = async (e) => {
+	let t = e.data;
+	if ("hostResponse" in t) {
+		let e = U.get(t.hostResponse);
+		U.delete(t.hostResponse), t.error !== void 0 || !t.bytes ? e?.reject(Error(t.error ?? "no bytes")) : e?.resolve(new Uint8Array(t.bytes));
+		return;
+	}
+	if ("release" in t) {
+		q(t.release);
+		return;
+	}
+	let { id: n, ...r } = t;
+	try {
+		let e = await Q(r);
+		self.postMessage({
+			id: n,
+			...e
+		}, [...$(e)]);
+	} catch (e) {
+		self.postMessage({
+			id: n,
+			error: e instanceof Error ? `${e.message}\n${e.stack}` : String(e)
+		});
 	}
 });
-function $(e) {
-	return le(e, { extensionCodec: Q });
-}
 //#endregion
-//#region src/runtime/runtimeMessagePackDecodeCore.ts
-async function ue(e, t) {
-	return $((await x(t)).decompress(new Uint8Array(e)));
-}
-//#endregion
-export { ue as decodeRuntimeMessagePackBrotliDirect };
-
+export { Z as buildOriginalPartRequest, J as loadOriginalClipsRequest, Y as loadOriginalRoleIndexRequest, H as registerOriginalHost, q as releaseOriginalContent, X as resolveOriginalMotionNameRequest, Q as runOriginalWorkerRequest };

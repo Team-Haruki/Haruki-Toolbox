@@ -5,10 +5,10 @@ import {
 } from "@/shared/sekai/catalog"
 
 /**
- * Helpers over the 3D runtime `part-registry` / `runtime-role-catalog`
- * documents. Options must come from the runtime registry — masterdata
- * costume ids are a superset of what the exporter actually shipped, and the
- * per-role defaults live in the role catalog.
+ * Helpers over the 3D kernel's part list of a role (`listRoleParts`: the
+ * master rows of the role's character checked against the AssetBundleInfo).
+ * Options must come from it — a costume whose bundle is missing is listed as
+ * `missing` — and the per-role defaults are the role's character3ds preset.
  */
 
 export const COSTUME_SLOTS = ["body", "hair", "head"] as const
@@ -152,7 +152,7 @@ function normalizeRegistryEntries(rawRegistry: unknown, characterId: number): Re
         costume3dId,
         rawPartType,
         colorId,
-        normalizeCatalogString(record.costumeAssetbundleName),
+        normalizeCatalogString(record.thumbnailAssetbundleName),
       ),
       costume3dGroupId: normalizeCatalogNumber(record.costume3dGroupId),
     })

@@ -4,11 +4,12 @@ import { useI18n } from "vue-i18n"
 import { LucideLoaderCircle, LucideRefreshCcw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { resolvePjsk3dRuntimeBaseUrl, resolvePjsk3dRuntimeFallbackBaseUrl } from "@/shared/sekai/data-sources"
-import { shouldRetryAssetOnFallback } from "@/shared/sekai/asset-fallback"
+import { useSettingsStore } from "@/shared/stores/settings"
 import type { SekaiRegion } from "@/types"
-import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
-import type { Haruki3DKernel } from "../vendor/haruki-3d-engine/haruki-3d-engine.js"
+import type { Haruki3DKernel } from "../vendor/haruki-3d-engine/haruki-3d-engine-costume-shop.js"
+import { costumeLoadTracker, loadCostumeContent, loadCostumeEngine, resolveCostumeContentBaseUrl } from "../lib/costume-content"
+import { formatMegabytes, type CostumeLoadProgress } from "../lib/costume-load-progress"
+import type { CostumeMotionType } from "../lib/costume-motions"
 
 export type CostumeViewerRecipe = {
   characterId: number
@@ -16,11 +17,35 @@ export type CostumeViewerRecipe = {
   bodyCostume3dId: number
   headCostume3dId: number
   hairCostume3dId: number
+  /** Which motion plays: the role's CostumeShop motion when absent ("costume"). */
+  motionType?: CostumeMotionType
+  /** Whose motion (`<characterId>:<unit>`); absent: the role's own. */
+  motionRoleId?: string | null
+  /**
+   * Only the head accessory (`headCostume3dId`, a head_optional part of the role): the kernel reads its bundle alone,
+   * without the character, and frames it on its own.
+   */
+  accessoryOnly?: boolean
+  /** Experimental: a hairstyle of this character in the role's own hair colours, instead of the hair. */
+  hairFromCharacterId?: number | null
+  /** With hairFromCharacterId: which of its hairs (absent: its default). */
+  hairFromCostume3dId?: number | null
+  /** Experimental: headCostume3dId is a full head set of this character, its hair in the role's colours. */
+  headFromCharacterId?: number | null
+  /** Experimental: this character's default outfit, in its figure, instead of the body. */
+  bodyFromCharacterId?: number | null
+  /** With bodyFromCharacterId: the unit whose default outfit (absent: the lender's own unit). */
+  bodyFromUnit?: string | null
+  /** With bodyFromCharacterId: which of that unit's default outfits (absent: the unit's preset). */
+  bodyFromCostume3dId?: number | null
 }
+
+/** "archive": the game's backdrop (the character archive costume viewer's); "transparent": the frame's plain color. */
+export type CostumeViewerBackground = "archive" | "transparent"
+
 
 const props = withDefaults(defineProps<{
   region: SekaiRegion
-  preference: SekaiAssetEndpointPreference
   recipe: CostumeViewerRecipe | null
   /** Sizing lives with the caller; the default keeps the card-detail embed as it was. */
   class?: string
@@ -30,9 +55,11 @@ const props = withDefaults(defineProps<{
    * the exposed `zoomBy` keep working.
    */
   wheelZoom?: boolean
+  background?: CostumeViewerBackground
 }>(), {
   class: "aspect-[7/5]",
   wheelZoom: true,
+  background: "archive",
 })
 
 const { t } = useI18n()
@@ -40,41 +67,64 @@ const { t } = useI18n()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const hostRef = ref<HTMLDivElement | null>(null)
 const status = ref<"idle" | "loading" | "ready" | "error">("idle")
+/** The current load's bundle downloads; null until the kernel asks for its first bundle. */
+const loadProgress = ref<CostumeLoadProgress | null>(null)
+let stopLoadProgress: (() => void) | null = null
+
+function watchLoadProgress() {
+  stopLoadProgress?.()
+  const tracker = costumeLoadTracker(contentBaseUrl.value)
+  const start = tracker.mark()
+  loadProgress.value = null
+  stopLoadProgress = tracker.subscribe(() => {
+    const progress = tracker.progressSince(start)
+    loadProgress.value = progress.requested > 0 ? progress : null
+  })
+}
+
+function endLoadProgress() {
+  stopLoadProgress?.()
+  stopLoadProgress = null
+  loadProgress.value = null
+}
 const errorMessage = ref<string | null>(null)
 
-const primaryBaseUrl = computed(() => resolvePjsk3dRuntimeBaseUrl(props.region, props.preference))
-const fallbackBaseUrl = computed(() => resolvePjsk3dRuntimeFallbackBaseUrl(props.region, props.preference))
-// After the chosen host fails a load (network, timeout, 5xx), this viewer
-// loads from the fallback host until the region or the asset route changes.
-const onFallback = ref(false)
-watch(primaryBaseUrl, () => {
-  onFallback.value = false
-}, { flush: "sync" })
-const assetBaseUrl = computed(() => (onFallback.value && fallbackBaseUrl.value) || primaryBaseUrl.value)
+const settingsStore = useSettingsStore()
+// The region's raw-bundle mirror on the asset CDN (AssetBundleInfo, original bundles, master rows).
+const contentBaseUrl = computed(() => resolveCostumeContentBaseUrl(settingsStore.currentAssetEndpoint, props.region))
 
 let kernel: Haruki3DKernel | null = null
 let kernelBaseUrl: string | null = null
 let resizeObserver: ResizeObserver | null = null
 let loadGeneration = 0
 
-async function ensureKernel(): Promise<Haruki3DKernel | null> {
+/**
+ * The kernel for the current content root, created when the root changed. `generation` is the load asking: a newer
+ * load started while this one waited takes over, so a stale call neither creates nor replaces the kernel.
+ */
+async function ensureKernel(generation: number): Promise<Haruki3DKernel | null> {
   const canvas = canvasRef.value
   if (canvas == null) {
     return null
   }
 
-  if (kernel != null && kernelBaseUrl === assetBaseUrl.value) {
+  const baseUrl = contentBaseUrl.value
+  if (kernel != null && kernelBaseUrl === baseUrl) {
     return kernel
   }
 
   await disposeKernel()
-  // The engine bundle (~450 kB + wasm) is loaded on demand.
-  const engine = await import("../vendor/haruki-3d-engine/haruki-3d-engine.js")
-  kernel = engine.createHaruki3DKernel({
-    canvas,
-    assetBaseUrl: assetBaseUrl.value,
-  })
-  kernelBaseUrl = assetBaseUrl.value
+  if (generation !== loadGeneration) {
+    return null
+  }
+  const [engine, content] = await Promise.all([loadCostumeEngine(), loadCostumeContent(baseUrl)])
+  if (generation !== loadGeneration || canvasRef.value !== canvas) {
+    return null
+  }
+  // The game's own backdrop (the character archive costume viewer's) unless the caller asks for the plain frame.
+  kernel = engine.createHaruki3DKernel({ canvas, content, background: props.background })
+  frameHeightAt = engine.studioViewFrameHeight
+  kernelBaseUrl = baseUrl
   applySize()
   return kernel
 }
@@ -89,16 +139,15 @@ async function disposeKernel() {
 }
 
 function applySize() {
-  const host = hostRef.value
-  if (host != null && kernel != null) {
-    const { width, height } = host.getBoundingClientRect()
+  const canvas = canvasRef.value
+  if (canvas != null && kernel != null) {
+    // The canvas's own box (inside the frame's border), so its buffer maps 1:1 onto it.
+    const width = canvas.clientWidth
+    const height = canvas.clientHeight
     if (width > 0 && height > 0) {
-      // The engine multiplies by min(devicePixelRatio, 2). Supersample on
-      // low-DPR displays so the backing store always ends up ~2x the CSS
-      // size — at 1x the world-space toon outlines alias into heavy edges
-      // (the capture service renders at scale 2 for the same reason).
-      const superSample = Math.max(1, Math.min(2, 2 / (window.devicePixelRatio || 1)))
-      kernel.resize(width * superSample, height * superSample)
+      // CSS pixels: the kernel draws at the device pixel ratio, supersampled offscreen, and widens the outline when
+      // the viewer is small.
+      kernel.resize(width, height)
     }
   }
 }
@@ -113,18 +162,32 @@ async function loadRecipe() {
 
   status.value = "loading"
   errorMessage.value = null
+  watchLoadProgress()
   try {
-    const activeKernel = await ensureKernel()
+    const activeKernel = await ensureKernel(generation)
     if (activeKernel == null || generation !== loadGeneration) {
       return
     }
 
-    await activeKernel.load({
-      roleId: `${recipe.characterId}:${recipe.unit}`,
+    const roleId = `${recipe.characterId}:${recipe.unit}`
+    await activeKernel.load(recipe.accessoryOnly ? {
+      kind: "head_optional",
+      roleId,
+      headOptionalCostume3dId: recipe.headCostume3dId,
+    } : {
+      roleId,
       bodyCostume3dId: recipe.bodyCostume3dId,
       headCostume3dId: recipe.headCostume3dId,
       hairCostume3dId: recipe.hairCostume3dId,
       headOptionalCostume3dId: null,
+      motionType: recipe.motionType ?? "costume",
+      motionRoleId: recipe.motionRoleId ?? null,
+      hairFromCharacterId: recipe.hairFromCharacterId ?? null,
+      hairFromCostume3dId: recipe.hairFromCostume3dId ?? null,
+      headFromCharacterId: recipe.headFromCharacterId ?? null,
+      bodyFromCharacterId: recipe.bodyFromCharacterId ?? null,
+      bodyFromUnit: recipe.bodyFromCharacterId != null ? recipe.bodyFromUnit ?? null : null,
+      bodyFromCostume3dId: recipe.bodyFromCharacterId != null ? recipe.bodyFromCostume3dId ?? null : null,
     })
     if (generation !== loadGeneration) {
       return
@@ -138,13 +201,12 @@ async function loadRecipe() {
     if (generation !== loadGeneration) {
       return
     }
-    if (!onFallback.value && fallbackBaseUrl.value && shouldRetryAssetOnFallback(loadError)) {
-      console.warn("3D load failed, retrying on the fallback host", loadError)
-      onFallback.value = true // assetBaseUrl changes and the watcher below reloads
-      return
-    }
     errorMessage.value = loadError instanceof Error ? loadError.message : String(loadError)
     status.value = "error"
+  } finally {
+    if (generation === loadGeneration) {
+      endLoadProgress()
+    }
   }
 }
 
@@ -154,12 +216,14 @@ async function loadRecipe() {
 
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 3
-const HEIGHT_MIN = -0.5
-const HEIGHT_MAX = 0.8
 
 let yawDegrees = 0
 let zoom = 1
+// The height offset the kernel applied: it keeps the view within the game's camera limits at the zoom (from the head
+// down to the feet) and re-clamps it on a zoom change.
 let heightOffset = 0
+// The frame's height in metres at the character for a zoom (the engine's), for turning a drag into metres.
+let frameHeightAt: ((zoom: number) => number) | null = null
 
 function applyView(target: Haruki3DKernel | null = kernel) {
   if (target == null) {
@@ -167,7 +231,7 @@ function applyView(target: Haruki3DKernel | null = kernel) {
   }
   target.setViewYawDegrees(yawDegrees)
   target.setViewZoom(zoom)
-  target.setViewHeightOffset(heightOffset)
+  heightOffset = target.setViewHeightOffset(heightOffset).heightOffset
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -177,12 +241,15 @@ function clamp(value: number, min: number, max: number) {
 /** Multiply the zoom by `factor` (>1 moves closer). */
 function zoomBy(factor: number) {
   zoom = clamp(zoom * factor, ZOOM_MIN, ZOOM_MAX)
-  kernel?.setViewZoom(zoom)
+  if (kernel != null) {
+    heightOffset = kernel.setViewZoom(zoom).heightOffset
+  }
 }
 
 function panBy(metres: number) {
-  heightOffset = clamp(heightOffset + metres, HEIGHT_MIN, HEIGHT_MAX)
-  kernel?.setViewHeightOffset(heightOffset)
+  if (kernel != null) {
+    heightOffset = kernel.setViewHeightOffset(heightOffset + metres).heightOffset
+  }
 }
 
 const activePointers = new Map<number, { x: number; y: number }>()
@@ -226,9 +293,12 @@ function handlePointerMove(event: PointerEvent) {
     kernel.setViewYawDegrees(yawDegrees)
   }
   if (deltaY !== 0) {
-    // The scene follows the finger: dragging down lifts the camera.
-    const host = hostRef.value
-    const metresPerPixel = host != null && host.clientHeight > 0 ? 1.6 / host.clientHeight / zoom : 0.003
+    // The scene follows the finger: dragging down lifts the camera by the metres the drag covers at the character
+    // (the square frame is as high as the canvas).
+    const canvas = canvasRef.value
+    const metresPerPixel = canvas != null && canvas.clientHeight > 0 && frameHeightAt != null
+      ? frameHeightAt(zoom) / canvas.clientHeight
+      : 0.002
     panBy(deltaY * metresPerPixel)
   }
 }
@@ -262,7 +332,15 @@ function resetView() {
   applyView()
 }
 
-defineExpose({ rotateBy, zoomBy, resetView })
+/** The current view as a PNG, rendered at 2048 px high (sharp regardless of the canvas size); null while not ready. */
+async function captureImage(): Promise<Blob | null> {
+  if (status.value !== "ready" || kernel == null) {
+    return null
+  }
+  return kernel.captureImage({ height: 2048 })
+}
+
+defineExpose({ rotateBy, zoomBy, resetView, captureImage })
 
 function handleVisibilityChange() {
   if (kernel == null || status.value !== "ready") {
@@ -275,8 +353,13 @@ function handleVisibilityChange() {
   }
 }
 
-watch([() => props.recipe, assetBaseUrl], () => {
+watch([() => props.recipe, contentBaseUrl], () => {
   void loadRecipe()
+})
+
+// The backdrop changes in place; the model stays loaded.
+watch(() => props.background, (background) => {
+  kernel?.setBackground(background).catch((error) => console.error("3D background:", error))
 })
 
 onMounted(() => {
@@ -289,6 +372,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  endLoadProgress()
   loadGeneration += 1
   document.removeEventListener("visibilitychange", handleVisibilityChange)
   resizeObserver?.disconnect()
@@ -311,7 +395,30 @@ onBeforeUnmount(() => {
       v-if="status === 'loading'"
       class="absolute inset-0 flex items-center justify-center bg-black/30"
     >
-      <LucideLoaderCircle class="size-8 animate-spin text-white/80" />
+      <div class="flex w-48 max-w-[70%] flex-col items-center gap-2" role="status" aria-live="polite">
+        <LucideLoaderCircle class="size-8 animate-spin text-white/80" />
+        <template v-if="loadProgress">
+          <div
+            class="h-1.5 w-full overflow-hidden rounded-full bg-white/20"
+            role="progressbar"
+            :aria-valuenow="Math.round((loadProgress.fraction ?? 0) * 100)"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            <div class="h-full rounded-full bg-white/80 transition-[width]" :style="{ width: `${(loadProgress.fraction ?? 0) * 100}%` }" />
+          </div>
+          <p class="text-xs text-white/80 tabular-nums">
+            {{
+              t("costumes.viewer.loadingProgress", {
+                done: loadProgress.done,
+                total: loadProgress.requested,
+                mb: formatMegabytes(loadProgress.bytesDone),
+              })
+            }}
+          </p>
+        </template>
+        <p v-else class="text-xs text-white/80">{{ t("costumes.viewer.loadingPrepare") }}</p>
+      </div>
     </div>
     <div
       v-else-if="status === 'error'"

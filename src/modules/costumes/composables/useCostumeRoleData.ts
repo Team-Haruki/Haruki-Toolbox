@@ -1,8 +1,6 @@
-import { ref, shallowRef, watch, type Ref } from "vue"
-import { resolvePjsk3dRuntimeBaseUrl, resolvePjsk3dRuntimeFallbackBaseUrl } from "@/shared/sekai/data-sources"
-import { loadWithAssetFallback } from "@/shared/sekai/asset-fallback"
+import { computed, ref, shallowRef, watch, type Ref } from "vue"
 import type { SekaiRegion } from "@/types"
-import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
+import { useSettingsStore } from "@/shared/stores/settings"
 import {
   buildRuntimeCostumeNameMap,
   listRuntimeCostumeOptions,
@@ -11,29 +9,25 @@ import {
   type CostumeSlot,
   type RuntimeCostumeOption,
 } from "../lib/costume-options"
+import { loadCostumeContent, loadCostumeEngine, resolveCostumeContentBaseUrl } from "../lib/costume-content"
+import { indexCostumeSources, isCostumeReleased } from "../lib/costume-filters"
+import type { HarukiCostumeSource, HarukiMotionEntry } from "../vendor/haruki-3d-engine/haruki-3d-engine-costume-shop.js"
 
 export type CostumeRoleData = {
   options: Record<CostumeSlot, RuntimeCostumeOption[]>
   defaults: CostumeRoleDefaults | null
-  /** costume3dId → display name/color, sourced from the runtime registry. */
+  /** costume3dId → display name/color, sourced from the 3D kernel's part list. */
   nameById: Map<number, { name: string; colorName: string }>
-}
-
-const BROTLI_WASM_URL = new URL(
-  "../vendor/haruki-3d-engine/assets/brotli_wasm_bg-NfWIZley.wasm",
-  import.meta.url,
-).href
-
-async function decodeRuntimeDocument(url: string): Promise<unknown> {
-  const [{ decodeRuntimeMessagePackBrotliDirect }, response] = await Promise.all([
-    import("../vendor/haruki-3d-engine/runtimeMessagePackDecodeCore-BptdOkvu.js"),
-    fetch(url),
-  ])
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} for ${url}`)
-  }
-
-  return decodeRuntimeMessagePackBrotliDirect(await response.arrayBuffer(), BROTLI_WASM_URL)
+  /** The character's units; a Virtual Singer has one role (models, preset, motion) per unit. */
+  units: string[]
+  /** `${headCostume3dId}|${hairCostume3dId}` pairs of this unit that cannot be worn together. */
+  notAvailable: Set<string>
+  /** Every motion the content has, for any role (the stage's motion picker). */
+  motions: HarukiMotionEntry[]
+  /** head costume3dId → the hair it brings (costume3dModelDefaultHairs of this unit). */
+  defaultHairs: Map<number, number>
+  /** costume3dId → its source (the rack's filters); empty when the mirror's slices carry none. */
+  sourceById: Map<number, HarukiCostumeSource>
 }
 
 const roleDataCache = new Map<string, Promise<CostumeRoleData>>()
@@ -49,20 +43,30 @@ function fetchCostumeRoleData(
     return cached
   }
 
-  const roleBase = `${baseUrl}parts/by-role/${characterId}/${unit}/`
   const request = (async (): Promise<CostumeRoleData> => {
-    const [registry, catalog] = await Promise.all([
-      decodeRuntimeDocument(`${roleBase}part-registry.msgpack.br`),
-      decodeRuntimeDocument(`${roleBase}runtime-role-catalog.msgpack.br`),
-    ])
+    const [engine, content] = await Promise.all([loadCostumeEngine(), loadCostumeContent(baseUrl)])
+    // The parts the kernel builds this role from (master rows checked against the AssetBundleInfo).
+    const { role, parts, units, notAvailablePatterns, defaultHairs, motions, sources } = await engine.listRoleParts(
+      content,
+      `${characterId}:${unit}`,
+    )
+    const sourceById = indexCostumeSources(sources)
+    // A costume the region has not released yet stays off the rack (and out of the counts) until its date.
+    const now = Date.now()
+    const released = (options: RuntimeCostumeOption[]) => options.filter((option) => isCostumeReleased(sourceById.get(option.id), now))
     return {
       options: {
-        body: listRuntimeCostumeOptions(registry, characterId, "body"),
-        hair: listRuntimeCostumeOptions(registry, characterId, "hair"),
-        head: listRuntimeCostumeOptions(registry, characterId, "head"),
+        body: released(listRuntimeCostumeOptions(parts, characterId, "body")),
+        hair: released(listRuntimeCostumeOptions(parts, characterId, "hair")),
+        head: released(listRuntimeCostumeOptions(parts, characterId, "head")),
       },
-      defaults: resolveRoleDefaults(catalog, characterId, unit),
-      nameById: buildRuntimeCostumeNameMap(registry, characterId),
+      defaults: resolveRoleDefaults([role], characterId, unit),
+      nameById: buildRuntimeCostumeNameMap(parts, characterId),
+      units,
+      notAvailable: new Set(notAvailablePatterns.map((p) => `${p.headCostume3dId}|${p.hairCostume3dId}`)),
+      motions,
+      defaultHairs: new Map((defaultHairs ?? []).map((pair) => [pair.headCostume3dId, pair.hairCostume3dId])),
+      sourceById,
     }
   })()
   request.catch(() => {
@@ -74,23 +78,21 @@ function fetchCostumeRoleData(
 }
 
 /**
- * Loads the selectable costume parts and stock defaults of one
- * `<characterId>:<unit>` role from the deployed 3D runtime packages.
+ * Loads the selectable costume parts and stock defaults of one `<characterId>:<unit>` role, as the 3D kernel
+ * builds them from the raw-bundle mirror on the asset CDN.
  */
 export function useCostumeRoleData(
   region: Ref<SekaiRegion>,
-  preference: Ref<SekaiAssetEndpointPreference>,
   characterId: Ref<number | null>,
   unit: Ref<string | null>,
 ) {
+  const settingsStore = useSettingsStore()
+  const baseUrl = computed(() => resolveCostumeContentBaseUrl(settingsStore.currentAssetEndpoint, region.value))
   const data = shallowRef<CostumeRoleData | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
 
   let loadToken = 0
-  // After a load succeeded on the fallback host, later loads start there
-  // (until the region or the asset route changes).
-  let onFallback = false
 
   async function load() {
     const targetCharacterId = characterId.value
@@ -106,16 +108,7 @@ export function useCostumeRoleData(
     loading.value = true
     error.value = null
     try {
-      const primary = resolvePjsk3dRuntimeBaseUrl(region.value, preference.value)
-      const fallback = resolvePjsk3dRuntimeFallbackBaseUrl(region.value, preference.value)
-      const { value: result, usedFallback } = await loadWithAssetFallback(
-        onFallback && fallback ? fallback : primary,
-        onFallback ? null : fallback,
-        (baseUrl) => fetchCostumeRoleData(baseUrl, targetCharacterId, targetUnit),
-      )
-      if (usedFallback) {
-        onFallback = true
-      }
+      const result = await fetchCostumeRoleData(baseUrl.value, targetCharacterId, targetUnit)
       if (token !== loadToken) {
         return
       }
@@ -134,15 +127,7 @@ export function useCostumeRoleData(
   }
 
   watch(
-    () => [region.value, preference.value] as const,
-    () => {
-      onFallback = false
-    },
-    { flush: "sync" },
-  )
-
-  watch(
-    () => [region.value, preference.value, characterId.value, unit.value] as const,
+    () => [baseUrl.value, characterId.value, unit.value] as const,
     () => {
       void load()
     },

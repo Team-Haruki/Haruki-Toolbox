@@ -5,9 +5,8 @@ import {
   normalizeSekaiMasterVersionInfo,
   resolveCardAttrIconUrl,
   resolveCharacterIconUrl,
+  resolveCharacterUnitIconUrl,
   resolveMySekaiCanvasIconUrl,
-  resolvePjsk3dRuntimeBaseUrl,
-  resolvePjsk3dRuntimeFallbackBaseUrl,
   resolveSekaiAssetFallbackRootUrl,
   SEKAI_ASSET_ENDPOINT_ROOTS,
   resolveRarityTrainingIconUrl,
@@ -136,6 +135,15 @@ describe("Sekai data source helpers", () => {
     )
   })
 
+  it("gives Miku's unit versions their own icons", () => {
+    const icon = (name: string) => `https://images.haruki.seiunx.com/sekai-toolbox/static_images/chara_icon/${name}.png`
+    expect(resolveCharacterUnitIconUrl(21, "light_sound")).toBe(icon("miku_light_sound"))
+    expect(resolveCharacterUnitIconUrl(21, "school_refusal")).toBe(icon("miku_school_refusal"))
+    expect(resolveCharacterUnitIconUrl(21, "piapro")).toBe(icon("miku"))
+    expect(resolveCharacterUnitIconUrl(22, "light_sound")).toBe(icon("rin"))
+    expect(resolveCharacterUnitIconUrl(5, null)).toBe(icon("mnr"))
+  })
+
   it("builds toolbox static image URLs for deck recommend UI assets", () => {
     expect(resolveRarityTrainingIconUrl("rarity_4")).toBe(
       "https://images.haruki.seiunx.com/sekai-toolbox/static_images/card/rare_star_after_training.png",
@@ -169,18 +177,6 @@ describe("Sekai data source helpers", () => {
     )
   })
 
-  it("serves the 3D runtime from the selected endpoint", () => {
-    expect(resolvePjsk3dRuntimeBaseUrl("jp", "china_cdn")).toBe(
-      "https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com/pjsk-3d-output/jp/",
-    )
-    expect(resolvePjsk3dRuntimeBaseUrl("jp", "global")).toBe(
-      "https://sekai-assets-haruki.seiunx.net/pjsk-3d-output/jp/",
-    )
-    expect(resolvePjsk3dRuntimeBaseUrl("cn")).toBe(
-      "https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com/pjsk-3d-output/cn/",
-    )
-  })
-
   it("offers only the China CDN and the global route", () => {
     expect(Object.keys(SEKAI_ASSET_ENDPOINT_ROOTS).sort()).toEqual(["china_cdn", "global"])
     expect(Object.values(SEKAI_ASSET_ENDPOINT_ROOTS)).not.toContain("https://sekai-assets.haruki.seiunx.com")
@@ -189,9 +185,5 @@ describe("Sekai data source helpers", () => {
   it("falls back to the global route from the China CDN only", () => {
     expect(resolveSekaiAssetFallbackRootUrl("china_cdn")).toBe("https://sekai-assets-haruki.seiunx.net")
     expect(resolveSekaiAssetFallbackRootUrl("global")).toBeNull()
-    expect(resolvePjsk3dRuntimeFallbackBaseUrl("kr", "china_cdn")).toBe(
-      "https://sekai-assets-haruki.seiunx.net/pjsk-3d-output/kr/",
-    )
-    expect(resolvePjsk3dRuntimeFallbackBaseUrl("kr", "global")).toBeNull()
   })
 })
