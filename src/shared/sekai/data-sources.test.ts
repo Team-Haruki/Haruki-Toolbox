@@ -5,6 +5,7 @@ import {
   normalizeSekaiMasterVersionInfo,
   resolveCardAttrIconUrl,
   resolveCharacterIconUrl,
+  resolveCharacterUnitIconUrl,
   resolveMySekaiCanvasIconUrl,
   resolveSekaiAssetFallbackRootUrl,
   SEKAI_ASSET_ENDPOINT_ROOTS,
@@ -132,6 +133,15 @@ describe("Sekai data source helpers", () => {
     expect(resolveCharacterIconUrl(5)).toBe(
       "https://images.haruki.seiunx.com/sekai-toolbox/static_images/chara_icon/mnr.png",
     )
+  })
+
+  it("gives Miku's unit versions their own icons", () => {
+    const icon = (name: string) => `https://images.haruki.seiunx.com/sekai-toolbox/static_images/chara_icon/${name}.png`
+    expect(resolveCharacterUnitIconUrl(21, "light_sound")).toBe(icon("miku_light_sound"))
+    expect(resolveCharacterUnitIconUrl(21, "school_refusal")).toBe(icon("miku_school_refusal"))
+    expect(resolveCharacterUnitIconUrl(21, "piapro")).toBe(icon("miku"))
+    expect(resolveCharacterUnitIconUrl(22, "light_sound")).toBe(icon("rin"))
+    expect(resolveCharacterUnitIconUrl(5, null)).toBe(icon("mnr"))
   })
 
   it("builds toolbox static image URLs for deck recommend UI assets", () => {

@@ -14,13 +14,15 @@ function n(e) {
 		return Number(n);
 	}, o = e.headPackagePath, s = o == null ? null : String(o).trim();
 	if (s !== null && (s.length === 0 || s.length > 1024 || s.includes("\0"))) throw Error("headPackagePath must be null or a non-empty string of at most 1024 characters without NUL bytes.");
-	let c = e.headOptionalCostume3dId == null ? null : a("headOptionalCostume3dId"), l = e.hairFromCharacterId == null ? null : a("hairFromCharacterId");
+	let c = e.headOptionalCostume3dId == null ? null : a("headOptionalCostume3dId"), l = e.hairFromCharacterId == null ? null : a("hairFromCharacterId"), u = l == null || e.hairFromCostume3dId == null ? null : a("hairFromCostume3dId"), d = e.headFromCharacterId == null ? null : a("headFromCharacterId"), f = e.bodyFromCharacterId == null ? null : a("bodyFromCharacterId"), p = f == null || e.bodyFromUnit == null ? null : String(e.bodyFromUnit).trim();
+	if (p !== null && !/^[A-Za-z0-9_/-]+$/.test(p)) throw Error("bodyFromUnit must be a unit name.");
 	return {
 		roleId: n,
 		hairFromCharacterId: l,
-		hairFromCostume3dId: l == null || e.hairFromCostume3dId == null ? null : a("hairFromCostume3dId"),
-		headFromCharacterId: e.headFromCharacterId == null ? null : a("headFromCharacterId"),
-		bodyFromCharacterId: e.bodyFromCharacterId == null ? null : a("bodyFromCharacterId"),
+		hairFromCostume3dId: u,
+		headFromCharacterId: d,
+		bodyFromCharacterId: f,
+		bodyFromUnit: p,
 		bodyCostume3dId: a("bodyCostume3dId"),
 		headCostume3dId: a("headCostume3dId"),
 		headPackagePath: s,
@@ -145,7 +147,8 @@ function c(e) {
 		e.hairFromCharacterId ?? "",
 		e.hairFromCostume3dId ?? "",
 		e.headFromCharacterId ?? "",
-		e.bodyFromCharacterId ?? ""
+		e.bodyFromCharacterId ?? "",
+		e.bodyFromUnit ?? ""
 	].join("\0");
 }
 //#endregion
@@ -2256,27 +2259,27 @@ function R(e, t) {
 	if (!e) throw Error(t);
 }
 var rr = (e) => -e;
-async function ir(e, t, n, r, i = null) {
-	let a = t.role;
-	R(a, "a borrowed part needs the part set's role"), R(r !== a.characterId, "a character cannot borrow its own parts");
-	let o = await e.characterUnit(r), s = await e.roleIndex(r, o), c = i ?? (n === "hair" ? s.role.hairCostume3dId : n === "body" ? s.role.bodyCostume3dId : null);
+async function ir(e, t, n, r, i = null, a = null) {
+	let o = t.role;
+	R(o, "a borrowed part needs the part set's role"), R(r !== o.characterId, "a character cannot borrow its own parts");
+	let s = await e.roleIndex(r, a ?? await e.characterUnit(r)), c = i ?? (n === "hair" ? s.role.hairCostume3dId : n === "body" ? s.role.bodyCostume3dId : null);
 	R(c != null, `character ${r}: a borrowed head needs its costume3dId`);
 	let l = rr(c), u = t.registry.find((e) => e.partType === n && e.costume3dId === l);
 	if (u) return u;
 	let d = s.registry.find((e) => e.partType === n && e.costume3dId === c);
 	R(d?.bundlePath, `character ${r} has no ${n} ${c}`), n === "head" && R(d.headCostume3dAssetbundleType?.toLowerCase() === "head_and_hair", `head ${c} of character ${r} is not a complete head (head_and_hair)`);
-	let f = t.registry.find((e) => e.partType === "hair" && e.costume3dId === a.hairCostume3dId);
-	R(f?.bundlePath, `role ${a.characterId} has no default hair bundle`);
+	let f = t.registry.find((e) => e.partType === "hair" && e.costume3dId === o.hairCostume3dId);
+	R(f?.bundlePath, `role ${o.characterId} has no default hair bundle`);
 	let p = er.get(t) ?? /* @__PURE__ */ new Map();
 	er.set(t, p);
-	let m = n === "body" ? Yn : Jn, h = (e) => `${m}${a.characterId}:${r}:${e}`, g = n === "body" && s.role.skinColors && a.skinColors ? {
+	let m = n === "body" ? Yn : Jn, h = (e) => `${m}${o.characterId}:${r}:${e}`, g = n === "body" && s.role.skinColors && o.skinColors ? {
 		from: s.role.skinColors,
-		to: a.skinColors
+		to: o.skinColors
 	} : null;
 	p.set(h(d.packagePath), {
 		source: d,
 		palette: f,
-		roleCharacterId: a.characterId,
+		roleCharacterId: o.characterId,
 		skin: g
 	});
 	let _ = d.headTypeVariants ? Object.fromEntries(Object.entries(d.headTypeVariants).flatMap(([e, t]) => t ? (p.set(h(t.packagePath), {
@@ -2286,14 +2289,14 @@ async function ir(e, t, n, r, i = null) {
 			packagePath: t.packagePath
 		},
 		palette: f,
-		roleCharacterId: a.characterId
+		roleCharacterId: o.characterId
 	}), [[e, {
 		bundlePath: t.bundlePath,
 		packagePath: h(t.packagePath)
 	}]]) : [])) : null, v = {
 		...d,
-		characterId: a.characterId,
-		unit: a.unit,
+		characterId: o.characterId,
+		unit: o.unit,
 		costume3dId: l,
 		packagePath: h(d.packagePath),
 		headTypeVariants: _

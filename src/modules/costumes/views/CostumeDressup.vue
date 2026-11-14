@@ -46,7 +46,7 @@ import { resolveSekaiUnitLabel } from "@/shared/sekai/labels"
 import { loadMasterFilesCacheFirst } from "@/shared/sekai/master-loader"
 import SekaiAssetImage from "@/shared/components/SekaiAssetImage.vue"
 import SekaiCharacterAvatar from "@/shared/components/SekaiCharacterAvatar.vue"
-import { resolveCostumeThumbnailUrl } from "@/shared/sekai/data-sources"
+import { resolveCharacterUnitIconUrl, resolveCostumeThumbnailUrl } from "@/shared/sekai/data-sources"
 import { applyCatalogRegionQuery, useCatalogRegionQuerySync, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { downloadFile } from "@/lib/download-file"
@@ -54,6 +54,7 @@ import { useSettingsStore } from "@/shared/stores/settings"
 import type { SekaiRegion } from "@/types"
 import CostumeViewer, { type CostumeViewerBackground, type CostumeViewerRecipe } from "../components/CostumeViewer.vue"
 import { useCostumeRoleData } from "../composables/useCostumeRoleData"
+import { useDefaultOutfits } from "../composables/useDefaultOutfits"
 import { COSTUME_SLOTS, pickDefaultOptionId, type CostumeSlot, type RuntimeCostumeOption } from "../lib/costume-options"
 import { isSameSetCell, NONE_HEAD_COSTUME3D_IDS, orderBySeries, type SeriesContext, type WornPart } from "../lib/costume-series-order"
 import { fitsWornHair, hairForHead, headForHair, type HeadHairRules } from "../lib/costume-head-hair"
@@ -165,12 +166,17 @@ const hairFromHair = ref<number | null>(queryNumber("hairFromHair"))
 /** Experimental too: another character's exclusive head (a full head set, `headFrom` / `headFromHead`). */
 const headFrom = ref<number | null>(queryNumber("headFrom"))
 const headFromHead = ref<number | null>(queryNumber("headFromHead"))
-/** Experimental too: another character's default outfit (`bodyFrom`, in that character's figure). */
+/**
+ * Experimental too: another character's default outfit (`bodyFrom`, in that character's figure; `bodyFromUnit`, which
+ * unit's: Miku has one per unit; absent: the lender's own unit).
+ */
 const bodyFrom = ref<number | null>(queryNumber("bodyFrom"))
+// Read only with bodyFrom set.
+const bodyFromUnit = ref<string | null>(queryUnit("bodyFromUnit"))
 const borrowHairEnabled = ref(hairFrom.value != null || headFrom.value != null || bodyFrom.value != null)
 
-function queryUnit(): string | null {
-  const raw = route.query.unit
+function queryUnit(key = "unit"): string | null {
+  const raw = route.query[key]
   const value = Array.isArray(raw) ? raw[0] : raw
   return typeof value === "string" && (SEKAI_UNITS as readonly string[]).includes(value) ? value : null
 }
@@ -298,7 +304,8 @@ const motionOptions = computed<ComboboxOption[]>(() => {
     options.push({
       value: motionValue(motion),
       label: [typeLabel(motion.motionType), name, ...(unitLabel ? [unitLabel] : [])].join(" · "),
-      iconUrl: character?.iconUrl ?? null,
+      // Miku's unit versions have their own icons.
+      iconUrl: resolveCharacterUnitIconUrl(motion.characterId, motion.unit),
       keywords: [typeLabel(motion.motionType), ...(motion.unit ? [resolveSekaiUnitLabel({ t, te }, motion.unit)] : [])],
     })
   }
@@ -631,9 +638,38 @@ const outfitDonorIds = computed(() => {
   const rank = (id: number) => (id === lead ? 0 : unit != null && characterMap.value.get(id)?.unit === unit ? 1 : 2)
   return [...hairDonorIds.value].sort((a, b) => rank(a) - rank(b) || a - b)
 })
+const showOutfitDonors = computed(() => activeSlot.value === "body" && borrowHairEnabled.value)
+const { outfits: donorOutfits } = useDefaultOutfits(region, outfitDonorIds, showOutfitDonors)
 
-function defaultOutfitThumbnail(donorId: number): string[] {
-  return thumbnailSources({ thumbnailAssetbundleName: `body_default_${String(donorId).padStart(2, "0")}` } as RuntimeCostumeOption)
+type OutfitTile = { donorId: number; unit: string | null; ownUnit: boolean; thumbnail: string | null }
+
+/** Each lender's default outfits (Miku's one per unit), its own unit's first; one plain tile while they load. */
+const outfitTiles = computed<OutfitTile[]>(() =>
+  outfitDonorIds.value.flatMap((donorId): OutfitTile[] => {
+    const outfits = donorOutfits.value.get(donorId)
+    if (!outfits?.length) {
+      return [{ donorId, unit: null, ownUnit: true, thumbnail: null }]
+    }
+    return outfits.map((outfit, index) => ({ donorId, unit: outfit.unit, ownUnit: index === 0, thumbnail: outfit.thumbnailAssetbundleName }))
+  }),
+)
+
+function outfitTileKey(tile: OutfitTile) {
+  return `${tile.donorId}:${tile.unit ?? ""}`
+}
+
+function outfitTileThumbnail(tile: OutfitTile): string[] {
+  return tile.thumbnail ? thumbnailSources({ thumbnailAssetbundleName: tile.thumbnail } as RuntimeCostumeOption) : []
+}
+
+/** The tile's name: the lender, and the unit of a unit outfit that is not the lender's own. */
+function outfitTileName(tile: OutfitTile) {
+  const name = characterMap.value.get(tile.donorId)?.name ?? `#${tile.donorId}`
+  return tile.ownUnit || tile.unit == null ? name : `${name} · ${resolveSekaiUnitLabel({ t, te }, tile.unit)}`
+}
+
+function isOutfitTileSelected(tile: OutfitTile) {
+  return bodyFrom.value === tile.donorId && (tile.ownUnit ? bodyFromUnit.value == null : bodyFromUnit.value === tile.unit)
 }
 
 function isBorrowedSelected(donorId: number, id: number) {
@@ -653,8 +689,11 @@ function selectBorrowed(donorId: number, id: number) {
   }
 }
 
-function selectBorrowedBody(donorId: number) {
-  bodyFrom.value = bodyFrom.value === donorId ? null : donorId
+function selectBorrowedBody(tile: OutfitTile) {
+  const selected = isOutfitTileSelected(tile)
+  bodyFrom.value = selected ? null : tile.donorId
+  // The lender's own unit stays implicit (a shorter URL).
+  bodyFromUnit.value = selected || tile.ownUnit ? null : tile.unit
 }
 /** This character's default hair is a gradient or two-tone: recoloured hair only approximates it. */
 const approximatePalette = computed(() => MULTI_TONE_HAIR_CHARACTER_IDS.has(characterId.value))
@@ -715,8 +754,9 @@ const currentOutfit = computed(() => {
         name: borrowedHeadName ? `${characterName(headFrom.value)}「${borrowedHeadName}」` : characterName(headFrom.value),
       })
     : label(headId.value)
+  const bodyFromTile = bodyFrom.value != null ? outfitTiles.value.find(isOutfitTileSelected) : undefined
   const body = bodyFrom.value != null
-    ? t("costumes.dressup.experimental.borrowedBodyCaption", { name: characterName(bodyFrom.value) })
+    ? t("costumes.dressup.experimental.borrowedBodyCaption", { name: bodyFromTile ? outfitTileName(bodyFromTile) : characterName(bodyFrom.value) })
     : label(bodyId.value)
   return { body, head, hair: headFrom.value != null ? null : borrowed ?? label(hairId.value) }
 })
@@ -860,11 +900,12 @@ const recipe = computed<CostumeViewerRecipe | null>(() => {
       ? { headCostume3dId: headFromHead.value, headFromCharacterId: headFrom.value }
       : {}),
     bodyFromCharacterId: borrowHairEnabled.value ? bodyFrom.value : null,
+    bodyFromUnit: borrowHairEnabled.value && bodyFrom.value != null ? bodyFromUnit.value : null,
   }
 })
 
 // Keep the URL shareable without polluting history.
-watch([characterId, bodyId, headId, hairId, unitOverride, motionChoice, background, accessoryOnly, hairFrom, hairFromHair, headFrom, headFromHead, bodyFrom], ([nextCharacter, nextBody, nextHead, nextHair, nextUnit, nextMotion, nextBackground, nextAccessoryOnly, nextHairFrom, nextHairFromHair, nextHeadFrom, nextHeadFromHead, nextBodyFrom]) => {
+watch([characterId, bodyId, headId, hairId, unitOverride, motionChoice, background, accessoryOnly, hairFrom, hairFromHair, headFrom, headFromHead, bodyFrom, bodyFromUnit], ([nextCharacter, nextBody, nextHead, nextHair, nextUnit, nextMotion, nextBackground, nextAccessoryOnly, nextHairFrom, nextHairFromHair, nextHeadFrom, nextHeadFromHead, nextBodyFrom, nextBodyFromUnit]) => {
   void router.replace({
     query: {
       ...route.query,
@@ -881,6 +922,7 @@ watch([characterId, bodyId, headId, hairId, unitOverride, motionChoice, backgrou
       headFrom: nextHeadFrom != null && nextHeadFromHead != null ? String(nextHeadFrom) : undefined,
       headFromHead: nextHeadFrom != null && nextHeadFromHead != null ? String(nextHeadFromHead) : undefined,
       bodyFrom: nextBodyFrom != null ? String(nextBodyFrom) : undefined,
+      bodyFromUnit: nextBodyFrom != null && nextBodyFromUnit != null ? nextBodyFromUnit : undefined,
     },
   })
 })
@@ -910,6 +952,10 @@ watch(() => route.query, () => {
   }
   if (bodyFrom.value !== nextBodyFrom) {
     bodyFrom.value = nextBodyFrom
+  }
+  const nextBodyFromUnit = queryUnit("bodyFromUnit")
+  if (bodyFromUnit.value !== nextBodyFromUnit) {
+    bodyFromUnit.value = nextBodyFromUnit
   }
   if (nextHeadFrom != null || nextBodyFrom != null) {
     borrowHairEnabled.value = true
@@ -1314,7 +1360,7 @@ watch(() => route.query, () => {
               </section>
 
               <section
-                v-if="activeSlot === 'body' && borrowHairEnabled && outfitDonorIds.length > 0"
+                v-if="showOutfitDonors && outfitTiles.length > 0"
                 class="flex flex-col gap-2 rounded-md border border-dashed p-2"
               >
                 <p class="text-xs font-medium">
@@ -1323,24 +1369,24 @@ watch(() => route.query, () => {
                 </p>
                 <div class="grid grid-cols-4 gap-1.5 sm:grid-cols-5" role="radiogroup" :aria-label="t('costumes.dressup.experimental.borrowBodyTitle')">
                   <button
-                    v-for="donorId in outfitDonorIds"
-                    :key="donorId"
+                    v-for="tile in outfitTiles"
+                    :key="outfitTileKey(tile)"
                     type="button"
                     role="radio"
-                    :aria-checked="bodyFrom === donorId"
-                    :title="characterMap.get(donorId)?.name ?? `#${donorId}`"
+                    :aria-checked="isOutfitTileSelected(tile)"
+                    :title="outfitTileName(tile)"
                     class="group flex min-w-0 flex-col items-center gap-0.5 rounded-md text-center outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    @click="selectBorrowedBody(donorId)"
+                    @click="selectBorrowedBody(tile)"
                   >
                     <span
                       :class="[
                         'relative block aspect-square w-full overflow-hidden rounded-md bg-muted/40 ring-2 transition',
-                        bodyFrom === donorId ? 'ring-primary' : 'ring-transparent group-hover:ring-border',
+                        isOutfitTileSelected(tile) ? 'ring-primary' : 'ring-transparent group-hover:ring-border',
                       ]"
                     >
-                      <SekaiAssetImage :sources="defaultOutfitThumbnail(donorId)" :alt="characterMap.get(donorId)?.name ?? ''" fit="contain" placeholder-class="bg-transparent" />
+                      <SekaiAssetImage :sources="outfitTileThumbnail(tile)" :alt="outfitTileName(tile)" fit="contain" placeholder-class="bg-transparent" />
                     </span>
-                    <span class="w-full truncate text-[10px] leading-tight text-muted-foreground">{{ characterMap.get(donorId)?.name }}</span>
+                    <span class="w-full truncate text-[10px] leading-tight text-muted-foreground">{{ outfitTileName(tile) }}</span>
                   </button>
                 </div>
               </section>

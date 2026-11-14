@@ -333,6 +333,21 @@ export function resolveCharacterIconUrl(characterId: number): string {
   return resolveToolboxStaticImageUrl(`static_images/chara_icon/${nickname}.png`)
 }
 
+/** Miku's unit versions: their gameCharacterUnits ids, which name their icons (the other Virtual Singers have none). */
+const MIKU_UNIT_ICON_IDS: Readonly<Record<string, number>> = {
+  light_sound: 27,
+  idol: 28,
+  street: 29,
+  theme_park: 30,
+  school_refusal: 31,
+}
+
+/** A character's icon in one unit: Miku's unit versions have their own; everyone else (or no unit) the character's. */
+export function resolveCharacterUnitIconUrl(characterId: number, unit: string | null | undefined): string {
+  const unitIconId = characterId === 21 && unit != null ? MIKU_UNIT_ICON_IDS[unit] : undefined
+  return resolveCharacterIconUrl(unitIconId ?? characterId)
+}
+
 function normalizeManifestFiles(value: unknown): Record<string, string> {
   const files: Record<string, string> = {}
   if (!Array.isArray(value)) {

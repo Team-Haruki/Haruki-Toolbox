@@ -6,7 +6,7 @@ const read = (name: string) => readFileSync(`${directory}/${name}`, "utf8")
 
 test("the vendored CostumeShop entry exports the kernel, the mirror content and the role parts", () => {
   const entry = read("haruki-3d-engine-costume-shop.js")
-  for (const name of ["createHaruki3DKernel", "createMirrorContent", "listRoleParts"]) {
+  for (const name of ["createHaruki3DKernel", "createMirrorContent", "listDefaultOutfits", "listRoleParts"]) {
     expect(entry).toMatch(new RegExp(`as ${name}\\b`))
   }
 })
