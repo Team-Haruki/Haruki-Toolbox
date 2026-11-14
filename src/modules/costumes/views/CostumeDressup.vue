@@ -3,6 +3,7 @@ import { computed, ref, shallowRef, useId, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { useRoute, useRouter } from "vue-router"
 import {
+  LucideChevronDown,
   LucideCrown,
   LucideImage,
   LucideImageDown,
@@ -472,6 +473,21 @@ function wornPart(slot: CostumeSlot, id: number | null): WornPart {
   return { id, costume3dGroupId: option?.costume3dGroupId ?? null }
 }
 
+/**
+ * The character's own parts worn now, for SET and the series order. A slot holding another character's part (the
+ * experimental borrowing; a borrowed head set brings its hair too) wears none of the character's own.
+ */
+function wornSeriesContext(notAvailable: ReadonlySet<string>): SeriesContext {
+  const borrowing = borrowHairEnabled.value
+  const borrowedHead = borrowing && headFrom.value != null && headFromHead.value != null
+  return {
+    body: borrowing && bodyFrom.value != null ? null : wornPart("body", bodyId.value),
+    head: borrowedHead ? null : wornPart("head", headId.value),
+    hair: borrowedHead || (borrowing && hairFrom.value != null) ? null : wornPart("hair", hairId.value),
+    notAvailable,
+  }
+}
+
 function rankSeries() {
   const data = roleData.value
   if (data == null) {
@@ -484,12 +500,7 @@ function rankSeries() {
     const key = groupKey(option)
     cells.set(key, [...(cells.get(key) ?? []), option])
   }
-  const context: SeriesContext = {
-    body: wornPart("body", bodyId.value),
-    head: wornPart("head", headId.value),
-    hair: wornPart("hair", hairId.value),
-    notAvailable: data.notAvailable,
-  }
+  const context = wornSeriesContext(data.notAvailable)
   const ordered = orderBySeries([...cells.entries()], slot, context, ([, options]) => {
     // The cell's default costume: its first colour.
     const first = [...options].sort((a, b) => (a.colorId ?? 0) - (b.colorId ?? 0) || a.id - b.id)[0]!
@@ -717,6 +728,21 @@ function selectBorrowed(donorId: number, id: number) {
   }
 }
 
+/** The borrowing sections folded away (the hair / head one, the outfit one); per page visit. */
+const borrowCollapsed = ref({ hair: false, body: false })
+
+/** What a folded borrowing section has on: the borrowed outfit's tile name, or the borrowed hair / head's lender. */
+const borrowedSummary = computed(() => ({
+  hair: (() => {
+    const id = activeSlot.value === "head" ? headFrom.value : hairFrom.value
+    return id != null ? characterMap.value.get(id)?.name ?? `#${id}` : null
+  })(),
+  body: (() => {
+    const tile = bodyFrom.value != null ? outfitTiles.value.find(isOutfitTileSelected) : undefined
+    return tile ? outfitTileName(tile) : bodyFrom.value != null ? characterMap.value.get(bodyFrom.value)?.name ?? null : null
+  })(),
+}))
+
 function selectBorrowedBody(tile: OutfitTile) {
   const selected = isOutfitTileSelected(tile)
   bodyFrom.value = selected ? null : tile.donorId
@@ -875,12 +901,7 @@ function isSetGroup(group: RackGroup): boolean {
     representativeId: first.id,
     costume3dGroupId: first.costume3dGroupId,
     ids: group.options.map((option) => option.id),
-  }, {
-    body: wornPart("body", bodyId.value),
-    head: wornPart("head", headId.value),
-    hair: wornPart("hair", hairId.value),
-    notAvailable: data.notAvailable,
-  })
+  }, wornSeriesContext(data.notAvailable))
 }
 
 type TileLabel = { key: string; text: string; hint: string; emphasis: boolean }
@@ -1339,10 +1360,25 @@ watch(() => route.query, () => {
                 v-if="(activeSlot === 'hair' || activeSlot === 'head') && borrowHairEnabled && hairDonorIds.length > 0"
                 class="flex flex-col gap-2 rounded-md border border-dashed p-2"
               >
-                <p class="text-xs font-medium">
-                  {{ t(activeSlot === "head" ? "costumes.dressup.experimental.borrowHeadTitle" : "costumes.dressup.experimental.borrowHairTitle") }}
-                  <span class="font-normal text-muted-foreground">· {{ t(activeSlot === "head" ? "costumes.dressup.experimental.borrowHeadHint" : "costumes.dressup.experimental.borrowHairHint") }}</span>
-                </p>
+                <button
+                  type="button"
+                  class="flex w-full min-w-0 items-center gap-2 text-left text-xs font-medium pointer-coarse:min-h-10"
+                  :aria-expanded="!borrowCollapsed.hair"
+                  @click="borrowCollapsed.hair = !borrowCollapsed.hair"
+                >
+                  <span class="min-w-0 flex-1 truncate">
+                    {{ t(activeSlot === "head" ? "costumes.dressup.experimental.borrowHeadTitle" : "costumes.dressup.experimental.borrowHairTitle") }}
+                    <span class="font-normal text-muted-foreground">· {{ t(activeSlot === "head" ? "costumes.dressup.experimental.borrowHeadHint" : "costumes.dressup.experimental.borrowHairHint") }}</span>
+                  </span>
+                  <span v-if="borrowCollapsed.hair && borrowedSummary.hair" class="max-w-[40%] truncate font-normal text-primary">{{ borrowedSummary.hair }}</span>
+                  <LucideChevronDown
+                    class="size-4 shrink-0 text-muted-foreground transition-transform duration-200"
+                    :class="borrowCollapsed.hair ? '-rotate-90' : ''"
+                    aria-hidden="true"
+                  />
+                  <span class="sr-only">{{ borrowCollapsed.hair ? t("catalog.detail.showMore") : t("catalog.detail.showLess") }}</span>
+                </button>
+                <template v-if="!borrowCollapsed.hair">
                 <p v-if="approximatePalette" class="text-[11px] text-muted-foreground">
                   {{ t("costumes.dressup.experimental.approximateHint") }}
                 </p>
@@ -1392,17 +1428,32 @@ watch(() => route.query, () => {
                     <span class="w-full truncate text-[10px] leading-tight text-muted-foreground">{{ option.name }}</span>
                   </button>
                 </div>
+                </template>
               </section>
 
               <section
                 v-if="showOutfitDonors && outfitTiles.length > 0"
                 class="flex flex-col gap-2 rounded-md border border-dashed p-2"
               >
-                <p class="text-xs font-medium">
-                  {{ t("costumes.dressup.experimental.borrowBodyTitle") }}
-                  <span class="font-normal text-muted-foreground">· {{ t("costumes.dressup.experimental.borrowBodyHint") }}</span>
-                </p>
-                <div class="grid grid-cols-4 gap-1.5 sm:grid-cols-5" role="radiogroup" :aria-label="t('costumes.dressup.experimental.borrowBodyTitle')">
+                <button
+                  type="button"
+                  class="flex w-full min-w-0 items-center gap-2 text-left text-xs font-medium pointer-coarse:min-h-10"
+                  :aria-expanded="!borrowCollapsed.body"
+                  @click="borrowCollapsed.body = !borrowCollapsed.body"
+                >
+                  <span class="min-w-0 flex-1 truncate">
+                    {{ t("costumes.dressup.experimental.borrowBodyTitle") }}
+                    <span class="font-normal text-muted-foreground">· {{ t("costumes.dressup.experimental.borrowBodyHint") }}</span>
+                  </span>
+                  <span v-if="borrowCollapsed.body && borrowedSummary.body" class="max-w-[40%] truncate font-normal text-primary">{{ borrowedSummary.body }}</span>
+                  <LucideChevronDown
+                    class="size-4 shrink-0 text-muted-foreground transition-transform duration-200"
+                    :class="borrowCollapsed.body ? '-rotate-90' : ''"
+                    aria-hidden="true"
+                  />
+                  <span class="sr-only">{{ borrowCollapsed.body ? t("catalog.detail.showMore") : t("catalog.detail.showLess") }}</span>
+                </button>
+                <div v-if="!borrowCollapsed.body" class="grid grid-cols-4 gap-1.5 sm:grid-cols-5" role="radiogroup" :aria-label="t('costumes.dressup.experimental.borrowBodyTitle')">
                   <button
                     v-for="tile in outfitTiles"
                     :key="outfitTileKey(tile)"
