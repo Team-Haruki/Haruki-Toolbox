@@ -151,6 +151,13 @@ export type HarukiRenderRecipe = {
   hairFromCharacterId?: number | null
   /** With hairFromCharacterId: which of its hairs (a hair costume3dId of its own role); absent: its default. */
   hairFromCostume3dId?: number | null
+  /**
+   * Experimental: headCostume3dId is a complete head (head_and_hair) of this character, its hair recoloured like a
+   * borrowed hair and its accessories as they are.
+   */
+  headFromCharacterId?: number | null
+  /** Experimental: wear this character's default outfit (its preset body, in its own figure) instead of the body. */
+  bodyFromCharacterId?: number | null
 }
 
 /**

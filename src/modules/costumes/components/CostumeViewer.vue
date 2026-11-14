@@ -30,6 +30,10 @@ export type CostumeViewerRecipe = {
   hairFromCharacterId?: number | null
   /** With hairFromCharacterId: which of its hairs (absent: its default). */
   hairFromCostume3dId?: number | null
+  /** Experimental: headCostume3dId is a full head set of this character, its hair in the role's colours. */
+  headFromCharacterId?: number | null
+  /** Experimental: this character's default outfit, in its figure, instead of the body. */
+  bodyFromCharacterId?: number | null
 }
 
 /** "archive": the game's backdrop (the character archive costume viewer's); "transparent": the frame's plain color. */
@@ -176,6 +180,8 @@ async function loadRecipe() {
       motionRoleId: recipe.motionRoleId ?? null,
       hairFromCharacterId: recipe.hairFromCharacterId ?? null,
       hairFromCostume3dId: recipe.hairFromCostume3dId ?? null,
+      headFromCharacterId: recipe.headFromCharacterId ?? null,
+      bodyFromCharacterId: recipe.bodyFromCharacterId ?? null,
     })
     if (generation !== loadGeneration) {
       return

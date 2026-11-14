@@ -924,12 +924,18 @@ export default {
       "experimental": {
         "title": "Experiments",
         "note": "Features in testing; results may be incomplete",
-        "borrowHair": "Borrow another character's hair",
+        "borrowHair": "Borrow other characters' hair, heads and outfits",
         "borrowHairTitle": "Other characters' hair",
         "borrowHairHint": "recoloured with this character's default hair colours",
         "loadingHairs": "Loading hairstyles…",
         "approximateHint": "This character's hair is a gradient or two-tone; the recolouring only approximates it",
-        "borrowedHairCaption": "{name}'s hair (borrowed)"
+        "borrowedHairCaption": "{name}'s hair (borrowed)",
+        "borrowHeadTitle": "Other characters' exclusive heads",
+        "borrowHeadHint": "hair recoloured with this character's default hair colours, accessories as they are",
+        "borrowedHeadCaption": "{name}'s head (borrowed)",
+        "borrowBodyTitle": "Other characters' default outfits",
+        "borrowBodyHint": "in that character's figure",
+        "borrowedBodyCaption": "{name}'s default outfit (borrowed)"
       },
       "filters": {
         "count": "{count} costumes",

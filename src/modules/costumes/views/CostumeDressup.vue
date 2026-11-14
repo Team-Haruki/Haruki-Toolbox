@@ -162,7 +162,12 @@ const hairId = ref<number | null>(queryNumber("hair"))
  */
 const hairFrom = ref<number | null>(queryNumber("hairFrom"))
 const hairFromHair = ref<number | null>(queryNumber("hairFromHair"))
-const borrowHairEnabled = ref(hairFrom.value != null)
+/** Experimental too: another character's exclusive head (a full head set, `headFrom` / `headFromHead`). */
+const headFrom = ref<number | null>(queryNumber("headFrom"))
+const headFromHead = ref<number | null>(queryNumber("headFromHead"))
+/** Experimental too: another character's default outfit (`bodyFrom`, in that character's figure). */
+const bodyFrom = ref<number | null>(queryNumber("bodyFrom"))
+const borrowHairEnabled = ref(hairFrom.value != null || headFrom.value != null || bodyFrom.value != null)
 
 function queryUnit(): string | null {
   const raw = route.query.unit
@@ -533,8 +538,9 @@ function activeOption(group: RackGroup): RuntimeCostumeOption {
 }
 
 function isGroupSelected(group: RackGroup): boolean {
-  // A borrowed hair stands in for the hair while set: no hair of the character's own is worn.
-  if (activeSlot.value === "hair" && hairFrom.value != null) {
+  // A borrowed part stands in for the slot while set: none of the character's own is worn there.
+  const borrowed = { hair: hairFrom.value, head: headFrom.value, body: bodyFrom.value }[activeSlot.value]
+  if (borrowed != null) {
     return false
   }
   return group.options.some((option) => option.id === selectedId.value)
@@ -562,9 +568,11 @@ function selectOption(id: number) {
   switch (activeSlot.value) {
     case "body":
       bodyId.value = id
+      bodyFrom.value = null
       break
     case "head": {
       headId.value = id
+      headFrom.value = null
       const head = options?.head.find((option) => option.id === id)
       if (rules && head && options) {
         hairId.value = hairForHead(head, hairId.value, rules, new Set(options.hair.map((option) => option.id)))
@@ -578,6 +586,8 @@ function selectOption(id: number) {
     default: {
       hairId.value = id
       hairFrom.value = null
+      // A borrowed full head set brings its own hairstyle: picking a hair takes it off.
+      headFrom.value = null
       if (rules && options) {
         const head = options.head.find((option) => option.id === headId.value) ?? null
         headId.value = headForHair(head, id, rules, options.head, roleData.value?.defaults?.headCostume3dId ?? null)
@@ -592,11 +602,11 @@ const hairDonorIds = computed(() => hairDonors(characterId.value, genderById.val
 /** The lending character whose hairs the experimental section lists (the worn one, or the first). */
 const browsedDonor = ref<number | null>(null)
 const shownDonor = computed<number | null>(() => {
-  if (!borrowHairEnabled.value || activeSlot.value !== "hair") {
+  if (!borrowHairEnabled.value || (activeSlot.value !== "hair" && activeSlot.value !== "head")) {
     return null
   }
   const donors = hairDonorIds.value
-  for (const id of [browsedDonor.value, hairFrom.value]) {
+  for (const id of [browsedDonor.value, activeSlot.value === "head" ? headFrom.value : null, hairFrom.value, headFrom.value]) {
     if (id != null && donors.includes(id)) {
       return id
     }
@@ -606,6 +616,46 @@ const shownDonor = computed<number | null>(() => {
 const shownDonorUnit = computed<string | null>(() => (shownDonor.value != null ? characterMap.value.get(shownDonor.value)?.unit ?? null : null))
 const { data: donorData, loading: donorLoading } = useCostumeRoleData(region, shownDonor, shownDonorUnit)
 const donorHairs = computed(() => donorData.value?.options.hair ?? [])
+/** The shown character's exclusive heads: its full head sets (its hair with its accessories). */
+const donorHeads = computed(() => (donorData.value?.options.head ?? []).filter((option) => option.includesHair))
+/** The items the borrowing section lists in the active slot. */
+const donorItems = computed(() => (activeSlot.value === "head" ? donorHeads.value : donorHairs.value))
+
+/**
+ * Other characters' default outfits for the body slot: the borrowed hair's (or head's) character first, then the
+ * character's unit mates, then the rest by id.
+ */
+const outfitDonorIds = computed(() => {
+  const unit = characterMap.value.get(characterId.value)?.unit ?? null
+  const lead = hairFrom.value ?? headFrom.value
+  const rank = (id: number) => (id === lead ? 0 : unit != null && characterMap.value.get(id)?.unit === unit ? 1 : 2)
+  return [...hairDonorIds.value].sort((a, b) => rank(a) - rank(b) || a - b)
+})
+
+function defaultOutfitThumbnail(donorId: number): string[] {
+  return thumbnailSources({ thumbnailAssetbundleName: `body_default_${String(donorId).padStart(2, "0")}` } as RuntimeCostumeOption)
+}
+
+function isBorrowedSelected(donorId: number, id: number) {
+  return activeSlot.value === "head"
+    ? headFrom.value === donorId && headFromHead.value === id
+    : hairFrom.value === donorId && hairFromHair.value === id
+}
+
+function selectBorrowed(donorId: number, id: number) {
+  if (activeSlot.value === "head") {
+    headFrom.value = donorId
+    headFromHead.value = id
+    // The head set brings its own hairstyle.
+    hairFrom.value = null
+  } else {
+    selectBorrowedHair(donorId, id)
+  }
+}
+
+function selectBorrowedBody(donorId: number) {
+  bodyFrom.value = bodyFrom.value === donorId ? null : donorId
+}
 /** This character's default hair is a gradient or two-tone: recoloured hair only approximates it. */
 const approximatePalette = computed(() => MULTI_TONE_HAIR_CHARACTER_IDS.has(characterId.value))
 
@@ -615,6 +665,8 @@ function setBorrowHair(enabled: boolean) {
     activeSlot.value = "hair"
   } else {
     hairFrom.value = null
+    headFrom.value = null
+    bodyFrom.value = null
   }
 }
 
@@ -622,6 +674,7 @@ function setBorrowHair(enabled: boolean) {
 function selectBorrowedHair(donorId: number, hair: number) {
   hairFrom.value = donorId
   hairFromHair.value = hair
+  headFrom.value = null
   const rules = headHairRules()
   const options = roleData.value?.options
   const head = options?.head.find((option) => option.id === headId.value) ?? null
@@ -653,7 +706,19 @@ const currentOutfit = computed(() => {
   const borrowed = donorName != null
     ? t("costumes.dressup.experimental.borrowedHairCaption", { name: borrowedHairName ? `${donorName}「${borrowedHairName}」` : donorName })
     : null
-  return { body: label(bodyId.value), head: label(headId.value), hair: borrowed ?? label(hairId.value) }
+  const characterName = (id: number) => characterMap.value.get(id)?.name ?? `#${id}`
+  const borrowedHeadName = headFromHead.value != null && shownDonor.value === headFrom.value
+    ? donorData.value?.nameById.get(headFromHead.value)?.name ?? null
+    : null
+  const head = headFrom.value != null
+    ? t("costumes.dressup.experimental.borrowedHeadCaption", {
+        name: borrowedHeadName ? `${characterName(headFrom.value)}「${borrowedHeadName}」` : characterName(headFrom.value),
+      })
+    : label(headId.value)
+  const body = bodyFrom.value != null
+    ? t("costumes.dressup.experimental.borrowedBodyCaption", { name: characterName(bodyFrom.value) })
+    : label(bodyId.value)
+  return { body, head, hair: headFrom.value != null ? null : borrowed ?? label(hairId.value) }
 })
 
 // --- Stage controls ---------------------------------------------------------
@@ -695,6 +760,8 @@ function selectCharacter(id: number) {
   if (id !== characterId.value && characterMap.value.has(id)) {
     characterId.value = id
     hairFrom.value = null
+    headFrom.value = null
+    bodyFrom.value = null
     unitOverride.value = null
     bodyId.value = null
     headId.value = null
@@ -770,7 +837,7 @@ function isHairStyleHead(group: RackGroup): boolean {
 }
 
 const hairLocked = computed(() =>
-  roleData.value?.options.head.find((option) => option.id === headId.value)?.includesHair === true,
+  headFrom.value != null || roleData.value?.options.head.find((option) => option.id === headId.value)?.includesHair === true,
 )
 
 const recipe = computed<CostumeViewerRecipe | null>(() => {
@@ -789,11 +856,15 @@ const recipe = computed<CostumeViewerRecipe | null>(() => {
     accessoryOnly: showingAccessoryOnly.value,
     hairFromCharacterId: borrowHairEnabled.value ? hairFrom.value : null,
     hairFromCostume3dId: borrowHairEnabled.value && hairFrom.value != null ? hairFromHair.value : null,
+    ...(borrowHairEnabled.value && headFrom.value != null && headFromHead.value != null
+      ? { headCostume3dId: headFromHead.value, headFromCharacterId: headFrom.value }
+      : {}),
+    bodyFromCharacterId: borrowHairEnabled.value ? bodyFrom.value : null,
   }
 })
 
 // Keep the URL shareable without polluting history.
-watch([characterId, bodyId, headId, hairId, unitOverride, motionChoice, background, accessoryOnly, hairFrom, hairFromHair], ([nextCharacter, nextBody, nextHead, nextHair, nextUnit, nextMotion, nextBackground, nextAccessoryOnly, nextHairFrom, nextHairFromHair]) => {
+watch([characterId, bodyId, headId, hairId, unitOverride, motionChoice, background, accessoryOnly, hairFrom, hairFromHair, headFrom, headFromHead, bodyFrom], ([nextCharacter, nextBody, nextHead, nextHair, nextUnit, nextMotion, nextBackground, nextAccessoryOnly, nextHairFrom, nextHairFromHair, nextHeadFrom, nextHeadFromHead, nextBodyFrom]) => {
   void router.replace({
     query: {
       ...route.query,
@@ -807,6 +878,9 @@ watch([characterId, bodyId, headId, hairId, unitOverride, motionChoice, backgrou
       hair: nextHair != null ? String(nextHair) : undefined,
       hairFrom: nextHairFrom != null ? String(nextHairFrom) : undefined,
       hairFromHair: nextHairFrom != null && nextHairFromHair != null ? String(nextHairFromHair) : undefined,
+      headFrom: nextHeadFrom != null && nextHeadFromHead != null ? String(nextHeadFrom) : undefined,
+      headFromHead: nextHeadFrom != null && nextHeadFromHead != null ? String(nextHeadFromHead) : undefined,
+      bodyFrom: nextBodyFrom != null ? String(nextBodyFrom) : undefined,
     },
   })
 })
@@ -824,6 +898,21 @@ watch(() => route.query, () => {
   const nextHairFromHair = queryNumber("hairFromHair")
   if (hairFromHair.value !== nextHairFromHair) {
     hairFromHair.value = nextHairFromHair
+  }
+  const nextHeadFrom = queryNumber("headFrom")
+  const nextHeadFromHead = queryNumber("headFromHead")
+  const nextBodyFrom = queryNumber("bodyFrom")
+  if (headFromHead.value !== nextHeadFromHead) {
+    headFromHead.value = nextHeadFromHead
+  }
+  if (headFrom.value !== nextHeadFrom) {
+    headFrom.value = nextHeadFrom
+  }
+  if (bodyFrom.value !== nextBodyFrom) {
+    bodyFrom.value = nextBodyFrom
+  }
+  if (nextHeadFrom != null || nextBodyFrom != null) {
+    borrowHairEnabled.value = true
   }
   if (hairFrom.value !== nextHairFrom) {
     hairFrom.value = nextHairFrom
@@ -1166,12 +1255,12 @@ watch(() => route.query, () => {
               </CatalogFilterPanel>
 
               <section
-                v-if="activeSlot === 'hair' && borrowHairEnabled && hairDonorIds.length > 0"
+                v-if="(activeSlot === 'hair' || activeSlot === 'head') && borrowHairEnabled && hairDonorIds.length > 0"
                 class="flex flex-col gap-2 rounded-md border border-dashed p-2"
               >
                 <p class="text-xs font-medium">
-                  {{ t("costumes.dressup.experimental.borrowHairTitle") }}
-                  <span class="font-normal text-muted-foreground">· {{ t("costumes.dressup.experimental.borrowHairHint") }}</span>
+                  {{ t(activeSlot === "head" ? "costumes.dressup.experimental.borrowHeadTitle" : "costumes.dressup.experimental.borrowHairTitle") }}
+                  <span class="font-normal text-muted-foreground">· {{ t(activeSlot === "head" ? "costumes.dressup.experimental.borrowHeadHint" : "costumes.dressup.experimental.borrowHairHint") }}</span>
                 </p>
                 <p v-if="approximatePalette" class="text-[11px] text-muted-foreground">
                   {{ t("costumes.dressup.experimental.approximateHint") }}
@@ -1191,32 +1280,67 @@ watch(() => route.query, () => {
                     @click="browsedDonor = donorId"
                   >
                     <SekaiCharacterAvatar :character-id="donorId" :name="characterMap.get(donorId)?.name ?? ''" size="sm" class="ring-0" />
-                    <span v-if="hairFrom === donorId" class="absolute -right-0.5 -bottom-0.5 size-2 rounded-full bg-primary ring-2 ring-card" />
+                    <span v-if="(activeSlot === 'head' ? headFrom : hairFrom) === donorId" class="absolute -right-0.5 -bottom-0.5 size-2 rounded-full bg-primary ring-2 ring-card" />
                   </button>
                 </div>
-                <p v-if="donorLoading && donorHairs.length === 0" class="py-3 text-center text-xs text-muted-foreground">
+                <p v-if="donorLoading && donorItems.length === 0" class="py-3 text-center text-xs text-muted-foreground">
                   {{ t("costumes.dressup.experimental.loadingHairs") }}
+                </p>
+                <p v-else-if="donorItems.length === 0" class="py-3 text-center text-xs text-muted-foreground">
+                  {{ t("costumes.dressup.empty") }}
                 </p>
                 <div v-else class="grid grid-cols-4 gap-1.5 sm:grid-cols-5" role="radiogroup" :aria-label="characterMap.get(shownDonor ?? 0)?.name ?? ''">
                   <button
-                    v-for="option in donorHairs"
+                    v-for="option in donorItems"
                     :key="option.id"
                     type="button"
                     role="radio"
-                    :aria-checked="hairFrom === shownDonor && hairFromHair === option.id"
+                    :aria-checked="shownDonor != null && isBorrowedSelected(shownDonor, option.id)"
                     :title="option.name"
                     class="group flex min-w-0 flex-col items-center gap-0.5 rounded-md text-center outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    @click="shownDonor != null && selectBorrowedHair(shownDonor, option.id)"
+                    @click="shownDonor != null && selectBorrowed(shownDonor, option.id)"
                   >
                     <span
                       :class="[
                         'relative block aspect-square w-full overflow-hidden rounded-md bg-muted/40 ring-2 transition',
-                        hairFrom === shownDonor && hairFromHair === option.id ? 'ring-primary' : 'ring-transparent group-hover:ring-border',
+                        shownDonor != null && isBorrowedSelected(shownDonor, option.id) ? 'ring-primary' : 'ring-transparent group-hover:ring-border',
                       ]"
                     >
                       <SekaiAssetImage :sources="thumbnailSources(option)" :alt="option.name" fit="contain" placeholder-class="bg-transparent" />
                     </span>
                     <span class="w-full truncate text-[10px] leading-tight text-muted-foreground">{{ option.name }}</span>
+                  </button>
+                </div>
+              </section>
+
+              <section
+                v-if="activeSlot === 'body' && borrowHairEnabled && outfitDonorIds.length > 0"
+                class="flex flex-col gap-2 rounded-md border border-dashed p-2"
+              >
+                <p class="text-xs font-medium">
+                  {{ t("costumes.dressup.experimental.borrowBodyTitle") }}
+                  <span class="font-normal text-muted-foreground">· {{ t("costumes.dressup.experimental.borrowBodyHint") }}</span>
+                </p>
+                <div class="grid grid-cols-4 gap-1.5 sm:grid-cols-5" role="radiogroup" :aria-label="t('costumes.dressup.experimental.borrowBodyTitle')">
+                  <button
+                    v-for="donorId in outfitDonorIds"
+                    :key="donorId"
+                    type="button"
+                    role="radio"
+                    :aria-checked="bodyFrom === donorId"
+                    :title="characterMap.get(donorId)?.name ?? `#${donorId}`"
+                    class="group flex min-w-0 flex-col items-center gap-0.5 rounded-md text-center outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    @click="selectBorrowedBody(donorId)"
+                  >
+                    <span
+                      :class="[
+                        'relative block aspect-square w-full overflow-hidden rounded-md bg-muted/40 ring-2 transition',
+                        bodyFrom === donorId ? 'ring-primary' : 'ring-transparent group-hover:ring-border',
+                      ]"
+                    >
+                      <SekaiAssetImage :sources="defaultOutfitThumbnail(donorId)" :alt="characterMap.get(donorId)?.name ?? ''" fit="contain" placeholder-class="bg-transparent" />
+                    </span>
+                    <span class="w-full truncate text-[10px] leading-tight text-muted-foreground">{{ characterMap.get(donorId)?.name }}</span>
                   </button>
                 </div>
               </section>

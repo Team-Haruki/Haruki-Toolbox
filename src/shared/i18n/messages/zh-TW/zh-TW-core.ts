@@ -924,12 +924,18 @@ export default {
       "experimental": {
         "title": "實驗功能",
         "note": "測試中的功能，效果可能不完整",
-        "borrowHair": "借用其他角色的髮型",
+        "borrowHair": "借用其他角色的髮型、頭飾和服裝",
         "borrowHairTitle": "其他角色的髮型",
         "borrowHairHint": "按本角色預設髮色重新上色",
         "loadingHairs": "正在讀取髮型…",
         "approximateHint": "本角色是漸層或雙色髮，重新上色只是近似效果",
-        "borrowedHairCaption": "{name}的髮型（借用）"
+        "borrowedHairCaption": "{name}的髮型（借用）",
+        "borrowHeadTitle": "其他角色的專屬頭飾",
+        "borrowHeadHint": "頭髮按本角色預設髮色重新上色，飾品保持原色",
+        "borrowedHeadCaption": "{name}的頭飾（借用）",
+        "borrowBodyTitle": "其他角色的初始服裝",
+        "borrowBodyHint": "按原角色的體型",
+        "borrowedBodyCaption": "{name}的初始服裝（借用）"
       },
       "filters": {
         "count": "{count} 件",
