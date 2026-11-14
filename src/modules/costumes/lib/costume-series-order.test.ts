@@ -57,13 +57,17 @@ describe("costumeSeriesSortValue", () => {
 })
 
 describe("isSameSetCell", () => {
-  it("labels the cells of a series another worn part belongs to, not the worn cell", () => {
+  it("labels the cells of a series another worn part belongs to, the worn cell too", () => {
     // Hair of series 90 worn: the series-90 body and accessory complete it.
     const worn = context({ hair: { id: 90161, costume3dGroupId: 90161 } })
     expect(isSameSetCell("body", cell(90001, 90001), worn)).toBe(true)
     expect(isSameSetCell("head", cell(90002, 90002), worn)).toBe(true)
-    // The worn body (any colour of it) is not labelled; neither is a body of no worn series.
-    expect(isSameSetCell("body", cell(84003, 84003, [84003, 84001]), worn)).toBe(false)
+    // The worn body (any colour of it) is labelled with the worn accessory's series; a body of no worn series is not.
+    expect(isSameSetCell("body", cell(84003, 84003, [84003, 84001]), worn)).toBe(true)
+    // An exclusive head (group 88001) worn with its outfit's body (88001): SET, as is the outfit's shared head (88021).
+    const cherry = context({ body: { id: 88002, costume3dGroupId: 88001 }, head: { id: 88001, costume3dGroupId: 88001 } })
+    expect(isSameSetCell("head", cell(88001, 88001), cherry)).toBe(true)
+    expect(isSameSetCell("head", cell(88161, 88021), cherry)).toBe(true)
     expect(isSameSetCell("body", cell(77001, 77001), worn)).toBe(false)
     // The series of the slot's own worn part does not count: only the other two parts.
     expect(isSameSetCell("body", cell(84005, 84005), context({ head: null, hair: null }))).toBe(false)

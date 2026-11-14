@@ -640,6 +640,32 @@ const donorHairs = computed(() => donorData.value?.options.hair ?? [])
 const donorHeads = computed(() => (donorData.value?.options.head ?? []).filter((option) => option.includesHair))
 /** The items the borrowing section lists in the active slot. */
 const donorItems = computed(() => (activeSlot.value === "head" ? donorHeads.value : donorHairs.value))
+/** The borrowing section's tiles: one per costume, its colours folded in under it as in the rack. */
+const donorGroups = computed<RackGroup[]>(() => {
+  const groups = new Map<string, RackGroup>()
+  for (const option of donorItems.value) {
+    const key = groupKey(option)
+    const group = groups.get(key)
+    if (group) {
+      group.options.push(option)
+    } else {
+      groups.set(key, { key, name: option.name, options: [option] })
+    }
+  }
+  for (const group of groups.values()) {
+    group.options.sort((a, b) => (a.colorId ?? 0) - (b.colorId ?? 0) || a.id - b.id)
+  }
+  return [...groups.values()]
+})
+
+function isDonorOptionSelected(option: RuntimeCostumeOption) {
+  return shownDonor.value != null && isBorrowedSelected(shownDonor.value, option.id)
+}
+
+/** The colour a borrowing tile shows: the borrowed one when the costume is worn, else its first. */
+function donorActiveOption(group: RackGroup): RuntimeCostumeOption {
+  return group.options.find(isDonorOptionSelected) ?? group.options[0]!
+}
 
 /**
  * Other characters' default outfits for the body slot: the borrowed hair's (or head's) character first, then the
@@ -890,7 +916,7 @@ function isExclusiveHead(group: RackGroup): boolean {
  * The game's hairstyle label (CostumeSelectCell.labelHairStyle): this head cannot be worn with the hair worn now
  * (costume3dModelNotAvailablePatterns), so wearing it changes the hair.
  */
-/** SET: this costume is of the same series as one of the other two parts worn now (not the worn one itself). */
+/** SET: this costume is of the same series as one of the other two parts worn now (the worn one too). */
 function isSetGroup(group: RackGroup): boolean {
   const data = roleData.value
   if (data == null) {
@@ -1407,26 +1433,44 @@ watch(() => route.query, () => {
                   {{ t("costumes.dressup.empty") }}
                 </p>
                 <div v-else class="grid grid-cols-4 gap-1.5 sm:grid-cols-5" role="radiogroup" :aria-label="characterMap.get(shownDonor ?? 0)?.name ?? ''">
-                  <button
-                    v-for="option in donorItems"
-                    :key="option.id"
-                    type="button"
-                    role="radio"
-                    :aria-checked="shownDonor != null && isBorrowedSelected(shownDonor, option.id)"
-                    :title="option.name"
-                    class="group flex min-w-0 flex-col items-center gap-0.5 rounded-md text-center outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    @click="shownDonor != null && selectBorrowed(shownDonor, option.id)"
-                  >
-                    <span
-                      :class="[
-                        'relative block aspect-square w-full overflow-hidden rounded-md bg-muted/40 ring-2 transition',
-                        shownDonor != null && isBorrowedSelected(shownDonor, option.id) ? 'ring-primary' : 'ring-transparent group-hover:ring-border',
-                      ]"
+                  <div v-for="group in donorGroups" :key="group.key" class="flex min-w-0 flex-col gap-1">
+                    <button
+                      type="button"
+                      role="radio"
+                      :aria-checked="group.options.some(isDonorOptionSelected)"
+                      :title="donorActiveOption(group).colorName ? `${group.name} · ${donorActiveOption(group).colorName}` : group.name"
+                      class="group flex min-w-0 flex-col items-center gap-0.5 rounded-md text-center outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      @click="shownDonor != null && selectBorrowed(shownDonor, donorActiveOption(group).id)"
                     >
-                      <SekaiAssetImage :sources="thumbnailSources(option)" :alt="option.name" fit="contain" placeholder-class="bg-transparent" />
-                    </span>
-                    <span class="w-full truncate text-[10px] leading-tight text-muted-foreground">{{ option.name }}</span>
-                  </button>
+                      <span
+                        :class="[
+                          'relative block aspect-square w-full overflow-hidden rounded-md bg-muted/40 ring-2 transition',
+                          group.options.some(isDonorOptionSelected) ? 'ring-primary' : 'ring-transparent group-hover:ring-border',
+                        ]"
+                      >
+                        <SekaiAssetImage :sources="thumbnailSources(donorActiveOption(group))" :alt="group.name" fit="contain" placeholder-class="bg-transparent" />
+                      </span>
+                      <span class="w-full truncate text-[10px] leading-tight text-muted-foreground">{{ group.name }}</span>
+                    </button>
+                    <!-- Colour variants, one tap each; the borrowed one is ringed. -->
+                    <div v-if="group.options.length > 1" class="flex flex-wrap gap-0.5" role="radiogroup" :aria-label="group.name">
+                      <button
+                        v-for="option in group.options"
+                        :key="option.id"
+                        type="button"
+                        role="radio"
+                        :aria-checked="isDonorOptionSelected(option)"
+                        :title="option.colorName || option.name"
+                        :class="[
+                          'relative size-5 shrink-0 overflow-hidden rounded bg-muted/40 ring-2 transition',
+                          isDonorOptionSelected(option) ? 'ring-primary' : 'ring-transparent hover:ring-border',
+                        ]"
+                        @click="shownDonor != null && selectBorrowed(shownDonor, option.id)"
+                      >
+                        <SekaiAssetImage :sources="thumbnailSources(option)" :alt="option.colorName || option.name" fit="contain" placeholder-class="bg-transparent" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 </template>
               </section>
