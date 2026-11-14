@@ -2099,7 +2099,7 @@ function Mn(e, t, n) {
 }
 //#endregion
 //#region src/original/faceHairShadow.ts
-var I = 720, Nn = 5e-4, Pn = 50 * Math.PI / 180, Fn = 75 * Math.PI / 180, In = .001, Ln = .0015, Rn = 5e-4, zn = .002, Bn = 6, Vn = 2;
+var I = 720, Nn = 5e-4, Pn = 50 * Math.PI / 180, Fn = 75 * Math.PI / 180, In = -.0015, Ln = .0015, Rn = 5e-4, zn = .002, Bn = 3, Vn = 2;
 function Hn(e, t) {
 	let n = [
 		[],
