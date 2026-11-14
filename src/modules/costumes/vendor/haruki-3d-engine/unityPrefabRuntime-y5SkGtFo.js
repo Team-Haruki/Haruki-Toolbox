@@ -1894,49 +1894,56 @@ function xn(e) {
 	}
 	return r;
 }
-function Sn(t) {
-	let n = xn(t.positions), r = /* @__PURE__ */ new Map(), i = t.triangles;
-	for (let e = 0; e + 2 < i.length; e += 3) {
-		let t = [
-			n[i[e]],
-			n[i[e + 1]],
-			n[i[e + 2]]
+function Sn(e) {
+	let t = xn(e.positions), n = /* @__PURE__ */ new Map(), r = e.triangles;
+	for (let e = 0; e + 2 < r.length; e += 3) {
+		let i = [
+			t[r[e]],
+			t[r[e + 1]],
+			t[r[e + 2]]
 		];
-		for (let [e, n] of [
-			[t[0], t[1]],
-			[t[1], t[2]],
-			[t[2], t[0]]
+		for (let [e, t] of [
+			[i[0], i[1]],
+			[i[1], i[2]],
+			[i[2], i[0]]
 		]) {
-			if (e === n) continue;
-			let t = e < n ? `${e},${n}` : `${n},${e}`;
-			r.set(t, (r.get(t) ?? 0) + 1);
+			if (e === t) continue;
+			let r = e < t ? `${e},${t}` : `${t},${e}`;
+			n.set(r, (n.get(r) ?? 0) + 1);
 		}
 	}
-	let a = /* @__PURE__ */ new Map();
-	for (let [e, t] of r) {
+	let i = /* @__PURE__ */ new Map();
+	for (let [e, t] of n) {
 		if (t !== 1) continue;
 		let [n, r] = e.split(",").map(Number);
-		a.set(n, [...a.get(n) ?? [], r]), a.set(r, [...a.get(r) ?? [], n]);
+		i.set(n, [...i.get(n) ?? [], r]), i.set(r, [...i.get(r) ?? [], n]);
 	}
-	let o = /* @__PURE__ */ new Set(), s = [], c = -1;
-	for (let n of a.keys()) {
-		if (o.has(n)) continue;
-		let r = [], i = -1, l = n;
-		for (; l !== void 0 && !o.has(l);) {
-			o.add(l), r.push(l);
-			let e = (a.get(l) ?? []).filter((e) => e !== i && !o.has(e));
-			i = l, l = e[0];
+	let a = /* @__PURE__ */ new Set(), o = [];
+	for (let e of i.keys()) {
+		if (a.has(e)) continue;
+		let t = [], n = -1, r = e;
+		for (; r !== void 0 && !a.has(r);) {
+			a.add(r), t.push(r);
+			let e = (i.get(r) ?? []).filter((e) => e !== n && !a.has(e));
+			n = r, r = e[0];
 		}
-		let u = new e.Box3();
-		for (let n of r) u.expandByPoint(new e.Vector3(t.positions[n * 3], t.positions[n * 3 + 1], t.positions[n * 3 + 2]));
-		let d = u.getSize(new e.Vector3()), f = d.x + d.y + d.z;
-		f > c && (c = f, s = r);
+		o.push(t);
 	}
-	return s;
+	return o;
 }
-var Cn = (t, n, r = new e.Vector3()) => r.set(t[n * 3], t[n * 3 + 1], t[n * 3 + 2]);
-function wn(t, n, r) {
-	let i = n.map((n) => Cn(t, n, new e.Vector3())), a = (e) => e.clone().sub(r.center).dot(r.up), o = 0;
+function Cn(t) {
+	let n = [], r = -1;
+	for (let i of Sn(t)) {
+		let a = new e.Box3();
+		for (let n of i) a.expandByPoint(new e.Vector3(t.positions[n * 3], t.positions[n * 3 + 1], t.positions[n * 3 + 2]));
+		let o = a.getSize(new e.Vector3()), s = o.x + o.y + o.z;
+		s > r && (r = s, n = i);
+	}
+	return n;
+}
+var wn = (t, n, r = new e.Vector3()) => r.set(t[n * 3], t[n * 3 + 1], t[n * 3 + 2]);
+function Tn(t, n, r) {
+	let i = n.map((n) => wn(t, n, new e.Vector3())), a = (e) => e.clone().sub(r.center).dot(r.up), o = 0;
 	for (let e = 1; e < i.length; e++) a(i[e]) > a(i[o]) && (o = e);
 	let s = [...i.slice(o), ...i.slice(0, o)], c = Math.max(1, Math.floor(s.length / 4)), l = (e) => e.reduce((e, t) => e + t.clone().sub(r.center).dot(r.across), 0) / e.length;
 	l(s.slice(1, c + 1)) < l(s.slice(-c)) && (s = [s[0], ...s.slice(1).reverse()]);
@@ -1950,7 +1957,7 @@ function wn(t, n, r) {
 		order: [...n.slice(o), ...n.slice(0, o)]
 	};
 }
-function Tn(t, n) {
+function En(t, n) {
 	let r = [], i = n.points.length;
 	for (let e = 0; e < i; e++) {
 		let t = n.points[e], a = n.points[(e + 1) % i], o = Math.max(1, Math.ceil(t.distanceTo(a) / vn));
@@ -1988,16 +1995,16 @@ function Tn(t, n) {
 	for (let e = c - 1, t = d; e >= 0; t = u[e][t], e--) p[e] = t;
 	return p.map((e) => r[e].clone());
 }
-function En(e, t) {
+function Dn(e, t) {
 	let n = e.points.length, r = 0;
 	for (; r + 1 < n && e.share[r + 1] <= t;) r++;
 	let i = (r + 1) % n, a = i === 0 ? 1 : e.share[i], o = a > e.share[r] ? (t - e.share[r]) / (a - e.share[r]) : 0;
 	return e.points[r].clone().lerp(e.points[i], Math.min(1, Math.max(0, o)));
 }
-function Dn(t, n, r, i, a = {}) {
-	let o = Sn(n), s = Sn(r);
+function On(t, n, r, i, a = {}) {
+	let o = Cn(n), s = Cn(r);
 	if (o.length < 3 || s.length < 3) return t;
-	let c = wn(n.positions, o, i), l = wn(r.positions, s, i), u = (t) => {
+	let c = Tn(n.positions, o, i), l = Tn(r.positions, s, i), u = (t) => {
 		let n = new e.Vector3(), r = Infinity, i = l.points.length, a = new e.Vector3(), o = new e.Vector3();
 		for (let e = 0; e < i; e++) {
 			let s = l.points[e], c = l.points[(e + 1) % i];
@@ -2008,34 +2015,44 @@ function Dn(t, n, r, i, a = {}) {
 			d < r && (r = d, n = o.clone());
 		}
 		return n;
-	}, d = a.match ? [] : Tn(c.points, l), f = c.points.map((e, t) => {
+	}, d = a.match ? [] : En(c.points, l), f = c.points.map((e, t) => {
 		let n = e.clone().sub(i.center).dot(i.up), r = Math.min(1, Math.max(0, (n - gn[0]) / (gn[1] - gn[0])));
 		return {
 			p: e,
-			move: (a.match === "nearest" ? u(e) : a.match === "length" ? En(l, c.share[t]) : d[t].clone()).sub(e).multiplyScalar(r)
+			move: (a.match === "nearest" ? u(e) : a.match === "length" ? Dn(l, c.share[t]) : d[t].clone()).sub(e).multiplyScalar(r)
 		};
-	}), p = t.slice(), m = new e.Vector3();
+	}), p = new Set(o), m = (e) => e.clone().sub(i.center).dot(i.up), h = [], g = gn[0];
+	for (let e of Sn(n)) {
+		if (e.some((e) => p.has(e))) continue;
+		let t = e.map((e) => wn(n.positions, e)), r = Math.min(...t.map(m));
+		r < g && (g = r, h = t);
+	}
+	for (let t of h) f.push({
+		p: t,
+		move: new e.Vector3()
+	});
+	let _ = t.slice(), v = new e.Vector3();
 	for (let n = 0; n < t.length / 3; n++) {
 		if (a.follow && !a.follow[n]) continue;
-		Cn(t, n, m);
+		wn(t, n, v);
 		let r = f.map((e) => ({
 			m: e,
-			d2: e.p.distanceToSquared(m)
+			d2: e.p.distanceToSquared(v)
 		})).sort((e, t) => e.d2 - t.d2).slice(0, _n), i = Math.sqrt(r[0].d2);
-		if (i >= hn) continue;
+		if (i >= hn || r[0].d2 < 1e-12 && r[0].m.move.lengthSq() === 0) continue;
 		let o = 1 - i / hn, s = o * o * (3 - 2 * o), c = new e.Vector3(), l = 0;
 		for (let { m: e, d2: t } of r) {
 			let n = 1 / (t + 1e-8);
 			c.addScaledVector(e.move, n), l += n;
 		}
-		m.addScaledVector(c, s / l), p[n * 3] = m.x, p[n * 3 + 1] = m.y, p[n * 3 + 2] = m.z;
+		v.addScaledVector(c, s / l), _[n * 3] = v.x, _[n * 3 + 1] = v.y, _[n * 3 + 2] = v.z;
 	}
-	return p;
+	return _;
 }
 //#endregion
 //#region src/original/skinRecolor.ts
-var On = 5, kn = 9;
-function An(e) {
+var kn = 5, An = 9;
+function jn(e) {
 	let t = Number.parseInt(e.replace(/^#/, "").slice(0, 6), 16), n = /* @__PURE__ */ new Float32Array(3);
 	return Yt(t >> 16 & 255, t >> 8 & 255, t & 255, n, 0), [
 		n[0],
@@ -2043,16 +2060,16 @@ function An(e) {
 		n[2]
 	];
 }
-function jn(e, t, n) {
+function Mn(e, t, n) {
 	let r = [
 		t.default,
 		t.shadow1,
 		t.shadow2
-	].map(An), i = [
+	].map(jn), i = [
 		n.default,
 		n.shadow1,
 		n.shadow2
-	].map(An), a = e.data.slice(), o = /* @__PURE__ */ new Float32Array(3), s = /* @__PURE__ */ new Uint8Array(3);
+	].map(jn), a = e.data.slice(), o = /* @__PURE__ */ new Float32Array(3), s = /* @__PURE__ */ new Uint8Array(3);
 	for (let t = 0; t < e.width * e.height; t++) {
 		Yt(e.data[t * 4], e.data[t * 4 + 1], e.data[t * 4 + 2], o, 0);
 		let n = Infinity, c = 0, l = 0;
@@ -2064,8 +2081,8 @@ function jn(e, t, n) {
 			], s = a[0] * a[0] + a[1] * a[1] + a[2] * a[2] || 1, u = Math.min(1, Math.max(0, ((o[0] - t[0]) * a[0] + (o[1] - t[1]) * a[1] + (o[2] - t[2]) * a[2]) / s)), d = Math.hypot(o[0] - (t[0] + u * a[0]), o[1] - (t[1] + u * a[1]), o[2] - (t[2] + u * a[2]));
 			d < n && (n = d, c = e, l = u);
 		}
-		if (n >= kn) continue;
-		let u = Math.min(1, (kn - n) / (kn - On)), d = r[c], f = r[c + 1], p = i[c], m = i[c + 1], h = [
+		if (n >= An) continue;
+		let u = Math.min(1, (An - n) / (An - kn)), d = r[c], f = r[c + 1], p = i[c], m = i[c + 1], h = [
 			0,
 			1,
 			2
@@ -2077,8 +2094,8 @@ function jn(e, t, n) {
 }
 //#endregion
 //#region src/original/faceHairShadow.ts
-var I = 720, Mn = 5e-4, Nn = 50 * Math.PI / 180, Pn = 75 * Math.PI / 180, Fn = .001, In = .0015, Ln = 5e-4, Rn = .002, zn = 6, Bn = 2;
-function Vn(e, t) {
+var I = 720, Nn = 5e-4, Pn = 50 * Math.PI / 180, Fn = 75 * Math.PI / 180, In = .001, Ln = .0015, Rn = 5e-4, zn = .002, Bn = 6, Vn = 2;
+function Hn(e, t) {
 	let n = [
 		[],
 		[],
@@ -2088,7 +2105,7 @@ function Vn(e, t) {
 	if (n[0].length === 0) throw Error("no texel to take a colour from");
 	return n.map((e) => e.sort((e, t) => e - t)[e.length >> 1]);
 }
-function Hn(e, t, n, r, i, a, o) {
+function Un(e, t, n, r, i, a, o) {
 	for (let s = 0; s + 2 < r.length; s += 3) {
 		let c = r[s], l = r[s + 1], u = r[s + 2], d = n[c * 2] * e, f = n[c * 2 + 1] * t, p = n[l * 2] * e, m = n[l * 2 + 1] * t, h = n[u * 2] * e, g = n[u * 2 + 1] * t, _ = (p - d) * (g - f) - (m - f) * (h - d);
 		if (_ === 0) continue;
@@ -2102,7 +2119,7 @@ function Hn(e, t, n, r, i, a, o) {
 		}
 	}
 }
-function Un(t, n, r, i, a = new e.Vector3()) {
+function Wn(t, n, r, i, a = new e.Vector3()) {
 	a.set(n, r, i).sub(t.center);
 	let o = a.dot(t.up), s = a.dot(t.across), c = a.dot(t.front);
 	return {
@@ -2111,12 +2128,12 @@ function Un(t, n, r, i, a = new e.Vector3()) {
 		r: Math.hypot(s, c)
 	};
 }
-function Wn(t, n, r, i, a) {
+function Gn(t, n, r, i, a) {
 	let o = new Float32Array(I * a), s = new e.Vector3(), c = (e) => {
-		let r = Un(t, n[e * 3], n[e * 3 + 1], n[e * 3 + 2], s);
+		let r = Wn(t, n[e * 3], n[e * 3 + 1], n[e * 3 + 2], s);
 		return {
 			x: (r.angle + Math.PI) / (2 * Math.PI) * I,
-			y: (r.h - i) / Mn,
+			y: (r.h - i) / Nn,
 			r: r.r
 		};
 	};
@@ -2138,7 +2155,7 @@ function Wn(t, n, r, i, a) {
 	}
 	return o;
 }
-function Gn(t) {
+function Kn(t) {
 	let { color: n, shadow: r, skin: i, frame: a, faceAt: o, region: s, hairMap: c, h0: l, rows: u } = t, d = n.data.slice(), f = new e.Vector3(), p = (e) => {
 		let t = 0, a = 0;
 		for (let o = 0; o < 3; o++) {
@@ -2149,10 +2166,10 @@ function Gn(t) {
 	}, m = [];
 	for (let e = 0; e < s.length; e++) s[e] && m.push({
 		i: e,
-		...Un(a, o[e * 3], o[e * 3 + 1], o[e * 3 + 2], f)
+		...Wn(a, o[e * 3], o[e * 3 + 1], o[e * 3 + 2], f)
 	});
 	if (m.length === 0) return d;
-	let h = m.filter((e) => Math.abs(e.angle) < Nn), g = h.length ? Math.min(...h.map((e) => e.h)) : 0, _ = h.length ? Math.max(...h.map((e) => e.h)) : 0, v = Math.max(1, Math.ceil((_ - g) / .001) + 1), y = Array.from({ length: v }, () => []);
+	let h = m.filter((e) => Math.abs(e.angle) < Pn), g = h.length ? Math.min(...h.map((e) => e.h)) : 0, _ = h.length ? Math.max(...h.map((e) => e.h)) : 0, v = Math.max(1, Math.ceil((_ - g) / .001) + 1), y = Array.from({ length: v }, () => []);
 	for (let e of h) y[Math.floor((e.h - g) / .001)].push(p(e.i));
 	let b = y.map((e) => e.length ? e.sort((e, t) => e - t)[Math.floor(e.length * .9)] : NaN), x = b.map((e, t) => {
 		let n = [
@@ -2163,33 +2180,33 @@ function Gn(t) {
 		return n.length ? n.reduce((e, t) => e + t, 0) / n.length : 0;
 	}), S = (e) => e < g || e > _ || !h.length ? 0 : x[Math.floor((e - g) / .001)], C = (e) => Math.min(I - 1, Math.max(0, Math.floor((e + Math.PI) / (2 * Math.PI) * I))), w = new Float32Array(I * u);
 	for (let e of m) {
-		let t = Math.floor((e.h - l) / Mn);
+		let t = Math.floor((e.h - l) / Nn);
 		if (t < 0 || t >= u) continue;
 		let n = t * I + C(e.angle);
 		e.r > w[n] && (w[n] = e.r);
 	}
-	let T = new Float64Array(I).fill(NaN), E = Math.ceil(Rn / Mn);
+	let T = new Float64Array(I).fill(NaN), E = Math.ceil(zn / Nn);
 	for (let e = 0; e < I; e++) {
 		let t = Infinity, n = !1;
 		for (let r = 0; r < u; r++) {
 			let i = w[r * I + e];
-			if (!i || (n = !0, c[r * I + e] < i + Ln)) continue;
+			if (!i || (n = !0, c[r * I + e] < i + Rn)) continue;
 			let a = !0;
 			for (let t = 1; t <= E && r + t < u; t++) {
 				let n = w[(r + t) * I + e];
-				if (n && c[(r + t) * I + e] < n + Ln) {
+				if (n && c[(r + t) * I + e] < n + Rn) {
 					a = !1;
 					break;
 				}
 			}
 			if (a) {
-				t = l + r * Mn;
+				t = l + r * Nn;
 				break;
 			}
 		}
 		n && (T[e] = t);
 	}
-	let D = _ + Fn + In, O = Array.from(T, (e) => Number.isNaN(e) ? NaN : Math.min(e, D)), k = O.map((e, t) => {
+	let D = _ + In + Ln, O = Array.from(T, (e) => Number.isNaN(e) ? NaN : Math.min(e, D)), k = O.map((e, t) => {
 		if (Number.isNaN(e)) return e;
 		let n = [];
 		for (let e = -4; e <= 4; e++) {
@@ -2200,25 +2217,25 @@ function Gn(t) {
 	}), A = k.map((e, t) => {
 		if (Number.isNaN(e)) return e;
 		let n = 0, r = 0;
-		for (let e = -3 * zn; e <= 3 * zn; e++) {
+		for (let e = -3 * Bn; e <= 3 * Bn; e++) {
 			let i = k[t + e];
 			if (i === void 0 || Number.isNaN(i)) continue;
-			let a = Math.exp(-(e * e) / (2 * zn * zn));
+			let a = Math.exp(-(e * e) / (2 * Bn * Bn));
 			n += a * i, r += a;
 		}
 		return n / r;
 	}), ee = new Float32Array(s.length);
 	for (let e of m) {
-		let t = Math.min(1, Math.max(0, (Math.abs(e.angle) - Nn) / (Pn - Nn))), n = A[C(e.angle)];
+		let t = Math.min(1, Math.max(0, (Math.abs(e.angle) - Pn) / (Fn - Pn))), n = A[C(e.angle)];
 		if (Number.isNaN(n) || t >= 1) continue;
-		let r = Math.min(1, Math.max(0, (e.h - (n - Fn)) / In + .5));
+		let r = Math.min(1, Math.max(0, (e.h - (n - In)) / Ln + .5));
 		ee[e.i] = r * r * (3 - 2 * r) * S(e.h) * (1 - t);
 	}
 	let { width: te, height: ne } = n, re = (e, t, n) => {
 		let r = new Float32Array(e.length);
 		for (let i of m) {
 			let a = i.i % te, o = (i.i - a) / te, c = 0, l = 0;
-			for (let r = -2; r <= Bn; r++) {
+			for (let r = -2; r <= Vn; r++) {
 				let i = a + r * t, u = o + r * n;
 				if (i < 0 || u < 0 || i >= te || u >= ne) continue;
 				let d = u * te + i;
@@ -2234,25 +2251,25 @@ function Gn(t) {
 	}
 	return d;
 }
-var Kn = (e, t) => Math.max(1, Math.ceil((t - e) / Mn)), qn = "borrowed-hair:", Jn = "borrowed-body:", Yn = ["_MainTex", "_ShadowTex"], Xn = 18, L = 36, Zn = .0015, Qn = [-.004, .012], $n = /* @__PURE__ */ new WeakMap(), er = (e) => e.startsWith(qn), tr = (e) => e.startsWith(Jn);
+var qn = (e, t) => Math.max(1, Math.ceil((t - e) / Nn)), Jn = "borrowed-hair:", Yn = "borrowed-body:", Xn = ["_MainTex", "_ShadowTex"], Zn = 18, L = 36, Qn = .0015, $n = [-.004, .012], er = /* @__PURE__ */ new WeakMap(), tr = (e) => e.startsWith(Jn), nr = (e) => e.startsWith(Yn);
 function R(e, t) {
 	if (!e) throw Error(t);
 }
-var nr = (e) => -e;
-async function rr(e, t, n, r, i = null) {
+var rr = (e) => -e;
+async function ir(e, t, n, r, i = null) {
 	let a = t.role;
 	R(a, "a borrowed part needs the part set's role"), R(r !== a.characterId, "a character cannot borrow its own parts");
 	let o = await e.characterUnit(r), s = await e.roleIndex(r, o), c = i ?? (n === "hair" ? s.role.hairCostume3dId : n === "body" ? s.role.bodyCostume3dId : null);
 	R(c != null, `character ${r}: a borrowed head needs its costume3dId`);
-	let l = nr(c), u = t.registry.find((e) => e.partType === n && e.costume3dId === l);
+	let l = rr(c), u = t.registry.find((e) => e.partType === n && e.costume3dId === l);
 	if (u) return u;
 	let d = s.registry.find((e) => e.partType === n && e.costume3dId === c);
 	R(d?.bundlePath, `character ${r} has no ${n} ${c}`), n === "head" && R(d.headCostume3dAssetbundleType?.toLowerCase() === "head_and_hair", `head ${c} of character ${r} is not a complete head (head_and_hair)`);
 	let f = t.registry.find((e) => e.partType === "hair" && e.costume3dId === a.hairCostume3dId);
 	R(f?.bundlePath, `role ${a.characterId} has no default hair bundle`);
-	let p = $n.get(t) ?? /* @__PURE__ */ new Map();
-	$n.set(t, p);
-	let m = n === "body" ? Jn : qn, h = (e) => `${m}${a.characterId}:${r}:${e}`, g = n === "body" && s.role.skinColors && a.skinColors ? {
+	let p = er.get(t) ?? /* @__PURE__ */ new Map();
+	er.set(t, p);
+	let m = n === "body" ? Yn : Jn, h = (e) => `${m}${a.characterId}:${r}:${e}`, g = n === "body" && s.role.skinColors && a.skinColors ? {
 		from: s.role.skinColors,
 		to: a.skinColors
 	} : null;
@@ -2283,21 +2300,21 @@ async function rr(e, t, n, r, i = null) {
 	};
 	return t.registry = [...t.registry, v], v;
 }
-async function ir(e, t, n) {
-	let r = $n.get(t)?.get(n.packagePath);
+async function ar(e, t, n) {
+	let r = er.get(t)?.get(n.packagePath);
 	R(r, `no source for borrowed body ${n.packagePath}`);
 	let i = await e.build(r.source), a = r.skin, o = i.materialSlots ?? [], s = /* @__PURE__ */ new Map(), c = a ? o.map((e) => ({
 		...e,
 		rawMaterial: {
 			...e.rawMaterial,
 			textureProperties: e.rawMaterial.textureProperties.map((e) => {
-				if (!e.uri || !Yn.includes(e.name)) return e;
+				if (!e.uri || !Xn.includes(e.name)) return e;
 				let t = s.get(e.uri);
 				if (!t) {
 					let n = e.uri;
 					t = `original:skin/${r.roleCharacterId}/${n.slice(9)}`, qt().define(t, async () => {
 						let e = qt().payload(n);
-						return R(e, `borrowed body texture ${n} was not delivered`), lr(jn({
+						return R(e, `borrowed body texture ${n} was not delivered`), ur(Mn({
 							width: e.width,
 							height: e.height,
 							data: await Wt(e)
@@ -2324,9 +2341,9 @@ async function ir(e, t, n) {
 		}
 	};
 }
-function ar(e) {
+function or(e) {
 	let t = e.nativeMeshes?.meshes ?? [], n = t.filter((e) => e.meshName === "Hair"), r = n.length ? n : t, i = new Set(r.flatMap((e) => e.submeshes.map((t) => `${e.meshName}|${t.materialKey}`))), a = (e.materialSlots ?? []).filter((e) => i.has(`${e.meshName}|${e.materialKey}`)), o = {};
-	for (let e of Yn) {
+	for (let e of Xn) {
 		let t = a.flatMap((e) => e.rawMaterial.textureProperties).find((t) => t.name === e && t.uri)?.uri;
 		t && (o[e] = t);
 	}
@@ -2338,21 +2355,21 @@ function ar(e) {
 		})))
 	};
 }
-function or(e, t, n) {
+function sr(e, t, n) {
 	let r = new Uint8Array(e * t);
 	for (let { uv: i, indices: a } of n.uvs) Zt(e, t, i, a, r);
 	return r;
 }
-function sr(e, t, n, r) {
+function cr(e, t, n, r) {
 	if (!e) return null;
 	let i = new Uint8Array(n * r);
 	for (let a of e.submeshes) t.has(a.materialKey) && Zt(n, r, e.uv0, a.indices, i);
-	return br(i, n, r);
+	return xr(i, n, r);
 }
-async function cr(e, t, n, r, i) {
+async function lr(e, t, n, r, i) {
 	let a = qt(), o = a.payload(e), s = a.payload(t);
 	R(o && s, `borrowed hair textures ${e} / ${t} were not delivered`);
-	let [c, l] = await Promise.all([Wt(o), Wt(s)]), { width: u, height: d } = o, f = or(u, d, n), p = {
+	let [c, l] = await Promise.all([Wt(o), Wt(s)]), { width: u, height: d } = o, f = sr(u, d, n), p = {
 		width: u,
 		height: d,
 		data: c
@@ -2360,26 +2377,26 @@ async function cr(e, t, n, r, i) {
 		width: s.width,
 		height: s.height,
 		data: l
-	}, or(s.width, s.height, r)), h = {
+	}, sr(s.width, s.height, r)), h = {
 		width: s.width,
 		height: s.height,
 		data: l
-	}, g = sr(i.donor.face, i.donor.keys, u, d), _ = sr(i.role.face, i.role.keys, s.width, s.height), v = g ? pn(p, g) : null, y = _ ? pn(h, _) : null;
-	return lr(mn(p, on(p, f), m, v && y ? {
+	}, g = cr(i.donor.face, i.donor.keys, u, d), _ = cr(i.role.face, i.role.keys, s.width, s.height), v = g ? pn(p, g) : null, y = _ ? pn(h, _) : null;
+	return ur(mn(p, on(p, f), m, v && y ? {
 		from: v,
 		to: y
 	} : null), u, d, `${o.name} (recoloured)`);
 }
-function lr(t, n, r, i) {
+function ur(t, n, r, i) {
 	let a = new e.DataTexture(t, n, r, e.RGBAFormat, e.UnsignedByteType);
 	return a.name = i, a.flipY = !1, a.generateMipmaps = !1, a.colorSpace = e.NoColorSpace, a.needsUpdate = !0, a;
 }
-function ur(t) {
+function dr(t) {
 	let n = (t.bonePaths ?? []).findIndex((e) => e === "Head" || e.endsWith("/Head")), r = t.boneInverseBindMatrices;
 	return n < 0 || !r || r.length < (n + 1) * 16 ? null : new e.Matrix4().fromArray(Array.from({ length: 16 }, (e, t) => r[n * 16 + t]));
 }
-function dr(t) {
-	let n = ur(t), r = t.positions;
+function fr(t) {
+	let n = dr(t), r = t.positions;
 	if (!n || !r || r.length < 3) return null;
 	let i = [
 		[],
@@ -2389,7 +2406,7 @@ function dr(t) {
 	for (let e = 0; e + 2 < r.length; e += 3) a.set(r[e], r[e + 1], r[e + 2]).applyMatrix4(n), i[0].push(a.x), i[1].push(a.y), i[2].push(a.z);
 	return i.map((e) => (e.sort((e, t) => e - t), [e[Math.floor(e.length * .005)], e[Math.floor(e.length * .995)]]));
 }
-function fr(t) {
+function pr(t) {
 	let n = (e) => Math.abs(t[e][0] + t[e][1]) / (t[e][1] - t[e][0]), r = [
 		0,
 		1,
@@ -2406,36 +2423,36 @@ function fr(t) {
 		front: u(c, l(c))
 	};
 }
-function pr(t, n, r = new e.Vector3()) {
+function mr(t, n, r = new e.Vector3()) {
 	r.subVectors(n, t.center);
 	let i = r.length(), a = Math.acos(Math.min(1, Math.max(-1, r.dot(t.up) / (i || 1)))), o = Math.atan2(r.dot(t.across), r.dot(t.front));
 	return {
-		row: a / Math.PI * Xn - .5,
+		row: a / Math.PI * Zn - .5,
 		column: (o + Math.PI) / (2 * Math.PI) * L - .5,
 		r: i
 	};
 }
-function mr(t, n, r) {
-	let i = new Float32Array(Xn * L).fill(NaN), a = ur(t), o = t.positions;
+function hr(t, n, r) {
+	let i = new Float32Array(Zn * L).fill(NaN), a = dr(t), o = t.positions;
 	if (!a || !o) return i;
 	let s = new e.Vector3();
 	for (let e = 0; e + 2 < o.length; e += 3) {
 		if (r && !r[e / 3]) continue;
 		s.set(o[e], o[e + 1], o[e + 2]).applyMatrix4(a);
-		let { row: t, column: c, r: l } = pr(n, s), u = Math.min(Xn - 1, Math.max(0, Math.round(t))) * L + (Math.round(c) % L + L) % L;
+		let { row: t, column: c, r: l } = mr(n, s), u = Math.min(Zn - 1, Math.max(0, Math.round(t))) * L + (Math.round(c) % L + L) % L;
 		i[u] >= l || (i[u] = l);
 	}
 	return i;
 }
-function hr(e, t) {
+function gr(e, t) {
 	let n = new Float32Array(e.length), r = new Float32Array(e.length);
-	for (let i = 0; i < n.length; i++) Number.isFinite(e[i]) && Number.isFinite(t[i]) && (n[i] = e[i] - t[i] + Zn, r[i] = 1);
+	for (let i = 0; i < n.length; i++) Number.isFinite(e[i]) && Number.isFinite(t[i]) && (n[i] = e[i] - t[i] + Qn, r[i] = 1);
 	let i = (e) => {
 		let t = new Float32Array(e.length);
-		for (let n = 0; n < Xn; n++) for (let r = 0; r < L; r++) {
+		for (let n = 0; n < Zn; n++) for (let r = 0; r < L; r++) {
 			let i = 0;
 			for (let t = -1; t <= 1; t++) {
-				let a = Math.min(Xn - 1, Math.max(0, n + t));
+				let a = Math.min(Zn - 1, Math.max(0, n + t));
 				for (let t = -1; t <= 1; t++) i += e[a * L + (r + t + L) % L];
 			}
 			t[n * L + r] = i / 9;
@@ -2443,28 +2460,28 @@ function hr(e, t) {
 		return t;
 	};
 	for (let e = 0; e < 2; e++) n = i(n), r = i(r);
-	return n.map((e, t) => Math.min(Qn[1], Math.max(Qn[0], e / (r[t] + .2) * 1.2)));
+	return n.map((e, t) => Math.min($n[1], Math.max($n[0], e / (r[t] + .2) * 1.2)));
 }
-function gr(e, t, n) {
-	let r = Math.floor(t), i = Math.floor(n), a = t - r, o = n - i, s = (t, n) => e[Math.min(Xn - 1, Math.max(0, t)) * L + (n % L + L) % L];
+function _r(e, t, n) {
+	let r = Math.floor(t), i = Math.floor(n), a = t - r, o = n - i, s = (t, n) => e[Math.min(Zn - 1, Math.max(0, t)) * L + (n % L + L) % L];
 	return (s(r, i) * (1 - o) + s(r, i + 1) * o) * (1 - a) + (s(r + 1, i) * (1 - o) + s(r + 1, i + 1) * o) * a;
 }
-function _r(t, n, r, i = {}) {
-	let a = ur(t), o = dr(r);
+function vr(t, n, r, i = {}) {
+	let a = dr(t), o = fr(r);
 	if (!a || !t.positions || !o) return t;
-	let s = fr(o), c = hr(mr(n, s, i.role), mr(r, s, i.donor)), l = a.clone().invert(), u = new Float32Array(t.positions.length), d = new e.Vector3(), f = new e.Vector3();
+	let s = pr(o), c = gr(hr(n, s, i.role), hr(r, s, i.donor)), l = a.clone().invert(), u = new Float32Array(t.positions.length), d = new e.Vector3(), f = new e.Vector3();
 	for (let e = 0; e + 2 < u.length; e += 3) {
 		d.set(t.positions[e], t.positions[e + 1], t.positions[e + 2]).applyMatrix4(a);
-		let { row: n, column: r, r: i } = pr(s, d, f);
-		i > 0 && d.addScaledVector(f, gr(c, n, r) / i), d.applyMatrix4(l), u[e] = d.x, u[e + 1] = d.y, u[e + 2] = d.z;
+		let { row: n, column: r, r: i } = mr(s, d, f);
+		i > 0 && d.addScaledVector(f, _r(c, n, r) / i), d.applyMatrix4(l), u[e] = d.x, u[e + 1] = d.y, u[e + 2] = d.z;
 	}
 	return {
 		...t,
 		positions: u
 	};
 }
-var vr = (e) => /^mtl_chr_\d+/.test(e.materialName ?? ""), yr = (e) => /^mtl_chr_eye_/i.test(e.materialName ?? "");
-function br(e, t, n) {
+var yr = (e) => /^mtl_chr_\d+/.test(e.materialName ?? ""), br = (e) => /^mtl_chr_eye_/i.test(e.materialName ?? "");
+function xr(e, t, n) {
 	let r = new Int32Array(e.length).fill(-1), i = -1, a = 0, o = 0, s = [];
 	for (let c = 0; c < e.length; c++) {
 		if (!e[c] || r[c] !== -1) continue;
@@ -2486,12 +2503,12 @@ function br(e, t, n) {
 	for (let t = 0; t < e.length; t++) r[t] === i && (c[t] = 1);
 	return c;
 }
-function xr(e, t) {
+function Sr(e, t) {
 	let n = e.submeshes.filter((e) => t.has(e.materialKey));
 	if (n.length === 0) return null;
 	let r = new Uint8Array(256 * 256);
 	for (let t of n) Zt(256, 256, e.uv0, t.indices, r);
-	let i = br(r, 256, 256), a = 256, o = -1, s = 256, c = -1;
+	let i = xr(r, 256, 256), a = 256, o = -1, s = 256, c = -1;
 	for (let e = 0; e < i.length; e++) {
 		if (!i[e]) continue;
 		let t = e % 256, n = (e - t) / 256;
@@ -2505,52 +2522,52 @@ function xr(e, t) {
 	}
 	return l;
 }
-function Sr(t, n, r, i) {
-	let a = ur(t), o = Cr(t), s = Cr(n), c = dr(n);
+function Cr(t, n, r, i) {
+	let a = dr(t), o = wr(t), s = wr(n), c = fr(n);
 	if (!a || !o || !s || !c) return t;
 	let l = (e, t) => e.submeshes.filter((e) => t.has(e.materialKey)).flatMap((e) => Array.from(e.indices)), u = l(t, r), d = l(n, i);
 	if (!u.length || !d.length) return t;
-	let f = Dn(o, {
+	let f = On(o, {
 		positions: o,
 		triangles: u
 	}, {
 		positions: s,
 		triangles: d
-	}, fr(c)), p = a.clone().invert(), m = new Float32Array(f.length), h = new e.Vector3();
+	}, pr(c)), p = a.clone().invert(), m = new Float32Array(f.length), h = new e.Vector3();
 	for (let e = 0; e + 2 < m.length; e += 3) h.set(f[e], f[e + 1], f[e + 2]).applyMatrix4(p), m[e] = h.x, m[e + 1] = h.y, m[e + 2] = h.z;
 	return {
 		...t,
 		positions: m
 	};
 }
-function Cr(t) {
-	let n = ur(t), r = t.positions;
+function wr(t) {
+	let n = dr(t), r = t.positions;
 	if (!n || !r) return null;
 	let i = new Float32Array(r.length), a = new e.Vector3();
 	for (let e = 0; e + 2 < r.length; e += 3) a.set(r[e], r[e + 1], r[e + 2]).applyMatrix4(n), i[e] = a.x, i[e + 1] = a.y, i[e + 2] = a.z;
 	return i;
 }
-async function wr(t, n, r, i) {
+async function Tr(t, n, r, i) {
 	let a = qt(), o = a.payload(t.color), s = a.payload(t.shadow);
 	R(o && s, "the face's textures were not delivered");
-	let { width: c, height: l, name: u } = o, [d, f] = await Promise.all([Wt(o), Wt(s)]), p = dr(n), m = Cr(n);
-	if (!p || !m || s.width !== c || s.height !== l) return lr(d, c, l, u);
-	let h = fr(p), g = (t, n) => new e.Vector3(t[n * 3], t[n * 3 + 1], t[n * 3 + 2]).sub(h.center).dot(h.up), _ = n.submeshes.filter((e) => i.eye.has(e.materialKey)).flatMap((e) => Array.from(e.indices));
-	if (_.length === 0) return lr(d, c, l, u);
+	let { width: c, height: l, name: u } = o, [d, f] = await Promise.all([Wt(o), Wt(s)]), p = fr(n), m = wr(n);
+	if (!p || !m || s.width !== c || s.height !== l) return ur(d, c, l, u);
+	let h = pr(p), g = (t, n) => new e.Vector3(t[n * 3], t[n * 3 + 1], t[n * 3 + 2]).sub(h.center).dot(h.up), _ = n.submeshes.filter((e) => i.eye.has(e.materialKey)).flatMap((e) => Array.from(e.indices));
+	if (_.length === 0) return ur(d, c, l, u);
 	let v = Math.max(..._.map((e) => g(m, e))), y = new Float32Array(c * l * 3), b = new Uint8Array(c * l);
-	for (let e of n.submeshes) i.skin.has(e.materialKey) && Hn(c, l, n.uv0, e.indices, m, y, b);
-	let x = new Uint8Array(c * l), S = new Uint8Array(c * l), C = br(b, c, l), w = v, T = v, E = new e.Vector3();
+	for (let e of n.submeshes) i.skin.has(e.materialKey) && Un(c, l, n.uv0, e.indices, m, y, b);
+	let x = new Uint8Array(c * l), S = new Uint8Array(c * l), C = xr(b, c, l), w = v, T = v, E = new e.Vector3();
 	for (let e = 0; e < b.length; e++) {
 		if (!C[e]) continue;
 		E.set(y[e * 3], y[e * 3 + 1], y[e * 3 + 2]).sub(h.center);
 		let t = E.dot(h.up), n = Math.abs(Math.atan2(E.dot(h.across), E.dot(h.front)));
-		t >= v || n >= Nn ? (x[e] = 1, w = Math.max(w, t), T = Math.min(T, t)) : t < v - .01 && n < Nn - .2 && (S[e] = 1);
+		t >= v || n >= Pn ? (x[e] = 1, w = Math.max(w, t), T = Math.min(T, t)) : t < v - .01 && n < Pn - .2 && (S[e] = 1);
 	}
-	let D = T - .01, O = Kn(D, w + .03), k = new Float32Array(O * 720);
+	let D = T - .01, O = qn(D, w + .03), k = new Float32Array(O * 720);
 	for (let e of r) {
-		let t = Cr(e);
+		let t = wr(e);
 		if (!t) continue;
-		let n = Wn(h, t, e.submeshes.flatMap((e) => Array.from(e.indices)), D, O);
+		let n = Gn(h, t, e.submeshes.flatMap((e) => Array.from(e.indices)), D, O);
 		for (let e = 0; e < n.length; e++) n[e] > k[e] && (k[e] = n[e]);
 	}
 	let A = (e) => ({
@@ -2558,10 +2575,10 @@ async function wr(t, n, r, i) {
 		height: l,
 		data: e
 	});
-	return lr(Gn({
+	return ur(Kn({
 		color: A(d),
 		shadow: A(f),
-		skin: Vn(A(d), S),
+		skin: Hn(A(d), S),
 		frame: h,
 		faceAt: y,
 		region: x,
@@ -2570,10 +2587,10 @@ async function wr(t, n, r, i) {
 		rows: O
 	}), c, l, `${u} (hair shadow)`);
 }
-async function Tr(e, t, n) {
-	let r = $n.get(t)?.get(n.packagePath);
+async function Er(e, t, n) {
+	let r = er.get(t)?.get(n.packagePath);
 	R(r, `no source for borrowed hair ${n.packagePath}`);
-	let [i, a] = await Promise.all([e.build(r.source), e.build(r.palette)]), o = ar(i), s = ar(a), c = /* @__PURE__ */ new Map(), l = (e) => (e.nativeMeshes?.meshes ?? []).find((e) => e.meshName === "Face"), u = (e) => new Set((e.materialSlots ?? []).filter((e) => e.meshName === "Face" && vr(e)).map((e) => e.materialKey)), d = {
+	let [i, a] = await Promise.all([e.build(r.source), e.build(r.palette)]), o = or(i), s = or(a), c = /* @__PURE__ */ new Map(), l = (e) => (e.nativeMeshes?.meshes ?? []).find((e) => e.meshName === "Face"), u = (e) => new Set((e.materialSlots ?? []).filter((e) => e.meshName === "Face" && yr(e)).map((e) => e.materialKey)), d = {
 		donor: {
 			face: l(i),
 			keys: u(i)
@@ -2583,11 +2600,11 @@ async function Tr(e, t, n) {
 			keys: u(a)
 		}
 	};
-	for (let e of Yn) {
+	for (let e of Xn) {
 		let t = o.uris[e], n = s.uris[e];
 		if (!t || !n) continue;
 		let i = `original:recolor/${r.roleCharacterId}/${t.slice(9)}`;
-		qt().define(i, () => cr(t, n, o, s, d)), c.set(t, i);
+		qt().define(i, () => lr(t, n, o, s, d)), c.set(t, i);
 	}
 	let f = (e) => e === "Hair", p = (e) => e === "Face", m = (i.materialSlots ?? []).filter((e) => !p(e.meshName)).map((e) => f(e.meshName) ? {
 		...e,
@@ -2616,23 +2633,23 @@ async function Tr(e, t, n) {
 			rootBonePath: e.rootBonePath ? y(e.rootBonePath) : e.rootBonePath ?? null,
 			rootBonePathId: e.rootBonePath ? _.get(y(e.rootBonePath)) : e.rootBonePathId ?? null
 		};
-	}), S = i.nativeMeshes ?? {}, C = b.find((e) => e.meshName === "Face"), w = new Set(h.filter(vr).map((e) => e.materialKey)), T = new Set((i.materialSlots ?? []).filter((e) => e.meshName === "Face" && vr(e)).map((e) => e.materialKey));
+	}), S = i.nativeMeshes ?? {}, C = b.find((e) => e.meshName === "Face"), w = new Set(h.filter(yr).map((e) => e.materialKey)), T = new Set((i.materialSlots ?? []).filter((e) => e.meshName === "Face" && yr(e)).map((e) => e.materialKey));
 	for (let e = 0; e < x.length; e++) {
 		let t = x[e];
 		t.meshName === "Face" && C && (x[e] = {
 			...t,
-			...Sr(t, C, w, T)
+			...Cr(t, C, w, T)
 		});
 	}
-	let E = x.find((e) => e.meshName === "Face"), D = b.filter((e) => !p(e.meshName)).map((e) => E && C ? _r(e, E, C, {
-		role: xr(E, w),
-		donor: xr(C, T)
+	let E = x.find((e) => e.meshName === "Face"), D = b.filter((e) => !p(e.meshName)).map((e) => E && C ? vr(e, E, C, {
+		role: Sr(E, w),
+		donor: Sr(C, T)
 	}) : e), O = {
 		color: s.uris._MainTex,
 		shadow: s.uris._ShadowTex
 	}, k = {
-		skin: new Set(h.filter(vr).map((e) => e.materialKey)),
-		eye: new Set(h.filter(yr).map((e) => e.materialKey))
+		skin: new Set(h.filter(yr).map((e) => e.materialKey)),
+		eye: new Set(h.filter(br).map((e) => e.materialKey))
 	}, A = null;
 	if (O.color && O.shadow && E && k.skin.size && k.eye.size) {
 		A = `original:hairshadow/${n.costume3dId}/${O.color.slice(9)}`;
@@ -2641,7 +2658,7 @@ async function Tr(e, t, n) {
 			O.shadow,
 			E
 		];
-		qt().define(A, () => wr({
+		qt().define(A, () => Tr({
 			color: e,
 			shadow: t
 		}, r, D, k));
@@ -2679,8 +2696,8 @@ async function Tr(e, t, n) {
 }
 //#endregion
 //#region src/runtime/runtimePackageLoader.ts
-async function Er(e, t) {
-	let n = kr(t.roleId), r = await e.roleIndex(n.characterId, n.unit);
+async function Dr(e, t) {
+	let n = Ar(t.roleId), r = await e.roleIndex(n.characterId, n.unit);
 	if (r.registry.length === 0) throw Error(`The master rows have no parts for role ${t.roleId}.`);
 	let i = {
 		registry: r.registry,
@@ -2689,14 +2706,14 @@ async function Er(e, t) {
 		compatibility: r.compatibility,
 		packages: /* @__PURE__ */ new Map(),
 		contentId: e.id
-	}, a = new _t({ loadPartRuntime: (t) => Or(e, i, t) });
+	}, a = new _t({ loadPartRuntime: (t) => kr(e, i, t) });
 	return a.loadPartPackageSet(i), {
-		combinedCharacter: t.deferDefaultSelection ? null : await a.setCustomSelection(Dr(r.role)),
+		combinedCharacter: t.deferDefaultSelection ? null : await a.setCustomSelection(Or(r.role)),
 		partSet: i,
 		wardrobe: a
 	};
 }
-function Dr(e) {
+function Or(e) {
 	return {
 		characterId: e.characterId,
 		unit: e.unit,
@@ -2707,13 +2724,13 @@ function Dr(e) {
 		headOptionalCostume3dId: null
 	};
 }
-async function Or(e, t, n) {
+async function kr(e, t, n) {
 	let r = t.packages.get(n.packagePath);
 	if (r) return r;
-	let i = er(n.packagePath) ? await Tr(e, t, n) : tr(n.packagePath) ? await ir(e, t, n) : await e.build(n);
+	let i = tr(n.packagePath) ? await Er(e, t, n) : nr(n.packagePath) ? await ar(e, t, n) : await e.build(n);
 	return t.packages.set(n.packagePath, i), i;
 }
-function kr(e) {
+function Ar(e) {
 	if (!e) throw Error("Runtime role id is required.");
 	let [t, ...n] = e.split(":"), r = Number(t);
 	if (!Number.isInteger(r) || r <= 0) throw Error(`Invalid runtime role id: ${e}`);
@@ -2724,7 +2741,7 @@ function kr(e) {
 }
 //#endregion
 //#region src/engine/unityCoordinateConversion.ts
-var Ar = {
+var jr = {
 	right: new e.Vector3(1, 0, 0),
 	left: new e.Vector3(-1, 0, 0),
 	up: new e.Vector3(0, 1, 0),
@@ -2732,31 +2749,31 @@ var Ar = {
 	forward: new e.Vector3(0, 0, 1),
 	back: new e.Vector3(0, 0, -1)
 };
-function jr(t, n) {
+function Mr(t, n) {
 	if (!t) return n.clone();
-	let r = Gr(t.x ?? t.X), i = Gr(t.y ?? t.Y), a = Gr(t.z ?? t.Z);
+	let r = Kr(t.x ?? t.X), i = Kr(t.y ?? t.Y), a = Kr(t.z ?? t.Z);
 	return r === null || i === null || a === null ? n.clone() : new e.Vector3(r, i, a);
 }
-function Mr(t) {
+function Nr(t) {
 	if (!t) return new e.Quaternion();
-	let n = Gr(t.x ?? t.X), r = Gr(t.y ?? t.Y), i = Gr(t.z ?? t.Z), a = Gr(t.w ?? t.W);
-	return n === null || r === null || i === null || a === null ? new e.Quaternion() : Nr(new e.Quaternion(n, r, i, a));
+	let n = Kr(t.x ?? t.X), r = Kr(t.y ?? t.Y), i = Kr(t.z ?? t.Z), a = Kr(t.w ?? t.W);
+	return n === null || r === null || i === null || a === null ? new e.Quaternion() : Pr(new e.Quaternion(n, r, i, a));
 }
-function Nr(e) {
+function Pr(e) {
 	let t = Math.fround, n = t(e.x), r = t(e.y), i = t(e.z), a = t(e.w), o = t(n * n), s = t(r * r), c = t(i * i), l = t(a * a), u = t(t(o + s) + t(c + l)), d = t(t(s + c) + t(l + o)), f = t(Math.sqrt(u)), p = t(Math.sqrt(d));
 	return e.set(u > t(1e-30) ? t(n / f) : 0, d > t(1e-30) ? t(r / p) : 0, u > t(1e-30) ? t(i / f) : 0, d > t(1e-30) ? t(a / p) : 1);
 }
-function Pr(t) {
+function Fr(t) {
 	return new e.Vector3(-t.x, t.y, t.z);
 }
-function Fr(e) {
-	return Pr(e);
+function Ir(e) {
+	return Fr(e);
 }
-function Ir(t) {
+function Lr(t) {
 	return new e.Quaternion(t.x, -t.y, -t.z, t.w);
 }
-function Lr(e) {
-	return Fr(Ar[e]);
+function Rr(e) {
+	return Ir(jr[e]);
 }
 function z(e, t) {
 	let n = Math.fround;
@@ -2767,57 +2784,57 @@ function z(e, t) {
 	}
 	return t;
 }
-var Rr = new e.Quaternion();
+var zr = new e.Quaternion();
 function B(e, t) {
 	let n = Math.fround;
 	t.set(n(e.position.x), n(e.position.y), n(e.position.z));
-	for (let r = e.parent; r; r = r.parent) t.set(n(t.x * n(r.scale.x)), n(t.y * n(r.scale.y)), n(t.z * n(r.scale.z))), Vr(t, r.quaternion), t.set(n(t.x + n(r.position.x)), n(t.y + n(r.position.y)), n(t.z + n(r.position.z)));
+	for (let r = e.parent; r; r = r.parent) t.set(n(t.x * n(r.scale.x)), n(t.y * n(r.scale.y)), n(t.z * n(r.scale.z))), Hr(t, r.quaternion), t.set(n(t.x + n(r.position.x)), n(t.y + n(r.position.y)), n(t.z + n(r.position.z)));
 	return t;
 }
-function zr(e, t) {
+function Br(e, t) {
 	let n = [];
 	for (let t = e; t; t = t.parent) n.push(t);
 	let r = Math.fround;
 	t.set(r(t.x), r(t.y), r(t.z));
 	for (let e = n.length - 1; e >= 0; e--) {
 		let i = n[e];
-		t.set(r(t.x - r(i.position.x)), r(t.y - r(i.position.y)), r(t.z - r(i.position.z))), Vr(t, i.quaternion, !0), t.set(r(t.x * Br(i.scale.x)), r(t.y * Br(i.scale.y)), r(t.z * Br(i.scale.z)));
+		t.set(r(t.x - r(i.position.x)), r(t.y - r(i.position.y)), r(t.z - r(i.position.z))), Hr(t, i.quaternion, !0), t.set(r(t.x * Vr(i.scale.x)), r(t.y * Vr(i.scale.y)), r(t.z * Vr(i.scale.z)));
 	}
 	return t;
 }
-function Br(e) {
+function Vr(e) {
 	let t = Math.fround, n = t(e), r = Math.abs(n);
 	if (r < t(1e-9)) return 0;
 	if (!Number.isFinite(n)) return 1 / n;
 	let i = 2 ** Math.floor(Math.log2(r)), a = Math.floor((r / i - 1) * 2048), o = t(Math.sign(n) * Math.round(8192 / (1 + (a + .5) / 2048)) / 8192 / i), s = t(o * t(2.000000476837158 - t(o * n)));
 	return s = t(s * t(2 - t(s * n))), Number.isNaN(s) ? o : s;
 }
-function Vr(e, t, n = !1) {
+function Hr(e, t, n = !1) {
 	let r = Math.fround, i = e.x, a = e.y, o = e.z, s = n ? -1 : 1, c = s * r(t.x), l = s * r(t.y), u = s * r(t.z), d = r(t.w), f = r(r(-2 * l * l) - r(2 * u * u)), p = r(r(-2 * u * d) - r(-2 * c * l)), m = r(r(2 * c * u) - r(-2 * l * d)), h = r(r(2 * l * c) - r(-2 * u * d)), g = r(r(-2 * u * u) - r(2 * c * c)), _ = r(r(-2 * c * d) - r(-2 * l * u)), v = r(r(-2 * l * d) - r(-2 * u * c)), y = r(r(2 * u * l) - r(-2 * c * d)), b = r(r(-2 * c * c) - r(2 * l * l));
 	e.set(r(r(r(f * i) + i) + r(r(p * a) + r(m * o))), r(r(r(h * i) + a) + r(r(g * a) + r(_ * o))), r(r(r(v * i) + o) + r(r(y * a) + r(b * o))));
 }
-function Hr(e, t) {
-	return t.copy(Ur(t, z(e, Rr)));
+function Ur(e, t) {
+	return t.copy(Wr(t, z(e, zr)));
 }
-function Ur(t, n) {
+function Wr(t, n) {
 	let r = Math.fround, i = r(n.x * 2), a = r(n.y * 2), o = r(n.z * 2), s = r(n.x * i), c = r(n.y * a), l = r(n.z * o), u = r(n.x * a), d = r(n.x * o), f = r(n.y * o), p = r(n.w * i), m = r(n.w * a), h = r(n.w * o);
 	return new e.Vector3(r((1 - (c + l)) * t.x + (u - h) * t.y + (d + m) * t.z), r((u + h) * t.x + (1 - (s + l)) * t.y + (f - p) * t.z), r((d - m) * t.x + (f + p) * t.y + (1 - (s + c)) * t.z));
 }
-function Wr(t, n, r) {
+function Gr(t, n, r) {
 	let i = Math.fround, a = i(e.MathUtils.clamp(r, 0, 1)), o = i(t.x), s = i(t.y), c = i(t.z), l = i(t.w), u = i(n.x), d = i(n.y), f = i(n.z), p = i(n.w);
 	i(i(i(i(o * u) + i(s * d)) + i(c * f)) + i(l * p)) < 0 && (u = -u, d = -d, f = -f, p = -p);
 	let m = i(o + i(i(u - o) * a)), h = i(s + i(i(d - s) * a)), g = i(c + i(i(f - c) * a)), _ = i(l + i(i(p - l) * a)), v = i(Math.sqrt(i(i(i(i(m * m) + i(h * h)) + i(g * g)) + i(_ * _))));
 	return v > 0 ? new e.Quaternion(i(m / v), i(h / v), i(g / v), i(_ / v)) : new e.Quaternion();
 }
-function Gr(e) {
+function Kr(e) {
 	return typeof e == "number" && Number.isFinite(e) ? e : null;
 }
 //#endregion
 //#region src/engine/utjSpringBoneRuntime.ts
-var Kr = /* @__PURE__ */ function(e) {
+var qr = /* @__PURE__ */ function(e) {
 	return e[e.NoCollision = 0] = "NoCollision", e[e.HeadIsEmbedded = 1] = "HeadIsEmbedded", e[e.TailCollision = 2] = "TailCollision", e;
-}({}), V = 1e-5, qr = .001, Jr = new e.Vector3(1, 0, 0);
-function Yr(t, n) {
+}({}), V = 1e-5, Jr = .001, Yr = new e.Vector3(1, 0, 0);
+function Xr(t, n) {
 	return {
 		currTipPos: n.clone(),
 		prevTipPos: n.clone(),
@@ -2826,32 +2843,32 @@ function Yr(t, n) {
 		cachedMovement: new e.Vector3(0, 0, 0)
 	};
 }
-function Xr(e) {
-	let t = vi(e.parentRotation.clone().multiply(e.initialLocalRotation)), n = Ur(e.boneAxis, t);
+function Zr(e) {
+	let t = yi(e.parentRotation.clone().multiply(e.initialLocalRotation)), n = Wr(e.boneAxis, t);
 	return H(n.multiplyScalar(Math.fround(e.springLength))), H(e.headPosition.clone().add(n));
 }
-function Zr(e, t) {
+function Qr(e, t) {
 	let n = Math.fround;
 	H(e.currTipPos), H(e.prevTipPos);
-	let r = e.currTipPos.clone(), i = H(H(Xr(t).sub(e.currTipPos)).multiplyScalar(n(t.stiffnessForce))), a = H(H(H(t.springForce.clone().add(t.externalForce)).add(i)).multiplyScalar(n(.5 * n(t.deltaTime) * n(t.deltaTime)))), o = H(H(e.currTipPos.clone().sub(e.prevTipPos)).multiplyScalar(n(1 - n(t.dragForce))));
+	let r = e.currTipPos.clone(), i = H(H(Zr(t).sub(e.currTipPos)).multiplyScalar(n(t.stiffnessForce))), a = H(H(H(t.springForce.clone().add(t.externalForce)).add(i)).multiplyScalar(n(.5 * n(t.deltaTime) * n(t.deltaTime)))), o = H(H(e.currTipPos.clone().sub(e.prevTipPos)).multiplyScalar(n(1 - n(t.dragForce))));
 	H(e.currTipPos.add(H(a.add(o)))), e.prevTipPos.copy(r);
 	let s = H(t.headPosition.clone()), c = H(e.currTipPos.clone().sub(s));
-	Math.fround(c.length()) <= qr && c.copy(t.lengthFallbackDirection ?? t.boneAxis), yi(c), H(c.multiplyScalar(n(t.springLength))), e.currTipPos.copy(H(c.add(s)));
+	Math.fround(c.length()) <= Jr && c.copy(t.lengthFallbackDirection ?? t.boneAxis), bi(c), H(c.multiplyScalar(n(t.springLength))), e.currTipPos.copy(H(c.add(s)));
 }
-function Qr(e, t) {
+function $r(e, t) {
 	let n = H(t.clone());
 	H(e.cachedMovement.copy(n).sub(e.cachedPosition)), e.cachedPosition.copy(n);
 }
-function $r(t, n, r, i, a, o = Jr) {
+function ei(t, n, r, i, a, o = Yr) {
 	let s = r.clone().sub(n), c = s.length();
-	if (c <= qr) {
+	if (c <= Jr) {
 		s.copy(o).normalize(), t.copy(n).addScaledVector(s, i);
 		return;
 	}
 	let l = e.MathUtils.clamp(c, i, a);
 	t.copy(n).addScaledVector(s, l / c);
 }
-function ei(t) {
+function ti(t) {
 	if (t.targets.length === 0) return;
 	let n = t.springConstant * t.deltaTime * t.deltaTime, r = new e.Vector3();
 	for (let e of t.targets) {
@@ -2862,22 +2879,22 @@ function ei(t) {
 	}
 	t.currTipPos.add(r);
 }
-function ti(e, t) {
+function ni(e, t) {
 	let n = 0, r = null, i = e.currTipPos.clone();
-	for (let i of wi(t.colliders)) {
+	for (let i of Ti(t.colliders)) {
 		if (i.enabled === !1) continue;
-		let a = ii(i, t.headPosition, e.currTipPos, t.tailRadius, t.springLength);
+		let a = ai(i, t.headPosition, e.currTipPos, t.tailRadius, t.springLength);
 		t.onColliderCheck?.(i, {
 			status: a.status,
 			beforeTailPosition: e.currTipPos.clone(),
 			afterTailPosition: a.tailPosition.clone(),
 			hitNormal: a.hitNormal.clone(),
-			details: ni(i, t.headPosition, e.currTipPos, a.tailPosition, t.tailRadius)
+			details: ri(i, t.headPosition, e.currTipPos, a.tailPosition, t.tailRadius)
 		}), a.status !== 0 && (e.currTipPos.copy(a.tailPosition), e.hitNormal.copy(a.hitNormal), r = a.hitNormal, n = a.status, t.onCollision?.(i, a));
 	}
-	return r && hi(e, r, t.bounce, t.friction, i), n;
+	return r && gi(e, r, t.bounce, t.friction, i), n;
 }
-function ni(e, t, n, r, i) {
+function ri(e, t, n, r, i) {
 	return e.kind === "sphere" ? {
 		kind: e.kind,
 		localHeadPosition: t.clone().applyMatrix4(e.worldToLocalMatrix),
@@ -2914,23 +2931,23 @@ function ni(e, t, n, r, i) {
 		capsuleRadius: e.radius
 	};
 }
-function ri(e, t) {
+function ii(e, t) {
 	let n = t.headPosition.clone();
 	n.y -= t.groundHeight;
 	let r = e.currTipPos.clone();
-	return r.y -= t.groundHeight, oi(n, e.currTipPos.distanceTo(t.headPosition), r, t.tailRadius, 1) === 0 ? !1 : (r.y += t.groundHeight, $r(e.currTipPos, t.headPosition, r, t.springLength * .5, t.springLength, t.lengthFallbackDirection), e.prevTipPos.copy(e.currTipPos), e.hitNormal.set(0, 1, 0), !0);
+	return r.y -= t.groundHeight, si(n, e.currTipPos.distanceTo(t.headPosition), r, t.tailRadius, 1) === 0 ? !1 : (r.y += t.groundHeight, ei(e.currTipPos, t.headPosition, r, t.springLength * .5, t.springLength, t.lengthFallbackDirection), e.prevTipPos.copy(e.currTipPos), e.hitNormal.set(0, 1, 0), !0);
 }
-function ii(e, t, n, r, i) {
-	return e.kind === "sphere" ? ci(t, n, r, e) : e.kind === "capsule" ? li(t, n, r, e.start, e.end, e.radius) : e.kind === "panel" ? ai(t, n, r, i, e) : ui(t, n, r, e);
+function ai(e, t, n, r, i) {
+	return e.kind === "sphere" ? li(t, n, r, e) : e.kind === "capsule" ? ui(t, n, r, e.start, e.end, e.radius) : e.kind === "panel" ? oi(t, n, r, i, e) : di(t, n, r, e);
 }
-function ai(t, n, r, i, a) {
+function oi(t, n, r, i, a) {
 	let o = n.clone().applyMatrix4(a.worldToLocalMatrix), s = r;
 	if (o.z >= s) return U(n);
 	let c = a.width * .5, l = a.height * .5;
 	if (Math.abs(o.x) >= c + s || Math.abs(o.y) >= l + s) return U(n);
 	let u = t.clone().applyMatrix4(a.worldToLocalMatrix), d = i, f = 0, p = o.clone();
 	if (o.z > 0 || u.z > 0) if (Math.abs(o.y) <= l && Math.abs(o.x) <= c) {
-		if (f = oi(u, d, p, s, 2), f === 0) return U(n);
+		if (f = si(u, d, p, s, 2), f === 0) return U(n);
 	} else if (Math.abs(o.y) > l) {
 		let t = o.y >= 0 ? l : -l, n = new e.Vector3(0, o.y - t, o.z);
 		n.lengthSq() <= V * V ? n.set(0, 0, 0) : n.normalize(), p.set(o.x + n.x * s, t + n.y * s, n.z * s), f = 2;
@@ -2942,88 +2959,88 @@ function ai(t, n, r, i, a) {
 	return {
 		status: f,
 		tailPosition: p.applyMatrix4(a.localToWorldMatrix),
-		hitNormal: Di(new e.Vector3(0, 0, 1), a.localToWorldMatrix)
+		hitNormal: Oi(new e.Vector3(0, 0, 1), a.localToWorldMatrix)
 	};
 }
-function oi(e, t, n, r, i) {
+function si(e, t, n, r, i) {
 	if (W(n, i) >= r) return 0;
 	let a = W(e, i);
-	if (a + t <= r) return n.copy(e), Oi(n, i, a + t), 1;
+	if (a + t <= r) return n.copy(e), ki(n, i, a + t), 1;
 	let o = (i + 1) % 3, s = (i + 2) % 3, c = W(n, o) - W(e, o), l = W(n, s) - W(e, s), u = Math.sqrt(c * c + l * l);
 	if (u > .001) {
 		let d = a - r, f = Math.sqrt(t * t - d * d) / u;
-		Oi(n, o, W(e, o) + c * f), Oi(n, s, W(e, s) + l * f), Oi(n, i, r);
+		ki(n, o, W(e, o) + c * f), ki(n, s, W(e, s) + l * f), ki(n, i, r);
 	} else n.copy(e);
 	return 2;
 }
-function si(t, n, r, i, a, o = a, s = {}) {
+function ci(t, n, r, i, a, o = a, s = {}) {
 	let c = r + a, l = n.clone().sub(i);
 	if (l.lengthSq() >= c * c) return U(n);
 	if (t.distanceToSquared(i) <= o * o) {
-		let n = s.headEmbeddedFallback === !1 ? l.clone().multiplyScalar(1 / Math.sqrt(l.lengthSq())) : Ei(l, s.headEmbeddedFallback instanceof e.Vector3 ? s.headEmbeddedFallback : t.clone().sub(i).lengthSq() <= V * V ? new e.Vector3(0, 1, 0) : t.clone().sub(i));
+		let n = s.headEmbeddedFallback === !1 ? l.clone().multiplyScalar(1 / Math.sqrt(l.lengthSq())) : Di(l, s.headEmbeddedFallback instanceof e.Vector3 ? s.headEmbeddedFallback : t.clone().sub(i).lengthSq() <= V * V ? new e.Vector3(0, 1, 0) : t.clone().sub(i));
 		return {
 			status: 1,
 			tailPosition: i.clone().addScaledVector(n, c),
 			hitNormal: n
 		};
 	}
-	let u = pi(t, n.distanceTo(t), i, c);
+	let u = mi(t, n.distanceTo(t), i, c);
 	if (!u) return s.noIntersectionStatus === 2 ? {
 		status: 2,
 		tailPosition: n.clone(),
-		hitNormal: Ei(n.clone().sub(i), l)
+		hitNormal: Di(n.clone().sub(i), l)
 	} : U(n);
-	let d = mi(u, n);
+	let d = hi(u, n);
 	return {
 		status: 2,
 		tailPosition: d,
-		hitNormal: Ei(d.clone().sub(i), l)
+		hitNormal: Di(d.clone().sub(i), l)
 	};
 }
-function ci(e, t, n, r) {
-	let i = e.clone().applyMatrix4(r.worldToLocalMatrix), a = t.clone().applyMatrix4(r.worldToLocalMatrix), o = n, s = Math.abs(r.lossyScaleX) * r.radius, c = si(i, a, o, r.localOffset, s, s, {
+function li(e, t, n, r) {
+	let i = e.clone().applyMatrix4(r.worldToLocalMatrix), a = t.clone().applyMatrix4(r.worldToLocalMatrix), o = n, s = Math.abs(r.lossyScaleX) * r.radius, c = ci(i, a, o, r.localOffset, s, s, {
 		headEmbeddedFallback: !1,
 		noIntersectionStatus: 2
 	});
 	return c.status === 0 ? U(t) : {
 		status: c.status,
 		tailPosition: c.tailPosition.clone().applyMatrix4(r.localToWorldMatrix),
-		hitNormal: Di(c.hitNormal.clone(), r.localToWorldNormalMatrix)
+		hitNormal: Oi(c.hitNormal.clone(), r.localToWorldNormalMatrix)
 	};
 }
-function li(t, n, r, i, a, o) {
+function ui(t, n, r, i, a, o) {
 	let s = a.clone().sub(i), c = s.lengthSq();
-	if (c <= V * V) return si(t, n, r, i, o);
+	if (c <= V * V) return ci(t, n, r, i, o);
 	let l = e.MathUtils.clamp(n.clone().sub(i).dot(s) / c, 0, 1), u = i.clone().addScaledVector(s, l), d = r + o, f = n.clone().sub(u);
 	if (f.lengthSq() >= d * d) return U(n);
-	if (l <= V) return si(t, n, r, i, o);
-	if (l >= 1 - V) return si(t, n, r, a, o);
-	let p = Ei(f, t.clone().sub(u)), m = e.MathUtils.clamp(t.clone().sub(i).dot(s) / c, 0, 1), h = i.clone().addScaledVector(s, m);
+	if (l <= V) return ci(t, n, r, i, o);
+	if (l >= 1 - V) return ci(t, n, r, a, o);
+	let p = Di(f, t.clone().sub(u)), m = e.MathUtils.clamp(t.clone().sub(i).dot(s) / c, 0, 1), h = i.clone().addScaledVector(s, m);
 	return {
 		status: t.distanceToSquared(h) <= o * o ? 1 : 2,
 		tailPosition: u.addScaledVector(p, d),
 		hitNormal: p
 	};
 }
-function ui(e, t, n, r) {
-	let i = di(e.clone().applyMatrix4(r.worldToLocalMatrix), t.clone().applyMatrix4(r.worldToLocalMatrix), n, r.localStart, r.localEnd, r.radius, r.lossyScaleX);
+function di(e, t, n, r) {
+	let i = fi(e.clone().applyMatrix4(r.worldToLocalMatrix), t.clone().applyMatrix4(r.worldToLocalMatrix), n, r.localStart, r.localEnd, r.radius, r.lossyScaleX);
 	if (i.status === 0) return U(t);
-	let a = i.tailPosition.clone().applyMatrix4(r.localToWorldMatrix), o = Di(i.hitNormal, r.localToWorldNormalMatrix);
+	let a = i.tailPosition.clone().applyMatrix4(r.localToWorldMatrix), o = Oi(i.hitNormal, r.localToWorldNormalMatrix);
 	return {
 		status: i.status,
 		tailPosition: a,
 		hitNormal: o
 	};
 }
-function di(t, n, r, i, a, o, s = 1) {
+function fi(t, n, r, i, a, o, s = 1) {
 	if (o <= 1e-4) return U(n);
 	let c = i.y <= a.y ? i : a, l = i.y <= a.y ? a : i, u = c.y, d = l.y;
-	return n.y <= u || n.y >= d ? si(t, n, r, n.y < d ? c : l, o, Math.abs(s) * o, {
+	return n.y <= u || n.y >= d ? ci(t, n, r, n.y < d ? c : l, o, Math.abs(s) * o, {
 		headEmbeddedFallback: new e.Vector3(0, 0, 0),
 		noIntersectionStatus: 2
-	}) : fi(t, n, r, o, s);
+	}) : pi(t, n, r, o, s);
 }
-function fi(t, n, r, i, a = 1) {
+function pi(t, n, r, i, a = 1) {
 	let o = i + r, s = n.x * n.x + n.z * n.z;
 	if (s > o * o) return U(n);
 	let c = Math.sqrt(s), l = c > V ? n.x / c : 0, u = c > V ? n.z / c : 0, d = new e.Vector3(o * l, n.y, o * u), f = new e.Vector3(l, 0, u), p = t.x * t.x + t.z * t.z, m = Math.abs(a) * i;
@@ -3033,7 +3050,7 @@ function fi(t, n, r, i, a = 1) {
 		hitNormal: f
 	};
 }
-function pi(e, t, n, r) {
+function mi(e, t, n, r) {
 	let i = n.clone().sub(e), a = i.lengthSq(), o = Math.sqrt(a);
 	if (o <= 0) return null;
 	let s = i.multiplyScalar(1 / o), c = t * t, l = c + a - r * r, u = .5 / o, d = a * 4 * c - l * l;
@@ -3045,12 +3062,12 @@ function pi(e, t, n, r) {
 		radius: u * Math.sqrt(d)
 	};
 }
-function mi(e, t) {
+function hi(e, t) {
 	let n = t.clone().sub(e.origin), r = e.origin.clone().addScaledVector(e.upVector, n.dot(e.upVector)), i = t.clone().sub(r), a = i.length();
 	return a <= V || e.radius <= V ? e.origin.clone() : e.origin.clone().addScaledVector(i, e.radius / a);
 }
-function hi(e, t, n, r, i = e.currTipPos) {
-	let a = Ei(t, Jr), o = e.prevTipPos.clone(), s = i.clone().sub(o), c = a.clone().multiplyScalar(s.dot(a)), l = s.sub(c).multiplyScalar(1 - r).sub(c.multiplyScalar(n));
+function gi(e, t, n, r, i = e.currTipPos) {
+	let a = Di(t, Yr), o = e.prevTipPos.clone(), s = i.clone().sub(o), c = a.clone().multiplyScalar(s.dot(a)), l = s.sub(c).multiplyScalar(1 - r).sub(c.multiplyScalar(n));
 	if (l.lengthSq() <= 1e-4) {
 		e.prevTipPos.copy(e.currTipPos);
 		return;
@@ -3059,7 +3076,7 @@ function hi(e, t, n, r, i = e.currTipPos) {
 	let u = e.currTipPos.distanceTo(o), d = l.length(), f = Math.max(d - u, 0);
 	f > 0 && e.currTipPos.addScaledVector(l, f / d);
 }
-function gi(e) {
+function _i(e) {
 	if (!e.limit.active) return !1;
 	let t = Math.fround, n = e.vector, r = H(e.basisUp.clone()), i = H(e.basisSide.clone()), a = H(e.basisForward.clone());
 	H(n);
@@ -3071,39 +3088,39 @@ function gi(e) {
 	let v = t(g * _), y = t(g * _ * t(Math.PI / 180)), b = H(i.multiplyScalar(t(Math.sin(y))));
 	return H(b.add(H(a.multiplyScalar(t(Math.cos(y)))))), H(b.multiplyScalar(l)), H(n.copy(s).add(b)), v !== p;
 }
-function _i(t, n, r, i, a) {
+function vi(t, n, r, i, a) {
 	let o = Math.fround, s = r.clone().multiply(i);
-	vi(s);
-	let c = Ur(new e.Vector3(o(o(n.x) - o(t.x)), o(o(n.y) - o(t.y)), o(o(n.z) - o(t.z))), s.invert());
+	yi(s);
+	let c = Wr(new e.Vector3(o(o(n.x) - o(t.x)), o(o(n.y) - o(t.y)), o(o(n.z) - o(t.z))), s.invert());
 	if (c.lengthSq() <= V * V) return i.clone();
-	yi(c);
-	let l = bi(a, c);
+	bi(c);
+	let l = xi(a, c);
 	return i.clone().multiply(l);
 }
 function H(e) {
 	return e.set(Math.fround(e.x), Math.fround(e.y), Math.fround(e.z));
 }
-function vi(e) {
+function yi(e) {
 	return e.set(Math.fround(e.x), Math.fround(e.y), Math.fround(e.z), Math.fround(e.w));
 }
-function yi(e) {
+function bi(e) {
 	H(e);
 	let t = Math.fround(e.length());
 	return t > 1e-5 ? e.set(Math.fround(e.x / t), Math.fround(e.y / t), Math.fround(e.z / t)) : e.set(0, 0, 0);
 }
-function bi(t, n) {
-	let r = Math.fround, i = Ci(t.clone()), a = Ci(n.clone()), o = Si(i, a);
+function xi(t, n) {
+	let r = Math.fround, i = wi(t.clone()), a = wi(n.clone()), o = Ci(i, a);
 	if (i.lengthSq() === 0 || a.lengthSq() === 0 || o > .999999) return new e.Quaternion();
 	let s = Array(9);
 	if (o < -.999999) {
 		let t = new e.Vector3(0, i.z, -i.y);
-		Si(t, t) < 1e-6 && t.set(-i.z, 0, i.x);
-		let n = r(1 / r(Math.sqrt(Si(t, t))));
+		Ci(t, t) < 1e-6 && t.set(-i.z, 0, i.x);
+		let n = r(1 / r(Math.sqrt(Ci(t, t))));
 		H(t.multiplyScalar(n));
-		let a = xi(t, i), o = i.toArray(), c = t.toArray(), l = a.toArray();
+		let a = Si(t, i), o = i.toArray(), c = t.toArray(), l = a.toArray();
 		for (let e = 0; e < 3; e++) for (let t = 0; t < 3; t++) s[e * 3 + t] = r(r(r(l[t] * l[e]) - r(o[t] * o[e])) - r(c[t] * c[e]));
 	} else {
-		let e = xi(i, a), t = r(r(1 - o) / Si(e, e)), n = r(e.x * t), c = r(e.y * t), l = r(e.z * t), u = r(e.y * n), d = r(e.z * n), f = r(e.y * l);
+		let e = Si(i, a), t = r(r(1 - o) / Ci(e, e)), n = r(e.x * t), c = r(e.y * t), l = r(e.z * t), u = r(e.y * n), d = r(e.z * n), f = r(e.y * l);
 		s[0] = r(o + r(e.x * n)), s[1] = r(e.z + u), s[2] = r(d - e.y), s[3] = r(u - e.z), s[4] = r(o + r(c * e.y)), s[5] = r(e.x + f), s[6] = r(e.y + d), s[7] = r(f - e.x), s[8] = r(o + r(e.z * l));
 	}
 	let c = [
@@ -3124,18 +3141,18 @@ function bi(t, n) {
 	let u = r(Math.sqrt(r(r(r(r(c[0] * c[0]) + r(c[1] * c[1])) + r(c[2] * c[2])) + r(c[3] * c[3]))));
 	return new e.Quaternion(r(c[0] / u), r(c[1] / u), r(c[2] / u), r(c[3] / u));
 }
-function xi(t, n) {
+function Si(t, n) {
 	let r = Math.fround;
 	return new e.Vector3(r(r(t.y * n.z) - r(t.z * n.y)), r(r(t.z * n.x) - r(t.x * n.z)), r(r(t.x * n.y) - r(t.y * n.x)));
 }
-function Si(e, t) {
+function Ci(e, t) {
 	let n = Math.fround;
 	return n(n(n(e.x * t.x) + n(e.y * t.y)) + n(e.z * t.z));
 }
-function Ci(e) {
+function wi(e) {
 	let t = Math.fround;
 	e.set(t(e.x), t(e.y), t(e.z));
-	let n = t(Math.sqrt(Si(e, e)));
+	let n = t(Math.sqrt(Ci(e, e)));
 	return n >= Math.fround(1e-5) ? e.set(t(e.x / n), t(e.y / n), t(e.z / n)) : e.set(0, 0, 0);
 }
 function U(t) {
@@ -3145,28 +3162,28 @@ function U(t) {
 		hitNormal: new e.Vector3(0, 0, 0)
 	};
 }
-function wi(e) {
-	return [...e].sort((e, t) => Ti(e) - Ti(t));
-}
 function Ti(e) {
+	return [...e].sort((e, t) => Ei(e) - Ei(t));
+}
+function Ei(e) {
 	return e.kind === "capsule" || e.kind === "capsuleLocal" ? 0 : e.kind === "sphere" ? 1 : 2;
 }
-function Ei(e, t) {
-	return e.lengthSq() <= V * V && e.copy(t), e.lengthSq() <= V * V && e.copy(Jr), e.normalize();
-}
 function Di(e, t) {
+	return e.lengthSq() <= V * V && e.copy(t), e.lengthSq() <= V * V && e.copy(Yr), e.normalize();
+}
+function Oi(e, t) {
 	let n = t.elements, r = e.x, i = e.y, a = e.z;
-	return e.set(n[0] * r + n[4] * i + n[8] * a, n[1] * r + n[5] * i + n[9] * a, n[2] * r + n[6] * i + n[10] * a), Ei(e, Jr);
+	return e.set(n[0] * r + n[4] * i + n[8] * a, n[1] * r + n[5] * i + n[9] * a, n[2] * r + n[6] * i + n[10] * a), Di(e, Yr);
 }
 function W(e, t) {
 	return t === 0 ? e.x : t === 1 ? e.y : e.z;
 }
-function Oi(e, t, n) {
+function ki(e, t, n) {
 	t === 0 ? e.x = n : t === 1 ? e.y = n : e.z = n;
 }
 //#endregion
 //#region src/engine/unityPrefabSpringRuntimeAdapter.ts
-var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"), Ni = Lr("down"), Pi = class t {
+var Ai = 1401298464324817e-60, ji = Rr("right"), Mi = Rr("left"), Ni = Rr("back"), Pi = Rr("down"), Fi = class t {
 	bones;
 	managerBatches;
 	missingNodes;
@@ -3199,24 +3216,24 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 		this.bones = e, this.managerBatches = t, this.missingNodes = n, this.skinnedBones = r, this.setupDiagnostics = i;
 	}
 	static fromPjskRuntimeExtension(e, n) {
-		let r = Da(e);
+		let r = Oa(e);
 		if (!r) return null;
 		n.updateMatrixWorld(!0);
-		let i = Qi(n), a = Zi(r), o = ia(n), s = [], c = ua(r), l = Vi(r, i, s, c), u = oa(r), d = sa(r), f = ca(r, l), p = aa(r), m = Ui(r), h = Hi(r, c, m), g = /* @__PURE__ */ new Map(), _ = /* @__PURE__ */ new Map(), v = /* @__PURE__ */ new Map(), y = /* @__PURE__ */ new Map();
+		let i = $i(n), a = Qi(r), o = aa(n), s = [], c = da(r), l = Hi(r, i, s, c), u = sa(r), d = ca(r), f = la(r, l), p = oa(r), m = Wi(r), h = Ui(r, c, m), g = /* @__PURE__ */ new Map(), _ = /* @__PURE__ */ new Map(), v = /* @__PURE__ */ new Map(), y = /* @__PURE__ */ new Map();
 		n.traverse((e) => y.set(e, y.size));
 		let b = /* @__PURE__ */ new Map();
-		for (let e of p.values()) b.set(e, ea(i, e.nodePath, e.runtimePartIndex));
-		let x = (r.managers ?? []).filter((e) => da(e.nodePath ?? e.poseRoot, c)).map((e) => ({
+		for (let e of p.values()) b.set(e, ta(i, e.nodePath, e.runtimePartIndex));
+		let x = (r.managers ?? []).filter((e) => fa(e.nodePath ?? e.poseRoot, c)).map((e) => ({
 			source: e,
-			node: ea(i, e.nodePath, e.runtimePartIndex),
+			node: ta(i, e.nodePath, e.runtimePartIndex),
 			nodes: []
 		})).sort((e, t) => (y.get(e.node) ?? 0) - (y.get(t.node) ?? 0));
 		for (let e of x) {
-			let t = e.source, n = Li(i, t, v), o = e.node ? [...b].filter(([n, r]) => r ? Qa(r, e.node) : n.pathId !== void 0 && t.bonePathIds?.includes(n.pathId)).sort((e, t) => (y.get(e[1]) ?? Infinity) - (y.get(t[1]) ?? Infinity)).map(([e]) => e) : (t.bonePathIds ?? []).map((e) => p.get(e));
+			let t = e.source, n = Ri(i, t, v), o = e.node ? [...b].filter(([n, r]) => r ? $a(r, e.node) : n.pathId !== void 0 && t.bonePathIds?.includes(n.pathId)).sort((e, t) => (y.get(e[1]) ?? Infinity) - (y.get(t[1]) ?? Infinity)).map(([e]) => e) : (t.bonePathIds ?? []).map((e) => p.get(e));
 			for (let p of o) {
-				if (!p || !da(p.nodePath, c)) continue;
+				if (!p || !fa(p.nodePath, c)) continue;
 				let o = p.pathId;
-				if (!Gi(p, m)) {
+				if (!Ki(p, m)) {
 					h.rejectedUnverifiedBoneSourceCount += 1;
 					continue;
 				}
@@ -3226,20 +3243,20 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 					continue;
 				}
 				e.nodes.push(v), _.set(v, p);
-				let y = qi(p, v, a, i), x = ea(i, p.pivotNodePath, p.runtimePartIndex), S = Ki(r, t, p, o === void 0 ? void 0 : u.get(o), o === void 0 ? void 0 : d.get(o), t.pathId === void 0 ? void 0 : f.get(t.pathId), l), C = Ii(t, p, v, y, x, fa(i, p), n, S);
+				let y = Ji(p, v, a, i), x = ta(i, p.pivotNodePath, p.runtimePartIndex), S = qi(r, t, p, o === void 0 ? void 0 : u.get(o), o === void 0 ? void 0 : d.get(o), t.pathId === void 0 ? void 0 : f.get(t.pathId), l), C = Li(t, p, v, y, x, pa(i, p), n, S);
 				C && g.set(v, C);
 			}
 		}
 		let S = [...g.values()];
-		S.sort((e, t) => Za(e.node) - Za(t.node));
+		S.sort((e, t) => Qa(e.node) - Qa(t.node));
 		let C = x.map((e) => {
-			let t = [...new Set(e.nodes)].map((e) => g.get(e)).sort((e, t) => Za(e.node) - Za(t.node));
+			let t = [...new Set(e.nodes)].map((e) => g.get(e)).sort((e, t) => Qa(e.node) - Qa(t.node));
 			return {
 				source: e.source,
 				bones: t,
-				animatedBones: new Set(t.filter((t) => wa(_.get(t.node), t.node, e.source))),
-				gravity: Ia(e.source.rawGravity),
-				forceProviders: Li(i, e.source, v),
+				animatedBones: new Set(t.filter((t) => Ta(_.get(t.node), t.node, e.source))),
+				gravity: La(e.source.rawGravity),
+				forceProviders: Ri(i, e.source, v),
 				slowMotionScale: Y(e.source.slowMotionScale) ?? 1,
 				isPaused: e.source.isPaused === !0
 			};
@@ -3263,8 +3280,8 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 		};
 	}
 	setTimelineControl(e) {
-		for (let t of this.managerBatches) t.slowMotionScale = Wa(e.slowMotionScale, 1), t.isPaused = e.paused ?? !1;
-		for (let t of this.bones) t.stiffnessForce = Wa(e.stiffnessForce, t.originalStiffnessForce), t.dragForce = Wa(e.dragForce, t.originalDragForce), t.windInfluence = Wa(e.windInfluence, t.originalWindInfluence), t.slowMotionScale = Wa(e.slowMotionScale, 1), t.isPaused = e.paused ?? !1;
+		for (let t of this.managerBatches) t.slowMotionScale = Ga(e.slowMotionScale, 1), t.isPaused = e.paused ?? !1;
+		for (let t of this.bones) t.stiffnessForce = Ga(e.stiffnessForce, t.originalStiffnessForce), t.dragForce = Ga(e.dragForce, t.originalDragForce), t.windInfluence = Ga(e.windInfluence, t.originalWindInfluence), t.slowMotionScale = Ga(e.slowMotionScale, 1), t.isPaused = e.paused ?? !1;
 	}
 	clearTimelineControl() {
 		this.setTimelineControl({});
@@ -3284,7 +3301,7 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 					i.skinAnimationLocalRotation.copy(i.node.quaternion), this.applyBoneRotation(i, s);
 					continue;
 				}
-				!o || this.updateManagerPathId !== null && r.has(this.updateManagerPathId) || (this.computeExternalForce(i, t, n), this.updateBoneSpringAndRotation(i, Ea(t, Y(a.simulationFrameRate) ?? 60, n.slowMotionScale), this.externalForce, s));
+				!o || this.updateManagerPathId !== null && r.has(this.updateManagerPathId) || (this.computeExternalForce(i, t, n), this.updateBoneSpringAndRotation(i, Da(t, Y(a.simulationFrameRate) ?? 60, n.slowMotionScale), this.externalForce, s));
 			}
 		}
 		for (let e of n) e.isActive && this.updateWindVolumeOneSelfLateUpdate(e, t);
@@ -3312,22 +3329,22 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 	}
 	computeWindVolume(e, t) {
 		let n = e.weight * e.strength;
-		if (n <= ki || e.period <= .001) return this.providerForce.set(0, 0, 0);
+		if (n <= Ai || e.period <= .001) return this.providerForce.set(0, 0, 0);
 		e.node.updateMatrixWorld(!0), z(e.node, this.providerRotation), t.node.getWorldPosition(this.localBonePosition).applyMatrix4(this.providerWorldToLocal.copy(e.node.matrixWorld).invert());
 		let r = -this.localBonePosition.x, i = Math.sin(e.timeFactor + Math.sin(r * e.positionalMultiplier) + Math.cos(this.localBonePosition.z * e.positionalMultiplier));
 		return this.providerForce.set(0, 0, 1).applyQuaternion(this.providerRotation).addScaledVector(e.offsetVector, i).normalize().multiplyScalar(n * t.windInfluence);
 	}
 	computeWindVolumeOneSelfForce(t, n, r) {
 		let i = t.weight * t.strength;
-		if (i <= ki || t.period <= ki) return this.providerForce.set(0, 0, 0);
-		t.currentTime = Ua(t.currentTime, r, t.period);
+		if (i <= Ai || t.period <= Ai) return this.providerForce.set(0, 0, 0);
+		t.currentTime = Wa(t.currentTime, r, t.period);
 		let a = t.currentTime * Math.PI * 2 / t.period;
 		if (t.node.updateMatrixWorld(!0), z(t.node, this.providerRotation), this.waveAxis.set(0, 1, 0).applyQuaternion(this.providerRotation), Math.abs(t.spinPeriod) > .001) {
-			t.spinTime = Ua(t.spinTime, r, t.spinPeriod);
+			t.spinTime = Wa(t.spinTime, r, t.spinPeriod);
 			let e = t.spinTime * Math.PI * 2 / t.spinPeriod;
-			this.providerRight.copy(Ai).applyQuaternion(this.providerRotation), this.providerUp.set(0, 1, 0).applyQuaternion(this.providerRotation), this.waveAxis.copy(this.providerRight).multiplyScalar(Math.cos(e)).addScaledVector(this.providerUp, Math.sin(e));
+			this.providerRight.copy(ji).applyQuaternion(this.providerRotation), this.providerUp.set(0, 1, 0).applyQuaternion(this.providerRotation), this.waveAxis.copy(this.providerRight).multiplyScalar(Math.cos(e)).addScaledVector(this.providerUp, Math.sin(e));
 		}
-		let o = Math.max(t.peakDistance, ki);
+		let o = Math.max(t.peakDistance, Ai);
 		n.node.getWorldPosition(this.localBonePosition).applyMatrix4(this.providerWorldToLocal.copy(t.node.matrixWorld).invert());
 		let s = Math.PI * 2 / o, c = -this.localBonePosition.x, l = Math.sin(a + Math.sin(s * c) + Math.cos(s * this.localBonePosition.z));
 		return this.mainWindDirection.set(0, 0, 1).applyQuaternion(this.providerRotation).addScaledVector(this.waveAxis, t.amplitude * l).normalize(), this.additionalDirection.set(-Math.cos(e.MathUtils.degToRad(t.additionalWindAngle)), 0, -Math.sin(e.MathUtils.degToRad(t.additionalWindAngle))).normalize(), this.providerForce.copy(this.mainWindDirection).multiplyScalar(i).addScaledVector(this.additionalDirection, t.additionalWindStrength).multiplyScalar(n.windInfluence);
@@ -3340,7 +3357,7 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 		for (let e of this.bones) e.node.quaternion.copy(e.initialLocalRotation), e.skinAnimationLocalRotation.copy(e.initialLocalRotation), e.node.scale.copy(e.initialLocalScale), e.node.updateMatrix(), e.node.updateMatrixWorld(!0);
 	}
 	resetStateToCurrentPose() {
-		for (let e of this.bones) z(e.node.parent, this.parentRotation), B(e.node, this.headPosition), e.skinAnimationLocalRotation.copy(e.node.quaternion), this.debugAnimatedTip.copy(Xr({
+		for (let e of this.bones) z(e.node.parent, this.parentRotation), B(e.node, this.headPosition), e.skinAnimationLocalRotation.copy(e.node.quaternion), this.debugAnimatedTip.copy(Zr({
 			headPosition: this.headPosition,
 			parentRotation: this.parentRotation,
 			initialLocalRotation: e.initialLocalRotation,
@@ -3352,7 +3369,7 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 		let r = /* @__PURE__ */ new Set(), i = [], a = [], o = 0, s = 0, c = 0, l = 0;
 		for (let t of this.bones) {
 			for (let e of t.colliders) r.add(e);
-			z(t.node.parent, this.parentRotation), B(t.node, this.headPosition), this.debugAnimatedTip.copy(Xr({
+			z(t.node.parent, this.parentRotation), B(t.node, this.headPosition), this.debugAnimatedTip.copy(Zr({
 				headPosition: this.headPosition,
 				parentRotation: this.parentRotation,
 				initialLocalRotation: t.initialLocalRotation,
@@ -3371,7 +3388,7 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 				pivotSourceName: t.pivotSourceName,
 				pivotSourcePath: t.pivotSourcePath,
 				pivotResolvedPath: t.pivotResolvedPath,
-				tailBinding: Pa(t.tailBinding),
+				tailBinding: Fa(t.tailBinding),
 				offset: n,
 				colliderCount: t.colliders.length,
 				lastCollisionStatus: t.lastCollisionStatus,
@@ -3384,7 +3401,7 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 				forceProviderCount: t.forceProviders.length,
 				stiffnessForce: t.stiffnessForce,
 				managerDynamicRatio: t.dynamicRatio,
-				dynamicRatio: Ca(t),
+				dynamicRatio: wa(t),
 				isAnimated: t.isAnimated,
 				automaticUpdates: t.automaticUpdates,
 				boneEnabled: t.enabled,
@@ -3392,11 +3409,11 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 				isSumOfForcesOnBone: t.isSumOfForcesOnBone,
 				simulationFrameRate: t.simulationFrameRate,
 				slowMotionScale: t.slowMotionScale,
-				updateSkipReason: ka(t),
+				updateSkipReason: Aa(t),
 				animatedTipDelta: G(d),
 				velocity: G(f),
 				springForce: G(t.springForce),
-				colliderBindings: t.colliderBindingDiagnostics.map(va)
+				colliderBindings: t.colliderBindingDiagnostics.map(ya)
 			}), u.includes("skirt") && a.push({
 				name: t.node.name,
 				path: X(t.node),
@@ -3408,7 +3425,7 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 				pivotSourceName: t.pivotSourceName,
 				pivotSourcePath: t.pivotSourcePath,
 				pivotResolvedPath: t.pivotResolvedPath,
-				tailBinding: Pa(t.tailBinding),
+				tailBinding: Fa(t.tailBinding),
 				offset: n,
 				appliedRotationDegrees: e.MathUtils.radToDeg(t.skinAnimationLocalRotation.clone().normalize().angleTo(t.node.quaternion.clone().normalize())),
 				colliderCount: t.colliders.length,
@@ -3424,7 +3441,7 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 				stiffnessForce: t.stiffnessForce,
 				dragForce: t.dragForce,
 				managerDynamicRatio: t.dynamicRatio,
-				dynamicRatio: Ca(t),
+				dynamicRatio: wa(t),
 				isAnimated: t.isAnimated,
 				automaticUpdates: t.automaticUpdates,
 				boneEnabled: t.enabled,
@@ -3432,17 +3449,17 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 				isSumOfForcesOnBone: t.isSumOfForcesOnBone,
 				simulationFrameRate: t.simulationFrameRate,
 				slowMotionScale: t.slowMotionScale,
-				updateSkipReason: ka(t),
+				updateSkipReason: Aa(t),
 				animatedTipDelta: G(d),
 				velocity: G(f),
 				headMovement: G(t.state.cachedMovement),
 				gravity: G(t.gravity),
 				springForce: G(t.springForce),
-				colliderBindings: t.colliderBindingDiagnostics.map(va)
+				colliderBindings: t.colliderBindingDiagnostics.map(ya)
 			});
 		}
 		i.sort((e, t) => t.offset - e.offset), a.sort((e, t) => t.offset - e.offset);
-		let u = Oa(i, n), d = Fi(this.bones, this.skinnedBones);
+		let u = ka(i, n), d = Ii(this.bones, this.skinnedBones);
 		return {
 			runtimeMode: "unity-prefab",
 			enabled: t,
@@ -3462,7 +3479,7 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 			controlledPartCounts: d.counts,
 			controlledHairSamples: d.hairSamples,
 			skirtOffsets: a,
-			bindingDiagnostics: this.bones.flatMap((e) => e.colliderBindingDiagnostics).map(va),
+			bindingDiagnostics: this.bones.flatMap((e) => e.colliderBindingDiagnostics).map(ya),
 			skinnedBoneMatches: c,
 			skinnedBoneMisses: l
 		};
@@ -3470,7 +3487,7 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 	updateBoneSpringAndRotation(t, n, r, i) {
 		z(t.node.parent, this.parentRotation), B(t.node, this.headPosition);
 		let a = this.shouldTraceBone(t) ? this.createTraceEvent(t, n, r, i) : null;
-		t.skinAnimationLocalRotation.copy(t.node.quaternion), a && (a.skinAnimationLocalRotation = ja(t.skinAnimationLocalRotation)), Qr(t.state, this.headPosition), a && (a.stateAfterCache = K(t.state)), Zr(t.state, {
+		t.skinAnimationLocalRotation.copy(t.node.quaternion), a && (a.skinAnimationLocalRotation = Ma(t.skinAnimationLocalRotation)), $r(t.state, this.headPosition), a && (a.stateAfterCache = K(t.state)), Qr(t.state, {
 			headPosition: this.headPosition,
 			parentRotation: this.parentRotation,
 			initialLocalRotation: t.initialLocalRotation,
@@ -3485,7 +3502,7 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 		}), a && (a.stateAfterUpdateSpring = K(t.state)), this.applyLengthLimits(t, n), a && (a.stateAfterLengthLimits = K(t.state));
 		let o = Math.abs(t.radius);
 		a && (a.tailRadius = o);
-		let s = t.collideWithGround ? ri(t.state, {
+		let s = t.collideWithGround ? ii(t.state, {
 			headPosition: this.headPosition,
 			springLength: t.springLength,
 			tailRadius: o,
@@ -3496,7 +3513,7 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 		}) : !1;
 		a && (a.groundHit = s, a.stateAfterGround = K(t.state)), t.lastCollisionInfo = null;
 		let c = [], l = t.enableCollision ? this.buildWorldColliders(t.colliders) : [];
-		t.lastCollisionStatus = !s && t.enableCollision ? ti(t.state, {
+		t.lastCollisionStatus = !s && t.enableCollision ? ni(t.state, {
 			headPosition: this.headPosition,
 			springLength: t.springLength,
 			tailRadius: o,
@@ -3504,7 +3521,7 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 			bounce: t.bounce,
 			friction: t.friction,
 			onColliderCheck: a ? (e, t) => {
-				c.push(Na(e, t));
+				c.push(Pa(e, t));
 			} : void 0,
 			onCollision: (e, n) => {
 				t.lastCollisionInfo = {
@@ -3516,8 +3533,8 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 				};
 			}
 		}) : 0, a && (a.collisionChecks = c, a.collisionStatus = t.lastCollisionStatus, a.stateAfterCollisions = K(t.state));
-		let u = a ? Ma(t) : void 0;
-		t.lastAngleLimitApplied = t.enableAngleLimits ? this.applyAngleLimits(t, n, u) : !1, a && u && (a.angleLimit = u, a.stateAfterAngleLimits = K(t.state)), this.resetInvalidTipPosition(t), this.applyBoneRotation(t, i), a && (a.finalLocalRotation = ja(t.node.quaternion), this.pushTraceEvent(a));
+		let u = a ? Na(t) : void 0;
+		t.lastAngleLimitApplied = t.enableAngleLimits ? this.applyAngleLimits(t, n, u) : !1, a && u && (a.angleLimit = u, a.stateAfterAngleLimits = K(t.state)), this.resetInvalidTipPosition(t), this.applyBoneRotation(t, i), a && (a.finalLocalRotation = Ma(t.node.quaternion), this.pushTraceEvent(a));
 	}
 	applyLengthLimits(t, n) {
 		if (!t.enableLengthLimits || t.lengthLimitTargets.length === 0) return;
@@ -3525,7 +3542,7 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 			position: B(t.node, new e.Vector3()),
 			initialLength: t.initialLength
 		}));
-		ei({
+		ti({
 			currTipPos: t.state.currTipPos,
 			springConstant: t.springConstant,
 			deltaTime: n,
@@ -3536,11 +3553,11 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 		if (!e.yAngleLimit && !e.zAngleLimit) return !1;
 		let r = e.pivotNode ?? e.node.parent ?? e.node;
 		r.updateMatrixWorld(!0), this.angleVector.copy(e.state.currTipPos).sub(e.state.cachedPosition), this.angleVector.set(Math.fround(this.angleVector.x), Math.fround(this.angleVector.y), Math.fround(this.angleVector.z));
-		let i = Hr(r, ji.clone()), a = Hr(r, Mi.clone()), o = Hr(r, Ni.clone());
+		let i = Ur(r, Mi.clone()), a = Ur(r, Ni.clone()), o = Ur(r, Pi.clone());
 		n && (n.enabled = !0, n.hasPivot = !0, n.pivotName = r.name || null, n.pivotPath = X(r) || null, n.vectorBefore = G(this.angleVector), n.forward = G(i), n.back = G(a), n.down = G(o));
 		let s = !1;
 		if (e.yAngleLimit) {
-			let r = gi({
+			let r = _i({
 				basisSide: o,
 				basisUp: a,
 				basisForward: i,
@@ -3552,7 +3569,7 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 			n && (n.yApplied = r, n.afterY = G(this.angleVector)), s = r || s;
 		}
 		if (e.zAngleLimit) {
-			let r = gi({
+			let r = _i({
 				basisSide: a,
 				basisUp: o,
 				basisForward: i,
@@ -3566,10 +3583,10 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 		return e.state.currTipPos.copy(e.state.cachedPosition).add(this.angleVector), e.state.currTipPos.set(Math.fround(e.state.currTipPos.x), Math.fround(e.state.currTipPos.y), Math.fround(e.state.currTipPos.z)), n && (n.vectorAfter = G(this.angleVector)), s;
 	}
 	applyBoneRotation(e, t = e.dynamicRatio) {
-		this.resetInvalidTipPosition(e), this.localRotation.copy(_i(this.headPosition, e.state.currTipPos, this.parentRotation, e.initialLocalRotation, e.boneAxis)), e.node.quaternion.copy(Nr(Wr(e.skinAnimationLocalRotation, this.localRotation, t))), e.node.updateMatrix(), e.node.updateMatrixWorld(!0);
+		this.resetInvalidTipPosition(e), this.localRotation.copy(vi(this.headPosition, e.state.currTipPos, this.parentRotation, e.initialLocalRotation, e.boneAxis)), e.node.quaternion.copy(Pr(Gr(e.skinAnimationLocalRotation, this.localRotation, t))), e.node.updateMatrix(), e.node.updateMatrixWorld(!0);
 	}
 	resetInvalidTipPosition(e) {
-		Number.isFinite(e.state.currTipPos.x) && Number.isFinite(e.state.currTipPos.y) && Number.isFinite(e.state.currTipPos.z) || (this.debugAnimatedTip.copy(Xr({
+		Number.isFinite(e.state.currTipPos.x) && Number.isFinite(e.state.currTipPos.y) && Number.isFinite(e.state.currTipPos.z) || (this.debugAnimatedTip.copy(Zr({
 			headPosition: this.headPosition,
 			parentRotation: this.parentRotation,
 			initialLocalRotation: e.initialLocalRotation,
@@ -3594,7 +3611,7 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 			pivotSourceName: e.pivotSourceName,
 			pivotSourcePath: e.pivotSourcePath,
 			pivotResolvedPath: e.pivotResolvedPath,
-			tailBinding: Pa(e.tailBinding),
+			tailBinding: Fa(e.tailBinding),
 			managerPathId: e.managerPathId,
 			updateManagerPathId: this.updateManagerPathId,
 			deltaTime: t,
@@ -3607,9 +3624,9 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 			colliderCount: e.colliders.length,
 			forceProviderCount: e.forceProviders.length,
 			headPosition: G(this.headPosition),
-			parentRotation: ja(this.parentRotation),
-			initialLocalRotation: ja(e.initialLocalRotation),
-			skinAnimationLocalRotation: ja(e.skinAnimationLocalRotation),
+			parentRotation: Ma(this.parentRotation),
+			initialLocalRotation: Ma(e.initialLocalRotation),
+			skinAnimationLocalRotation: Ma(e.skinAnimationLocalRotation),
 			boneAxis: G(e.boneAxis),
 			boneAxisSource: e.boneAxisSource,
 			springLength: e.springLength,
@@ -3622,7 +3639,7 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 			externalForce: G(n),
 			stateBefore: K(e.state),
 			stateAfterCache: K(e.state),
-			animatedTip: G(Xr({
+			animatedTip: G(Zr({
 				headPosition: this.headPosition,
 				parentRotation: this.parentRotation,
 				initialLocalRotation: e.initialLocalRotation,
@@ -3636,9 +3653,9 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 			collisionStatus: 0,
 			collisionChecks: [],
 			stateAfterCollisions: K(e.state),
-			angleLimit: Ma(e),
+			angleLimit: Na(e),
 			stateAfterAngleLimits: K(e.state),
-			finalLocalRotation: ja(e.node.quaternion)
+			finalLocalRotation: Ma(e.node.quaternion)
 		};
 	}
 	pushTraceEvent(e) {
@@ -3656,7 +3673,7 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 		this.frameColliderCache.clear();
 		let t = /* @__PURE__ */ new Set();
 		for (let n of e) for (let e of n.colliders) t.add(e);
-		let n = [...t].sort((e, t) => Ja(e.source) - Ja(t.source));
+		let n = [...t].sort((e, t) => Ya(e.source) - Ya(t.source));
 		for (let e of n) {
 			let t = this.createWorldCollider(e);
 			t && this.frameColliderCache.set(e, t);
@@ -3670,27 +3687,27 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 			debugName: t.source.nodeName ?? t.source.scriptName ?? t.node.name,
 			debugPath: t.source.nodePath ?? X(t.node),
 			debugSourcePathId: t.source.pathId,
-			localOffset: Ia(n.sphere.offset),
+			localOffset: La(n.sphere.offset),
 			radius: Math.max(0, n.sphere.radius ?? .01),
 			localToWorldMatrix: this.colliderLocalToWorld.clone(),
 			worldToLocalMatrix: this.colliderWorldToLocal.clone(),
-			worldToLocalRadiusScale: Xa(this.colliderWorldToLocal),
+			worldToLocalRadiusScale: Za(this.colliderWorldToLocal),
 			localToWorldNormalMatrix: new e.Matrix4().makeRotationFromQuaternion(z(t.node, new e.Quaternion())),
-			lossyScaleX: Ya(t.node)
+			lossyScaleX: Xa(t.node)
 		}) : n?.capsule ? (t.node.updateMatrixWorld(!0), this.colliderLocalToWorld.copy(t.node.matrixWorld), this.colliderWorldToLocal.copy(t.node.matrixWorld).invert(), {
 			kind: "capsuleLocal",
 			enabled: i,
 			debugName: t.source.nodeName ?? t.source.scriptName ?? t.node.name,
 			debugPath: t.source.nodePath ?? X(t.node),
 			debugSourcePathId: t.source.pathId,
-			localStart: Ia(n.capsule.offset),
-			localEnd: Ia(n.capsule.tail),
+			localStart: La(n.capsule.offset),
+			localEnd: La(n.capsule.tail),
 			radius: Math.max(0, n.capsule.radius ?? .01),
 			localToWorldMatrix: this.colliderLocalToWorld.clone(),
 			worldToLocalMatrix: this.colliderWorldToLocal.clone(),
-			worldToLocalRadiusScale: Xa(this.colliderWorldToLocal),
+			worldToLocalRadiusScale: Za(this.colliderWorldToLocal),
 			localToWorldNormalMatrix: new e.Matrix4().makeRotationFromQuaternion(z(t.node, new e.Quaternion())),
-			lossyScaleX: Ya(t.node)
+			lossyScaleX: Xa(t.node)
 		}) : n?.panel ? (t.node.updateMatrixWorld(!0), this.colliderLocalToWorld.copy(t.node.matrixWorld), this.colliderWorldToLocal.copy(t.node.matrixWorld).invert(), {
 			kind: "panel",
 			enabled: i,
@@ -3701,16 +3718,16 @@ var ki = 1401298464324817e-60, Ai = Lr("right"), ji = Lr("left"), Mi = Lr("back"
 			height: Math.max(0, n.panel.height ?? 0),
 			localToWorldMatrix: this.colliderLocalToWorld.clone(),
 			worldToLocalMatrix: this.colliderWorldToLocal.clone(),
-			worldToLocalRadiusScale: Xa(this.colliderWorldToLocal),
-			worldToLocalLengthScale: Xa(this.colliderWorldToLocal),
+			worldToLocalRadiusScale: Za(this.colliderWorldToLocal),
+			worldToLocalLengthScale: Za(this.colliderWorldToLocal),
 			localToWorldNormalMatrix: new e.Matrix4().makeRotationFromQuaternion(z(t.node, new e.Quaternion()))
 		}) : null;
 	}
 };
-function Fi(e, t) {
+function Ii(e, t) {
 	let n = /* @__PURE__ */ new Map(), r = [];
 	for (let i of e) {
-		let e = Fa(i.sourceBonePath), a = `${i.runtimePartIndex ?? "null"}|${i.runtimePartType ?? "null"}|${e ?? "null"}`, o = n.get(a);
+		let e = Ia(i.sourceBonePath), a = `${i.runtimePartIndex ?? "null"}|${i.runtimePartType ?? "null"}|${e ?? "null"}`, o = n.get(a);
 		o || (o = {
 			runtimePartIndex: i.runtimePartIndex,
 			runtimePartType: i.runtimePartType,
@@ -3732,10 +3749,10 @@ function Fi(e, t) {
 		hairSamples: r
 	};
 }
-function Ii(t, n, r, i, a, o, s, c) {
+function Li(t, n, r, i, a, o, s, c) {
 	let l = i.tailPosition, u = B(r, new e.Vector3()), d = l.clone().sub(u);
 	d.set(Math.fround(d.x), Math.fround(d.y), Math.fround(d.z));
-	let f = Math.fround(d.length()), p = r.quaternion.clone(), m = La(r, l), h = e.MathUtils.clamp(Y(t.dynamicRatio) ?? .5, 0, 1), g = o.map((t) => ({
+	let f = Math.fround(d.length()), p = r.quaternion.clone(), m = Ra(r, l), h = e.MathUtils.clamp(Y(t.dynamicRatio) ?? .5, 0, 1), g = o.map((t) => ({
 		node: t.node,
 		initialLength: B(t.node, new e.Vector3()).distanceTo(l)
 	})), _ = n.rawStiffnessForce ?? 300, v = n.rawDragForce ?? n.dragForce ?? .4, y = Math.max(0, n.rawWindInfluence ?? 1), b = Y(t.slowMotionScale) ?? 1, x = t.isPaused === !0;
@@ -3760,10 +3777,10 @@ function Ii(t, n, r, i, a, o, s, c) {
 		groundHeight: t.groundHeight ?? 0,
 		isSumOfForcesOnBone: t.isSumOfForcesOnBone !== !1,
 		isPaused: x,
-		gravity: Ia(t.rawGravity),
+		gravity: La(t.rawGravity),
 		forceProviders: s,
 		node: r,
-		state: Yr(u, l),
+		state: Xr(u, l),
 		initialLocalRotation: p,
 		initialLocalScale: r.scale.clone(),
 		skinAnimationLocalRotation: p.clone(),
@@ -3771,7 +3788,7 @@ function Ii(t, n, r, i, a, o, s, c) {
 		boneAxisSource: m.source,
 		springLength: f,
 		dynamicRatio: h,
-		isAnimated: wa(n, r, t),
+		isAnimated: Ta(n, r, t),
 		simulationFrameRate: Y(t.simulationFrameRate) ?? 60,
 		slowMotionScale: b,
 		bounce: Y(t.bounce) ?? 0,
@@ -3783,13 +3800,13 @@ function Ii(t, n, r, i, a, o, s, c) {
 		originalStiffnessForce: _,
 		originalDragForce: v,
 		originalWindInfluence: y,
-		springForce: Ia(n.rawSpringForce),
+		springForce: La(n.rawSpringForce),
 		springConstant: n.rawSpringConstant ?? .5,
 		lengthLimitTargets: g,
 		angularStiffness: Math.max(0, n.rawAngularStiffness ?? 100),
 		pivotNode: a,
-		yAngleLimit: Sa(n.rawAngleLimits?.y),
-		zAngleLimit: Sa(n.rawAngleLimits?.z),
+		yAngleLimit: Ca(n.rawAngleLimits?.y),
+		zAngleLimit: Ca(n.rawAngleLimits?.z),
 		colliders: c.colliders,
 		colliderBindingDiagnostics: c.diagnostics,
 		lastCollisionStatus: 0,
@@ -3797,27 +3814,27 @@ function Ii(t, n, r, i, a, o, s, c) {
 		lastAngleLimitApplied: !1
 	};
 }
-function Li(e, t, n) {
+function Ri(e, t, n) {
 	return (t.forceProviders ?? []).map((t) => {
-		let r = Ri(t), i = r ? n.get(r) : void 0;
+		let r = zi(t), i = r ? n.get(r) : void 0;
 		if (i) return i;
-		let a = zi(e, t);
+		let a = Bi(e, t);
 		return a && r && n.set(r, a), a;
 	}).filter((e) => !!e);
 }
-function Ri(e) {
+function zi(e) {
 	let t = typeof e.runtimePartIndex == "number" ? `${e.runtimePartIndex}:` : "";
 	return typeof e.sourcePathId == "number" ? `${t}path:${e.sourcePathId}` : e.nodePath ? `${t}nodePath:${e.nodePath}` : null;
 }
-function zi(t, n) {
+function Bi(t, n) {
 	let r = n.scriptName ?? "", i = r.endsWith("WindVolumeOneSelf"), a = r.endsWith("WindVolume") && !i, o = r.endsWith("ForceVolume") && !a;
 	if (!o && !a && !i) return null;
-	let s = ea(t, n.nodePath, n.runtimePartIndex) ?? Bi(t, n.nodeName), c = n.raw ?? {};
-	if (!s || !Ba(c, "m_Enabled", !0) || n.activeSelf === !1 || n.activeInHierarchy === !1) return null;
+	let s = ta(t, n.nodePath, n.runtimePartIndex) ?? Vi(t, n.nodeName), c = n.raw ?? {};
+	if (!s || !Va(c, "m_Enabled", !0) || n.activeSelf === !1 || n.activeInHierarchy === !1) return null;
 	let l = {
 		sourcePathId: Y(n.sourcePathId),
 		node: s,
-		springManagerPathId: Y(n.springManagerPathId) ?? Va(c, "<SpringManager>k__BackingField") ?? Va(c, "_SpringManager_k__BackingField") ?? Va(c, "springManager")
+		springManagerPathId: Y(n.springManagerPathId) ?? Ha(c, "<SpringManager>k__BackingField") ?? Ha(c, "_SpringManager_k__BackingField") ?? Ha(c, "springManager")
 	};
 	return o ? {
 		kind: "ForceVolume",
@@ -3831,11 +3848,11 @@ function zi(t, n) {
 		period: J(c, "period", 0),
 		positionalMultiplier: J(c, "positionalMultiplier", 0),
 		timeFactor: J(c, "timeFactor", 0),
-		offsetVector: za(c, "offsetVector")
+		offsetVector: Ba(c, "offsetVector")
 	} : {
 		kind: "WindVolumeOneSelf",
 		...l,
-		isActive: Ba(c, "isActive", !1),
+		isActive: Va(c, "isActive", !1),
 		dynamicRatio: e.MathUtils.clamp(J(c, "dynamicRatio", .5), 0, 1),
 		simulationFrameRate: Math.max(0, J(c, "simulationFrameRate", 60)),
 		weight: J(c, "weight", 0),
@@ -3850,16 +3867,16 @@ function zi(t, n) {
 		additionalWindStrength: J(c, "additionalWindStrength", 0)
 	};
 }
-function Bi(e, t) {
+function Vi(e, t) {
 	if (!t) return null;
 	let n = [...new Set(e.nodeByPath.values())].filter((e) => e.name === t);
 	return n.length === 1 ? n[0] : null;
 }
-function Vi(e, t, n, r) {
+function Hi(e, t, n, r) {
 	let i = /* @__PURE__ */ new Map();
 	for (let a of e.colliders ?? []) {
-		if (typeof a.index != "number" || !da(a.nodePath, r)) continue;
-		let e = ea(t, a.nodePath, a.runtimePartIndex);
+		if (typeof a.index != "number" || !fa(a.nodePath, r)) continue;
+		let e = ta(t, a.nodePath, a.runtimePartIndex);
 		if (!e) {
 			n.push(a.nodePath ?? a.nodeName ?? `collider:${a.index}`);
 			continue;
@@ -3871,7 +3888,7 @@ function Vi(e, t, n, r) {
 	}
 	return i;
 }
-function Hi(e, t, n) {
+function Ui(e, t, n) {
 	return {
 		managerCount: e.managers?.length ?? 0,
 		boneSourceCount: e.bones?.length ?? 0,
@@ -3884,11 +3901,11 @@ function Hi(e, t, n) {
 		activeRoots: [...t].sort()
 	};
 }
-function Ui(e) {
+function Wi(e) {
 	let t = /* @__PURE__ */ new Set(), n = /* @__PURE__ */ new Set(), r = !1;
 	for (let i of e.prefabGraphs ?? []) {
 		Array.isArray(i.monoBehaviours) && (r = !0);
-		for (let e of i.monoBehaviours ?? []) Wi(e.scriptName) && (typeof e.pathId == "number" && t.add(e.pathId), e.transformPath && n.add(na(e.runtimePartIndex ?? -1, e.transformPath)));
+		for (let e of i.monoBehaviours ?? []) Gi(e.scriptName) && (typeof e.pathId == "number" && t.add(e.pathId), e.transformPath && n.add(ra(e.runtimePartIndex ?? -1, e.transformPath)));
 	}
 	return {
 		hasComponentMetadata: r,
@@ -3896,35 +3913,35 @@ function Ui(e) {
 		partPaths: n
 	};
 }
-function Wi(e) {
+function Gi(e) {
 	let t = e?.trim().toLowerCase();
 	return t === "springbone" || t === "sekaispringbone";
 }
-function Gi(e, t) {
-	return !t.hasComponentMetadata || typeof e.pathId == "number" && t.pathIds.has(e.pathId) ? !0 : !!(e.nodePath && t.partPaths.has(na(e.runtimePartIndex ?? -1, e.nodePath)));
+function Ki(e, t) {
+	return !t.hasComponentMetadata || typeof e.pathId == "number" && t.pathIds.has(e.pathId) ? !0 : !!(e.nodePath && t.partPaths.has(ra(e.runtimePartIndex ?? -1, e.nodePath)));
 }
-function Ki(e, t, n, r, i, a, o) {
+function qi(e, t, n, r, i, a, o) {
 	if (!r && !i) return {
 		colliders: [],
-		diagnostics: a ? [_a(t, n, r, i, null, null, null, `no per-bone collider binding; manager cache not used as fallback; ${xa(a)}`, [])] : []
+		diagnostics: a ? [va(t, n, r, i, null, null, null, `no per-bone collider binding; manager cache not used as fallback; ${Sa(a)}`, [])] : []
 	};
-	let s = i?.sourceKind ?? r?.sourceKind ?? "direct", c = pa(i?.candidateRoots ?? r?.collidersByRoot, o);
+	let s = i?.sourceKind ?? r?.sourceKind ?? "direct", c = ma(i?.candidateRoots ?? r?.collidersByRoot, o);
 	if (s === "colliderFlag" && c.size > 0) {
-		let o = ha(c, a), s = ga(e, t, n, i, r, o), l = s.root ? o.get(s.root) ?? [] : [];
+		let o = ga(c, a), s = _a(e, t, n, i, r, o), l = s.root ? o.get(s.root) ?? [] : [];
 		return {
 			colliders: l,
-			diagnostics: [_a(t, n, r, i, c, i?.defaultRoot ?? r?.defaultRoot, s.root, `${s.reason}; manager cache constrained; ${xa(a)}`, l)]
+			diagnostics: [va(t, n, r, i, c, i?.defaultRoot ?? r?.defaultRoot, s.root, `${s.reason}; manager cache constrained; ${Sa(a)}`, l)]
 		};
 	}
-	let l = ya((i?.selectedColliderIndexes ?? r?.colliders ?? []).map((e) => o.get(e)).filter((e) => !!e), t, n);
+	let l = ba((i?.selectedColliderIndexes ?? r?.colliders ?? []).map((e) => o.get(e)).filter((e) => !!e), t, n);
 	return {
 		colliders: l,
-		diagnostics: [_a(t, n, r, i, null, i?.defaultRoot ?? r?.defaultRoot, null, `${i?.selectedColliderIndexes ? "bindingDecision.selectedColliderIndexes" : r?.colliders ? "colliderBinding.colliders" : "no direct collider indexes"} / direct serialized collider references / pose root preference; ${xa(a)}`, l)]
+		diagnostics: [va(t, n, r, i, null, i?.defaultRoot ?? r?.defaultRoot, null, `${i?.selectedColliderIndexes ? "bindingDecision.selectedColliderIndexes" : r?.colliders ? "colliderBinding.colliders" : "no direct collider indexes"} / direct serialized collider references / pose root preference; ${Sa(a)}`, l)]
 	};
 }
-function qi(t, n, r, i) {
+function Ji(t, n, r, i) {
 	n.updateMatrixWorld(!0);
-	let a = B(n, new e.Vector3()), o = Hr(n, Lr("right")), s = Math.fround, c = new e.Vector3(s(a.x - s(o.x * s(.1))), s(a.y - s(o.y * s(.1))), s(a.z - s(o.z * s(.1)))), l = t.nodePath ? ta(r, t.nodePath, t.runtimePartIndex) : void 0, u = l ? Yi(l, r, i, t.runtimePartIndex) : [], d = u.map((e) => e.source.name ?? e.node.name), f = u.map((e) => e.source.transformPath ?? X(e.node));
+	let a = B(n, new e.Vector3()), o = Ur(n, Rr("right")), s = Math.fround, c = new e.Vector3(s(a.x - s(o.x * s(.1))), s(a.y - s(o.y * s(.1))), s(a.z - s(o.z * s(.1)))), l = t.nodePath ? na(r, t.nodePath, t.runtimePartIndex) : void 0, u = l ? Xi(l, r, i, t.runtimePartIndex) : [], d = u.map((e) => e.source.name ?? e.node.name), f = u.map((e) => e.source.transformPath ?? X(e.node));
 	if (u.length === 0) return {
 		mode: "fallback",
 		childCount: 0,
@@ -3949,7 +3966,7 @@ function qi(t, n, r, i) {
 		r.set(s(r.x), s(r.y), s(r.z)), m = s(m + s(r.length()));
 	}
 	p.set(s(p.x / u.length), s(p.y / u.length), s(p.z / u.length)), m = s(m / u.length);
-	let h = Ji(a, p, m);
+	let h = Yi(a, p, m);
 	return {
 		mode: "averageChildren",
 		childCount: u.length,
@@ -3959,21 +3976,21 @@ function qi(t, n, r, i) {
 		tailPosition: h
 	};
 }
-function Ji(t, n, r) {
+function Yi(t, n, r) {
 	let i = Math.fround, a = n.clone().sub(t);
-	if (a.set(i(a.x), i(a.y), i(a.z)), a.lengthSq() <= 1e-5 * 1e-5) a.copy(Ai);
+	if (a.set(i(a.x), i(a.y), i(a.z)), a.lengthSq() <= 1e-5 * 1e-5) a.copy(ji);
 	else {
 		let e = i(a.length());
 		a.set(i(a.x / e), i(a.y / e), i(a.z / e));
 	}
 	return new e.Vector3(i(t.x + i(a.x * i(r))), i(t.y + i(a.y * i(r))), i(t.z + i(a.z * i(r))));
 }
-function Yi(e, t, n, r) {
+function Xi(e, t, n, r) {
 	let i = [];
 	for (let a of e.childPathIds ?? []) {
 		let e = t.transformByPathId.get(a);
-		if (!e || !Xi(e, t)) continue;
-		let o = ea(n, e.transformPath, r ?? e.runtimePartIndex);
+		if (!e || !Zi(e, t)) continue;
+		let o = ta(n, e.transformPath, r ?? e.runtimePartIndex);
 		o && i.push({
 			source: e,
 			node: o
@@ -3981,12 +3998,12 @@ function Yi(e, t, n, r) {
 	}
 	return i;
 }
-function Xi(e, t) {
+function Zi(e, t) {
 	return typeof e.pathId == "number" && t.pivotTransformPathIds.has(e.pathId) ? !1 : !e.transformPath || !t.pivotTransformPaths.has(e.transformPath);
 }
-function Zi(e) {
+function Qi(e) {
 	let t = /* @__PURE__ */ new Map(), n = /* @__PURE__ */ new Map(), r = /* @__PURE__ */ new Map(), i = /* @__PURE__ */ new Set(), a = /* @__PURE__ */ new Set();
-	for (let i of e.prefabGraphs ?? []) for (let e of i.transforms ?? []) typeof e.pathId == "number" && t.set(e.pathId, e), e.transformPath && (n.set(e.transformPath, e), typeof e.runtimePartIndex == "number" && r.set(na(e.runtimePartIndex, e.transformPath), e));
+	for (let i of e.prefabGraphs ?? []) for (let e of i.transforms ?? []) typeof e.pathId == "number" && t.set(e.pathId, e), e.transformPath && (n.set(e.transformPath, e), typeof e.runtimePartIndex == "number" && r.set(ra(e.runtimePartIndex, e.transformPath), e));
 	for (let t of e.prefabGraphs ?? []) for (let e of t.monoBehaviours ?? []) if (e.scriptName?.toLowerCase() === "springbonepivot" && e.transformPath) {
 		a.add(e.transformPath);
 		let t = n.get(e.transformPath);
@@ -4000,66 +4017,66 @@ function Zi(e) {
 		pivotTransformPaths: a
 	};
 }
-function Qi(e) {
+function $i(e) {
 	let t = /* @__PURE__ */ new Map(), n = /* @__PURE__ */ new Map(), r = /* @__PURE__ */ new Map();
 	return e.traverse((i) => {
 		let a = X(i, e);
 		if (!a) return;
 		t.set(a, i);
-		let o = Ka(i, e);
+		let o = qa(i, e);
 		o && o !== a && r.set(o, i);
-		let s = ra(i), c = i.userData.pjskTransformPath;
-		for (let e of typeof c == "string" && c.length > 0 ? [c] : []) typeof s == "number" && n.set(na(s, e), i), t.has(e) || t.set(e, i);
+		let s = ia(i), c = i.userData.pjskTransformPath;
+		for (let e of typeof c == "string" && c.length > 0 ? [c] : []) typeof s == "number" && n.set(ra(s, e), i), t.has(e) || t.set(e, i);
 	}), {
 		nodeByPath: t,
 		nodeByPartPath: n,
 		canonicalNodeByPath: r
 	};
 }
-function $i(e, t) {
+function ea(e, t) {
 	return t ? e.nodeByPath.get(t) ?? e.canonicalNodeByPath.get(t) ?? null : null;
 }
-function ea(e, t, n) {
+function ta(e, t, n) {
 	if (!t) return null;
 	if (typeof n == "number") {
-		let r = e.nodeByPartPath.get(na(n, t));
+		let r = e.nodeByPartPath.get(ra(n, t));
 		if (r) return r;
 	}
-	return $i(e, t);
+	return ea(e, t);
 }
-function ta(e, t, n) {
-	return typeof n == "number" ? e.transformByPartPath.get(na(n, t)) ?? e.transformByPath.get(t) : e.transformByPath.get(t);
+function na(e, t, n) {
+	return typeof n == "number" ? e.transformByPartPath.get(ra(n, t)) ?? e.transformByPath.get(t) : e.transformByPath.get(t);
 }
-function na(e, t) {
+function ra(e, t) {
 	return `${e}:${t}`;
 }
-function ra(e) {
+function ia(e) {
 	let t = e.userData.pjskRuntimePartIndex;
 	return typeof t == "number" ? t : void 0;
 }
-function ia(e) {
+function aa(e) {
 	let t = /* @__PURE__ */ new Set();
 	return e.traverse((e) => {
 		let n = e;
 		if (n.isSkinnedMesh) for (let e of n.skeleton.bones) t.add(e);
 	}), t;
 }
-function aa(e) {
+function oa(e) {
 	let t = /* @__PURE__ */ new Map();
 	for (let n of e.bones ?? []) typeof n.pathId == "number" && t.set(n.pathId, n);
 	return t;
 }
-function oa(e) {
+function sa(e) {
 	let t = /* @__PURE__ */ new Map();
 	for (let n of e.colliderBindings ?? []) typeof n.sourceSpringBonePathId == "number" && t.set(n.sourceSpringBonePathId, n);
 	return t;
 }
-function sa(e) {
+function ca(e) {
 	let t = /* @__PURE__ */ new Map();
 	for (let n of e.bindingDecisions ?? []) typeof n.sourceSpringBonePathId == "number" && t.set(n.sourceSpringBonePathId, n);
 	return t;
 }
-function ca(e, t) {
+function la(e, t) {
 	let n = /* @__PURE__ */ new Map();
 	for (let r of e.managerColliderCaches ?? []) {
 		if (typeof r.managerPathId != "number") continue;
@@ -4070,7 +4087,7 @@ function ca(e, t) {
 			...r.panelColliderIndexes ?? []
 		]) {
 			let i = typeof n == "number" ? t.get(n) : void 0;
-			typeof n == "number" && i && la(r, i) && e.add(n);
+			typeof n == "number" && i && ua(r, i) && e.add(n);
 		}
 		n.set(r.managerPathId, {
 			source: r,
@@ -4079,22 +4096,22 @@ function ca(e, t) {
 	}
 	return n;
 }
-function la(e, t) {
+function ua(e, t) {
 	let n = e.managerNodePath ?? "", r = t.source.nodePath ?? "", i = t.source.shape;
 	return n.endsWith("/Position/PositionOffset/Hip") ? i?.sphere ? /\/(?:Left_Thigh|Right_Thigh)\/CL_/.test(r) || /\/Hip\/CL_HipSphereCollider$/.test(r) : !1 : !0;
 }
-function ua(e) {
+function da(e) {
 	return new Set((e.activeRootProfile?.activeRoots ?? []).map((e) => q(e)).filter((e) => !!e));
 }
-function da(e, t) {
+function fa(e, t) {
 	if (t.size === 0) return !0;
-	let n = q(Fa(e));
+	let n = q(Ia(e));
 	return n !== null && t.has(n);
 }
-function fa(e, t) {
+function pa(e, t) {
 	let n = [];
 	for (let r of t.lengthLimitTargets ?? []) {
-		let i = ea(e, r.nodePath, r.runtimePartIndex ?? t.runtimePartIndex);
+		let i = ta(e, r.nodePath, r.runtimePartIndex ?? t.runtimePartIndex);
 		i && n.push({
 			node: i,
 			initialLength: 0
@@ -4102,7 +4119,7 @@ function fa(e, t) {
 	}
 	return n;
 }
-function pa(e, t) {
+function ma(e, t) {
 	let n = /* @__PURE__ */ new Map();
 	for (let [r, i] of Object.entries(e ?? {})) {
 		let e = i.map((e) => t.get(e)).filter((e) => !!e);
@@ -4110,23 +4127,23 @@ function pa(e, t) {
 	}
 	return n;
 }
-function ma(e, t) {
+function ha(e, t) {
 	return !t || t.colliderIndexes.size === 0 ? e : e.filter((e) => typeof e.source.index == "number" && t.colliderIndexes.has(e.source.index));
 }
-function ha(e, t) {
+function ga(e, t) {
 	let n = /* @__PURE__ */ new Map();
 	for (let [r, i] of e.entries()) {
-		let e = ma(i, t);
+		let e = ha(i, t);
 		e.length > 0 && n.set(r, e);
 	}
 	return n;
 }
-function ga(e, t, n, r, i, a) {
+function _a(e, t, n, r, i, a) {
 	if (a.size === 1) return {
 		root: a.keys().next().value,
 		reason: "single manager-cache root"
 	};
-	let o = q(Fa(n.nodePath));
+	let o = q(Ia(n.nodePath));
 	if (o && a.has(o)) return {
 		root: o,
 		reason: "joint root matched candidate root"
@@ -4163,7 +4180,7 @@ function ga(e, t, n, r, i, a) {
 		reason: c ? `binding.defaultRoot ${c} not available after manager cache` : "no matching root"
 	};
 }
-function _a(e, t, n, r, i, a, o, s, c) {
+function va(e, t, n, r, i, a, o, s, c) {
 	return {
 		sourceKind: r?.sourceKind ?? n?.sourceKind ?? "direct",
 		colliderFlag: r?.colliderFlag ?? n?.colliderFlag ?? null,
@@ -4184,7 +4201,7 @@ function _a(e, t, n, r, i, a, o, s, c) {
 		selectionReason: s
 	};
 }
-function va(e) {
+function ya(e) {
 	return {
 		...e,
 		candidateRoots: e.candidateRoots.map((e) => ({
@@ -4194,8 +4211,8 @@ function va(e) {
 		selectedColliderSourcePathIds: [...e.selectedColliderSourcePathIds]
 	};
 }
-function ya(e, t, n) {
-	let r = ba(t, n);
+function ba(e, t, n) {
+	let r = xa(t, n);
 	if (!r) return e;
 	let i = /* @__PURE__ */ new Map();
 	for (let t of e) {
@@ -4207,35 +4224,35 @@ function ya(e, t, n) {
 		return !n || n.length <= 1 || !n.some((e) => e.source.nodePath?.startsWith(r)) || e.source.nodePath?.startsWith(r);
 	});
 }
-function ba(e, t) {
+function xa(e, t) {
 	return t.nodePath?.startsWith("sit_body/") ? "sit_body/" : t.nodePath?.startsWith("body/") || e.partKind === "Head" || t.nodePath?.startsWith("face/") ? "body/" : null;
 }
-function xa(e) {
+function Sa(e) {
 	return e ? `${e.source.managerNodeName ?? "manager"} manager cache (${e.source.sphereColliderIndexes?.length ?? 0} sphere, ${e.source.capsuleColliderIndexes?.length ?? 0} capsule, ${e.source.panelColliderIndexes?.length ?? 0} panel)` : "no manager cache available";
 }
-function Sa(e) {
+function Ca(e) {
 	return e?.active ? {
 		active: !0,
 		min: e.min ?? 0,
 		max: e.max ?? 0
 	} : null;
 }
-function Ca(e) {
+function wa(e) {
 	return e.isAnimated ? e.dynamicRatio : 1;
 }
-function wa(e, t, n) {
-	let r = Ta(n.animatedBoneNames);
+function Ta(e, t, n) {
+	let r = Ea(n.animatedBoneNames);
 	return r.size === 0 ? !1 : r.has(t.name) || typeof e.nodeName == "string" && r.has(e.nodeName);
 }
-function Ta(e) {
+function Ea(e) {
 	return Array.isArray(e) ? new Set(e.filter((e) => typeof e == "string")) : /* @__PURE__ */ new Set();
 }
-function Ea(e, t, n) {
+function Da(e, t, n) {
 	let r = t > 0 ? 1 / t : e;
 	return n === 1 ? r : r * n;
 }
-function Da(e) {
-	let t = Ga(Ga(Ga(e)?.pjskSpringBone)?.runtimeUnitySetup), n = t?.version;
+function Oa(e) {
+	let t = Ka(Ka(Ka(e)?.pjskSpringBone)?.runtimeUnitySetup), n = t?.version;
 	return n === "0414" || n === 414 ? t : null;
 }
 function G(e) {
@@ -4246,7 +4263,7 @@ function G(e) {
 		length: e.length()
 	};
 }
-function Oa(e, t) {
+function ka(e, t) {
 	if (t.springDebugAllOffsets) return e;
 	let n = (t.springDebugBones ?? []).map((e) => e.trim().toLowerCase()).filter(Boolean);
 	return n.length === 0 ? [] : e.filter((e) => {
@@ -4263,13 +4280,13 @@ function Oa(e, t) {
 		return n.some((e) => t.includes(e));
 	});
 }
-function ka(e) {
+function Aa(e) {
 	return e.automaticUpdates ? e.enabled ? e.isPaused ? "isPaused=true" : e.isSumOfForcesOnBone ? null : "isSumOfForcesOnBone=false" : "enabled=false" : "automaticUpdates=false";
 }
-function Aa(e) {
+function ja(e) {
 	return e ? G(e) : null;
 }
-function ja(e) {
+function Ma(e) {
 	return {
 		x: e.x,
 		y: e.y,
@@ -4286,7 +4303,7 @@ function K(e) {
 		cachedMovement: G(e.cachedMovement)
 	};
 }
-function Ma(e) {
+function Na(e) {
 	return {
 		enabled: e.enableAngleLimits,
 		hasPivot: !!e.pivotNode,
@@ -4303,7 +4320,7 @@ function Ma(e) {
 		vectorAfter: null
 	};
 }
-function Na(e, t) {
+function Pa(e, t) {
 	return {
 		kind: e.kind,
 		name: e.debugName ?? null,
@@ -4314,20 +4331,20 @@ function Na(e, t) {
 		beforeTailPosition: G(t.beforeTailPosition),
 		afterTailPosition: G(t.afterTailPosition),
 		hitNormal: G(t.hitNormal),
-		localHeadPosition: Aa(t.details.localHeadPosition),
-		localTailPositionBefore: Aa(t.details.localTailPositionBefore),
-		localTailPositionAfter: Aa(t.details.localTailPositionAfter),
+		localHeadPosition: ja(t.details.localHeadPosition),
+		localTailPositionBefore: ja(t.details.localTailPositionBefore),
+		localTailPositionAfter: ja(t.details.localTailPositionAfter),
 		localTailRadius: t.details.localTailRadius ?? null,
-		localSphereOrigin: Aa(t.details.localSphereOrigin),
+		localSphereOrigin: ja(t.details.localSphereOrigin),
 		localSphereRadius: t.details.localSphereRadius ?? null,
-		localCapsuleStart: Aa(t.details.localCapsuleStart),
-		localCapsuleEnd: Aa(t.details.localCapsuleEnd),
+		localCapsuleStart: ja(t.details.localCapsuleStart),
+		localCapsuleEnd: ja(t.details.localCapsuleEnd),
 		capsuleRadius: t.details.capsuleRadius ?? null,
 		panelWidth: t.details.panelWidth ?? null,
 		panelHeight: t.details.panelHeight ?? null
 	};
 }
-function Pa(e) {
+function Fa(e) {
 	return {
 		mode: e.mode,
 		childCount: e.childCount,
@@ -4336,7 +4353,7 @@ function Pa(e) {
 		tailPosition: G(e.tailPosition)
 	};
 }
-function Fa(e) {
+function Ia(e) {
 	if (!e) return null;
 	let t = e.indexOf("/");
 	return t < 0 ? e : e.slice(0, t);
@@ -4344,52 +4361,52 @@ function Fa(e) {
 function q(e) {
 	return e ? e.endsWith("/") ? e.slice(0, -1) : e : null;
 }
-function Ia(t) {
-	return Fr(Array.isArray(t) ? new e.Vector3(t[0] ?? 0, t[1] ?? 0, t[2] ?? 0) : jr(t, new e.Vector3()));
+function La(t) {
+	return Ir(Array.isArray(t) ? new e.Vector3(t[0] ?? 0, t[1] ?? 0, t[2] ?? 0) : Mr(t, new e.Vector3()));
 }
-function La(e, t) {
+function Ra(e, t) {
 	e.updateMatrixWorld(!0);
-	let n = Ra(zr(e, t.clone()));
+	let n = za(Br(e, t.clone()));
 	return n ? {
 		axis: n,
 		source: "computed-local-tip"
 	} : {
-		axis: Ai.clone(),
+		axis: ji.clone(),
 		source: "fallback-local-tip"
 	};
 }
-function Ra(t) {
+function za(t) {
 	let n = Math.fround(t.length());
 	return n <= 1e-5 ? null : new e.Vector3(Math.fround(t.x / n), Math.fround(t.y / n), Math.fround(t.z / n));
 }
 function J(e, t, n) {
-	return Y(e[t] ?? e[Ha(t)]) ?? n;
+	return Y(e[t] ?? e[Ua(t)]) ?? n;
 }
-function za(t, n) {
-	let r = t[n] ?? t[Ha(n)];
-	return Array.isArray(r) || typeof r == "object" && r ? Ia(r) : new e.Vector3();
+function Ba(t, n) {
+	let r = t[n] ?? t[Ua(n)];
+	return Array.isArray(r) || typeof r == "object" && r ? La(r) : new e.Vector3();
 }
-function Ba(e, t, n) {
-	let r = e[t] ?? e[Ha(t)];
+function Va(e, t, n) {
+	let r = e[t] ?? e[Ua(t)];
 	return typeof r == "boolean" ? r : typeof r == "number" ? r !== 0 : n;
 }
-function Va(e, t) {
-	let n = Ga(e[t] ?? e[Ha(t)]);
+function Ha(e, t) {
+	let n = Ka(e[t] ?? e[Ua(t)]);
 	return Y(n?.m_PathID ?? n?.m_pathID ?? n?.pathId);
 }
-function Ha(e) {
+function Ua(e) {
 	return e.length > 0 ? e[0].toUpperCase() + e.slice(1) : e;
 }
-function Ua(t, n, r) {
+function Wa(t, n, r) {
 	return r > 0 ? e.MathUtils.euclideanModulo(t + n, r) : t + n;
 }
-function Wa(e, t) {
+function Ga(e, t) {
 	return typeof e == "number" && Number.isFinite(e) ? e : t;
 }
 function Y(e) {
 	return typeof e == "number" && Number.isFinite(e) ? e : null;
 }
-function Ga(e) {
+function Ka(e) {
 	return e && typeof e == "object" ? e : null;
 }
 function X(e, t) {
@@ -4397,36 +4414,36 @@ function X(e, t) {
 	for (; r && r !== t;) r.name && !r.name.startsWith("Loaded:") && n.unshift(r.name), r = r.parent;
 	return n.join("/");
 }
-function Ka(e, t) {
+function qa(e, t) {
 	let n = [], r = e;
-	for (; r && r !== t;) r.name && !r.name.startsWith("Loaded:") && n.unshift(qa(r.name)), r = r.parent;
+	for (; r && r !== t;) r.name && !r.name.startsWith("Loaded:") && n.unshift(Ja(r.name)), r = r.parent;
 	return n.join("/");
 }
-function qa(e) {
+function Ja(e) {
 	return e.replace(/_([1-9]\d*)$/, "");
 }
-function Ja(e) {
+function Ya(e) {
 	return e.shape?.sphere ? 0 : e.shape?.capsule ? 1 : 2;
 }
-function Ya(t) {
+function Xa(t) {
 	return t.getWorldScale(new e.Vector3()).x;
 }
-function Xa(e) {
+function Za(e) {
 	let t = e.elements;
 	return Math.sqrt(t[0] * t[0] + t[1] * t[1] + t[2] * t[2]);
 }
-function Za(e) {
+function Qa(e) {
 	let t = 0, n = e;
 	for (; n;) t += 1, n = n.parent;
 	return t;
 }
-function Qa(e, t) {
+function $a(e, t) {
 	for (let n = e; n; n = n.parent) if (n === t) return !0;
 	return !1;
 }
 //#endregion
 //#region src/engine/prefabNodeLookup.ts
-function $a(e) {
+function eo(e) {
 	let t = /* @__PURE__ */ new Map();
 	return e.traverse((n) => {
 		if (n === e || !n.name) return;
@@ -4443,29 +4460,29 @@ function $a(e) {
 }
 //#endregion
 //#region src/engine/unityConstraintRuntime.ts
-var eo = 7, to = class {
+var to = 7, no = class {
 	graph;
 	setup;
 	constraints;
 	constructor(e, t, n) {
 		this.graph = e, this.setup = t, e.root.updateMatrixWorld(!0);
 		let r = Array.isArray(t.constraints) ? t.constraints : [];
-		this.constraints = r.map((t) => io(e, t, n));
+		this.constraints = r.map((t) => ao(e, t, n));
 	}
 	update() {
 		this.graph.root.updateMatrixWorld(!0);
-		let e = this.constraints.map(ao);
-		return this.graph.root.updateMatrixWorld(!0), ro(this.setup, e);
+		let e = this.constraints.map(oo);
+		return this.graph.root.updateMatrixWorld(!0), io(this.setup, e);
 	}
 };
-function no(e, t, n) {
+function ro(e, t, n) {
 	if (!t) return null;
 	let r = Array.isArray(t.constraints) ? t.constraints : [];
 	e.root.updateMatrixWorld(!0);
-	let i = r.map((t) => io(e, t, n)).map(ao);
-	return e.root.updateMatrixWorld(!0), ro(t, i);
+	let i = r.map((t) => ao(e, t, n)).map(oo);
+	return e.root.updateMatrixWorld(!0), io(t, i);
 }
-function ro(e, t) {
+function io(e, t) {
 	let n = t.filter((e) => e.resolvedOwner && e.sources.length > 0 && e.sources.every((e) => e.resolvedSource)).length;
 	return {
 		version: e.version ?? null,
@@ -4478,8 +4495,8 @@ function ro(e, t) {
 		constraints: t
 	};
 }
-function io(e, t, n) {
-	let r = No(t.type) ?? "unknown", i = No(t.ownerPath), a = No(t.ownerName), o = uo(e, i, a), s = uo(e, No(t.worldUpObjectPath), No(t.worldUpObjectName)).node, c = (Array.isArray(t.sources) ? t.sources : []).map((t) => so(e, t, n, r !== "position"));
+function ao(e, t, n) {
+	let r = Po(t.type) ?? "unknown", i = Po(t.ownerPath), a = Po(t.ownerName), o = fo(e, i, a), s = fo(e, Po(t.worldUpObjectPath), Po(t.worldUpObjectName)).node, c = (Array.isArray(t.sources) ? t.sources : []).map((t) => co(e, t, n, r !== "position"));
 	return {
 		source: t,
 		type: r,
@@ -4491,7 +4508,7 @@ function io(e, t, n) {
 		sourceDebug: c.map((e) => e.debug)
 	};
 }
-function ao(e) {
+function oo(e) {
 	let { source: t, type: n, ownerPath: r, ownerName: i, owner: a, worldUpObject: o, sources: s, sourceDebug: c } = e, l = (e, t) => ({
 		type: n,
 		status: e,
@@ -4507,10 +4524,10 @@ function ao(e) {
 	if (s.length === 0) return l("unresolved", "constraint has no source transforms");
 	let u = s.find((e) => !e.node);
 	if (u) return l("unresolved", u.debug.sourceName ? `source transform ${u.debug.sourceName} was not uniquely resolved` : "constraint source transform was not resolved");
-	let d = s.filter(lo);
-	return n === "parent" ? wo(a.node, d, t) ? oo(n, r, i, c, "parent constraint applied with height-scaled translation offsets") : l("skipped", "parent constraint has no positive source weight") : n === "rotation" ? Eo(a.node, d, t) ? oo(n, r, i, c, "rotation constraint applied with weighted source rotations") : l("skipped", "rotation constraint has no positive source weight") : n === "position" ? To(a.node, d, t) ? oo(n, r, i, c, "position constraint applied in the parent space") : l("skipped", "position constraint has no positive source weight") : n === "aim" ? Do(a.node, d, t, o) ? oo(n, r, i, c, "aim constraint applied with exported aim/up vectors") : l("skipped", "aim constraint target direction or source weight was invalid") : l("skipped", `unsupported constraint type ${n}`);
+	let d = s.filter(uo);
+	return n === "parent" ? To(a.node, d, t) ? so(n, r, i, c, "parent constraint applied with height-scaled translation offsets") : l("skipped", "parent constraint has no positive source weight") : n === "rotation" ? Do(a.node, d, t) ? so(n, r, i, c, "rotation constraint applied with weighted source rotations") : l("skipped", "rotation constraint has no positive source weight") : n === "position" ? Eo(a.node, d, t) ? so(n, r, i, c, "position constraint applied in the parent space") : l("skipped", "position constraint has no positive source weight") : n === "aim" ? Oo(a.node, d, t, o) ? so(n, r, i, c, "aim constraint applied with exported aim/up vectors") : l("skipped", "aim constraint target direction or source weight was invalid") : l("skipped", `unsupported constraint type ${n}`);
 }
-function oo(e, t, n, r, i) {
+function so(e, t, n, r, i) {
 	return {
 		type: e,
 		status: "applied",
@@ -4522,8 +4539,8 @@ function oo(e, t, n, r, i) {
 		sources: r
 	};
 }
-function so(e, t, n, r) {
-	let i = No(t.sourcePath), a = No(t.sourceName), o = r ? co(e, i, a) : uo(e, i, null), s = Po(t.weight) ?? 1, c = jo(t.translationOffset, n), l = Mo(t.rotationOffset);
+function co(e, t, n, r) {
+	let i = Po(t.sourcePath), a = Po(t.sourceName), o = r ? lo(e, i, a) : fo(e, i, null), s = Fo(t.weight) ?? 1, c = Mo(t.translationOffset, n), l = No(t.rotationOffset);
 	return {
 		node: o.node,
 		weight: s,
@@ -4547,7 +4564,7 @@ function so(e, t, n, r) {
 		}
 	};
 }
-function co(e, t, n) {
+function lo(e, t, n) {
 	if (n) {
 		let t = null;
 		if (e.root.traverse((e) => {
@@ -4557,12 +4574,12 @@ function co(e, t, n) {
 			reason: "rebound by transform name in the combined model"
 		};
 	}
-	return uo(e, t, n);
+	return fo(e, t, n);
 }
-function lo(e) {
+function uo(e) {
 	return !!e.node;
 }
-function uo(e, t, n) {
+function fo(e, t, n) {
 	if (t) {
 		let n = e.nodeByPath.get(t);
 		if (n) return {
@@ -4587,100 +4604,100 @@ function uo(e, t, n) {
 		reason: `transform name ${n} was not found`
 	};
 }
-var fo = (t) => new e.Vector3(-t.x, t.y, t.z), po = (t) => new e.Quaternion(t.x, -t.y, -t.z, t.w), mo = fo, ho = po;
-function go(t) {
-	return t.updateMatrixWorld(!0), fo(t.getWorldPosition(new e.Vector3()));
-}
+var po = (t) => new e.Vector3(-t.x, t.y, t.z), mo = (t) => new e.Quaternion(t.x, -t.y, -t.z, t.w), ho = po, go = mo;
 function _o(t) {
-	return po(z(t, new e.Quaternion()));
+	return t.updateMatrixWorld(!0), po(t.getWorldPosition(new e.Vector3()));
 }
 function vo(t) {
-	return new e.Quaternion().setFromEuler(new e.Euler(e.MathUtils.degToRad(t.x), e.MathUtils.degToRad(t.y), e.MathUtils.degToRad(t.z), "YXZ"));
+	return mo(z(t, new e.Quaternion()));
 }
 function yo(t) {
+	return new e.Quaternion().setFromEuler(new e.Euler(e.MathUtils.degToRad(t.x), e.MathUtils.degToRad(t.y), e.MathUtils.degToRad(t.z), "YXZ"));
+}
+function bo(t) {
 	let n = new e.Euler().setFromQuaternion(t, "YXZ");
 	return new e.Vector3(e.MathUtils.radToDeg(n.x), e.MathUtils.radToDeg(n.y), e.MathUtils.radToDeg(n.z));
 }
-function bo(t, n) {
+function xo(t, n) {
 	let r = t.clone().normalize(), i = new e.Vector3().crossVectors(n, r);
 	if (i.lengthSq() < 1e-12) return new e.Quaternion().setFromUnitVectors(new e.Vector3(0, 0, 1), r);
 	i = i.normalize();
 	let a = new e.Vector3().crossVectors(r, i);
 	return new e.Quaternion().setFromRotationMatrix(new e.Matrix4().makeBasis(i, a, r));
 }
-function xo(t, n) {
+function So(t, n) {
 	let r = t.reduce((e, t) => e + Math.max(0, t.weight), 0);
 	if (r <= 0) return null;
 	let i = new e.Vector3();
 	for (let e of t) {
 		let t = Math.max(0, e.weight);
 		if (t <= 0) continue;
-		let a = go(e.node);
-		n && a.add(n(e, _o(e.node))), i.addScaledVector(a, t / r);
+		let a = _o(e.node);
+		n && a.add(n(e, vo(e.node))), i.addScaledVector(a, t / r);
 	}
 	return i;
 }
-function So(e, t) {
+function Co(e, t) {
 	let n = null, r = 0;
 	for (let i of e) {
 		let e = Math.max(0, i.weight);
-		e <= 0 || (n = Ao(n, t(i), r, e), r += e);
+		e <= 0 || (n = jo(n, t(i), r, e), r += e);
 	}
 	return n;
 }
-function Co(t, n, r, i, a = null) {
-	let o = e.MathUtils.clamp(Po(n.weight) ?? 1, 0, 1), s = _o(t.parent);
+function wo(t, n, r, i, a = null) {
+	let o = e.MathUtils.clamp(Fo(n.weight) ?? 1, 0, 1), s = vo(t.parent);
 	if (i) {
-		let r = s.clone().invert().multiply(i).normalize(), a = Po(n.rotationAxis) ?? eo, c = n.rotationAtRest ? ko(n.rotationAtRest) : yo(po(t.quaternion)), l = yo(r), u = vo(new e.Vector3(Oo(a, 1) ? l.x : c.x, Oo(a, 2) ? l.y : c.y, Oo(a, 4) ? l.z : c.z)), d = vo(c).slerp(u, o).normalize();
-		t.quaternion.copy(ho(d));
+		let r = s.clone().invert().multiply(i).normalize(), a = Fo(n.rotationAxis) ?? to, c = n.rotationAtRest ? Ao(n.rotationAtRest) : bo(mo(t.quaternion)), l = bo(r), u = yo(new e.Vector3(ko(a, 1) ? l.x : c.x, ko(a, 2) ? l.y : c.y, ko(a, 4) ? l.z : c.z)), d = yo(c).slerp(u, o).normalize();
+		t.quaternion.copy(go(d));
 	}
 	if (r && t.parent) {
 		t.parent.updateMatrixWorld(!0);
-		let i = fo(t.parent.worldToLocal(mo(r)));
+		let i = po(t.parent.worldToLocal(ho(r)));
 		a && i.add(a);
-		let s = Po(n.translationAxis) ?? eo, c = n.translationAtRest ? ko(n.translationAtRest) : fo(t.position), l = new e.Vector3(Oo(s, 1) ? i.x : c.x, Oo(s, 2) ? i.y : c.y, Oo(s, 4) ? i.z : c.z);
-		t.position.copy(mo(c.clone().lerp(l, o)));
+		let s = Fo(n.translationAxis) ?? to, c = n.translationAtRest ? Ao(n.translationAtRest) : po(t.position), l = new e.Vector3(ko(s, 1) ? i.x : c.x, ko(s, 2) ? i.y : c.y, ko(s, 4) ? i.z : c.z);
+		t.position.copy(ho(c.clone().lerp(l, o)));
 	}
 	t.updateMatrix(), t.updateMatrixWorld(!0);
 }
-function wo(t, n, r) {
-	let i = xo(n, (t, n) => t.translationOffset ? fo(t.translationOffset).applyQuaternion(n) : new e.Vector3()), a = So(n, (t) => _o(t.node).multiply(t.rotationOffset ? vo(t.rotationOffset) : new e.Quaternion()));
-	return !i || !a ? !1 : (Co(t, r, i, a), !0);
-}
 function To(t, n, r) {
-	let i = xo(n);
-	return i ? (Co(t, r, i, null, r.translationOffset ? ko(r.translationOffset) : new e.Vector3()), !0) : !1;
+	let i = So(n, (t, n) => t.translationOffset ? po(t.translationOffset).applyQuaternion(n) : new e.Vector3()), a = Co(n, (t) => vo(t.node).multiply(t.rotationOffset ? yo(t.rotationOffset) : new e.Quaternion()));
+	return !i || !a ? !1 : (wo(t, r, i, a), !0);
 }
-function Eo(e, t, n) {
-	let r = So(t, (e) => _o(e.node));
+function Eo(t, n, r) {
+	let i = So(n);
+	return i ? (wo(t, r, i, null, r.translationOffset ? Ao(r.translationOffset) : new e.Vector3()), !0) : !1;
+}
+function Do(e, t, n) {
+	let r = Co(t, (e) => vo(e.node));
 	if (!r) return !1;
-	let i = Mo(n.rotationOffset);
-	return i && r.multiply(vo(i)), Co(e, n, null, r), !0;
+	let i = No(n.rotationOffset);
+	return i && r.multiply(yo(i)), wo(e, n, null, r), !0;
 }
-function Do(t, n, r, i) {
-	let a = xo(n);
+function Oo(t, n, r, i) {
+	let a = So(n);
 	if (!a) return !1;
-	let o = go(t), s = a.clone().sub(o);
+	let o = _o(t), s = a.clone().sub(o);
 	if (s.lengthSq() < 1e-12) return !1;
-	let c = ko(r.aimVector ?? {
+	let c = Ao(r.aimVector ?? {
 		x: 0,
 		y: 0,
 		z: 1
-	}), l = ko(r.upVector ?? {
+	}), l = Ao(r.upVector ?? {
 		x: 0,
 		y: 1,
 		z: 0
-	}), u = ko(r.worldUpVector ?? {
+	}), u = Ao(r.worldUpVector ?? {
 		x: 0,
 		y: 1,
 		z: 0
 	}), d;
-	switch (Po(r.worldUpType) ?? 0) {
+	switch (Fo(r.worldUpType) ?? 0) {
 		case 1:
-			d = i ? go(i).sub(o) : new e.Vector3(0, 1, 0);
+			d = i ? _o(i).sub(o) : new e.Vector3(0, 1, 0);
 			break;
 		case 2:
-			d = i ? u.clone().applyQuaternion(_o(i)) : u.clone();
+			d = i ? u.clone().applyQuaternion(vo(i)) : u.clone();
 			break;
 		case 3:
 			d = u.clone();
@@ -4690,48 +4707,48 @@ function Do(t, n, r, i) {
 			break;
 		default: d = new e.Vector3(0, 1, 0);
 	}
-	let f = d ? bo(s, d).multiply(bo(c, l).invert()) : new e.Quaternion().setFromUnitVectors(c.clone().normalize(), s.clone().normalize()), p = Mo(r.rotationOffset);
-	return p && f.multiply(vo(p)), Co(t, r, null, f.normalize()), !0;
+	let f = d ? xo(s, d).multiply(xo(c, l).invert()) : new e.Quaternion().setFromUnitVectors(c.clone().normalize(), s.clone().normalize()), p = No(r.rotationOffset);
+	return p && f.multiply(yo(p)), wo(t, r, null, f.normalize()), !0;
 }
-function Oo(e, t) {
+function ko(e, t) {
 	return (e & t) !== 0;
 }
-function ko(t) {
-	return jr(t, new e.Vector3());
+function Ao(t) {
+	return Mr(t, new e.Vector3());
 }
-function Ao(e, t, n, r) {
+function jo(e, t, n, r) {
 	if (!e) return t.clone();
 	let i = t.clone();
 	return e.dot(i) < 0 && i.set(-i.x, -i.y, -i.z, -i.w), e.slerp(i, r / (n + r)).normalize();
 }
-function jo(t, n) {
-	return !t || typeof t != "object" ? null : Pr(jr(t, new e.Vector3())).multiplyScalar(n);
+function Mo(t, n) {
+	return !t || typeof t != "object" ? null : Fr(Mr(t, new e.Vector3())).multiplyScalar(n);
 }
-function Mo(t) {
-	return !t || typeof t != "object" ? null : jr(t, new e.Vector3());
-}
-function No(e) {
-	return typeof e == "string" ? e : null;
+function No(t) {
+	return !t || typeof t != "object" ? null : Mr(t, new e.Vector3());
 }
 function Po(e) {
+	return typeof e == "string" ? e : null;
+}
+function Fo(e) {
 	return typeof e == "number" && Number.isFinite(e) ? e : null;
 }
 //#endregion
 //#region src/engine/unityPrefabRuntime.ts
-function Fo(e, t) {
+function Io(e, t) {
 	let n = t, r = e.nodeByPath.get("body/Position");
 	if (!r) throw Error("Official CharacterModel PositionNote 'body/Position' was not found.");
 	return r.scale.setScalar(n), r.updateMatrix(), e.root.updateMatrixWorld(!0), r;
 }
-function Io(e) {
+function Lo(e) {
 	return e && typeof e == "object" ? e : {};
 }
 function Z(e) {
-	let t = Io(Io(Io(e).pjskSpringBone).runtimeUnitySetup);
+	let t = Lo(Lo(Lo(e).pjskSpringBone).runtimeUnitySetup);
 	return t.version === "0414" ? t : null;
 }
-function Lo(e) {
-	let t = Io(Io(e).nativeMeshes);
+function Ro(e) {
+	let t = Lo(Lo(e).nativeMeshes);
 	return t.version === "0414" ? t : null;
 }
 function Q(e, t) {
@@ -4745,24 +4762,24 @@ function Q(e, t) {
 	}
 	return null;
 }
-function Ro(e) {
+function zo(e) {
 	return e?.parentingMode === "model_combine_setup";
 }
-function zo(e, t) {
+function Bo(e, t) {
 	e.parent && e.parent.remove(e), t.add(e), e.updateMatrix();
 }
-function Bo(e, t) {
-	for (; e.children.length > 0;) zo(e.children[0], t);
+function Vo(e, t) {
+	for (; e.children.length > 0;) Bo(e.children[0], t);
 }
-function Vo(e, t, n) {
+function Ho(e, t, n) {
 	let r = [], i = /* @__PURE__ */ new Set();
 	for (let a of t) {
 		let t = e.get(a);
-		t && !i.has(t) && (zo(t, n), i.add(t), r.push(a));
+		t && !i.has(t) && (Bo(t, n), i.add(t), r.push(a));
 	}
 	return r;
 }
-function Ho(e, t, n) {
+function Uo(e, t, n) {
 	e.parent && e.parent.remove(e);
 	let r = /* @__PURE__ */ new Set();
 	e.traverse((e) => {
@@ -4771,42 +4788,42 @@ function Ho(e, t, n) {
 	for (let [e, n] of t.entries()) r.has(n) && t.delete(e);
 	for (let [e, t] of n.entries()) r.has(t) && n.delete(e);
 }
-function Uo(e, t, n) {
+function Wo(e, t, n) {
 	for (let [r, i] of e.entries()) i === t && e.set(r, n);
 }
-function Wo(e, t, n, r, i) {
+function Go(e, t, n, r, i) {
 	let a = r.childMoveSuffix ?? "_target", o = r.parentRootPath, s = r.childRootPath, c = Q(t, [r.parentCombineNodeAPath ?? r.parentAttachPath]), l = Q(t, [r.parentCombineNodeBPath]), u = Q(t, [r.childCombineNodeAPath ?? r.childOriginPath]), d = Q(t, [r.childCombineNodeBPath]), f = Q(t, [s]);
 	if (!o || !s || !c || !l || !u || !d || !f) throw Error("Official model_combine_setup paths were not fully resolved.");
-	Bo(l.node, d.node);
+	Vo(l.node, d.node);
 	let p = c.node.parent, m = u.node.parent;
 	if (p && m) {
-		for (let e of [...p.children]) e.name.endsWith(a) && zo(e, m);
-		let e = Vo(t, i, t.get(o) ?? p), n = i.filter((t) => !e.includes(t));
+		for (let e of [...p.children]) e.name.endsWith(a) && Bo(e, m);
+		let e = Ho(t, i, t.get(o) ?? p), n = i.filter((t) => !e.includes(t));
 		if (n.length > 0) throw Error(`Official model_combine_setup head renderers were not moved: ${n.join(", ")}.`);
 		let c = `${s}/${r.faceRendererName ?? "Face"}`;
 		if (!e.includes(c)) throw Error(`Official model_combine_setup face renderer '${c}' was not moved.`);
-		zo(u.node, p);
+		Bo(u.node, p);
 	}
-	return u.node.position.copy(c.node.position), u.node.quaternion.copy(c.node.quaternion), u.node.scale.copy(c.node.scale), u.node.updateMatrix(), d.node.position.copy(l.node.position), d.node.quaternion.copy(l.node.quaternion), d.node.scale.copy(l.node.scale), d.node.updateMatrix(), Uo(n, c.node, u.node), Uo(n, l.node, d.node), Ho(l.node, t, n), Ho(c.node, t, n), Ho(f.node, t, n), t.set(c.path, u.node), t.set(l.path, d.node), r.parentAttachPath && t.set(r.parentAttachPath, u.node), r.parentCombineNodeBPath && t.set(r.parentCombineNodeBPath, d.node), e.updateMatrixWorld(!0), {
+	return u.node.position.copy(c.node.position), u.node.quaternion.copy(c.node.quaternion), u.node.scale.copy(c.node.scale), u.node.updateMatrix(), d.node.position.copy(l.node.position), d.node.quaternion.copy(l.node.quaternion), d.node.scale.copy(l.node.scale), d.node.updateMatrix(), Wo(n, c.node, u.node), Wo(n, l.node, d.node), Uo(l.node, t, n), Uo(c.node, t, n), Uo(f.node, t, n), t.set(c.path, u.node), t.set(l.path, d.node), r.parentAttachPath && t.set(r.parentAttachPath, u.node), r.parentCombineNodeBPath && t.set(r.parentCombineNodeBPath, d.node), e.updateMatrixWorld(!0), {
 		bodyNodeA: c,
 		bodyNodeB: l,
 		faceNodeA: u,
 		faceNodeB: d
 	};
 }
-function Go(e, t) {
+function Ko(e, t) {
 	return [...new Set((Z(e)?.prefabGraphs ?? []).flatMap((e) => e.renderers ?? []).filter((e) => e.typeName === "SkinnedMeshRenderer").map((e) => e.transformPath).filter((e) => !!(e && e.startsWith(`${t}/`))))];
 }
-function Ko(e, t) {
+function qo(e, t) {
 	let n = Z(e), r = n?.bodyHeadAssembly?.childRootPath, i = t.rendererTransformPath;
 	if (!r || !i?.startsWith(`${r}/`)) return !1;
 	let a = (n.prefabGraphs ?? []).flatMap((e) => e.renderers ?? []).filter((e) => e.transformPath === i);
 	return a.length > 0 && a.every((e) => e.typeName !== "SkinnedMeshRenderer");
 }
-function qo(e, t) {
-	return (Lo(e)?.meshes ?? []).find((e) => e.rendererTransformPath?.startsWith(`${t}/`) && typeof e.rootBonePath == "string")?.rootBonePath ?? null;
-}
 function Jo(e, t) {
+	return (Ro(e)?.meshes ?? []).find((e) => e.rendererTransformPath?.startsWith(`${t}/`) && typeof e.rootBonePath == "string")?.rootBonePath ?? null;
+}
+function Yo(e, t) {
 	let n = e, r = /* @__PURE__ */ new Set();
 	for (; typeof n.parentPathId == "number";) {
 		if (typeof n.pathId == "number" && !r.add(n.pathId)) throw Error(`Runtime prefab graph contains a parent cycle at PathID ${n.pathId}.`);
@@ -4816,17 +4833,17 @@ function Jo(e, t) {
 	}
 	return n;
 }
-function Yo(e) {
+function Xo(e) {
 	let t = e.transformPath?.split("/")[0];
 	return t ? `${e.runtimePartIndex ?? -1}:${t}` : null;
 }
-function Xo(e, t) {
+function Zo(e, t) {
 	let n = /* @__PURE__ */ new Map();
-	for (let r of Lo(e)?.meshes ?? []) {
+	for (let r of Ro(e)?.meshes ?? []) {
 		if (typeof r.rendererTransformPathId != "number") continue;
 		let e = t.get(r.rendererTransformPathId);
 		if (!e) continue;
-		let i = Jo(e, t), a = Yo(e);
+		let i = Yo(e, t), a = Xo(e);
 		if (!a || typeof i.pathId != "number") continue;
 		let o = n.get(a);
 		if (o !== void 0 && o !== i.pathId) throw Error(`Runtime native meshes reference multiple Unity prefab instances for '${a}' (${o}, ${i.pathId}).`);
@@ -4834,17 +4851,17 @@ function Xo(e, t) {
 	}
 	return n;
 }
-function Zo(t, n) {
+function Qo(t, n) {
 	let r = n.prefabGraphs ?? [], i = new e.Group();
 	i.name = "UnityPrefabSourceRoot", i.userData.pjskUnityPrefabSourceGraph = !0;
 	let a = /* @__PURE__ */ new Map(), o = /* @__PURE__ */ new Map(), s = /* @__PURE__ */ new Map(), c = /* @__PURE__ */ new Map();
 	for (let e of r) for (let t of e.transforms ?? []) typeof t.pathId != "number" || !t.transformPath || (o.set(t.pathId, t), c.set(t.transformPath, (c.get(t.transformPath) ?? 0) + 1));
-	let l = new Set([...c.entries()].filter(([, e]) => e > 1).map(([e]) => e)), u = Xo(t, o);
+	let l = new Set([...c.entries()].filter(([, e]) => e > 1).map(([e]) => e)), u = Zo(t, o);
 	for (let t of r) for (let n of t.transforms ?? []) {
 		if (typeof n.pathId != "number" || !n.transformPath) continue;
 		let t = new e.Object3D();
-		t.name = n.name ?? n.transformPath.split("/").pop() ?? `path_${n.pathId}`, t.userData.pjskTransformPath = n.transformPath, t.userData.pjskRuntimePartIndex = n.runtimePartIndex, t.userData.pjskPoseRoot = n.poseRoot ?? null, t.position.copy(Pr(jr(n.localPosition, new e.Vector3()))), t.quaternion.copy(Ir(Mr(n.localRotation))), t.scale.copy(jr(n.localScale, new e.Vector3(1, 1, 1))), t.updateMatrix(), a.set(n.pathId, t);
-		let r = Jo(n, o), i = u.get(Yo(n) ?? "");
+		t.name = n.name ?? n.transformPath.split("/").pop() ?? `path_${n.pathId}`, t.userData.pjskTransformPath = n.transformPath, t.userData.pjskRuntimePartIndex = n.runtimePartIndex, t.userData.pjskPoseRoot = n.poseRoot ?? null, t.position.copy(Fr(Mr(n.localPosition, new e.Vector3()))), t.quaternion.copy(Lr(Nr(n.localRotation))), t.scale.copy(Mr(n.localScale, new e.Vector3(1, 1, 1))), t.updateMatrix(), a.set(n.pathId, t);
+		let r = Yo(n, o), i = u.get(Xo(n) ?? "");
 		(i === void 0 || i === r.pathId || !s.has(n.transformPath)) && s.set(n.transformPath, t);
 	}
 	for (let [e, t] of a.entries()) {
@@ -4858,18 +4875,18 @@ function Zo(t, n) {
 		ambiguousPaths: l
 	};
 }
-function Qo(e, t) {
+function $o(e, t) {
 	let n = Z(e);
 	if (!n?.prefabGraphs?.length) return null;
-	let { root: r, nodeByPath: i, nodeByPathId: a, ambiguousPaths: o } = Zo(e, n);
+	let { root: r, nodeByPath: i, nodeByPathId: a, ambiguousPaths: o } = Qo(e, n);
 	r.updateMatrixWorld(!0);
-	let s = es(r), c = n.bodyHeadAssembly;
-	if (!Ro(c)) throw Error("Runtime package must provide the official model_combine_setup body/head assembly.");
+	let s = ts(r), c = n.bodyHeadAssembly;
+	if (!zo(c)) throw Error("Runtime package must provide the official model_combine_setup body/head assembly.");
 	let l = Q(i, [c.parentAttachPath]), u = Q(i, [c.childRootPath]), d = Q(i, [c.childOriginPath]);
 	if (!l || !u || !d) throw Error("Official model_combine_setup body/head roots were not fully resolved.");
-	let f = Go(e, u.path), p = Wo(r, i, a, c, f), m = qo(e, l.path.split("/")[0]), h = m ? i.get(m) ?? null : null, g = es(r), _ = s - g, v = [];
+	let f = Ko(e, u.path), p = Go(r, i, a, c, f), m = Jo(e, l.path.split("/")[0]), h = m ? i.get(m) ?? null : null, g = ts(r), _ = s - g, v = [];
 	if (t) {
-		let e = $a(t);
+		let e = eo(t);
 		for (let [t, n] of i.entries()) {
 			let r = e.get(t);
 			r && v.push({
@@ -4897,8 +4914,8 @@ function Qo(e, t) {
 		targetPaths: v.slice(0, 24).map((e) => String(e.source.userData.pjskTransformPath ?? e.source.name)),
 		keyNodes: {
 			runtimeMount: null,
-			modelCombineBodyNeck: hs(p.bodyNodeA.node, r),
-			modelCombineFaceNeck: hs(p.faceNodeA.node, r)
+			modelCombineBodyNeck: gs(p.bodyNodeA.node, r),
+			modelCombineFaceNeck: gs(p.faceNodeA.node, r)
 		}
 	};
 	return {
@@ -4919,10 +4936,10 @@ function Qo(e, t) {
 		debug: y
 	};
 }
-function $o(e) {
+function es(e) {
 	let t = Z(e);
 	if (!t?.prefabGraphs?.length) return null;
-	let { root: n, nodeByPath: r, nodeByPathId: i, ambiguousPaths: a } = Zo(e, t), o = es(n);
+	let { root: n, nodeByPath: r, nodeByPathId: i, ambiguousPaths: a } = Qo(e, t), o = ts(n);
 	return {
 		root: n,
 		nodeByPath: r,
@@ -4963,14 +4980,14 @@ function $o(e) {
 		}
 	};
 }
-function es(e) {
+function ts(e) {
 	let t = 0;
 	return e.traverse((n) => {
 		n !== e && (t += 1);
 	}), t;
 }
-function ts(t, n) {
-	let r = Lo(n), i = r?.meshes ?? [];
+function ns(t, n) {
+	let r = Ro(n), i = r?.meshes ?? [];
 	if (!r || i.length === 0) return {
 		meshCount: 0,
 		boneCount: t.nodeByPath.size,
@@ -4982,7 +4999,7 @@ function ts(t, n) {
 	let a = 0, o = 0, s = [], c = [...r.warnings ?? []], l = [];
 	t.root.updateMatrixWorld(!0);
 	for (let r of i) {
-		if (Ko(n, r)) continue;
+		if (qo(n, r)) continue;
 		let i = r.rendererTransformPath, u = r.bonePaths ?? [], d = r.bonePathIds ?? [], f = [
 			...typeof r.rendererTransformPathId == "number" ? [] : [i],
 			...d.length === 0 ? u : [],
@@ -5004,7 +5021,7 @@ function ts(t, n) {
 			c.push(e), l.push(e);
 			continue;
 		}
-		let m = as(r);
+		let m = os(r);
 		if (!m) {
 			let e = `Native mesh '${r.meshPath ?? r.meshName ?? "<unnamed>"}' skipped: invalid geometry payload.`;
 			c.push(e), l.push(e);
@@ -5037,14 +5054,14 @@ function ts(t, n) {
 		} else y = new e.Mesh(m, g);
 		if (y.name = _, y.userData.pjskNativeUnityMesh = !0, y.userData.pjskPartKind = r.partKind ?? null, y.userData.pjskRendererPathId = r.rendererPathId ?? null, y.frustumCulled = !1, p.add(y), b) {
 			t.root.updateMatrixWorld(!0), b.updateMatrixWorld(!0);
-			let n = is(r, x.length, c), a = b.matrixWorld.clone();
+			let n = as(r, x.length, c), a = b.matrixWorld.clone();
 			if (n.length > 0) {
 				let e = a.clone().invert();
 				for (let t of n) t.multiply(e);
 			}
 			let o = new e.Skeleton(x, n.length > 0 ? n : void 0);
 			n.length === 0 && o.calculateInverses(), b.bind(o, a);
-			let l = ns(x[0], o.boneInverses[0]), u = rs(x, o.boneInverses), d = i && t.headRendererPaths.includes(i) ? t.bodyRootBone ?? null : typeof r.rootBonePathId == "number" ? t.nodeByPathId.get(r.rootBonePathId) ?? null : r.rootBonePath ? t.nodeByPath.get(r.rootBonePath) ?? null : null;
+			let l = rs(x[0], o.boneInverses[0]), u = is(x, o.boneInverses), d = i && t.headRendererPaths.includes(i) ? t.bodyRootBone ?? null : typeof r.rootBonePathId == "number" ? t.nodeByPathId.get(r.rootBonePathId) ?? null : r.rootBonePath ? t.nodeByPath.get(r.rootBonePath) ?? null : null;
 			y.userData.pjskUnityRootBone = d, s.push({
 				meshName: _,
 				partKind: r.partKind ?? null,
@@ -5069,14 +5086,14 @@ function ts(t, n) {
 		warnings: c
 	};
 }
-function ns(t, n) {
+function rs(t, n) {
 	let r = new e.Matrix4().multiplyMatrices(t.matrixWorld, n), i = new e.Vector3(), a = new e.Quaternion(), o = new e.Vector3();
 	return r.decompose(i, a, o), {
-		restTranslation: ps(i),
-		restScale: ps(o)
+		restTranslation: ms(i),
+		restScale: ms(o)
 	};
 }
-function rs(t, n) {
+function is(t, n) {
 	if (t.length < 2 || n.length !== t.length) return {
 		restMatrixSpread: 0,
 		restMatrixSpreadBonePath: null
@@ -5095,7 +5112,7 @@ function rs(t, n) {
 		restMatrixSpreadBonePath: s > 0 ? o : null
 	};
 }
-function is(t, n, r) {
+function as(t, n, r) {
 	let i = t.boneInverseBindMatrices ?? [];
 	if (n === 0 || i.length === 0) {
 		if (n === 0 && i.length === 0) return [];
@@ -5106,7 +5123,7 @@ function is(t, n, r) {
 	for (let t = 0; t < i.length; t += 16) a.push(new e.Matrix4().fromArray(i, t));
 	return a;
 }
-function as(t) {
+function os(t) {
 	let n = t.positions ?? [];
 	if (n.length === 0 || n.length % 3 != 0) return null;
 	let r = n.length / 3, i = new e.BufferGeometry();
@@ -5162,27 +5179,27 @@ function $(e, t, n) {
 	let r = e[t] ?? [];
 	if (r.length !== 0 && r.length !== n) throw Error(`Native mesh '${e.meshPath ?? e.meshName ?? "<unnamed>"}' attribute '${t}' has ${r.length} values; expected ${n}.`);
 }
-function os(e, t, n, r) {
+function ss(e, t, n, r) {
 	e.root.updateMatrixWorld(!0);
-	let i = r ? r.update() : no(e, Z(t)?.constraintSetup, n);
+	let i = r ? r.update() : ro(e, Z(t)?.constraintSetup, n);
 	for (let t of e.meshCarrierBindings) t.target.position.copy(t.source.position), t.target.quaternion.copy(t.source.quaternion), t.target.scale.copy(t.source.scale), t.target.updateMatrix();
 	return e.root.updateMatrixWorld(!0), i;
 }
-function ss(e, t, n) {
-	let r = Z(t)?.constraintSetup;
-	return r ? new to(e, r, n) : null;
-}
 function cs(e, t, n) {
+	let r = Z(t)?.constraintSetup;
+	return r ? new no(e, r, n) : null;
+}
+function ls(e, t, n) {
 	let r = {
 		...e?.debug ?? n,
-		setupVersion: ls(t)
+		setupVersion: us(t)
 	};
 	if (!e) return r;
 	let i = e.root;
 	i.updateMatrixWorld(!0);
-	let a = Z(t)?.bodyHeadAssembly, o = $a(i), s = (t) => {
-		let n = Q(e.nodeByPath, t) ?? us(o, t);
-		return n ? hs(n.node, i) : null;
+	let a = Z(t)?.bodyHeadAssembly, o = eo(i), s = (t) => {
+		let n = Q(e.nodeByPath, t) ?? ds(o, t);
+		return n ? gs(n.node, i) : null;
 	}, c = s([
 		a?.parentCombineNodeAPath ?? "",
 		e.debug.sourcePath ?? "",
@@ -5204,7 +5221,7 @@ function cs(e, t, n) {
 	]), p = s(["mdl_chr_IDL_A_00/Position", "mdl_chr_IDL_A_00/Position_4"]);
 	return {
 		...r,
-		positionRoots: gs(i),
+		positionRoots: _s(i),
 		assemblyDistances: {
 			bodyNeckToFaceNeck: null,
 			bodyHeadToFaceHead: null
@@ -5220,10 +5237,10 @@ function cs(e, t, n) {
 		}
 	};
 }
-function ls(e) {
+function us(e) {
 	return Z(e) ? "0414" : "";
 }
-function us(e, t) {
+function ds(e, t) {
 	for (let n of t) {
 		let t = e.get(n);
 		if (t) return {
@@ -5233,22 +5250,22 @@ function us(e, t) {
 	}
 	return null;
 }
-function ds(e) {
+function fs(e) {
 	return e.replace(/_\d+$/, "");
 }
-function fs(e, t, n = !1) {
+function ps(e, t, n = !1) {
 	let r = [], i = e;
-	for (; i && i !== t;) i.name && r.push(n ? ds(i.name) : i.name), i = i.parent;
+	for (; i && i !== t;) i.name && r.push(n ? fs(i.name) : i.name), i = i.parent;
 	return r.reverse().join("/");
 }
-function ps(e) {
+function ms(e) {
 	return {
 		x: Number(e.x.toFixed(5)),
 		y: Number(e.y.toFixed(5)),
 		z: Number(e.z.toFixed(5))
 	};
 }
-function ms(e) {
+function hs(e) {
 	return {
 		x: Number(e.x.toFixed(5)),
 		y: Number(e.y.toFixed(5)),
@@ -5256,28 +5273,28 @@ function ms(e) {
 		w: Number(e.w.toFixed(5))
 	};
 }
-function hs(t, n) {
+function gs(t, n) {
 	t.updateMatrixWorld(!0);
 	let r = new e.Vector3(), i = new e.Quaternion(), a = new e.Vector3(0, 0, 1);
 	return t.getWorldPosition(r), z(t, i), a.applyQuaternion(i).normalize(), {
-		path: fs(t, n),
-		canonicalPath: fs(t, n, !0),
-		parentPath: t.parent && t.parent !== n ? fs(t.parent, n) : null,
+		path: ps(t, n),
+		canonicalPath: ps(t, n, !0),
+		parentPath: t.parent && t.parent !== n ? ps(t.parent, n) : null,
 		destroyed: t.userData.pjskModelCombineDestroyed === !0,
-		localPosition: ps(t.position),
-		localQuaternion: ms(t.quaternion),
-		worldPosition: ps(r),
-		worldQuaternion: ms(i),
-		worldForward: ps(a)
+		localPosition: ms(t.position),
+		localQuaternion: hs(t.quaternion),
+		worldPosition: ms(r),
+		worldQuaternion: hs(i),
+		worldForward: ms(a)
 	};
 }
-function gs(e) {
+function _s(e) {
 	let t = [], n = /* @__PURE__ */ new Set();
 	return e.updateMatrixWorld(!0), e.traverse((r) => {
 		if (r === e || !r.name || n.has(r)) return;
-		let i = fs(r, e, !0), a = i === "face/Position", o = i === "body/Position", s = i.endsWith("/Position") && i.split("/").some((e) => e.startsWith("mdl_chr_"));
-		!a && !o && !s || (n.add(r), t.push(hs(r, e)));
+		let i = ps(r, e, !0), a = i === "face/Position", o = i === "body/Position", s = i.endsWith("/Position") && i.split("/").some((e) => e.startsWith("mdl_chr_"));
+		!a && !o && !s || (n.add(r), t.push(gs(r, e)));
 	}), t;
 }
 //#endregion
-export { gt as A, rr as C, Mt as D, qt as E, r as F, i as I, n as L, w as M, h as N, Pt as O, s as P, Dr as S, Jt as T, Ir as _, ts as a, Or as b, $a as c, Kr as d, ei as f, gi as g, _i as h, ss as i, Be as j, _t as k, Pi as l, ci as m, $o as n, cs as o, ui as p, Qo as r, os as s, Fo as t, Ji as u, z as v, Vt as w, Er as x, Nr as y };
+export { gt as A, ir as C, Mt as D, qt as E, r as F, i as I, n as L, w as M, h as N, Pt as O, s as P, Or as S, Jt as T, Lr as _, ns as a, kr as b, eo as c, qr as d, ti as f, _i as g, vi as h, cs as i, Be as j, _t as k, Fi as l, li as m, es as n, ls as o, di as p, $o as r, ss as s, Io as t, Yi as u, z as v, Vt as w, Dr as x, Pr as y };
