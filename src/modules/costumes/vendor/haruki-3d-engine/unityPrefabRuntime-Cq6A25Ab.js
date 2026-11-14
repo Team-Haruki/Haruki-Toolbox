@@ -23,6 +23,7 @@ function n(e) {
 		headFromCharacterId: d,
 		bodyFromCharacterId: f,
 		bodyFromUnit: p,
+		bodyFromCostume3dId: f == null || e.bodyFromCostume3dId == null ? null : a("bodyFromCostume3dId"),
 		bodyCostume3dId: a("bodyCostume3dId"),
 		headCostume3dId: a("headCostume3dId"),
 		headPackagePath: s,
@@ -148,7 +149,8 @@ function c(e) {
 		e.hairFromCostume3dId ?? "",
 		e.headFromCharacterId ?? "",
 		e.bodyFromCharacterId ?? "",
-		e.bodyFromUnit ?? ""
+		e.bodyFromUnit ?? "",
+		e.bodyFromCostume3dId ?? ""
 	].join("\0");
 }
 //#endregion

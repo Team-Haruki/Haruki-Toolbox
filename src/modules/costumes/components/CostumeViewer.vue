@@ -36,6 +36,8 @@ export type CostumeViewerRecipe = {
   bodyFromCharacterId?: number | null
   /** With bodyFromCharacterId: the unit whose default outfit (absent: the lender's own unit). */
   bodyFromUnit?: string | null
+  /** With bodyFromCharacterId: which of that unit's default outfits (absent: the unit's preset). */
+  bodyFromCostume3dId?: number | null
 }
 
 /** "archive": the game's backdrop (the character archive costume viewer's); "transparent": the frame's plain color. */
@@ -185,6 +187,7 @@ async function loadRecipe() {
       headFromCharacterId: recipe.headFromCharacterId ?? null,
       bodyFromCharacterId: recipe.bodyFromCharacterId ?? null,
       bodyFromUnit: recipe.bodyFromCharacterId != null ? recipe.bodyFromUnit ?? null : null,
+      bodyFromCostume3dId: recipe.bodyFromCharacterId != null ? recipe.bodyFromCostume3dId ?? null : null,
     })
     if (generation !== loadGeneration) {
       return

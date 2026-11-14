@@ -1,4 +1,4 @@
-import { A as e, C as t, D as n, E as r, F as i, I as a, L as o, M as s, N as c, P as l, T as u, _ as d, a as f, b as p, c as m, i as h, l as g, n as _, r as v, s as y, t as b, v as x, x as S } from "./unityPrefabRuntime-DPzxCbSJ.js";
+import { A as e, C as t, D as n, E as r, F as i, I as a, L as o, M as s, N as c, P as l, T as u, _ as d, a as f, b as p, c as m, i as h, l as g, n as _, r as v, s as y, t as b, v as x, x as S } from "./unityPrefabRuntime-Cq6A25Ab.js";
 import * as C from "three";
 import { CompressedArrayTexture as w, CompressedCubeTexture as T, CompressedTexture as ee, Data3DTexture as te, DataTexture as ne, FileLoader as re, FloatType as E, HalfFloatType as ie, LinearFilter as ae, LinearMipmapLinearFilter as oe, LinearSRGBColorSpace as se, Loader as ce, NoColorSpace as le, RGBAFormat as ue, RGBA_ASTC_4x4_Format as de, RGBA_ASTC_6x6_Format as fe, RGBA_BPTC_Format as pe, RGBA_ETC2_EAC_Format as me, RGBA_PVRTC_4BPPV1_Format as he, RGBA_S3TC_DXT1_Format as ge, RGBA_S3TC_DXT3_Format as _e, RGBA_S3TC_DXT5_Format as ve, RGB_BPTC_UNSIGNED_Format as ye, RGB_ETC1_Format as be, RGB_ETC2_Format as xe, RGB_PVRTC_4BPPV1_Format as Se, RGB_S3TC_DXT1_Format as Ce, RGFormat as we, RedFormat as Te, SRGBColorSpace as Ee, UnsignedByteType as D } from "three";
 //#region src/data/costumeShopLights.ts
@@ -439,7 +439,7 @@ var rt = 1, it = class {
 			contentId: this.id
 		};
 		if (typeof Worker > "u") {
-			this.inPlace ??= import("./originalPartWorker-DGf08aPz.js").then((e) => (e.registerOriginalHost(this.id, this.host), e));
+			this.inPlace ??= import("./originalPartWorker-DuLUUs_3.js").then((e) => (e.registerOriginalHost(this.id, this.host), e));
 			try {
 				return {
 					id: 0,
@@ -8860,7 +8860,7 @@ var zo = class {
 		d.getActiveRoleId() !== s && d.selectRole(a.characterId, a.unit);
 		let f = i.motionRoleId ? Lo(i.motionRoleId) : null, p = f ? c(f.characterId, f.unit) : null, m = p !== this.costumeShopMotionRoleId || i.motionType !== this.costumeShopMotionType;
 		this.costumeShopMotionRoleId = p, this.costumeShopMotionType = i.motionType;
-		let h = this.currentLoadedRuntimePackage?.partSet, g = i.hairFromCharacterId !== null && h ? await t(r, h, "hair", i.hairFromCharacterId, i.hairFromCostume3dId) : null, _ = i.headFromCharacterId !== null && h ? await t(r, h, "head", i.headFromCharacterId, i.headCostume3dId) : null, v = i.bodyFromCharacterId !== null && h ? await t(r, h, "body", i.bodyFromCharacterId, null, i.bodyFromUnit) : null;
+		let h = this.currentLoadedRuntimePackage?.partSet, g = i.hairFromCharacterId !== null && h ? await t(r, h, "hair", i.hairFromCharacterId, i.hairFromCostume3dId) : null, _ = i.headFromCharacterId !== null && h ? await t(r, h, "head", i.headFromCharacterId, i.headCostume3dId) : null, v = i.bodyFromCharacterId !== null && h ? await t(r, h, "body", i.bodyFromCharacterId, i.bodyFromCostume3dId, i.bodyFromUnit) : null;
 		if (!n()) throw Ro();
 		let y = {
 			characterId: a.characterId,

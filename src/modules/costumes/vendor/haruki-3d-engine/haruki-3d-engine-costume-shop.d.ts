@@ -128,15 +128,22 @@ export type HarukiMotionEntry = {
 /** The role's preset and parts, without loading a bundle (shares the kernel's worker for the same content). */
 export declare function listRoleParts(content: HarukiCostumeShopContent, roleId: string): Promise<HarukiRoleParts>
 
-/** A character's default outfit of one unit (that unit role's preset body). */
+/** A character's default outfit: a unit role's preset body, or a later default outfit of the unit (body_default_*_v2). */
 export type HarukiDefaultOutfit = {
   /** Pass as the recipe's bodyFromUnit. */
   unit: string
+  /** Pass as the recipe's bodyFromCostume3dId (unneeded for the preset). */
   bodyCostume3dId: number
+  /** The unit role's preset body (the first default outfit). */
+  preset: boolean
+  name: string | null
   thumbnailAssetbundleName: string | null
 }
 
-/** A character's default outfits, one per unit the CostumeShop offers it (Miku's six, every other its one), own unit first. */
+/**
+ * A character's default outfits, own unit first: per unit the CostumeShop offers it (Miku's six, every other its one) the
+ * preset body, then the unit's other default outfits by id.
+ */
 export declare function listDefaultOutfits(content: HarukiCostumeShopContent, characterId: number): Promise<HarukiDefaultOutfit[]>
 
 export type Haruki3DKernelOptions = {
@@ -171,6 +178,8 @@ export type HarukiRenderRecipe = {
   bodyFromCharacterId?: number | null
   /** With bodyFromCharacterId: the unit whose default outfit (Miku has one per unit); absent: the lender's own unit. */
   bodyFromUnit?: string | null
+  /** With bodyFromCharacterId: which of that unit's default outfits (listDefaultOutfits); absent: the unit's preset. */
+  bodyFromCostume3dId?: number | null
 }
 
 /**

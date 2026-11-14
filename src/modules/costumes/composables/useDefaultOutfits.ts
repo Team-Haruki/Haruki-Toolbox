@@ -24,8 +24,8 @@ function fetchDefaultOutfits(baseUrl: string, characterId: number): Promise<Haru
 }
 
 /**
- * The default outfits other characters lend (the experimental borrowed outfit): per character, one per unit the
- * CostumeShop offers it (Miku's six unit outfits, every other character its one), its own unit first. Loaded while
+ * The default outfits other characters lend (the experimental borrowed outfit): per character, its own unit first, each
+ * unit's preset body and then its other default outfits (the second default outfits). Loaded while
  * `enabled`; a character whose outfits fail to load is left out.
  */
 export function useDefaultOutfits(region: Ref<SekaiRegion>, characterIds: Ref<number[]>, enabled: Ref<boolean>) {

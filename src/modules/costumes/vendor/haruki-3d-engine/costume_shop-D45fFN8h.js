@@ -1,4 +1,4 @@
-import { E as e } from "./mirrorContent-Cwy_jf18.js";
+import { E as e } from "./mirrorContent-C-sUjcGX.js";
 //#region src/original/roleParts.ts
 async function t(t, n) {
 	let r = /^(\d+):(.+)$/.exec(String(n).trim());
@@ -36,13 +36,13 @@ async function t(t, n) {
 async function n(t, n) {
 	let r = e(t), i = await r.characterUnit(n), a = await r.roleIndex(n, i), o = [...new Set([i, ...a.units].filter((e) => !!e))], s = [];
 	for (let e of o) {
-		let t = e === i ? a : await r.roleIndex(n, e), o = t.role.bodyCostume3dId;
-		if (o == null || s.some((e) => e.bodyCostume3dId === o)) continue;
-		let c = t.registry.find((e) => e.partType === "body" && e.costume3dId === o);
-		s.push({
+		let t = e === i ? a : await r.roleIndex(n, e), o = t.role.bodyCostume3dId, c = t.registry.filter((t) => t.partType === "body" && !t.presetAlias && (t.unit == null || t.unit === e)).filter((e) => e.costume3dId === o || /^body_default/i.test(e.thumbnailAssetbundleName ?? "")).sort((e, t) => Number(t.costume3dId === o) - Number(e.costume3dId === o) || e.costume3dId - t.costume3dId);
+		for (let t of c) s.some((e) => e.bodyCostume3dId === t.costume3dId) || s.push({
 			unit: e,
-			bodyCostume3dId: o,
-			thumbnailAssetbundleName: c?.thumbnailAssetbundleName ?? null
+			bodyCostume3dId: t.costume3dId,
+			preset: t.costume3dId === o,
+			name: t.name ?? null,
+			thumbnailAssetbundleName: t.thumbnailAssetbundleName ?? null
 		});
 	}
 	return s;

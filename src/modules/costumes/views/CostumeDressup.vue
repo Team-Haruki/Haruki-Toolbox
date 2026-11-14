@@ -168,11 +168,13 @@ const headFrom = ref<number | null>(queryNumber("headFrom"))
 const headFromHead = ref<number | null>(queryNumber("headFromHead"))
 /**
  * Experimental too: another character's default outfit (`bodyFrom`, in that character's figure; `bodyFromUnit`, which
- * unit's: Miku has one per unit; absent: the lender's own unit).
+ * unit's: Miku has one per unit; absent: the lender's own unit; `bodyFromBody`, which of the unit's default outfits: the
+ * second ones; absent: the unit's first).
  */
 const bodyFrom = ref<number | null>(queryNumber("bodyFrom"))
 // Read only with bodyFrom set.
 const bodyFromUnit = ref<string | null>(queryUnit("bodyFromUnit"))
+const bodyFromBody = ref<number | null>(queryNumber("bodyFromBody"))
 const borrowHairEnabled = ref(hairFrom.value != null || headFrom.value != null || bodyFrom.value != null)
 
 function queryUnit(key = "unit"): string | null {
@@ -641,35 +643,61 @@ const outfitDonorIds = computed(() => {
 const showOutfitDonors = computed(() => activeSlot.value === "body" && borrowHairEnabled.value)
 const { outfits: donorOutfits } = useDefaultOutfits(region, outfitDonorIds, showOutfitDonors)
 
-type OutfitTile = { donorId: number; unit: string | null; ownUnit: boolean; thumbnail: string | null }
+type OutfitTile = {
+  donorId: number
+  unit: string | null
+  /** The lender's own unit. */
+  ownUnit: boolean
+  /** The unit's first default outfit (its preset); else a second one, `bodyId`. */
+  preset: boolean
+  bodyId: number | null
+  name: string | null
+  thumbnail: string | null
+}
 
-/** Each lender's default outfits (Miku's one per unit), its own unit's first; one plain tile while they load. */
+/**
+ * Each lender's default outfits, its own unit's first: per unit the first (Miku has one per unit) and the second ones;
+ * one plain tile while they load.
+ */
 const outfitTiles = computed<OutfitTile[]>(() =>
   outfitDonorIds.value.flatMap((donorId): OutfitTile[] => {
     const outfits = donorOutfits.value.get(donorId)
     if (!outfits?.length) {
-      return [{ donorId, unit: null, ownUnit: true, thumbnail: null }]
+      return [{ donorId, unit: null, ownUnit: true, preset: true, bodyId: null, name: null, thumbnail: null }]
     }
-    return outfits.map((outfit, index) => ({ donorId, unit: outfit.unit, ownUnit: index === 0, thumbnail: outfit.thumbnailAssetbundleName }))
+    return outfits.map((outfit) => ({
+      donorId,
+      unit: outfit.unit,
+      ownUnit: outfit.unit === outfits[0]!.unit,
+      preset: outfit.preset,
+      bodyId: outfit.bodyCostume3dId,
+      name: outfit.name,
+      thumbnail: outfit.thumbnailAssetbundleName,
+    }))
   }),
 )
 
 function outfitTileKey(tile: OutfitTile) {
-  return `${tile.donorId}:${tile.unit ?? ""}`
+  return `${tile.donorId}:${tile.unit ?? ""}:${tile.bodyId ?? ""}`
 }
 
 function outfitTileThumbnail(tile: OutfitTile): string[] {
   return tile.thumbnail ? thumbnailSources({ thumbnailAssetbundleName: tile.thumbnail } as RuntimeCostumeOption) : []
 }
 
-/** The tile's name: the lender, and the unit of a unit outfit that is not the lender's own. */
+/** The tile's name: the lender, and a second outfit's name or the unit of another unit's first outfit. */
 function outfitTileName(tile: OutfitTile) {
   const name = characterMap.value.get(tile.donorId)?.name ?? `#${tile.donorId}`
+  if (!tile.preset && tile.name) {
+    return `${name} · ${tile.name}`
+  }
   return tile.ownUnit || tile.unit == null ? name : `${name} · ${resolveSekaiUnitLabel({ t, te }, tile.unit)}`
 }
 
 function isOutfitTileSelected(tile: OutfitTile) {
-  return bodyFrom.value === tile.donorId && (tile.ownUnit ? bodyFromUnit.value == null : bodyFromUnit.value === tile.unit)
+  return bodyFrom.value === tile.donorId &&
+    (tile.ownUnit ? bodyFromUnit.value == null : bodyFromUnit.value === tile.unit) &&
+    (tile.preset ? bodyFromBody.value == null : bodyFromBody.value === tile.bodyId)
 }
 
 function isBorrowedSelected(donorId: number, id: number) {
@@ -692,8 +720,9 @@ function selectBorrowed(donorId: number, id: number) {
 function selectBorrowedBody(tile: OutfitTile) {
   const selected = isOutfitTileSelected(tile)
   bodyFrom.value = selected ? null : tile.donorId
-  // The lender's own unit stays implicit (a shorter URL).
+  // The lender's own unit and the unit's first outfit stay implicit (a shorter URL).
   bodyFromUnit.value = selected || tile.ownUnit ? null : tile.unit
+  bodyFromBody.value = selected || tile.preset ? null : tile.bodyId
 }
 /** This character's default hair is a gradient or two-tone: recoloured hair only approximates it. */
 const approximatePalette = computed(() => MULTI_TONE_HAIR_CHARACTER_IDS.has(characterId.value))
@@ -901,11 +930,12 @@ const recipe = computed<CostumeViewerRecipe | null>(() => {
       : {}),
     bodyFromCharacterId: borrowHairEnabled.value ? bodyFrom.value : null,
     bodyFromUnit: borrowHairEnabled.value && bodyFrom.value != null ? bodyFromUnit.value : null,
+    bodyFromCostume3dId: borrowHairEnabled.value && bodyFrom.value != null ? bodyFromBody.value : null,
   }
 })
 
 // Keep the URL shareable without polluting history.
-watch([characterId, bodyId, headId, hairId, unitOverride, motionChoice, background, accessoryOnly, hairFrom, hairFromHair, headFrom, headFromHead, bodyFrom, bodyFromUnit], ([nextCharacter, nextBody, nextHead, nextHair, nextUnit, nextMotion, nextBackground, nextAccessoryOnly, nextHairFrom, nextHairFromHair, nextHeadFrom, nextHeadFromHead, nextBodyFrom, nextBodyFromUnit]) => {
+watch([characterId, bodyId, headId, hairId, unitOverride, motionChoice, background, accessoryOnly, hairFrom, hairFromHair, headFrom, headFromHead, bodyFrom, bodyFromUnit, bodyFromBody], ([nextCharacter, nextBody, nextHead, nextHair, nextUnit, nextMotion, nextBackground, nextAccessoryOnly, nextHairFrom, nextHairFromHair, nextHeadFrom, nextHeadFromHead, nextBodyFrom, nextBodyFromUnit, nextBodyFromBody]) => {
   void router.replace({
     query: {
       ...route.query,
@@ -923,6 +953,7 @@ watch([characterId, bodyId, headId, hairId, unitOverride, motionChoice, backgrou
       headFromHead: nextHeadFrom != null && nextHeadFromHead != null ? String(nextHeadFromHead) : undefined,
       bodyFrom: nextBodyFrom != null ? String(nextBodyFrom) : undefined,
       bodyFromUnit: nextBodyFrom != null && nextBodyFromUnit != null ? nextBodyFromUnit : undefined,
+      bodyFromBody: nextBodyFrom != null && nextBodyFromBody != null ? String(nextBodyFromBody) : undefined,
     },
   })
 })
@@ -956,6 +987,10 @@ watch(() => route.query, () => {
   const nextBodyFromUnit = queryUnit("bodyFromUnit")
   if (bodyFromUnit.value !== nextBodyFromUnit) {
     bodyFromUnit.value = nextBodyFromUnit
+  }
+  const nextBodyFromBody = queryNumber("bodyFromBody")
+  if (bodyFromBody.value !== nextBodyFromBody) {
+    bodyFromBody.value = nextBodyFromBody
   }
   if (nextHeadFrom != null || nextBodyFrom != null) {
     borrowHairEnabled.value = true
