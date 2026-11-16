@@ -40,7 +40,8 @@ export interface MysekaiDataPrivacySettings {
 
 export interface GameAccountBinding {
     server: SekaiRegion
-    userId: number
+    /** Game IDs exceed JavaScript's safe integer range; keep the API string. */
+    userId: string
     verified: boolean
     isDefault?: boolean
     suite?: SuiteDataPrivacySettings | null

@@ -1,6 +1,8 @@
 import { formatFileTimestamp } from "@/lib/csv"
+import { request } from "@/core/http/call-api"
+import { buildUserApiPath } from "@/core/http/path"
 import type { SekaiRegion } from "@/types"
-import { fetchUserSuiteSubset, suiteUploadTimeToMillis } from "./api"
+import { normalizeSuiteUploadTime, suiteUploadTimeToMillis } from "./api"
 
 export type UserSuiteExport = {
   fileName: string
@@ -17,21 +19,30 @@ export type UserSuiteExport = {
  */
 export async function fetchUserSuiteExport(
   params: { toolboxUserId: string | number; server: SekaiRegion; gameUserId: string | number },
-  dependencies: { fetchSubset: typeof fetchUserSuiteSubset; now: () => number } = {
-    fetchSubset: fetchUserSuiteSubset,
+  dependencies: { request: typeof request; now: () => number } = {
+    request,
     now: Date.now,
   },
 ): Promise<UserSuiteExport> {
-  const result = await dependencies.fetchSubset({ ...params, keys: [] })
-  if (result.kind !== "data") {
+  // Keep the response text intact: parsing then stringifying rounds every
+  // numeric game ID above 2^53, including IDs nested in other Suite tables.
+  const json = await dependencies.request<string>(
+    buildUserApiPath(params.toolboxUserId, "game-account", params.server, params.gameUserId, "suite"),
+    { responseType: "text" },
+  )
+  const data: unknown = JSON.parse(json)
+  if (data == null || typeof data !== "object" || Array.isArray(data)) {
     throw new Error("suite export received no data")
   }
+  // Only the safe upload timestamp is read from the parsed copy. The file
+  // always receives the original text, including the original number types.
+  const uploadTime = normalizeSuiteUploadTime((data as Record<string, unknown>).upload_time)
   // Named by when the data was uploaded, so two exports of one upload match.
   const stamp = formatFileTimestamp(
-    result.uploadTime == null ? dependencies.now() : suiteUploadTimeToMillis(result.uploadTime),
+    uploadTime == null ? dependencies.now() : suiteUploadTimeToMillis(uploadTime),
   )
   return {
     fileName: `suite-${params.server}-${params.gameUserId}-${stamp}.json`,
-    json: JSON.stringify(result.data),
+    json,
   }
 }

@@ -22,7 +22,7 @@ export const BINDING_UID_INPUT_ID = "binding-user-id"
 function toEditableAccount(account?: GameAccountBinding | null): GameAccountBinding {
   return {
     server: account?.server ?? "jp",
-    userId: account?.userId ?? 0,
+    userId: account?.userId ?? "",
     verified: account?.verified ?? false,
     suite: normalizeSuitePermissions(account?.suite),
     mysekai: normalizeMysekaiPermissions(account?.mysekai),

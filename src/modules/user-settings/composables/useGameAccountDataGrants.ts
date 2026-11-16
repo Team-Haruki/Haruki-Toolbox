@@ -163,7 +163,7 @@ export function useGameAccountDataGrants(currentUserId: () => string | null | un
     if (!account || account.server !== grant.server || String(account.userId) !== grant.gameUserId) {
       selectedAccount.value = {
         server: grant.server,
-        userId: Number(grant.gameUserId),
+        userId: grant.gameUserId,
         verified: true,
       }
     }
