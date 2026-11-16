@@ -77,14 +77,7 @@ export function normalizeAccessibleGameAccounts(updatedData: UnknownRecord): Acc
     .filter((item): item is AccessibleGameAccount => item !== null)
 }
 
-export type SelectableGameAccount = Omit<GameAccountBinding, "userId"> & {
-  /**
-   * Kept as a string for granted accounts: jp/en game uids are 17-18 digit
-   * values above Number.MAX_SAFE_INTEGER, so a Number() round-trip would
-   * silently corrupt them. Every consumer (URL building, cache keys,
-   * display) interpolates, never computes.
-   */
-  userId: number | string
+export type SelectableGameAccount = GameAccountBinding & {
   key: string
   ownership: "own" | "granted"
   /** Readable data types; own verified accounts hold every capability. */

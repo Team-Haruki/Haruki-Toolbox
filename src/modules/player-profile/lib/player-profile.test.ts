@@ -42,6 +42,29 @@ describe("normalizePlayerGamedata", () => {
     expect(normalizePlayerGamedata({ userId: " 42 ", name: "P", rank: "5", deck: null })?.userId).toBe("42")
   })
 
+  it("prefers the exact Suite ID over a rounded JSON number", () => {
+    const data = JSON.parse('{"userId":28808221489823746,"userIdString":"28808221489823746"}')
+    expect(String(data.userId)).not.toBe("28808221489823746")
+    expect(normalizePlayerGamedata(data)?.userId).toBe("28808221489823746")
+  })
+
+  it("uses the requested account ID for live profiles and old rounded caches", () => {
+    const profile = normalizeProfileSnapshot(JSON.parse('{"user":{"userId":28808221489823746}}'))
+    expect(normalizePlayerGamedata(profile?.userGamedata, "28808221489823746")?.userId)
+      .toBe("28808221489823746")
+    expect(normalizePlayerGamedata(profile?.userGamedata)?.userId).toBeNull()
+  })
+
+  it("never displays unsafe or invalid numeric IDs as exact IDs", () => {
+    for (const userId of [Number.MAX_SAFE_INTEGER + 1, NaN, Infinity, -1, 1.5, "1e18", ""]) {
+      expect(normalizePlayerGamedata({ userId })?.userId).toBeNull()
+    }
+    expect(normalizePlayerGamedata({ userId: Number.MAX_SAFE_INTEGER })?.userId)
+      .toBe(String(Number.MAX_SAFE_INTEGER))
+    expect(normalizePlayerGamedata({ userId: "9223372036854775807" })?.userId)
+      .toBe("9223372036854775807")
+  })
+
   it("rejects non-object payloads", () => {
     expect(normalizePlayerGamedata(null)).toBeNull()
     expect(normalizePlayerGamedata([])).toBeNull()

@@ -2,8 +2,8 @@ import { describe, expect, it } from "bun:test"
 import { buildSelectableGameAccounts, makeGrantedGameAccountKey, normalizeAccessibleGameAccounts } from "./selectable-accounts"
 import type { GameAccountBinding } from "@/types/store"
 
-const OWN_BINDING: GameAccountBinding = { server: "jp", userId: 111, verified: true, isDefault: true }
-const UNVERIFIED_BINDING: GameAccountBinding = { server: "en", userId: 222, verified: false }
+const OWN_BINDING: GameAccountBinding = { server: "jp", userId: "111", verified: true, isDefault: true }
+const UNVERIFIED_BINDING: GameAccountBinding = { server: "en", userId: "222", verified: false }
 
 describe("normalizeAccessibleGameAccounts", () => {
   it("normalizes own and granted entries and drops junk", () => {

@@ -199,7 +199,7 @@ function handleSourceChange(value: unknown) {
 
 const numberFormatter = computed(() => new Intl.NumberFormat(locale.value))
 
-const gamedata = computed(() => normalizePlayerGamedata(snapshotData.value?.userGamedata))
+const gamedata = computed(() => normalizePlayerGamedata(snapshotData.value?.userGamedata, selectedAccount.value?.userId))
 const nameSegments = computed(() => parseSekaiColoredText(gamedata.value?.name))
 const profileInfo = computed(() => normalizePlayerProfile(snapshotData.value?.userProfile))
 const wordSegments = computed(() => parseSekaiColoredText(profileInfo.value.rawWord))

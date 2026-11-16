@@ -103,18 +103,18 @@ export function parseSekaiColoredText(value: unknown): ColoredTextSegment[] {
 }
 
 /** Tolerantly parses the suite `userGamedata` record. */
-export function normalizePlayerGamedata(raw: unknown): PlayerGamedataInfo | null {
+export function normalizePlayerGamedata(raw: unknown, accountUserId?: string): PlayerGamedataInfo | null {
   if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
     return null
   }
 
   const record = raw as Record<string, unknown>
-  const rawUserId = record.userId
-  const userId = typeof rawUserId === "string" && rawUserId.trim() !== ""
-    ? rawUserId.trim()
-    : normalizeCatalogNumber(rawUserId) != null
-      ? String(record.userId)
-      : null
+  // Suite supplies userIdString. Live profiles and old cached responses may
+  // only carry a JSON number, already rounded by the browser. The selected
+  // account is the exact string used to request that profile.
+  const userId = normalizeGameUserId(record.userIdString)
+    ?? normalizeGameUserId(record.userId)
+    ?? normalizeGameUserId(accountUserId)
 
   return {
     userId,
@@ -122,6 +122,15 @@ export function normalizePlayerGamedata(raw: unknown): PlayerGamedataInfo | null
     rank: normalizeCatalogNumber(record.rank) ?? 0,
     deck: normalizeCatalogNumber(record.deck),
   }
+}
+
+function normalizeGameUserId(value: unknown): string | null {
+  if (typeof value === "string" && /^\d+$/.test(value.trim())) {
+    return value.trim()
+  }
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0
+    ? String(value)
+    : null
 }
 
 /** Tolerantly parses the suite `userProfile` record. */

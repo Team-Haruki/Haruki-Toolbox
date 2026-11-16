@@ -1,7 +1,6 @@
 import { describe, expect, it } from "bun:test"
-import type { UserSuiteSubsetParams, UserSuiteSubsetReadResult } from "./api"
+import type { request } from "@/core/http/call-api"
 
-// The HTTP client behind `./api` reads the session stores when it loads.
 const storage = {
   length: 0,
   clear: () => undefined,
@@ -16,44 +15,43 @@ Object.defineProperty(globalThis, "sessionStorage", { value: storage, configurab
 
 const { fetchUserSuiteExport } = await import("./export")
 
-const account = { toolboxUserId: "toolbox-1", server: "jp" as const, gameUserId: "123456" }
+const account = { toolboxUserId: "toolbox-1", server: "jp" as const, gameUserId: "28808221489823746" }
 
-function dependencies(result: UserSuiteSubsetReadResult, calls: UserSuiteSubsetParams[] = []) {
+function dependencies(json: string, calls: Parameters<typeof request>[] = []) {
   return {
-    fetchSubset: async (params: UserSuiteSubsetParams) => {
-      calls.push(params)
-      return result
+    request: async <T>(...args: Parameters<typeof request>): Promise<T> => {
+      calls.push(args)
+      return json as T
     },
     now: () => new Date(2026, 0, 2, 3, 4, 5).getTime(),
   }
 }
 
 describe("fetchUserSuiteExport", () => {
-  it("asks for every table and names the file by the upload time", async () => {
-    const calls: UserSuiteSubsetParams[] = []
+  it("requests the full Suite as text and preserves all numeric IDs verbatim", async () => {
+    const calls: Parameters<typeof request>[] = []
     const uploadedAt = new Date(2026, 10, 13, 18, 27, 13).getTime()
-    const data = { upload_time: uploadedAt / 1000, userCards: [{ cardId: 1 }] }
-    const file = await fetchUserSuiteExport(
-      account,
-      dependencies({ kind: "data", data, uploadTime: uploadedAt / 1000 }, calls),
-    )
+    const json = `{"upload_time":${uploadedAt / 1000},"userGamedata":{"userId":28808221489823746},"userCards":[{"id":9223372036854775807,"cardId":1}]}`
+    const file = await fetchUserSuiteExport(account, dependencies(json, calls))
 
-    expect(calls).toEqual([{ ...account, keys: [] }])
-    expect(file.fileName).toBe("suite-jp-123456-20261113-182713.json")
-    expect(JSON.parse(file.json)).toEqual(data)
+    expect(calls).toEqual([[
+      "/api/user/toolbox-1/game-account/jp/28808221489823746/suite",
+      { responseType: "text" },
+    ]])
+    expect(file.fileName).toBe("suite-jp-28808221489823746-20261113-182713.json")
+    expect(file.json).toBe(json)
+    // Demonstrate why a parse/stringify round-trip cannot produce the file.
+    expect(JSON.stringify(JSON.parse(json))).not.toBe(json)
   })
 
   it("names the file by the current time when the upload time is unknown", async () => {
-    const file = await fetchUserSuiteExport(
-      account,
-      dependencies({ kind: "data", data: { userCards: [] }, uploadTime: null }),
-    )
-    expect(file.fileName).toBe("suite-jp-123456-20260102-030405.json")
+    const file = await fetchUserSuiteExport(account, dependencies('{"userCards":[]}'))
+    expect(file.fileName).toBe("suite-jp-28808221489823746-20260102-030405.json")
   })
 
-  it("fails when the server sends no data", async () => {
-    await expect(
-      fetchUserSuiteExport(account, dependencies({ kind: "not-modified", uploadTime: 1 })),
-    ).rejects.toThrow("suite export received no data")
+  it("rejects empty, invalid, and non-object responses", async () => {
+    for (const raw of ["", "not json", "null", "[]", "42"]) {
+      await expect(fetchUserSuiteExport(account, dependencies(raw))).rejects.toThrow()
+    }
   })
 })
