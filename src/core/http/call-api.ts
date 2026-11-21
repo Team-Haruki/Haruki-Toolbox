@@ -145,6 +145,9 @@ async function handleAdminSecondFactorRequired(router: Router): Promise<void> {
     }
 
     secondFactorRedirectInProgress = true
+    // The page whose request was refused: the one to return to, and the one
+    // the person must still be on for any of this to concern them.
+    const refusedOn = router.currentRoute.value.fullPath
     try {
         const {
             decideSecondFactor,
@@ -157,8 +160,12 @@ async function handleAdminSecondFactorRequired(router: Router): Promise<void> {
         const decision = decideSecondFactor({
             gate: resolveSecondFactorGate(await loadKratosSessionState()),
             returned: false,
-            target: router.currentRoute.value.fullPath,
+            target: refusedOn,
         })
+        // They went elsewhere while Kratos was asked: leave them there.
+        if (router.currentRoute.value.fullPath !== refusedOn) {
+            return
+        }
         if (decision.kind === "redirect") {
             await router.push(decision.location)
             return

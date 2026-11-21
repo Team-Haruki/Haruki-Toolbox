@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useTemplateRef } from "vue"
+import { computed, onBeforeUnmount, ref, useTemplateRef } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
 import { toast } from "vue-sonner"
@@ -49,15 +49,25 @@ const SESSION_STATE_WAIT_MS = 1500
 // Opened for the second factor of the current session (the admin area asked).
 const wantsSecondFactor = computed(() => isSecondFactorAalQuery(route.query.aal))
 
+let pageOpen = true
+onBeforeUnmount(() => {
+  pageOpen = false
+})
+
 // The session bootstrap has usually asked Kratos already, so this resolves at once.
 async function startLoginFlow(returnTo: string) {
+  const queryAal = route.query.aal
   const state = wantsSecondFactor.value
     ? null
     : await Promise.race([
       loadKratosSessionState(),
       new Promise<null>((resolve) => setTimeout(() => resolve(null), SESSION_STATE_WAIT_MS)),
     ])
-  const aal = resolveLoginFlowAal(route.query.aal, state)
+  // The person left the sign-in page while it waited: do not take them to Kratos from wherever they went.
+  if (!pageOpen) {
+    return
+  }
+  const aal = resolveLoginFlowAal(queryAal, state)
   redirectToKratosBrowserFlow("login", {
     ...(returnTo ? { returnTo } : {}),
     ...(aal ? { aal } : {}),

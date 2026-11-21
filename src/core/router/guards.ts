@@ -9,8 +9,7 @@ import {
     SECOND_FACTOR_RETURN_PARAM,
     decideSecondFactor,
     isSecondFactorAalQuery,
-    loadKratosSessionState,
-    resolveSecondFactorGate,
+    loadSecondFactorGate,
     withoutSecondFactorReturnMarker,
 } from "@/modules/auth/lib/session-assurance"
 import { HOME_TOOL_URLS } from "@/modules/home/lib/home-trays"
@@ -28,7 +27,7 @@ async function resolveAdminSecondFactorRedirect(
     const returned = to.query[SECOND_FACTOR_RETURN_PARAM] === "1"
     const query = withoutSecondFactorReturnMarker(to.query)
     const decision = decideSecondFactor({
-        gate: resolveSecondFactorGate(await loadKratosSessionState()),
+        gate: await loadSecondFactorGate(),
         returned,
         target: router.resolve({ path: to.path, query, hash: to.hash }).fullPath,
     })

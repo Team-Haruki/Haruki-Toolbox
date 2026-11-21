@@ -17,8 +17,7 @@ import { normalizeKratosSettingsSection as normalizeSection } from "@/modules/us
 import {
   SECOND_FACTOR_REDIRECT_QUERY,
   buildSecondFactorEnrollLocation,
-  loadKratosSessionState,
-  resolveSecondFactorGate,
+  loadSecondFactorGate,
   resolveSecondFactorRedirect,
 } from "@/modules/auth/lib/session-assurance"
 
@@ -74,7 +73,7 @@ async function refreshCurrentUserSettings() {
 // (whose guard opens it, or asks for the verification first); without one,
 // the change was something else, so the setup page opens again.
 async function continueToSecondFactorTarget(target: string) {
-  const gate = resolveSecondFactorGate(await loadKratosSessionState())
+  const gate = await loadSecondFactorGate()
   await router.replace(gate === "enroll" ? buildSecondFactorEnrollLocation(target) : target)
 }
 

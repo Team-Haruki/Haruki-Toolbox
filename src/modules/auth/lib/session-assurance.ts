@@ -170,8 +170,13 @@ export function resolveSecondFactorRedirect(queryValue: unknown, flowReturnTo = 
 // The level only changes through Kratos, which the browser leaves the app
 // for (sign-in, second factor, settings), so one answer per document is
 // current until something here says otherwise: signing out in place, or the
-// backend refusing an admin request.
+// backend refusing an admin request. Another tab can raise the level
+// meanwhile, which is why an answer that would turn the person away is asked
+// again (`loadSecondFactorGate`).
 let cachedState: Promise<KratosSessionState | null> | null = null
+// Counts the times the remembered answer was dropped. A caller that started
+// before a sign-out must not put its answer back afterwards.
+let sessionGeneration = 0
 
 /** The session state, asked once per document; null when Kratos did not answer (asked again next time). */
 export function loadKratosSessionState(
@@ -189,11 +194,44 @@ export function loadKratosSessionState(
   return cachedState
 }
 
-/** Seeds the per-document answer with what the session bootstrap already learned. */
-export function rememberKratosSessionState(state: KratosSessionState) {
+/**
+ * The gate for a page that needs `aal2`. An `aal2` answer from earlier in
+ * this document is used as it is. One that would send the person away is not
+ * trusted from memory: they may have passed or set up the second factor in
+ * another tab since, so Kratos is asked once more before they are redirected.
+ */
+export async function loadSecondFactorGate(
+  fetchState: () => Promise<KratosSessionState> = fetchKratosSessionState
+): Promise<SecondFactorGate> {
+  const remembered = cachedState !== null
+  const gate = resolveSecondFactorGate(await loadKratosSessionState(fetchState))
+  if (!remembered || gate === "pass" || gate === "unknown") {
+    return gate
+  }
+  forgetKratosSessionState()
+  return resolveSecondFactorGate(await loadKratosSessionState(fetchState))
+}
+
+/** A mark of the session the document knows now; see `rememberKratosSessionState`. */
+export function currentKratosSessionGeneration(): number {
+  return sessionGeneration
+}
+
+/**
+ * Seeds the per-document answer with what the session bootstrap learned.
+ * `generation` is the mark taken when the bootstrap started: if the answer
+ * was dropped since (the person signed out while the bootstrap was still
+ * waiting for the backend), what it learned is about a session that ended,
+ * and is not kept.
+ */
+export function rememberKratosSessionState(state: KratosSessionState, generation = sessionGeneration) {
+  if (generation !== sessionGeneration) {
+    return
+  }
   cachedState = Promise.resolve(state)
 }
 
 export function forgetKratosSessionState() {
   cachedState = null
+  sessionGeneration += 1
 }

@@ -17,10 +17,12 @@ const {
   SECOND_FACTOR_RETURN_PARAM,
   buildSecondFactorEnrollLocation,
   buildSecondFactorLoginLocation,
+  currentKratosSessionGeneration,
   decideSecondFactor,
   forgetKratosSessionState,
   isSecondFactorAalQuery,
   loadKratosSessionState,
+  loadSecondFactorGate,
   rememberKratosSessionState,
   resolveLoginFlowAal,
   resolveSecondFactorGate,
@@ -200,5 +202,66 @@ describe("loadKratosSessionState", () => {
     expect(await loadKratosSessionState(async () => {
       throw new Error("not asked")
     })).toEqual(PENDING)
+  })
+
+  it("does not keep what a bootstrap learned before a sign-out", async () => {
+    const startedAt = currentKratosSessionGeneration()
+    // Signed out in place while the bootstrap was still waiting for the backend.
+    forgetKratosSessionState()
+    rememberKratosSessionState(active("aal2"), startedAt)
+    expect(await loadKratosSessionState(async () => NONE)).toEqual(NONE)
+
+    forgetKratosSessionState()
+    rememberKratosSessionState(active("aal2"), currentKratosSessionGeneration())
+    expect(await loadKratosSessionState(async () => NONE)).toEqual(active("aal2"))
+  })
+})
+
+describe("loadSecondFactorGate", () => {
+  beforeEach(() => {
+    forgetKratosSessionState()
+  })
+
+  const counting = (...answers: KratosSessionState[]) => {
+    const calls = { count: 0 }
+    const fetchState = async () => answers[Math.min(calls.count++, answers.length - 1)]!
+    return { calls, fetchState }
+  }
+
+  it("uses a remembered aal2 answer without asking", async () => {
+    rememberKratosSessionState(active("aal2"))
+    const { calls, fetchState } = counting(NONE)
+    expect(await loadSecondFactorGate(fetchState)).toBe("pass")
+    expect(calls.count).toBe(0)
+  })
+
+  it("asks once on a fresh document", async () => {
+    const { calls, fetchState } = counting(active("aal1"), active("aal2"))
+    expect(await loadSecondFactorGate(fetchState)).toBe("enroll")
+    expect(calls.count).toBe(1)
+  })
+
+  it("asks again before turning the person away on a remembered answer", async () => {
+    // The second factor was set up in another tab after this one asked.
+    const { calls, fetchState } = counting(active("aal1"), active("aal2"))
+    expect(await loadSecondFactorGate(fetchState)).toBe("enroll")
+    expect(await loadSecondFactorGate(fetchState)).toBe("pass")
+    expect(calls.count).toBe(2)
+    // The new answer is the remembered one from here on.
+    expect(await loadSecondFactorGate(fetchState)).toBe("pass")
+    expect(calls.count).toBe(2)
+  })
+
+  it("keeps turning them away while Kratos says the same", async () => {
+    rememberKratosSessionState(PENDING)
+    const { calls, fetchState } = counting(PENDING)
+    expect(await loadSecondFactorGate(fetchState)).toBe("verify")
+    expect(calls.count).toBe(1)
+  })
+
+  it("does not decide when Kratos gives no answer", async () => {
+    expect(await loadSecondFactorGate(async () => {
+      throw new Error("unreachable")
+    })).toBe("unknown")
   })
 })
