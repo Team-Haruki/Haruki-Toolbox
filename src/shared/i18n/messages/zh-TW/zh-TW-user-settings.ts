@@ -181,12 +181,12 @@ export default {
         "off": "未啟用"
       },
       "methodHelp": {
-        "passkey": "用於免密登入",
-        "webauthn": "登記後，可在密碼登入的第二步用相容的裝置或硬體安全密鑰驗證。免密登入的通行密鑰不能直接用於這一步，需在此另行登記。"
+        "passkey": "用於免密登入，不能代替第二步驗證",
+        "webauthn": "適用於 YubiKey 這類硬體金鑰。手機、電腦或密碼管理器裡已有通行密鑰時不要在這裡再新增，請改用驗證器 App。"
       },
       "secondFactor": {
         "requiredTitle": "繼續之前需要兩步驗證",
-        "requiredDescription": "登記 WebAuthn 二次驗證或驗證器 App，儲存後自動返回",
+        "requiredDescription": "設定驗證器 App，儲存後自動返回。通行密鑰不算第二步",
         "readyTitle": "兩步驗證已啟用",
         "continue": "繼續"
       },
@@ -228,7 +228,7 @@ export default {
         "password": "密碼",
         "oidc": "第三方帳號",
         "passkey": "通行密鑰登入",
-        "webauthn": "WebAuthn 二次驗證",
+        "webauthn": "硬體安全密鑰",
         "totp": "驗證器 App",
         "lookupSecret": "備用恢復碼"
       }
@@ -283,7 +283,7 @@ export default {
     },
     "mfa": {
       "title": "兩步驗證",
-      "description": "通行密鑰登入、WebAuthn 二次驗證、驗證器 App 和備用恢復碼",
+      "description": "驗證器 App、硬體安全密鑰、備用恢復碼和通行密鑰登入",
       "hint": "點選後進入設定頁面，完成後會自動返回",
       "manageButton": "管理兩步驗證"
     },

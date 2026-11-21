@@ -181,12 +181,12 @@ export default {
         "off": "Not turned on"
       },
       "methodHelp": {
-        "passkey": "For signing in without a password",
-        "webauthn": "Once registered, a compatible device or hardware security key can be the second step of a password sign-in. A passkey used for passwordless sign-in does not work for this step; register it here separately."
+        "passkey": "For signing in without a password. It does not replace the second step.",
+        "webauthn": "For hardware keys such as a YubiKey. If your phone, computer or password manager already holds a passkey for this site, do not add it here again; use an authenticator app instead."
       },
       "secondFactor": {
         "requiredTitle": "Two-step verification is needed to continue",
-        "requiredDescription": "Register WebAuthn two-step verification or an authenticator app. You return when it is saved.",
+        "requiredDescription": "Set up an authenticator app. You return when it is saved. A passkey does not count as the second step.",
         "readyTitle": "Two-step verification is on",
         "continue": "Continue"
       },
@@ -228,7 +228,7 @@ export default {
         "password": "Password",
         "oidc": "Linked accounts",
         "passkey": "Passkey sign-in",
-        "webauthn": "WebAuthn two-step verification",
+        "webauthn": "Hardware security keys",
         "totp": "Authenticator app",
         "lookupSecret": "Backup recovery codes"
       }
@@ -283,7 +283,7 @@ export default {
     },
     "mfa": {
       "title": "Two-step verification",
-      "description": "Passkey sign-in, WebAuthn two-step verification, an authenticator app and backup recovery codes",
+      "description": "An authenticator app, hardware security keys, backup recovery codes and passkey sign-in",
       "hint": "Opens the setup page; you will be brought back automatically when done",
       "manageButton": "Manage two-step verification"
     },
