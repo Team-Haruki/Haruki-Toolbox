@@ -81,7 +81,7 @@ test("a passkey signs in at the first level and does not switch on the WebAuthn 
   await expect(group(page, "passkey")).toContainText("已启用")
   await expect(group(page, "passkey")).toContainText("通行密钥登录")
   await expect(group(page, "webauthn")).toContainText("未启用")
-  await expect(group(page, "webauthn")).toContainText("WebAuthn 二次验证")
+  await expect(group(page, "webauthn")).toContainText("硬件安全密钥")
   await expect(group(page, "webauthn").locator('button[name="webauthn_remove"]')).toHaveCount(0)
 
   await signOut(page)
@@ -133,7 +133,7 @@ test("registering a device, then password sign-in and the second factor, ends at
 
   const verify = page.locator('button[name="webauthn_login_trigger"]')
   await expect(verify).toBeVisible()
-  await expect(verify).toHaveText("使用设备或安全密钥验证")
+  await expect(verify).toHaveText("使用安全密钥验证")
   await expect(page.getByRole("heading", { name: "两步验证" })).toBeVisible()
   // Half-way: Kratos does not accept the session yet.
   expect((await probeSession(page)).errorId).toBe("session_aal2_required")

@@ -205,6 +205,11 @@ test.describe("an admin page without a passed second factor", () => {
     await expect(notice).toHaveAttribute("data-ready", "false")
     await expect(notice).toContainText("继续之前需要两步验证")
     await expect(notice.getByRole("link")).toHaveCount(0)
+    // The second-step methods come first, the authenticator app at the top; passkey sign-in is last.
+    const order = await page.locator("[data-kratos-group]").evaluateAll(
+      (groups) => groups.map((element) => element.getAttribute("data-kratos-group")),
+    )
+    expect(order).toEqual(["totp", "webauthn", "lookup_secret", "passkey"])
     expect(record.adminCalls).toEqual([])
   })
 
@@ -224,7 +229,7 @@ test.describe("an admin page without a passed second factor", () => {
 
     await expect(page.getByRole("heading", { name: "两步验证" })).toBeVisible()
     const verify = page.locator('button[name="webauthn_login_trigger"]')
-    await expect(verify).toHaveText("使用设备或安全密钥验证")
+    await expect(verify).toHaveText("使用安全密钥验证")
     // Nothing starts the device prompt but the person's click.
     await expect(page.locator('input[name="webauthn_login"]')).toHaveValue("")
     await expect(page.locator('input[name="totp_code"]')).toBeVisible()
@@ -338,6 +343,7 @@ test.describe("the sign-in page and the second factor", () => {
 
     const missing = page.getByTestId("login-second-factor-missing")
     await expect(missing).toContainText("还没有可用的两步验证方式")
+    await expect(missing).toContainText("设置验证器 App")
     const link = new URL(await missing.getByRole("link").getAttribute("href") ?? "", APP_ORIGIN)
     expect(link.pathname).toBe("/user/identity-settings/mfa")
     expect(link.searchParams.get("aal2_redirect")).toBe(ADMIN_TARGET)
@@ -383,13 +389,18 @@ test.describe("the two-step settings page", () => {
 
     await expect(group(page, "passkey")).toContainText("通行密钥登录")
     await expect(group(page, "passkey")).toContainText("已启用")
-    await expect(group(page, "passkey")).toContainText("用于免密登录")
-    await expect(group(page, "webauthn")).toContainText("WebAuthn 二次验证")
+    await expect(group(page, "passkey")).toContainText("用于免密登录，不能代替第二步验证")
+    await expect(group(page, "webauthn")).toContainText("硬件安全密钥")
     await expect(group(page, "webauthn")).toContainText("未启用")
-    await expect(group(page, "webauthn")).toContainText("免密登录的通行密钥不能直接用于这一步")
-    await expect(group(page, "webauthn").getByRole("button", { name: "登记设备或安全密钥" })).toBeVisible()
-    // The passkey does not count towards what the admin page needs.
-    await expect(page.getByTestId("kratos-second-factor-notice")).toHaveAttribute("data-ready", "false")
+    // The key group is for hardware keys: whoever already holds a passkey is pointed at the app.
+    await expect(group(page, "webauthn")).toContainText("已有通行密钥时不要在这里再添加，请改用验证器 App")
+    await expect(group(page, "webauthn").getByRole("button", { name: "添加安全密钥" })).toBeVisible()
+    // The passkey does not count towards what the admin page needs, and the notice says what does.
+    const notice = page.getByTestId("kratos-second-factor-notice")
+    await expect(notice).toHaveAttribute("data-ready", "false")
+    await expect(notice).toContainText("设置验证器 App，保存后自动返回。通行密钥不算第二步")
+    // Passkey sign-in is not a second step: it comes after the methods that are.
+    await expect(page.locator("[data-kratos-group]").last()).toHaveAttribute("data-kratos-group", "passkey")
   })
 
   test("a registered device shows as on and can be removed after a confirmation", async ({ page }) => {

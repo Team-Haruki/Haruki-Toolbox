@@ -3,7 +3,7 @@ import { computed, ref, useTemplateRef, watch, type Component } from "vue"
 import { useI18n } from "vue-i18n"
 import { useRoute } from "vue-router"
 import { Button } from "@/components/ui/button"
-import { KeyRound, LifeBuoy, Link2, Loader2, PowerOff, ShieldAlert, ShieldCheck, Smartphone, Trash2, Unlink } from "lucide-vue-next"
+import { KeyRound, LifeBuoy, Link2, Loader2, PowerOff, ShieldAlert, ShieldCheck, Smartphone, Trash2, Unlink, Usb } from "lucide-vue-next"
 import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import PageHeader from "@/shared/components/PageHeader.vue"
@@ -398,8 +398,10 @@ const isMfaSection = computed(() => requestedSection.value === "mfa")
 const groupedSections = computed(() => {
   const ordered: string[] = []
   const seen = new Set<string>()
+  // The second-step methods first, the one to reach for at the top; signing
+  // in with a passkey is not one of them and comes last.
   const preferred = isMfaSection.value
-    ? ["passkey", "webauthn", "totp", "lookup_secret"]
+    ? ["totp", "webauthn", "lookup_secret", "passkey"]
     : allowedGroups.value
 
   const addGroup = (group: string) => {
@@ -479,9 +481,12 @@ function dangerIcon(submit: SettingsSubmit): Component {
 }
 
 // One status line per method: whether it is set up. The group's heading
-// names the method; the two that are easily taken for one another (signing
-// in with a passkey, and a device or security key as the second step) also
-// say what they are for.
+// names the method. The two WebAuthn-based ones also say what they are for,
+// because they are easily taken for one another: a passkey signs in and is
+// not a second step, and the second-step key is meant for hardware keys. A
+// device or password manager that already holds the passkey would have to
+// keep a second credential for the same site, which some of them refuse or
+// offer as overwriting the first.
 interface MethodIntro {
   icon: Component
   tone: SettingsRowTone
@@ -489,10 +494,9 @@ interface MethodIntro {
   help?: string
 }
 
-// The second step can be a phone, a laptop or a hardware key: no USB icon.
 const METHOD_ICONS: Record<KratosSettingsMethodGroup, Component> = {
   passkey: KeyRound,
-  webauthn: ShieldCheck,
+  webauthn: Usb,
   totp: Smartphone,
   lookup_secret: LifeBuoy,
 }
