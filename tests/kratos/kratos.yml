@@ -1,0 +1,104 @@
+# Ory Kratos for `bun run e2e:kratos`: the production settings that decide
+# how sessions and second factors behave (methods, `required_aal:
+# highest_available` for whoami and settings, a non-passwordless WebAuthn),
+# on localhost with an in-memory database. Nothing here is a real secret.
+#
+# The identity schema below is tests/kratos/identity.schema.json in base64
+# (`base64 < tests/kratos/identity.schema.json`), so the server starts from
+# any working directory. It mirrors the production schema.
+version: v0.13.0
+dsn: memory
+serve:
+  public:
+    base_url: http://localhost:4433/
+    host: 127.0.0.1
+    port: 4433
+    cors:
+      enabled: true
+      allowed_origins:
+        - http://localhost:4183
+      allow_credentials: true
+  admin:
+    base_url: http://127.0.0.1:4434/
+    host: 127.0.0.1
+    port: 4434
+selfservice:
+  default_browser_return_url: http://localhost:4183/
+  allowed_return_urls:
+    - http://localhost:4183
+  methods:
+    password:
+      enabled: true
+    passkey:
+      enabled: true
+      config:
+        rp:
+          display_name: Haruki Toolbox
+          id: localhost
+          origins:
+            - http://localhost:4183
+    totp:
+      enabled: true
+      config:
+        issuer: Haruki Toolbox
+    lookup_secret:
+      enabled: true
+    webauthn:
+      enabled: true
+      config:
+        passwordless: false
+        rp:
+          display_name: Haruki Toolbox
+          id: localhost
+          origins:
+            - http://localhost:4183
+  flows:
+    error:
+      ui_url: http://localhost:4183/user/error
+    settings:
+      ui_url: http://localhost:4183/user/settings
+      privileged_session_max_age: 15m
+      required_aal: highest_available
+    recovery:
+      enabled: true
+      ui_url: http://localhost:4183/user/recovery
+      use: code
+    verification:
+      enabled: true
+      ui_url: http://localhost:4183/user/verification
+      use: code
+    logout:
+      after:
+        default_browser_return_url: http://localhost:4183/user/login
+    login:
+      ui_url: http://localhost:4183/user/login
+      lifespan: 10m
+    registration:
+      lifespan: 10m
+      ui_url: http://localhost:4183/user/register
+session:
+  lifespan: 72h
+  whoami:
+    required_aal: highest_available
+log:
+  level: warning
+  format: text
+secrets:
+  cookie:
+    - e2e-only-kratos-cookie-secret-0123456789
+  cipher:
+    - e2e-only-kratos-cipher-secret-32
+hashers:
+  algorithm: bcrypt
+  bcrypt:
+    cost: 4
+identity:
+  default_schema_id: default
+  schemas:
+    - id: default
+      url: base64://ewogICIkaWQiOiAiaHR0cHM6Ly9oYXJ1a2kuZXhhbXBsZS9zY2hlbWFzL2lkZW50aXR5LnNjaGVtYS5qc29uIiwKICAiJHNjaGVtYSI6ICJodHRwOi8vanNvbi1zY2hlbWEub3JnL2RyYWZ0LTA3L3NjaGVtYSMiLAogICJ0aXRsZSI6ICJIYXJ1a2kgSWRlbnRpdHkiLAogICJ0eXBlIjogIm9iamVjdCIsCiAgInByb3BlcnRpZXMiOiB7CiAgICAidHJhaXRzIjogewogICAgICAidHlwZSI6ICJvYmplY3QiLAogICAgICAicHJvcGVydGllcyI6IHsKICAgICAgICAiZW1haWwiOiB7CiAgICAgICAgICAidHlwZSI6ICJzdHJpbmciLAogICAgICAgICAgImZvcm1hdCI6ICJlbWFpbCIsCiAgICAgICAgICAidGl0bGUiOiAiRS1NYWlsIiwKICAgICAgICAgICJtaW5MZW5ndGgiOiAzLAogICAgICAgICAgIm9yeS5zaC9rcmF0b3MiOiB7CiAgICAgICAgICAgICJjcmVkZW50aWFscyI6IHsKICAgICAgICAgICAgICAicGFzc3dvcmQiOiB7ICJpZGVudGlmaWVyIjogdHJ1ZSB9LAogICAgICAgICAgICAgICJwYXNza2V5IjogeyAiZGlzcGxheV9uYW1lIjogdHJ1ZSB9LAogICAgICAgICAgICAgICJ3ZWJhdXRobiI6IHsgImlkZW50aWZpZXIiOiB0cnVlIH0KICAgICAgICAgICAgfSwKICAgICAgICAgICAgInZlcmlmaWNhdGlvbiI6IHsgInZpYSI6ICJlbWFpbCIgfSwKICAgICAgICAgICAgInJlY292ZXJ5IjogeyAidmlhIjogImVtYWlsIiB9CiAgICAgICAgICB9CiAgICAgICAgfSwKICAgICAgICAibmFtZSI6IHsKICAgICAgICAgICJ0eXBlIjogInN0cmluZyIsCiAgICAgICAgICAidGl0bGUiOiAiRGlzcGxheSBOYW1lIiwKICAgICAgICAgICJtaW5MZW5ndGgiOiAxLAogICAgICAgICAgIm1heExlbmd0aCI6IDY0CiAgICAgICAgfQogICAgICB9LAogICAgICAicmVxdWlyZWQiOiBbImVtYWlsIl0sCiAgICAgICJhZGRpdGlvbmFsUHJvcGVydGllcyI6IGZhbHNlCiAgICB9CiAgfQp9Cg==
+courier:
+  smtp:
+    connection_uri: smtp://127.0.0.1:1025/?disable_starttls=true
+    from_address: no-reply@example.com
+    from_name: Haruki Toolbox

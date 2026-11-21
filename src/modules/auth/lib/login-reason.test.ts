@@ -32,6 +32,7 @@ describe("login reason", () => {
     const storage = createStorage({ [LOGIN_REASON_STORAGE_KEY]: "garbage" })
     expect(readLoginReason(storage)).toBeNull()
     expect(isLoginReason("admin-required")).toBe(true)
+    expect(isLoginReason("second-factor-required")).toBe(true)
     expect(isLoginReason(42)).toBe(false)
   })
 

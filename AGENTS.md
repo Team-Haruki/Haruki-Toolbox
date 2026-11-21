@@ -48,6 +48,7 @@ Bun is the runtime and package manager (README: Bun ≥ 1.2; CI pins 1.3.14). Sc
 - `bun run test` — `bun test` (unit tests, `*.test.ts`); single file: `bun test path/to/file.test.ts`, by name: `bun test -t "name"`
 - `bun run e2e` — Playwright tests in `tests/e2e/**/*.e2e.ts`; single file: `bunx playwright test tests/e2e/foo.e2e.ts` (add `--headed` / `--debug` as needed)
 - `bun run e2e:install` — one-time `playwright install chromium`
+- `bun run e2e:kratos` — `tests/kratos/**/*.kratos.ts` against a real Ory Kratos (`playwright.kratos.config.ts` starts it with `tests/kratos/kratos.yml` and serves the app with `vite --mode kratos`, `.env.kratos`). Needs the `kratos` binary of the production version with SQLite on PATH or in `KRATOS_BIN`; not part of CI. Sessions are real and WebAuthn runs against Chromium's virtual authenticator; only the toolbox backend is mocked. Run it when changing sign-in, second-factor or session-level behaviour: the hermetic suite replays captured responses and cannot show what Kratos does with a session.
 - `bun run quality` — lint + typecheck + test
 
 ## Type Checking
@@ -57,8 +58,8 @@ Bun is the runtime and package manager (README: Bun ≥ 1.2; CI pins 1.3.14). Sc
 - `tsconfig.app.json` — app sources: `src/**/*.{ts,tsx,vue}` except `*.test.ts` and `src/sw.ts`; DOM lib, no ambient `types`.
 - `tsconfig.sw.json` — the Service Worker `src/sw.ts` with the WebWorker lib; whatever it imports must stay DOM-free.
 - `tsconfig.test.json` — unit tests (`src/**/*.test.ts`), extends the app config and adds `bun` types (`@types/bun`, pinned to the CI Bun version).
-- `tsconfig.node.json` — `vite.config.ts` and `playwright.config.ts` with `node` types.
-- `tsconfig.e2e.json` — `tests/e2e/**` (node types plus DOM for `page.evaluate` callbacks).
+- `tsconfig.node.json` — `vite.config.ts` and the Playwright configs with `node` types.
+- `tsconfig.e2e.json` — `tests/e2e/**` and `tests/kratos/**` (node types plus DOM for `page.evaluate` callbacks).
 - The root `compilerOptions.paths` stays: `bun test` resolves `@/` through the root `tsconfig.json`.
 - Module workers are checked with the DOM lib (the WebWorker lib conflicts with it); type their `self` with `DedicatedWorkerScope` from `@/lib/worker-scope`.
 - Elements bound only through a template `ref="name"` belong in `useTemplateRef("name")` (in the component or its composable): vue-tsc does not count a string template ref as a use of a plain `ref()` variable.
@@ -130,6 +131,8 @@ Barrel rules:
 - Kratos sends every UI text (flow and field messages, node labels, error-page reasons) in English with a stable numeric id. Render them only through `localizeKratosMessage` / `describeKratosFlowError` (`src/modules/auth/lib/kratos-messages.ts`), which translate by id into the core bundle's `auth.kratos.text.<id>` and keep the English as the fallback; never show `meta.label.text` or `messages[].text` directly, and tell buttons apart by label id or node name, not by label wording. The id inventory is `kratos-text-ids.ts` (Kratos v25.4.0); when `ORY_VERSION` changes, add new ids there and refresh the captured responses in `tests/e2e/fixtures/kratos/`, which `tests/e2e/kratos-i18n.e2e.ts` renders and checks for leftover English.
 - `request()` defaults `skipErrorToast` to `true`; features should opt into local, user-meaningful toasts where appropriate.
 - `request()` retries GET/HEAD/OPTIONS once by default on 5xx, timeout or network errors (override with `retry`). On a 401 for a logged-in user (unless `skipAuthRedirect`) it checks the Kratos session and, only if that is gone, clears the user and redirects to login.
+- The admin area needs a Kratos session that passed a second factor (AAL2): the backend refuses every `/api/admin/` request without one, and the route guard checks it after the role (`src/modules/auth/lib/session-assurance.ts`). Kratos owns the level; the app reads it from `GET /sessions/whoami` (`fetchKratosSessionState`), asked once per document. A session that passed only its first factor on an account with a second one is the state `second-factor-required` (whoami answers 403 `session_aal2_required`): Kratos and the backend treat it as signed out, and a plain login flow on it answers "already signed in", so the sign-in page starts the flow with `aal=aal2` instead (also on `/user/login?aal=aal2&redirect=…`). An account with no second factor goes to the two-step settings page with `?aal2_redirect=<path>`, which says why it opened and continues to that page once Kratos reports the new level. The return target of a second-factor sign-in carries `_aal2=1`; arriving with it and still below AAL2 stops with a toast instead of going round again. A refused admin request is never sent again after the verification.
+- In the settings flow, `passkey` (signs in without a password, AAL1) and `webauthn` (a device or security key for the second step, AAL2) are separate Kratos credentials with separate nodes: a passkey never switches on the second step, and `hasSecondFactorMethod` does not count it. Copy names the second step “设备或安全密钥”, not a USB key.
 - `src/main.ts`, `src/App.vue`, and `src/shared/stores/user.ts` are a sensitive cluster. Partial Kratos session data is not a full substitute for synced toolbox user data.
 - When hydrating from a fallback Kratos session, preserve cached user context unless the session is definitely gone. Otherwise post-login sync paths that depend on `userId` can break.
 

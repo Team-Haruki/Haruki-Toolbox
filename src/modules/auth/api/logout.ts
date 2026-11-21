@@ -2,6 +2,7 @@ import router from "@/core/router";
 import { redirectToLogin } from "@/core/router/navigation";
 import {useUserStore} from "@/shared/stores/user";
 import { createKratosLogoutUrl, performKratosLogout, redirectToKratosLogout } from "@/modules/auth/lib/kratos";
+import { forgetKratosSessionState } from "@/modules/auth/lib/session-assurance";
 import { clearDeckRecommendUserDataCache } from "@/modules/deck-recommend/lib/user-data-cache";
 import { clearUserSuiteSubsetCache } from "@/shared/sekai/user-snapshot/cache";
 
@@ -13,6 +14,8 @@ async function clearLocalUserState() {
         await clearUserSuiteSubsetCache(userId).catch(() => undefined);
     }
     userStore.clearUser();
+    // The session whose level was remembered is the one being ended.
+    forgetKratosSessionState();
 }
 
 /**

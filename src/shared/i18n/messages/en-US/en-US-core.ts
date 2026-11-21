@@ -78,6 +78,7 @@ export default {
     "captchaFailed": "The CAPTCHA check failed. Complete it again and retry.",
     "invalidVerificationCode": "The verification code is incorrect. Check it and enter it again.",
     "reauthRequired": "Re-enter your password to continue",
+    "adminSecondFactorRequired": "The admin area needs two-step verification first",
     "consentChallengeExpired": "The authorization request has expired or is invalid. Go back to the app that started it and try again.",
     "loginChallengeRequired": "The authorization parameters are missing. Go back to the app that started it and try again.",
     "inheritFailed": "Transfer failed. Check that the transfer ID and password are correct, regenerate the transfer ID in the game and try again.",
@@ -130,7 +131,7 @@ export default {
         "1010005": "Verify",
         "1010006": "Authenticator code",
         "1010007": "Backup recovery code",
-        "1010008": "Sign in with a security key",
+        "1010008": "Verify with a device or security key",
         "1010009": "Use authenticator app",
         "1010010": "Use a backup recovery code",
         "1010011": "Sign in with a security key",
@@ -169,13 +170,13 @@ export default {
         "1050009": "{secret}",
         "1050010": "These are your backup recovery codes. Each one works once. Keep them somewhere safe!",
         "1050011": "Confirm and turn on backup recovery codes",
-        "1050012": "Add security key",
-        "1050013": "Security key name",
+        "1050012": "Register a device or security key",
+        "1050013": "Device or security key name",
         "1050014": "Used on {usedAt}",
         "1050015": "{secrets}",
         "1050016": "Turn off backup recovery codes",
         "1050017": "This is your authenticator app secret. Enter it manually if you can't scan the QR code.",
-        "1050018": "Remove security key “{display_name}”",
+        "1050018": "Remove “{display_name}”",
         "1050019": "Add passkey",
         "1050020": "Remove passkey “{display_name}”",
         "1050023": "Your account is managed by your organization. To change these settings, contact your organization administrator.",
@@ -222,7 +223,7 @@ export default {
         "4000010": "This account's email address is not verified yet. Please check your inbox and verify it first.",
         "4000011": "This account has no authenticator app set up",
         "4000012": "This backup recovery code has already been used. Please use another one.",
-        "4000013": "This account has no security key set up",
+        "4000013": "This account has no device or security key registered",
         "4000014": "This account has no backup recovery codes set up",
         "4000015": "This account doesn't exist or has no security key set up",
         "4000016": "The backup recovery code is not valid. Please check it and try again.",
@@ -252,7 +253,7 @@ export default {
         "4000040": "Enter a valid email address",
         "4000041": "Enter a valid phone number",
         "4000042": "This account has no device key set up",
-        "4000043": "The security key check failed. Please try again.",
+        "4000043": "The device or security key check failed. Please try again.",
         "4000044": "The device key signature is not valid",
         "4000045": "This device key can no longer be used. Please add it again.",
         "4000046": "This device key was added before user verification was supported and can no longer be used. Please add it again.",
@@ -306,7 +307,7 @@ export default {
         "code": "verification code",
         "totp_code": "authentication code",
         "lookup_secret": "backup recovery code",
-        "webauthn_register_displayname": "security key name"
+        "webauthn_register_displayname": "device or security key name"
       },
       "credentialTypes": {
         "password": "your password",
@@ -409,7 +410,14 @@ export default {
       "reasons": {
         "authRequired": "That page needs you to sign in. You return to it afterwards.",
         "adminRequired": "That page needs an administrator account. You return to it after signing in.",
-        "sessionExpired": "Your session has expired. Sign in again to return to where you were."
+        "sessionExpired": "Your session has expired. Sign in again to return to where you were.",
+        "secondFactorRequired": "That page needs two-step verification. You return to it after verifying."
+      },
+      "secondFactor": {
+        "missingTitle": "No two-step verification method yet",
+        "missingDescription": "Set one up under “Sign-in & security” first. You return here when it is saved.",
+        "setUp": "Set one up",
+        "cancelFailed": "Sign-out failed. Please try again."
       },
       "toast": {
         "enterEmail": "Please enter your email",
@@ -1928,7 +1936,11 @@ export default {
       "permissionDeniedDescription": "You do not have permission to do this. If you think that is a mistake, contact an administrator.",
       "accountBannedDescription": "Your account has been banned and can no longer be used. Contact an administrator if you have questions.",
       "accountBannedWithReason": "Your account has been banned and can no longer be used. Reason: {reason}",
-      "reauthRequired": "Password re-verification required"
+      "reauthRequired": "Password re-verification required",
+      "secondFactorRequiredTitle": "Two-step verification required",
+      "secondFactorRequiredDescription": "Repeat the action after you verify",
+      "secondFactorIncompleteTitle": "Two-step verification did not complete",
+      "secondFactorIncompleteDescription": "Open the page again to retry"
     },
     "errors": {
       "network": "Network connection failed. Check your connection and try again.",

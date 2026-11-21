@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, useTemplateRef, type Component } from "vue"
+import { computed, ref, useTemplateRef, watch, type Component } from "vue"
 import { useI18n } from "vue-i18n"
 import { useRoute } from "vue-router"
 import { Button } from "@/components/ui/button"
-import { KeyRound, LifeBuoy, Link2, Loader2, PowerOff, Smartphone, Trash2, Unlink, Usb } from "lucide-vue-next"
+import { KeyRound, LifeBuoy, Link2, Loader2, PowerOff, ShieldAlert, ShieldCheck, Smartphone, Trash2, Unlink } from "lucide-vue-next"
 import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import PageHeader from "@/shared/components/PageHeader.vue"
@@ -15,10 +15,12 @@ import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue
 import KratosSettingsActions from "@/modules/user-settings/components/settings/KratosSettingsActions.vue"
 import { getKratosPublicUrl } from "@/modules/auth/lib/kratos"
 import { formatKratosProviderName } from "@/modules/auth/lib/kratos-messages"
-import { createAllowedReturnToOrigins } from "@/modules/auth/lib/return-to"
+import { createAllowedReturnToOrigins, resolveBrowserOrigin } from "@/modules/auth/lib/return-to"
+import { SECOND_FACTOR_REDIRECT_QUERY, resolveSecondFactorRedirect } from "@/modules/auth/lib/session-assurance"
 import { useKratosSettingsRedirect } from "@/modules/user-settings/composables/useKratosSettingsRedirect"
 import {
   classifySettingsAction,
+  hasSecondFactorMethod,
   isKratosSettingsMethodGroup,
   pickSettingsEnterTarget,
   resolveSettingsDangerKind,
@@ -126,6 +128,11 @@ function resolveFrontendOrigin(): string {
   return window.location.origin
 }
 
+// The page that needs a second factor and sent the person here to set one up
+// (see session-assurance.ts). Declared before the flow, which reads the
+// return target as soon as it starts; kept in step with the loaded flow below.
+const secondFactorRedirect = ref(resolveSecondFactorRedirect(route.query[SECOND_FACTOR_REDIRECT_QUERY]))
+
 const settingsReturnTo = computed(() => {
   if (typeof window === "undefined") {
     return ""
@@ -139,6 +146,9 @@ const settingsReturnTo = computed(() => {
     url.searchParams.set("section", section)
   }
   url.searchParams.set("_identity_saved", "1")
+  if (secondFactorRedirect.value) {
+    url.searchParams.set(SECOND_FACTOR_REDIRECT_QUERY, secondFactorRedirect.value)
+  }
   return url.toString()
 })
 
@@ -171,6 +181,16 @@ const {
 })
 
 const { t } = useI18n()
+
+// Kratos comes back with only `?flow=`: the page that asked is then in the
+// flow's return target.
+watch(
+  [() => route.query[SECOND_FACTOR_REDIRECT_QUERY], flowReturnTo],
+  ([queryValue, returnTo]) => {
+    secondFactorRedirect.value = resolveSecondFactorRedirect(queryValue, returnTo, resolveBrowserOrigin())
+  },
+  { immediate: true },
+)
 
 // The page is titled after the section it edits (email and nickname,
 // password, two-step verification, linked accounts); unknown sections read as
@@ -458,28 +478,28 @@ function dangerIcon(submit: SettingsSubmit): Component {
   return DANGER_ICONS[resolveSettingsDangerVerb(resolveSettingsDangerKind(submit))]
 }
 
-// One status line per second-step method: whether it is set up. The group's
-// heading already names the method.
+// One status line per method: whether it is set up. The group's heading
+// names the method; the two that are easily taken for one another (signing
+// in with a passkey, and a device or security key as the second step) also
+// say what they are for.
 interface MethodIntro {
   icon: Component
   tone: SettingsRowTone
   label: string
+  help?: string
 }
 
+// The second step can be a phone, a laptop or a hardware key: no USB icon.
 const METHOD_ICONS: Record<KratosSettingsMethodGroup, Component> = {
   passkey: KeyRound,
-  webauthn: Usb,
+  webauthn: ShieldCheck,
   totp: Smartphone,
   lookup_secret: LifeBuoy,
 }
 
-// Passkeys and security keys are things you add; the authenticator app and
-// the backup codes are switched on.
-const STATUS_KEYS: Record<KratosSettingsMethodGroup, Record<KratosSettingsMethodStatus, string>> = {
-  passkey: { on: "added", pending: "added", off: "notAdded" },
-  webauthn: { on: "added", pending: "added", off: "notAdded" },
-  totp: { on: "on", pending: "pending", off: "off" },
-  lookup_secret: { on: "on", pending: "pending", off: "off" },
+const METHOD_HELP_KEYS: Partial<Record<KratosSettingsMethodGroup, string>> = {
+  passkey: "userSettings.kratosFlow.methodHelp.passkey",
+  webauthn: "userSettings.kratosFlow.methodHelp.webauthn",
 }
 
 const STATUS_TONES: Record<KratosSettingsMethodStatus, SettingsRowTone> = {
@@ -494,10 +514,12 @@ function methodIntro(section: SettingsSection): MethodIntro | null {
   }
 
   const status = resolveSettingsMethodStatus(section.group, section.submitFields)
+  const helpKey = METHOD_HELP_KEYS[section.group]
   return {
     icon: METHOD_ICONS[section.group],
     tone: STATUS_TONES[status],
-    label: t(`userSettings.kratosFlow.status.${STATUS_KEYS[section.group][status]}`),
+    label: t(`userSettings.kratosFlow.status.${status}`),
+    help: helpKey ? t(helpKey) : undefined,
   }
 }
 
@@ -635,6 +657,16 @@ const kratosHost = computed(() => {
 })
 
 const isLeavingForKratos = computed(() => redirect.status.value === "probing" || redirect.status.value === "redirecting")
+
+// Opened to set up a second factor for another page: say so, and once one is
+// there offer the way on. The flow's own nodes say whether one is set up, so
+// this holds whatever level Kratos asks of a session.
+const secondFactorNotice = computed(() => {
+  if (!isMfaSection.value || !secondFactorRedirect.value) {
+    return null
+  }
+  return { target: secondFactorRedirect.value, ready: hasSecondFactorMethod(submitFields.value) }
+})
 </script>
 
 <template>
@@ -643,7 +675,7 @@ const isLeavingForKratos = computed(() => redirect.status.value === "probing" ||
     <PageHeader
       size="compact"
       :title="pageTitle"
-      :description="t('userSettings.kratosFlow.description')"
+      :description="secondFactorRedirect ? undefined : t('userSettings.kratosFlow.description')"
       :back="isLeavingForKratos ? null : { name: 'user.settings' }"
       :back-label="t('userSettings.kratosFlow.redirect.backToSettings')"
     />
@@ -686,6 +718,33 @@ const isLeavingForKratos = computed(() => redirect.status.value === "probing" ||
     </div>
     <form v-else ref="settingsForm" :action="action" :method="method" class="flex min-w-0 flex-col gap-5" novalidate>
       <input v-for="field in displayedHiddenFields" :key="field.key" type="hidden" :name="field.name" :value="field.value" />
+
+      <div
+        v-if="secondFactorNotice"
+        class="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border bg-card px-4 py-3"
+        role="status"
+        data-testid="kratos-second-factor-notice"
+        :data-ready="secondFactorNotice.ready"
+      >
+        <div class="flex min-w-0 flex-1 basis-56 items-start gap-2 text-sm">
+          <component
+            :is="secondFactorNotice.ready ? ShieldCheck : ShieldAlert"
+            :class="['mt-0.5 size-4 shrink-0', secondFactorNotice.ready ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300']"
+            aria-hidden="true"
+          />
+          <div class="grid min-w-0 gap-1">
+            <p class="font-medium">
+              {{ t(secondFactorNotice.ready ? "userSettings.kratosFlow.secondFactor.readyTitle" : "userSettings.kratosFlow.secondFactor.requiredTitle") }}
+            </p>
+            <p v-if="!secondFactorNotice.ready" class="text-muted-foreground">
+              {{ t("userSettings.kratosFlow.secondFactor.requiredDescription") }}
+            </p>
+          </div>
+        </div>
+        <Button v-if="secondFactorNotice.ready" as-child size="sm">
+          <router-link :to="secondFactorNotice.target">{{ t("userSettings.kratosFlow.secondFactor.continue") }}</router-link>
+        </Button>
+      </div>
 
       <div v-if="generalMessages.length > 0" class="min-w-0 rounded-xl border bg-card px-4 py-3" data-testid="kratos-settings-messages">
         <KratosFlowMessages :messages="generalMessages" />
@@ -752,6 +811,7 @@ const isLeavingForKratos = computed(() => redirect.status.value === "probing" ||
             :icon="section.intro.icon"
             :tone="section.intro.tone"
             :label="section.intro.label"
+            :help="section.intro.help"
           >
             <template v-if="section.introActions" #default>
               <KratosSettingsActions

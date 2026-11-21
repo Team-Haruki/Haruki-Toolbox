@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef } from "vue"
-import { useRoute } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
 import { toast } from "vue-sonner"
 import { Button } from "@/components/ui/button"
-import { CircleAlert, Loader2 } from "lucide-vue-next"
+import { CircleAlert, Loader2, ShieldAlert } from "lucide-vue-next"
 import {
   isPasskeyAction,
   orderKratosActions,
@@ -28,9 +28,41 @@ import { logoutInPlaceStrict } from "@/modules/auth/api/logout"
 import AuthPageShell from "@/modules/auth/components/AuthPageShell.vue"
 import KratosAuthForm from "@/modules/auth/components/KratosAuthForm.vue"
 import { resolveLoginReason } from "@/modules/auth/lib/login-reason"
+import { redirectToKratosBrowserFlow } from "@/modules/auth/lib/kratos"
+import {
+  SECOND_FACTOR_RETURN_PARAM,
+  buildSecondFactorEnrollLocation,
+  isSecondFactorAalQuery,
+  loadKratosSessionState,
+  resolveLoginFlowAal,
+} from "@/modules/auth/lib/session-assurance"
+import { useUserStore } from "@/shared/stores/user"
 
 const route = useRoute()
+const router = useRouter()
+const userStore = useUserStore()
 const { t } = useI18n()
+
+/** Longest the page waits to learn what session it starts from before it starts a plain sign-in. */
+const SESSION_STATE_WAIT_MS = 1500
+
+// Opened for the second factor of the current session (the admin area asked).
+const wantsSecondFactor = computed(() => isSecondFactorAalQuery(route.query.aal))
+
+// The session bootstrap has usually asked Kratos already, so this resolves at once.
+async function startLoginFlow(returnTo: string) {
+  const state = wantsSecondFactor.value
+    ? null
+    : await Promise.race([
+      loadKratosSessionState(),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), SESSION_STATE_WAIT_MS)),
+    ])
+  const aal = resolveLoginFlowAal(route.query.aal, state)
+  redirectToKratosBrowserFlow("login", {
+    ...(returnTo ? { returnTo } : {}),
+    ...(aal ? { aal } : {}),
+  })
+}
 
 const {
   loading,
@@ -48,13 +80,21 @@ const {
   flowReturnTo,
   method,
   isRefreshFlow,
+  isSecondFactorFlow,
   invokeVisibleFieldAction,
   restartFlow,
 } = useKratosBrowserFlow("login", {
   getReturnTo: () => buildFlowReturnTo(route.query.redirect, resolveBrowserOrigin(), {
     fallbackPath: "/",
-    params: { [LOGIN_SUCCESS_QUERY_PARAM]: "1" },
+    params: {
+      [LOGIN_SUCCESS_QUERY_PARAM]: "1",
+      // Lets the page that asked tell a finished second factor from a round trip that changed nothing.
+      ...(wantsSecondFactor.value ? { [SECOND_FACTOR_RETURN_PARAM]: "1" } : {}),
+    },
   }),
+  startFlow: (returnTo) => {
+    void startLoginFlow(returnTo)
+  },
 })
 
 useFlowReturnToGuard(
@@ -125,11 +165,12 @@ const orderedLoginActions = computed<LoginAction[]>(() => {
 })
 
 // The heading names the step: email + password, the second factor, or a
-// re-authentication. Kratos flags the latter on the flow itself; a passkey-only
-// account gets no password field there, so the fields alone cannot tell.
+// re-authentication. Kratos flags the last two on the flow itself: a second
+// factor that is a device or security key has no input, and a passkey-only
+// account gets no password field, so the fields alone cannot tell.
 const loginStep = computed<"password" | "mfa" | "refresh">(() => {
   const names = visibleFields.value.map((field) => field.name.toLowerCase())
-  if (names.some((name) => name === "totp_code" || name === "lookup_secret")) {
+  if (isSecondFactorFlow.value || names.some((name) => name === "totp_code" || name === "lookup_secret")) {
     return "mfa"
   }
   if (isRefreshFlow.value) {
@@ -186,18 +227,36 @@ async function runRefreshPasskeyLogin() {
   }
 }
 
+// Signed in before this page opened: the second factor of a running session,
+// not a sign-in, so no "signed in" confirmation follows it.
+const startedSignedIn = userStore.isLoggedIn
+
+function markSignInPending() {
+  if (!startedSignedIn) {
+    markLoginSuccessPending()
+  }
+}
+
+/** The passkey button, not the device or security key of the second factor (group `webauthn`). */
+function isPasskeyLoginTrigger(action: LoginAction): boolean {
+  return isPasskeyAction(action) && (action.group === "passkey" || action.name.startsWith("passkey"))
+}
+
 function handleActionClick(action: LoginAction) {
   if (action.kind !== "trigger") {
     return
   }
 
-  markLoginSuccessPending()
-  if (isRefreshFlow.value && isPasskeyAction(action) && passkeyChallenge.value !== "") {
+  markSignInPending()
+  if (isRefreshFlow.value && isPasskeyLoginTrigger(action) && passkeyChallenge.value !== "") {
     void runRefreshPasskeyLogin()
     return
   }
   invokeVisibleFieldAction({ onClickTrigger: action.onClickTrigger })
 }
+
+/** Kratos text id of "Please complete the second authentication challenge." (text/message_login.go). */
+const SECOND_FACTOR_PROMPT_ID = 1010004
 
 // Kratos text id of "This account does not exist or has no security key set
 // up" (text/message_login.go). In a refresh flow it means the authenticator
@@ -251,7 +310,46 @@ function handleSubmit(event: Event) {
     event.preventDefault()
     return
   }
-  markLoginSuccessPending()
+  markSignInPending()
+}
+
+// Kratos opens a second-factor flow for an account that has none: the form
+// is then empty. The page says so and points at where one is set up, with
+// the page that asked carried along.
+const needsSecondFactorSetup = computed(() =>
+  isSecondFactorFlow.value
+  && visibleFields.value.length === 0
+  && buttonFields.value.length === 0
+  && submitFields.value.length === 0
+)
+const secondFactorSetupLink = computed(() => {
+  const redirect = resolveRedirectFromFlowReturnTo(flowReturnTo.value, resolveBrowserOrigin(), [
+    LOGIN_SUCCESS_QUERY_PARAM,
+    SECOND_FACTOR_RETURN_PARAM,
+  ])
+  return buildSecondFactorEnrollLocation(redirect === "/" ? null : redirect)
+})
+
+const cancelBusy = ref(false)
+
+// Leaving the second factor. A session that was signed in before stays as it
+// is. One that only passed its first factor here is ended: Kratos keeps it
+// otherwise, and every later sign-in would open on this step again.
+async function cancelSecondFactor() {
+  if (startedSignedIn) {
+    await router.replace("/")
+    return
+  }
+
+  cancelBusy.value = true
+  try {
+    await logoutInPlaceStrict()
+  } catch {
+    cancelBusy.value = false
+    toast.error(t("auth.login.secondFactor.cancelFailed"))
+    return
+  }
+  await router.replace("/")
 }
 
 const isReady = computed(() => !loading.value && !loadError.value && action.value !== "")
@@ -267,6 +365,8 @@ const loginReasonText = computed(() => {
       return t("auth.login.reasons.adminRequired")
     case "session-expired":
       return t("auth.login.reasons.sessionExpired")
+    case "second-factor-required":
+      return t("auth.login.reasons.secondFactorRequired")
     default:
       return ""
   }
@@ -279,7 +379,15 @@ const formMessages = computed<KratosFlowMessage[]>(() => {
   if (!loginReasonText.value) {
     return messages
   }
-  return [{ key: "login-reason", id: null, text: loginReasonText.value, tone: "info" }, ...messages]
+  const reasonLine: KratosFlowMessage = { key: "login-reason", id: null, text: loginReasonText.value, tone: "info" }
+  if (loginStep.value !== "mfa") {
+    return [reasonLine, ...messages]
+  }
+  // The second step says one thing. A reason for signing in belonged to the
+  // first step; the reason for the second factor replaces Kratos' own prompt.
+  return loginReason.value === "second-factor-required"
+    ? [reasonLine, ...messages.filter((message) => message.id !== SECOND_FACTOR_PROMPT_ID)]
+    : messages
 })
 const formFields = computed(() =>
   hasRefreshPasskeyMismatch.value
@@ -305,7 +413,20 @@ function setFieldValue(name: string, value: string) {
     :load-error="loadError"
     @restart="restartFlow"
   >
+    <div v-if="needsSecondFactorSetup" class="grid min-w-0 gap-4 p-4" data-testid="login-second-factor-missing">
+      <div class="flex min-w-0 items-start gap-2 text-sm">
+        <ShieldAlert class="mt-0.5 size-4 shrink-0 text-amber-700 dark:text-amber-300" aria-hidden="true" />
+        <div class="grid min-w-0 gap-1">
+          <p class="font-medium">{{ t("auth.login.secondFactor.missingTitle") }}</p>
+          <p class="text-muted-foreground [overflow-wrap:anywhere]">{{ t("auth.login.secondFactor.missingDescription") }}</p>
+        </div>
+      </div>
+      <Button as-child size="lg" class="w-full">
+        <router-link :to="secondFactorSetupLink">{{ t("auth.login.secondFactor.setUp") }}</router-link>
+      </Button>
+    </div>
     <KratosAuthForm
+      v-else
       ref="authForm"
       :action="action"
       :method="method"
@@ -342,7 +463,19 @@ function setFieldValue(name: string, value: string) {
       </template>
     </KratosAuthForm>
 
-    <template v-if="!loading && (loginStep === 'password' || hasPasswordField)" #footer>
+    <template v-if="!loading && !loadError && loginStep === 'mfa'" #footer>
+      <!-- A button, not a link: on touch it gets the 40 px target the footer gives its links. -->
+      <button
+        type="button"
+        class="underline-offset-4 hover:text-foreground hover:underline disabled:opacity-50 pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:min-w-10 pointer-coarse:items-center pointer-coarse:justify-center"
+        :disabled="cancelBusy"
+        data-testid="login-second-factor-cancel"
+        @click="cancelSecondFactor"
+      >
+        {{ t("auth.common.cancel") }}
+      </button>
+    </template>
+    <template v-else-if="!loading && (loginStep === 'password' || hasPasswordField)" #footer>
       <p v-if="loginStep === 'password'">
         {{ t("auth.login.noAccount") }}
         <router-link :to="registerLink" class="font-medium text-foreground underline-offset-4 hover:underline">

@@ -14,6 +14,13 @@ import { getSettings } from "@/modules/user-settings/api/get-settings"
 import AfdianBindingCard from "@/modules/user-settings/components/settings/AfdianBindingCard.vue"
 import PageHeader from "@/shared/components/PageHeader.vue"
 import { normalizeKratosSettingsSection as normalizeSection } from "@/modules/user-settings/lib/kratos-settings-section"
+import {
+  SECOND_FACTOR_REDIRECT_QUERY,
+  buildSecondFactorEnrollLocation,
+  loadKratosSessionState,
+  resolveSecondFactorGate,
+  resolveSecondFactorRedirect,
+} from "@/modules/auth/lib/session-assurance"
 
 const route = useRoute()
 const router = useRouter()
@@ -62,6 +69,15 @@ async function refreshCurrentUserSettings() {
   }
 }
 
+// A change was saved for a page that needs a second factor. Kratos is asked
+// what the session is now: with a second factor it goes on to that page
+// (whose guard opens it, or asks for the verification first); without one,
+// the change was something else, so the setup page opens again.
+async function continueToSecondFactorTarget(target: string) {
+  const gate = resolveSecondFactorGate(await loadKratosSessionState())
+  await router.replace(gate === "enroll" ? buildSecondFactorEnrollLocation(target) : target)
+}
+
 onMounted(() => {
   if (!hasIdentitySavedFlag.value && !isSettingsSubmitReferrer()) {
     return
@@ -86,6 +102,12 @@ onMounted(() => {
   })
 
   if (hasIdentitySavedFlag.value) {
+    const secondFactorTarget = resolveSecondFactorRedirect(route.query[SECOND_FACTOR_REDIRECT_QUERY])
+    if (secondFactorTarget) {
+      void continueToSecondFactorTarget(secondFactorTarget)
+      return
+    }
+
     const nextQuery = { ...route.query }
     delete nextQuery._identity_saved
     void router.replace({

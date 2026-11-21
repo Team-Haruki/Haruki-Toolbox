@@ -73,6 +73,8 @@ const KRATOS_STATES: KratosState[] = [
   flowState("login", "login-aal2", /请完成第二步验证/),
   flowState("login", "login-aal2-totp-wrong", /动态验证码不正确/),
   flowState("login", "login-aal2-lookup-wrong", /备用恢复码不正确/),
+  flowState("login", "login-aal2-webauthn", /使用设备或安全密钥验证/),
+  flowState("login", "login-aal2-no-method", /还没有可用的两步验证方式/),
   flowState("registration", "registration-initial", /使用 Google 注册/),
   flowState("registration", "registration-invalid-email", /邮箱格式不正确/),
   flowState("registration", "registration-choose-credentials", /使用通行密钥注册/),
@@ -199,7 +201,7 @@ const ALLOWED_LATIN = [
   /[\w.+-]+@[\w-]+(\.[\w-]+)+/g, // email addresses (user data)
   /\bJBSWY3DPEHPK3PXP\w*/g, // the fixtures' TOTP secret (shown for manual entry)
   /\b(?=[a-z0-9]*\d)[a-z0-9]{8}\b/g, // backup recovery codes
-  /\b(Haruki|Toolbox|Google|Apple|App|Cookie|YubiKey|USB|QR|ID|Kanade|Mizuki)\b/g,
+  /\b(Haruki|Toolbox|Google|Apple|App|Cookie|YubiKey|USB|QR|ID|Kanade|Mizuki|WebAuthn)\b/g,
   /\bY\./g, // the fixture user name "Kanade Y."
 ]
 

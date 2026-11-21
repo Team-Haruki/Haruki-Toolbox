@@ -870,6 +870,8 @@ export function useKratosBrowserFlow(
 
   const action = computed(() => flow.value?.ui.action ?? "")
   const isRefreshFlow = computed(() => flow.value?.refresh === true)
+  /** Login flows: true when Kratos asks for the second factor of a session that passed the first. */
+  const isSecondFactorFlow = computed(() => flow.value?.requested_aal?.trim().toLowerCase() === "aal2")
   const flowReturnTo = computed(() =>
     typeof flow.value?.return_to === "string" ? flow.value.return_to : ""
   )
@@ -905,6 +907,7 @@ export function useKratosBrowserFlow(
     flowReturnTo,
     flowState,
     isRefreshFlow,
+    isSecondFactorFlow,
     method,
     invokeVisibleFieldAction,
     restartFlow,

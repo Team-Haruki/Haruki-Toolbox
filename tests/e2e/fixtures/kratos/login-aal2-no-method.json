@@ -1,0 +1,41 @@
+{
+  "_note": "captured from Kratos v26.2.0: an aal2 login flow for an account with no second factor carries only the CSRF token",
+  "id": "0d6f4b1a-93c2-4e58-8a7b-6f1e2d3c4b5a",
+  "organization_id": null,
+  "type": "browser",
+  "expires_at": "2026-11-21T01:17:39.650045Z",
+  "issued_at": "2026-11-21T01:07:39.650045Z",
+  "request_url": "http://127.0.0.1:9/self-service/login/browser?aal=aal2",
+  "ui": {
+    "action": "http://127.0.0.1:9/self-service/login?flow=0d6f4b1a-93c2-4e58-8a7b-6f1e2d3c4b5a",
+    "method": "POST",
+    "nodes": [
+      {
+        "type": "input",
+        "group": "default",
+        "attributes": {
+          "name": "csrf_token",
+          "type": "hidden",
+          "value": "e2e-csrf",
+          "required": true,
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {}
+      }
+    ],
+    "messages": [
+      {
+        "id": 1010004,
+        "text": "Please complete the second authentication challenge.",
+        "type": "info"
+      }
+    ]
+  },
+  "created_at": "2026-11-21T01:07:39.652424Z",
+  "updated_at": "2026-11-21T01:07:39.652424Z",
+  "refresh": false,
+  "requested_aal": "aal2",
+  "state": "choose_method"
+}

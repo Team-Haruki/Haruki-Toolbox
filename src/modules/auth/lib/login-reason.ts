@@ -7,7 +7,7 @@
  */
 export const LOGIN_REASON_STORAGE_KEY = "haruki-toolbox-login-reason"
 
-export const LOGIN_REASONS = ["auth-required", "admin-required", "session-expired"] as const
+export const LOGIN_REASONS = ["auth-required", "admin-required", "session-expired", "second-factor-required"] as const
 export type LoginReason = (typeof LOGIN_REASONS)[number]
 
 type ReasonStorage = Pick<Storage, "getItem" | "removeItem" | "setItem">

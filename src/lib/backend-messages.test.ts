@@ -30,6 +30,8 @@ describe("resolveBackendMessage", () => {
     // Specific 403 bodies keep their own, more helpful text.
     expect(resolveBackendMessage("forbidden: binding is locked by administrator")).toEqual({ key: "backendMessages.bindingLocked" })
     expect(resolveBackendMessage("reauthentication required")).toEqual({ key: "backendMessages.reauthRequired" })
+    expect(resolveBackendMessage("administrator access requires two-factor authentication"))
+      .toEqual({ key: "backendMessages.adminSecondFactorRequired" })
   })
 
   test("matches prefixes and captures the inherit code", () => {
