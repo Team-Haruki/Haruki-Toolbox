@@ -10,6 +10,11 @@ export { KratosRequestError }
 export type KratosFlowType = "login" | "registration" | "recovery" | "verification" | "settings"
 interface KratosBrowserFlowRedirectOptions {
   returnTo?: string
+  /**
+   * Login flows only: `aal2` asks the signed-in session for its second factor
+   * instead of a first sign-in. Kratos refuses it without a session.
+   */
+  aal?: "aal2"
 }
 
 export interface KratosUiMessage {
@@ -63,6 +68,8 @@ export interface KratosBrowserFlow {
   state?: string
   /** Login flows only: true when Kratos asked the signed-in user to prove it is still them. */
   refresh?: boolean
+  /** Login flows only: `aal2` when the flow asks for the second factor. */
+  requested_aal?: string
   ui: {
     action: string
     method: string
@@ -110,10 +117,26 @@ export interface KratosFlowError {
   details?: unknown
 }
 
+/**
+ * What `GET /sessions/whoami` says about this browser:
+ * - `none`: no session.
+ * - `active`: a session Kratos accepts, with the level it reached.
+ * - `second-factor-required`: a session that passed the first factor only,
+ *   on an account that has a second one. Kratos (`required_aal:
+ *   highest_available`) and the backend treat it as signed out until the
+ *   second factor is done, and a plain login flow answers "already signed in".
+ */
+export type KratosSessionState =
+  | { status: "none" }
+  | { status: "active"; aal: string; session: KratosWhoAmIResponse }
+  | { status: "second-factor-required" }
+
 export interface KratosSessionBootstrap {
   sessionUser: UserSettings | null
   fullUser: UserSettings | null
   hasKratosSession: boolean | null
+  /** Set when the bootstrap had to ask Kratos itself; the backend path does not report the level. */
+  sessionState?: KratosSessionState
 }
 
 export interface KratosSessionDevice {
@@ -161,6 +184,25 @@ export function buildKratosUrl(path: string): string {
   return baseUrl ? `${baseUrl}${path}` : path
 }
 
+/** Path and query that start a Kratos browser flow. */
+export function buildKratosBrowserFlowPath(
+  flowType: KratosFlowType,
+  options: KratosBrowserFlowRedirectOptions = {}
+): string {
+  const query = new URLSearchParams()
+  if (flowType === "login" && options.aal) {
+    query.set("aal", options.aal)
+  }
+  if (options.returnTo?.trim()) {
+    query.set("return_to", options.returnTo.trim())
+  }
+
+  const suffix = query.toString()
+  return suffix
+    ? `/self-service/${flowType}/browser?${suffix}`
+    : `/self-service/${flowType}/browser`
+}
+
 export function redirectToKratosBrowserFlow(
   flowType: KratosFlowType,
   options: KratosBrowserFlowRedirectOptions = {}
@@ -169,16 +211,7 @@ export function redirectToKratosBrowserFlow(
     return
   }
 
-  const query = new URLSearchParams()
-  if (options.returnTo?.trim()) {
-    query.set("return_to", options.returnTo.trim())
-  }
-
-  const suffix = query.toString()
-  const path = suffix
-    ? `/self-service/${flowType}/browser?${suffix}`
-    : `/self-service/${flowType}/browser`
-  window.location.assign(buildKratosUrl(path))
+  window.location.assign(buildKratosUrl(buildKratosBrowserFlowPath(flowType, options)))
 }
 
 export function redirectToKratosLogout() {
@@ -308,6 +341,60 @@ export async function fetchKratosWhoAmI(options: { unauthorized?: "null" | "thro
   }
 
   return await response.json() as KratosWhoAmIResponse
+}
+
+/** Kratos error id of a whoami / settings answer that wants the second factor first. */
+const SESSION_AAL2_REQUIRED_ERROR_ID = "session_aal2_required"
+
+/** Reads a whoami response (status and parsed body) as a session state; null when it is neither. */
+export function resolveKratosSessionState(status: number, body: unknown): KratosSessionState | null {
+  if (status === 401) {
+    return { status: "none" }
+  }
+
+  if (status === 403) {
+    const error = asRecord(asRecord(body)?.error)
+    return error && readOptionalString(error, ["id"]) === SESSION_AAL2_REQUIRED_ERROR_ID
+      ? { status: "second-factor-required" }
+      : null
+  }
+
+  if (status < 200 || status >= 300) {
+    return null
+  }
+
+  const session = asRecord(body)
+  if (!session) {
+    return null
+  }
+
+  return {
+    status: "active",
+    aal: (readOptionalString(session, ["authenticator_assurance_level"]) ?? "").toLowerCase(),
+    session: session as KratosWhoAmIResponse,
+  }
+}
+
+/**
+ * The session as Kratos sees it, including the half-way state after the
+ * first factor. Rejects with `KratosRequestError` when Kratos did not answer
+ * the question (unreachable, 5xx, an unknown 403).
+ */
+export async function fetchKratosSessionState(): Promise<KratosSessionState> {
+  const response = await fetch(buildKratosUrl("/sessions/whoami"), {
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+    },
+  })
+
+  const body = await response.json().catch(() => null) as unknown
+  const state = resolveKratosSessionState(response.status, body)
+  if (!state) {
+    throw new KratosRequestError("whoami", response.status)
+  }
+
+  return state
 }
 
 function normalizeKratosSessionDevice(value: unknown): KratosSessionDevice | null {
@@ -563,7 +650,14 @@ export async function bootstrapUserSettingsFromKratosSession(): Promise<KratosSe
       hasKratosSession: true,
     }
   } catch {
-    const session = await fetchKratosWhoAmI()
+    const sessionState = await fetchKratosSessionState()
+    if (sessionState.status === "second-factor-required") {
+      // The first factor passed and the second is still owed: there is a
+      // session, but nothing may be read with it yet.
+      return { sessionUser: null, fullUser: null, hasKratosSession: true, sessionState }
+    }
+
+    const session = sessionState.status === "active" ? sessionState.session : null
     const sessionUser = resolveUserSettingsFromKratosSession(session)
     if (sessionUser?.userId) {
       try {
@@ -573,6 +667,7 @@ export async function bootstrapUserSettingsFromKratosSession(): Promise<KratosSe
             sessionUser: response.updatedData,
             fullUser: response.updatedData,
             hasKratosSession: true,
+            sessionState,
           }
         }
       } catch {
@@ -583,6 +678,7 @@ export async function bootstrapUserSettingsFromKratosSession(): Promise<KratosSe
       sessionUser,
       fullUser: null,
       hasKratosSession: session != null,
+      sessionState,
     }
   }
 }

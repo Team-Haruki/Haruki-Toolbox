@@ -12,6 +12,7 @@ import { setupInterceptors } from "@/core/http/call-api";
 import { DEFAULT_LOCALE, i18n, isAppLocale, setI18nLocale } from "@/shared/i18n";
 import { resolvePreMountDark, resolvePreMountLocale } from "@/lib/pre-mount-preferences";
 import { bootstrapUserSettingsFromKratosSession } from "@/modules/auth/lib/kratos";
+import { currentKratosSessionGeneration, rememberKratosSessionState } from "@/modules/auth/lib/session-assurance";
 import { installAppUpdateMessaging, installChunkLoadRecovery, registerAppServiceWorker } from "@/pwa";
 import { isRestrictedBrowser } from "@/lib/restricted-browser";
 import { configureAnalytics } from "@/lib/analytics";
@@ -62,8 +63,17 @@ if (isRestrictedBrowser()) {
     installChunkLoadRecovery(router)
     userStore.checkExpiration()
     const hadCachedUserContext = userStore.isLoggedIn || !!userStore.userId
+    const bootstrapSessionGeneration = currentKratosSessionGeneration()
     const sessionBootstrap = bootstrapUserSettingsFromKratosSession().then(
-        ({ sessionUser, fullUser, hasKratosSession }) => {
+        ({ sessionUser, fullUser, hasKratosSession, sessionState }) => {
+            if (sessionState) {
+                // Kratos was asked directly: the sign-in page and the admin
+                // guard reuse the answer (a session still owing its second
+                // factor, or the level it reached). Not after a sign-out
+                // that happened while this was still waiting: the answer is
+                // then about the session that ended.
+                rememberKratosSessionState(sessionState, bootstrapSessionGeneration)
+            }
             if (fullUser) {
                 userStore.clearUser()
                 userStore.setUser(fullUser)

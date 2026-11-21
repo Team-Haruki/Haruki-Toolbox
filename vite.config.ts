@@ -102,8 +102,9 @@ const localDevKey = new URL('./certs/haruki-dev-local.seiunx.com-key.pem', impor
 
 function resolveLocalDevServer(command: string, mode: string) {
     // Playwright must behave the same in local checkouts and CI, where the
-    // gitignored development certificates are unavailable.
-    if (command !== 'serve' || mode === 'e2e' || !existsSync(localDevCert) || !existsSync(localDevKey)) {
+    // gitignored development certificates are unavailable. That holds for
+    // both of its modes: `e2e` and the real-Kratos `kratos`.
+    if (command !== 'serve' || mode === 'e2e' || mode === 'kratos' || !existsSync(localDevCert) || !existsSync(localDevKey)) {
         return undefined
     }
 

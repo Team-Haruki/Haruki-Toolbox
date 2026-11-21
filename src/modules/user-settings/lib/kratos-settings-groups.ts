@@ -151,6 +151,21 @@ export function resolveSettingsMethodStatus(
   }
 }
 
+/**
+ * The groups whose method counts as a second factor (Kratos AAL2). A passkey
+ * is not one of them: it signs in without a password, at the first level, and
+ * Kratos keeps it as a credential of its own (`passkey`) next to the devices
+ * and security keys registered for the second step (`webauthn`).
+ */
+export const KRATOS_SECOND_FACTOR_GROUPS = ["webauthn", "totp", "lookup_secret"] as const satisfies readonly KratosSettingsMethodGroup[]
+
+/** Whether any second factor is set up, read from the submit nodes of a settings flow. */
+export function hasSecondFactorMethod(submits: readonly (KratosSettingsActionLike & { group: string })[]): boolean {
+  return KRATOS_SECOND_FACTOR_GROUPS.some((group) =>
+    resolveSettingsMethodStatus(group, submits.filter((submit) => submit.group === group)) === "on"
+  )
+}
+
 export type KratosSettingsEnterTarget<S, B> =
   | { kind: "submit"; action: S }
   | { kind: "trigger"; action: B }

@@ -64,6 +64,7 @@ const EXACT_MESSAGES: Record<string, string> = {
   "captcha verify failed": "captchaFailed",
   "invalid verification code": "invalidVerificationCode",
   "reauthentication required": "reauthRequired",
+  "administrator access requires two-factor authentication": "adminSecondFactorRequired",
   "consent challenge expired or invalid": "consentChallengeExpired",
   "loginchallenge is required": "loginChallengeRequired",
   "player data not found.": "playerDataNotFound",

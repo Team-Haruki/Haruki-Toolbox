@@ -1,20 +1,62 @@
 import { toast } from "vue-sonner"
-import type { Router } from "vue-router"
+import type { RouteLocationNormalized, RouteLocationRaw, Router } from "vue-router"
 import { useUserStore } from "@/shared/stores/user"
 import { ensureI18nBundles, translate } from "@/shared/i18n"
 import { resolveI18nBundlesForPath } from "@/shared/i18n/bundles"
 import { resolveSafeRedirectTarget } from "@/core/router/navigation"
 import { clearLoginReason, isLoginReason, rememberLoginReason } from "@/modules/auth/lib/login-reason"
+import {
+    SECOND_FACTOR_RETURN_PARAM,
+    decideSecondFactor,
+    isSecondFactorAalQuery,
+    loadSecondFactorGate,
+    withoutSecondFactorReturnMarker,
+} from "@/modules/auth/lib/session-assurance"
 import { HOME_TOOL_URLS } from "@/modules/home/lib/home-trays"
 import { recordToolVisit } from "@/modules/home/lib/tool-usage"
 
+/**
+ * The admin area needs a session that passed a second factor (the backend
+ * refuses every admin request without one). Returns where to go instead, or
+ * nothing when the page may open. See `session-assurance.ts`.
+ */
+async function resolveAdminSecondFactorRedirect(
+    router: Router,
+    to: RouteLocationNormalized
+): Promise<RouteLocationRaw | undefined> {
+    const returned = to.query[SECOND_FACTOR_RETURN_PARAM] === "1"
+    const query = withoutSecondFactorReturnMarker(to.query)
+    const decision = decideSecondFactor({
+        gate: await loadSecondFactorGate(),
+        returned,
+        target: router.resolve({ path: to.path, query, hash: to.hash }).fullPath,
+    })
+
+    switch (decision.kind) {
+        case "continue":
+            return undefined
+        case "strip-marker":
+            return { path: to.path, query, hash: to.hash, replace: true }
+        case "failed":
+            toast.error(translate("core.auth.secondFactorIncompleteTitle"), {
+                description: translate("core.auth.secondFactorIncompleteDescription"),
+            })
+            return "/"
+        case "redirect":
+            return decision.location
+    }
+}
+
 export function setupRouteGuards(router: Router) {
-    router.beforeEach((to) => {
+    router.beforeEach(async (to) => {
         const userStore = useUserStore()
         userStore.checkExpiration()
 
         const hasKratosFlow = typeof to.query.flow === "string" && to.query.flow.trim() !== ""
-        const allowGuestRouteForStepUp = to.name === "user.login" && hasKratosFlow
+        // A signed-in session stays on the sign-in page for its second factor:
+        // while the flow is open, and when the page is asked to start one.
+        const allowGuestRouteForStepUp = to.name === "user.login"
+            && (hasKratosFlow || isSecondFactorAalQuery(to.query.aal))
 
         if (to.name === "user.login") {
             // A reason arriving in the query (redirectToLogin, the guard below)
@@ -65,6 +107,18 @@ export function setupRouteGuards(router: Router) {
                 description: translate("core.auth.requireAdminDescription"),
             })
             return "/"
+        }
+
+        // After the role: a normal user is turned away as before and is never
+        // asked for a second factor on the way.
+        if (to.matched.some((record) => record.meta.requiresAdmin || record.meta.requiresSuperAdmin)) {
+            return await resolveAdminSecondFactorRedirect(router, to)
+        }
+
+        // The return marker of a second-factor sign-in means nothing to a page
+        // that does not need one: it only leaves the address.
+        if (SECOND_FACTOR_RETURN_PARAM in to.query) {
+            return { path: to.path, query: withoutSecondFactorReturnMarker(to.query), hash: to.hash, replace: true }
         }
     })
 

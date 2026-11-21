@@ -176,11 +176,19 @@ export default {
         "oidc": "第三方帳號登入"
       },
       "status": {
-        "added": "已新增",
-        "notAdded": "未新增",
         "on": "已啟用",
         "pending": "等待確認",
         "off": "未啟用"
+      },
+      "methodHelp": {
+        "passkey": "用於免密登入",
+        "webauthn": "登記後，可在密碼登入的第二步用相容的裝置或硬體安全密鑰驗證。免密登入的通行密鑰不能直接用於這一步，需在此另行登記。"
+      },
+      "secondFactor": {
+        "requiredTitle": "繼續之前需要兩步驗證",
+        "requiredDescription": "登記 WebAuthn 二次驗證或驗證器 App，儲存後自動返回",
+        "readyTitle": "兩步驗證已啟用",
+        "continue": "繼續"
       },
       "providers": {
         "linked": "已關聯"
@@ -219,8 +227,8 @@ export default {
         "profile": "個人資料",
         "password": "密碼",
         "oidc": "第三方帳號",
-        "passkey": "通行密鑰",
-        "webauthn": "安全密鑰",
+        "passkey": "通行密鑰登入",
+        "webauthn": "WebAuthn 二次驗證",
         "totp": "驗證器 App",
         "lookupSecret": "備用恢復碼"
       }
@@ -275,7 +283,7 @@ export default {
     },
     "mfa": {
       "title": "兩步驗證",
-      "description": "通行密鑰、安全密鑰、驗證器 App 和備用恢復碼",
+      "description": "通行密鑰登入、WebAuthn 二次驗證、驗證器 App 和備用恢復碼",
       "hint": "點選後進入設定頁面，完成後會自動返回",
       "manageButton": "管理兩步驗證"
     },

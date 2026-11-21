@@ -176,11 +176,19 @@ export default {
         "oidc": "Linked sign-in accounts"
       },
       "status": {
-        "added": "Added",
-        "notAdded": "Not added",
         "on": "Turned on",
         "pending": "Waiting for confirmation",
         "off": "Not turned on"
+      },
+      "methodHelp": {
+        "passkey": "For signing in without a password",
+        "webauthn": "Once registered, a compatible device or hardware security key can be the second step of a password sign-in. A passkey used for passwordless sign-in does not work for this step; register it here separately."
+      },
+      "secondFactor": {
+        "requiredTitle": "Two-step verification is needed to continue",
+        "requiredDescription": "Register WebAuthn two-step verification or an authenticator app. You return when it is saved.",
+        "readyTitle": "Two-step verification is on",
+        "continue": "Continue"
       },
       "providers": {
         "linked": "Linked"
@@ -219,8 +227,8 @@ export default {
         "profile": "Profile",
         "password": "Password",
         "oidc": "Linked accounts",
-        "passkey": "Passkeys",
-        "webauthn": "Security keys",
+        "passkey": "Passkey sign-in",
+        "webauthn": "WebAuthn two-step verification",
         "totp": "Authenticator app",
         "lookupSecret": "Backup recovery codes"
       }
@@ -275,7 +283,7 @@ export default {
     },
     "mfa": {
       "title": "Two-step verification",
-      "description": "Passkeys, security keys, an authenticator app and backup recovery codes",
+      "description": "Passkey sign-in, WebAuthn two-step verification, an authenticator app and backup recovery codes",
       "hint": "Opens the setup page; you will be brought back automatically when done",
       "manageButton": "Manage two-step verification"
     },

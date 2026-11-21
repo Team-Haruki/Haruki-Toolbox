@@ -10,6 +10,7 @@ import type { Router } from "vue-router"
 import type { APIResponse } from "@/types/response"
 import { translate } from "@/shared/i18n"
 import { isAdminReauthRequiredError, withAdminReauthRetry } from "@/lib/admin-reauth"
+import { isAdminSecondFactorRequiredError } from "@/lib/admin-second-factor"
 import { requestAdminReauth } from "@/core/http/admin-reauth"
 import { resolveRequestBaseURL } from "@/core/http/url"
 
@@ -36,6 +37,7 @@ export const apiClient: AxiosInstance = axios.create({
 let authRedirectInProgress = false
 let sessionExpiredHandled = false
 let kratosSessionCheckInProgress: Promise<boolean | null> | null = null
+let secondFactorRedirectInProgress = false
 
 function isCrossOriginBrowserRequest(baseURL: string | undefined): boolean {
     if (typeof window === "undefined" || !baseURL) {
@@ -129,10 +131,63 @@ async function handleUnauthorized(error: AxiosError, userStore: UserStore, route
     })
 }
 
+/**
+ * An admin route refused the session for lack of a second factor. The route
+ * guard normally sends the admin to it before the page opens; this covers a
+ * page that opened anyway (Kratos did not answer the guard). The admin is
+ * taken to the verification or the setup, which say why they opened; the
+ * refused request is not sent again, they repeat the action on their return.
+ * When Kratos sees nothing to verify or set up, a toast is all there is.
+ */
+async function handleAdminSecondFactorRequired(router: Router): Promise<void> {
+    if (secondFactorRedirectInProgress) {
+        return
+    }
+
+    secondFactorRedirectInProgress = true
+    // The page whose request was refused: the one to return to, and the one
+    // the person must still be on for any of this to concern them.
+    const refusedOn = router.currentRoute.value.fullPath
+    try {
+        const {
+            decideSecondFactor,
+            forgetKratosSessionState,
+            loadKratosSessionState,
+            resolveSecondFactorGate,
+        } = await import("@/modules/auth/lib/session-assurance")
+        // What the guard was told no longer holds.
+        forgetKratosSessionState()
+        const decision = decideSecondFactor({
+            gate: resolveSecondFactorGate(await loadKratosSessionState()),
+            returned: false,
+            target: refusedOn,
+        })
+        // They went elsewhere while Kratos was asked: leave them there.
+        if (router.currentRoute.value.fullPath !== refusedOn) {
+            return
+        }
+        if (decision.kind === "redirect") {
+            await router.push(decision.location)
+            return
+        }
+        // One toast however many requests of the page were refused.
+        toast.error(translate("core.auth.secondFactorRequiredTitle"), {
+            id: "admin-second-factor-required",
+            description: translate("core.auth.secondFactorRequiredDescription"),
+        })
+    } finally {
+        secondFactorRedirectInProgress = false
+    }
+}
+
 async function handleForbidden(error: AxiosError, userStore: UserStore, router: Router): Promise<void> {
     // `request()` turns this one into the re-authentication prompt; the caller
     // reports it if the admin cancels.
     if (!error.config?.skipAdminReauth && isAdminReauthRequiredError(error)) {
+        return
+    }
+    if (isAdminSecondFactorRequiredError(error)) {
+        await handleAdminSecondFactorRequired(router)
         return
     }
     // Only the backend's own-account ban message ("Your account has been

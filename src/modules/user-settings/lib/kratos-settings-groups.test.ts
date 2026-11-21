@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test"
 import {
   classifySettingsAction,
+  hasSecondFactorMethod,
   isDangerousSettingsAction,
   isKratosSettingsMethodGroup,
   pickSettingsEnterTarget,
@@ -132,5 +133,39 @@ describe("splitSettingsCodeList", () => {
   it("returns one entry per non-empty line", () => {
     expect(splitSettingsCodeList("ak5vnfk0\n  k5hwo3n2 \r\n\n4digp5ez")).toEqual(["ak5vnfk0", "k5hwo3n2", "4digp5ez"])
     expect(splitSettingsCodeList("")).toEqual([])
+  })
+})
+
+describe("hasSecondFactorMethod", () => {
+  const node = (group: string, name: string) => ({ group, name })
+
+  it("does not count a passkey: it signs in at the first level", () => {
+    const submits = [node("passkey", "passkey_remove"), node("profile", "method"), node("password", "method")]
+    expect(resolveSettingsMethodStatus("passkey", submits.filter((submit) => submit.group === "passkey"))).toBe("on")
+    expect(resolveSettingsMethodStatus("webauthn", submits.filter((submit) => submit.group === "webauthn"))).toBe("off")
+    expect(hasSecondFactorMethod(submits)).toBe(false)
+  })
+
+  it("counts a registered device or security key, whatever the passkey state", () => {
+    expect(hasSecondFactorMethod([node("webauthn", "webauthn_remove")])).toBe(true)
+    const both = [node("passkey", "passkey_remove"), node("webauthn", "webauthn_remove")]
+    expect(hasSecondFactorMethod(both)).toBe(true)
+    // Removing the passkey later changes nothing about the second step.
+    expect(hasSecondFactorMethod(both.filter((submit) => submit.group !== "passkey"))).toBe(true)
+  })
+
+  it("counts the authenticator app and confirmed backup codes", () => {
+    expect(hasSecondFactorMethod([node("totp", "totp_unlink")])).toBe(true)
+    expect(hasSecondFactorMethod([node("lookup_secret", "lookup_secret_reveal")])).toBe(true)
+    expect(hasSecondFactorMethod([node("lookup_secret", "lookup_secret_disable")])).toBe(true)
+  })
+
+  it("does not count what is only offered or still waiting", () => {
+    expect(hasSecondFactorMethod([])).toBe(false)
+    expect(hasSecondFactorMethod([node("totp", "method"), node("lookup_secret", "lookup_secret_regenerate")])).toBe(false)
+    // New backup codes are shown but not confirmed yet.
+    expect(hasSecondFactorMethod([node("lookup_secret", "lookup_secret_confirm")])).toBe(false)
+    // A node name in another group is not that group's credential.
+    expect(hasSecondFactorMethod([node("passkey", "webauthn_remove")])).toBe(false)
   })
 })

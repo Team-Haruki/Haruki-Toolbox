@@ -176,11 +176,19 @@ export default {
         "oidc": "第三方账号登录"
       },
       "status": {
-        "added": "已添加",
-        "notAdded": "未添加",
         "on": "已启用",
         "pending": "等待确认",
         "off": "未启用"
+      },
+      "methodHelp": {
+        "passkey": "用于免密登录",
+        "webauthn": "登记后，可在密码登录的第二步用兼容的设备或硬件安全密钥验证。免密登录的通行密钥不能直接用于这一步，需在此另行登记。"
+      },
+      "secondFactor": {
+        "requiredTitle": "继续之前需要两步验证",
+        "requiredDescription": "登记 WebAuthn 二次验证或验证器 App，保存后自动返回",
+        "readyTitle": "两步验证已启用",
+        "continue": "继续"
       },
       "providers": {
         "linked": "已关联"
@@ -219,8 +227,8 @@ export default {
         "profile": "个人资料",
         "password": "密码",
         "oidc": "第三方账号",
-        "passkey": "通行密钥",
-        "webauthn": "安全密钥",
+        "passkey": "通行密钥登录",
+        "webauthn": "WebAuthn 二次验证",
         "totp": "验证器 App",
         "lookupSecret": "备用恢复码"
       }
@@ -275,7 +283,7 @@ export default {
     },
     "mfa": {
       "title": "两步验证",
-      "description": "通行密钥、安全密钥、验证器 App 和备用恢复码",
+      "description": "通行密钥登录、WebAuthn 二次验证、验证器 App 和备用恢复码",
       "hint": "点击后进入设置页面，完成后会自动返回",
       "manageButton": "管理两步验证"
     },
