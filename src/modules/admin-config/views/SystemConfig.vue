@@ -6,7 +6,6 @@ import {
   LucideListChecks,
   LucideLoader2,
   LucideMonitorSmartphone,
-  LucidePackage,
   LucideSave,
   LucideWebhook,
 } from "lucide-vue-next"
@@ -23,7 +22,7 @@ import ConfigAllowedKeysGroup from "@/modules/admin-config/components/ConfigAllo
 import ConfigCredentialsGroup from "@/modules/admin-config/components/ConfigCredentialsGroup.vue"
 import ConfigJsonEditor from "@/modules/admin-config/components/ConfigJsonEditor.vue"
 import { useSystemConfig } from "@/modules/admin-config/composables/useSystemConfig"
-import { readRuntimeFlag, readRuntimeText, summarizeRuntimeSecrets } from "@/modules/admin-config/lib/runtime-facts"
+import { readRuntimeFlag, summarizeRuntimeSecrets } from "@/modules/admin-config/lib/runtime-facts"
 
 const { t } = useI18n()
 
@@ -83,7 +82,6 @@ function onOff(value: boolean | null): string {
 const statusFacts = computed<SettingsFact[]>(() => {
   const config = runtimeReady.value ? runtimeConfig.value : null
   const secrets = summarizeRuntimeSecrets(config)
-  const proxyVersion = readRuntimeText(config, "harukiProxyVersion")
   return [
     {
       key: "deviceFlow",
@@ -108,13 +106,6 @@ const statusFacts = computed<SettingsFact[]>(() => {
       label: t("adminConfig.status.secrets"),
       value: secrets.known > 0 ? t("adminConfig.status.secretsValue", secrets) : "—",
       icon: LucideKeyRound,
-    },
-    {
-      key: "proxyVersion",
-      label: t("adminConfig.status.proxyVersion"),
-      value: proxyVersion || "—",
-      icon: LucidePackage,
-      mono: !!proxyVersion,
     },
   ]
 })

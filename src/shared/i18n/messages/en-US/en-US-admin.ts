@@ -77,7 +77,6 @@ export default {
       "allowedKeys": "Allowed data keys",
       "secrets": "Secrets",
       "secretsValue": "{configured} / {known} set",
-      "proxyVersion": "HarukiProxy version",
       "on": "On",
       "off": "Off"
     },
@@ -110,16 +109,12 @@ export default {
       "notConfigured": "Not set",
       "notSet": "Not set",
       "privateApiToken": "Private API token",
-      "harukiProxySecret": "HarukiProxy secret",
-      "harukiProxyUnpackKey": "HarukiProxy unpack key",
       "webhookJwtSecret": "Webhook JWT secret",
-      "privateApiUserAgent": "Private API User-Agent",
-      "harukiProxyUserAgent": "HarukiProxy User-Agent",
-      "harukiProxyVersion": "HarukiProxy version"
+      "privateApiUserAgent": "Private API User-Agent"
     },
     "runtime": {
       "title": "Runtime configuration",
-      "description": "Edit the runtime configuration as JSON; saving applies it immediately. Fields you leave out stay as they are.",
+      "description": "Edit the runtime configuration as JSON; saving applies it immediately. Fields you leave out stay as they are. The allowed data keys are edited in their own list.",
       "saveDialogTitle": "Apply runtime configuration?",
       "saveDialogDescription": "This change takes effect immediately and applies system-wide. Make sure the JSON is correct before continuing.",
       "saveDialogConfirm": "Apply"
@@ -1462,8 +1457,6 @@ export default {
         "latencyP95Hint": "95% of the uploads are faster",
         "activeAccounts": "Active game accounts",
         "activeAccountsHint": "Verified accounts with a successful upload",
-        "v3Share": "HarukiProxy V3 share",
-        "v2OnlyAccounts": "{count} accounts still on V2 only",
         "attempts": "Uploads",
         "failed": "Failed",
         "accounts": "Active accounts",

@@ -30,15 +30,6 @@ export interface UploadAnalytics {
   methods: UploadAnalyticsMethodRow[]
   /** Failed attempts per failure stage, most frequent first. */
   failureStages: Array<{ key: string; count: number }>
-  /** HarukiProxy protocol split of successful uploads. */
-  migration: {
-    v2Success: number
-    v3Success: number
-    /** v3 / (v2 + v3), 0..1; null when neither occurred. */
-    v3Share: number | null
-    /** Verified accounts that only uploaded over protocol 2. */
-    v2OnlyAccounts: number
-  }
 }
 
 function count(value: unknown): number {
@@ -87,16 +78,12 @@ export function parseUploadAnalytics(value: unknown): UploadAnalytics {
     .filter((stage) => stage.count > 0)
     .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key))
 
-  const migration = asRecord(record.migration) ?? {}
+  // The response also carries `migration`, the HarukiProxy v2 / v3 split.
+  // Shared-key (v2) uploads were closed on 2026-11-01, so it reads 100 % v3
+  // for every range since and is not shown.
   return {
     summary: readMetrics(summary),
     methods,
     failureStages,
-    migration: {
-      v2Success: count(migration.v2Success),
-      v3Success: count(migration.v3Success),
-      v3Share: optionalNumber(migration.v3Share),
-      v2OnlyAccounts: count(migration.v2OnlyAccounts),
-    },
   }
 }

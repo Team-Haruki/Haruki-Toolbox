@@ -7,7 +7,7 @@
  */
 import { computed, type Component } from "vue"
 import { useI18n } from "vue-i18n"
-import { LucideKeyRound, LucideLock, LucidePackageOpen, LucideWebhook } from "lucide-vue-next"
+import { LucideLock, LucideWebhook } from "lucide-vue-next"
 import { Badge } from "@/components/ui/badge"
 import SettingsFacts, { type SettingsFact } from "@/shared/components/settings/SettingsFacts.vue"
 import SettingsGroup from "@/shared/components/settings/SettingsGroup.vue"
@@ -29,8 +29,6 @@ const { t } = useI18n()
 /** Each `…Configured` flag with the label and the writable field behind it. */
 const SECRETS: ReadonlyArray<{ flag: RuntimeSecretKey; field: string; labelKey: string; icon: Component }> = [
   { flag: "privateApiTokenConfigured", field: "privateApiToken", labelKey: "privateApiToken", icon: LucideLock },
-  { flag: "harukiProxySecretConfigured", field: "harukiProxySecret", labelKey: "harukiProxySecret", icon: LucideKeyRound },
-  { flag: "harukiProxyUnpackKeyConfigured", field: "harukiProxyUnpackKey", labelKey: "harukiProxyUnpackKey", icon: LucidePackageOpen },
   { flag: "webhookJwtSecretConfigured", field: "webhookJwtSecret", labelKey: "webhookJwtSecret", icon: LucideWebhook },
 ]
 

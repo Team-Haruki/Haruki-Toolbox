@@ -77,7 +77,6 @@ export default {
       "allowedKeys": "允许的数据键",
       "secrets": "密钥",
       "secretsValue": "{configured} / {known} 已配置",
-      "proxyVersion": "HarukiProxy 版本",
       "on": "已开启",
       "off": "已关闭"
     },
@@ -110,16 +109,12 @@ export default {
       "notConfigured": "未配置",
       "notSet": "未设置",
       "privateApiToken": "私有 API Token",
-      "harukiProxySecret": "HarukiProxy 密钥",
-      "harukiProxyUnpackKey": "HarukiProxy 解包密钥",
       "webhookJwtSecret": "Webhook JWT 密钥",
-      "privateApiUserAgent": "私有 API User-Agent",
-      "harukiProxyUserAgent": "HarukiProxy User-Agent",
-      "harukiProxyVersion": "HarukiProxy 版本"
+      "privateApiUserAgent": "私有 API User-Agent"
     },
     "runtime": {
       "title": "运行时配置",
-      "description": "以 JSON 直接编辑运行时配置，保存后立即生效。没有写出的字段保持不变。",
+      "description": "以 JSON 直接编辑运行时配置，保存后立即生效。没有写出的字段保持不变。允许的数据键在它自己的列表里编辑。",
       "saveDialogTitle": "应用运行时配置？",
       "saveDialogDescription": "此更改将立即生效并应用于整个系统。请在继续前确认 JSON 内容正确。",
       "saveDialogConfirm": "应用"
@@ -1462,8 +1457,6 @@ export default {
         "latencyP95Hint": "95% 的上传快于此",
         "activeAccounts": "活跃游戏账号",
         "activeAccountsHint": "成功上传过的已验证账号",
-        "v3Share": "HarukiProxy V3 占比",
-        "v2OnlyAccounts": "仍只用 V2 的账号 {count} 个",
         "attempts": "次数",
         "failed": "失败",
         "accounts": "活跃账号",

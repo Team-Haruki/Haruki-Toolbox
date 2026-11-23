@@ -3,15 +3,19 @@ import type { RuntimeConfig } from "@/types/admin"
 /**
  * Read-only facts the runtime configuration reports (`GET
  * /api/admin/config/runtime`). The backend never sends a secret back, only
- * whether one is set; a member an older backend does not send reads as
- * unknown (`null`) rather than as "not set".
+ * whether one is set; a member the backend does not send reads as unknown
+ * (`null`) rather than as "not set".
+ *
+ * The lists below are what the backend reports (`runtimeConfigResponse` in
+ * its `internal/modules/admin/config.go`). The HarukiProxy shared key, unpack
+ * key, user agent and version left it when shared-key uploads were closed
+ * (backend 9.3.0): HarukiProxy v3 signs in with OAuth2 and has no settings
+ * here.
  */
 
 /** The `…Configured` members: whether each secret has a value. */
 export const RUNTIME_SECRET_KEYS = [
   "privateApiTokenConfigured",
-  "harukiProxySecretConfigured",
-  "harukiProxyUnpackKeyConfigured",
   "webhookJwtSecretConfigured",
 ] as const
 
@@ -20,8 +24,6 @@ export type RuntimeSecretKey = (typeof RUNTIME_SECRET_KEYS)[number]
 /** The plain-text members shown as they are. */
 export const RUNTIME_TEXT_KEYS = [
   "privateApiUserAgent",
-  "harukiProxyUserAgent",
-  "harukiProxyVersion",
 ] as const
 
 export type RuntimeTextKey = (typeof RUNTIME_TEXT_KEYS)[number]
