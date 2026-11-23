@@ -196,7 +196,10 @@ for (const theme of ["light", "dark"] as const) {
     // Upload analytics: processing time, failure stages, per-method rows.
     const quality = page.getByTestId("statistics-upload-quality")
     await expect(quality.getByText("1.24 s")).toBeVisible()
-    await expect(quality.getByText("75.0%")).toBeVisible()
+    // The HarukiProxy v2 / v3 split is gone from the panel, whatever the backend still sends.
+    await expect(quality.getByText("75.0%")).toHaveCount(0)
+    await expect(quality.getByText(/V3/)).toHaveCount(0)
+    await expect(quality.locator("dl > div")).toHaveCount(3)
     await expect(quality.getByRole("row", { name: /iOS/ })).toContainText("98.00%")
     await expect(page.getByText("解析数据")).toBeVisible()
     await expect(page.getByText("9 · 64.3%")).toBeVisible()

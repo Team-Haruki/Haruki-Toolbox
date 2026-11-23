@@ -23,7 +23,7 @@ const metrics = (attemptCount: number, successCount: number) => ({
 })
 
 describe("parseUploadAnalytics", () => {
-  it("reads the summary, orders methods and failure stages, and keeps the protocol split", () => {
+  it("reads the summary and orders methods and failure stages", () => {
     const parsed = parseUploadAnalytics({
       from: "2026-11-09T00:00:00Z",
       to: "2026-11-10T00:00:00Z",
@@ -48,7 +48,8 @@ describe("parseUploadAnalytics", () => {
       { key: "persist", count: 1 },
       { key: "unknown", count: 1 },
     ])
-    expect(parsed.migration).toEqual({ v2Success: 24, v3Success: 72, v3Share: 0.75, v2OnlyAccounts: 5 })
+    // The retired HarukiProxy v2 / v3 split the backend still sends is not carried along.
+    expect(Object.keys(parsed).sort()).toEqual(["failureStages", "methods", "summary"])
   })
 
   it("keeps missing rates and latencies as null and tolerates absent lists", () => {
@@ -61,7 +62,6 @@ describe("parseUploadAnalytics", () => {
     expect(parsed.methods).toHaveLength(1)
     expect(parsed.methods[0]?.method).toBe("")
     expect(parsed.failureStages).toEqual([])
-    expect(parsed.migration.v3Share).toBeNull()
   })
 
   it("rejects a payload without a summary", () => {

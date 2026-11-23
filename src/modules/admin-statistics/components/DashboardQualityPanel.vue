@@ -13,8 +13,8 @@ import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 
 /**
  * Upload quality over the last 24 hours, from the upload analytics endpoint:
- * processing-time percentiles, active game accounts and the HarukiProxy
- * protocol split on top, then one row per upload method.
+ * processing-time percentiles and active game accounts on top, then one row
+ * per upload method.
  */
 const props = defineProps<{
   analytics: UploadAnalytics | null
@@ -45,7 +45,6 @@ const description = computed(() => [
 
 const figures = computed(() => {
   const summary = props.analytics?.summary
-  const migration = props.analytics?.migration
   return [
     {
       key: "p50",
@@ -67,13 +66,6 @@ const figures = computed(() => {
       value: summary ? summary.activeGameAccounts : null,
       format: (value: number) => formatNumberCN(Math.round(value)),
       detail: t("adminStatistics.dashboard.quality.activeAccountsHint"),
-    },
-    {
-      key: "v3",
-      label: t("adminStatistics.dashboard.quality.v3Share"),
-      value: migration?.v3Share ?? null,
-      format: (value: number) => formatPercent(value * 100),
-      detail: t("adminStatistics.dashboard.quality.v2OnlyAccounts", { count: formatNumberCN(migration?.v2OnlyAccounts ?? 0) }),
     },
   ]
 })
@@ -108,7 +100,7 @@ const rows = computed(() => (props.analytics?.methods ?? []).map((row) => ({
       :aria-busy="loading"
       data-testid="statistics-upload-quality"
     >
-      <dl class="grid grid-cols-2 gap-px border-b border-border/60 bg-border/60 @min-[40rem]:grid-cols-4">
+      <dl class="grid grid-cols-3 gap-px border-b border-border/60 bg-border/60">
         <div v-for="figure in figures" :key="figure.key" class="min-w-0 bg-card px-4 py-3">
           <dt class="truncate text-xs text-muted-foreground" :title="figure.label">{{ figure.label }}</dt>
           <dd class="mt-0.5 text-lg leading-tight font-semibold">

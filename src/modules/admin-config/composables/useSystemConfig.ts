@@ -18,6 +18,7 @@ import {
   splitKeyInput,
   type AllowedKeysDraft,
 } from "@/modules/admin-config/lib/allowed-keys"
+import { formatRuntimeEditorJson } from "@/modules/admin-config/lib/runtime-editor"
 import { isJsonRecord } from "@/lib/json-utils"
 import type { RuntimeConfig } from "@/types/admin"
 import { describeError, type ErrorDescription } from "@/lib/error-utils"
@@ -67,7 +68,7 @@ export function useSystemConfig() {
     !apiKeysLoading.value && !apiKeysLoadError.value && isAllowedKeysDraftDirty(apiKeysDraft.value)
   )
   const runtimeDirty = computed(() =>
-    !runtimeLoading.value && !runtimeLoadError.value && runtimeJson.value !== JSON.stringify(runtimeConfig.value, null, 2)
+    !runtimeLoading.value && !runtimeLoadError.value && runtimeJson.value !== formatRuntimeEditorJson(runtimeConfig.value)
   )
 
   const deviceFlowEnabled = computed(() => readRuntimeSwitch(runtimeConfig.value, RUNTIME_SWITCH_KEYS.oauth2DeviceFlow))
@@ -102,7 +103,8 @@ export function useSystemConfig() {
     try {
       const data = await getRuntimeConfig()
       runtimeConfig.value = data
-      runtimeJson.value = JSON.stringify(data, null, 2)
+      // Without the allowlist, which the list above edits (see runtime-editor.ts).
+      runtimeJson.value = formatRuntimeEditorJson(data)
       runtimeLoadError.value = null
     } catch (error: unknown) {
       runtimeLoadError.value = describeError(error, t("adminConfig.toast.loadRuntimeFailedTitle"))
@@ -220,8 +222,9 @@ export function useSystemConfig() {
     }
     pendingRuntimeConfig = null
     await loadRuntimeConfig({ silent: true })
-    // The runtime PUT can carry the allowlist too; show what the backend holds
-    // now, unless the list has unsaved edits of its own.
+    // The editor does not show the allowlist, but one typed into it is sent
+    // and stored; show what the backend holds now, unless the list has
+    // unsaved edits of its own.
     if (!apiKeysDirty.value && !apiKeysLoading.value && !apiKeysLoadError.value) {
       void loadApiKeys()
     }

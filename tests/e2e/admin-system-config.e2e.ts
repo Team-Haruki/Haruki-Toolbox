@@ -258,30 +258,90 @@ test.describe("admin system config lists", () => {
   test.describe.configure({ timeout: 60_000 })
 
   test("reports what the runtime configuration carries and nothing it does not", async ({ page }) => {
+    // What the backend's GET /api/admin/config/runtime answers (runtimeConfigResponse).
     const runtime = { current: {
-      oauth2DeviceFlowEnabled: true,
-      webhookEnabled: false,
+      publicApiAllowedKeys: ["userCards", "userDecks", "userAreas"],
       privateApiTokenConfigured: true,
-      harukiProxySecretConfigured: false,
-      harukiProxyVersion: "v3.2.1",
-      privateApiUserAgent: "",
+      privateApiUserAgent: "HarukiBot/3",
+      webhookJwtSecretConfigured: false,
+      webhookEnabled: false,
+      oauth2DeviceFlowEnabled: true,
     } as Record<string, unknown> }
     await openSystemConfig(page, runtime, () => undefined, { required: false }, { current: ["userCards", "userDecks", "userAreas"] })
 
     const status = page.getByTestId("config-status")
-    await expect(status).toContainText("v3.2.1", { timeout: 30_000 })
     const fact = (label: RegExp) => status.locator("dl > div").filter({ hasText: label }).locator("dd")
-    await expect(fact(/设备授权|Device authorization/)).toHaveText(/已开启|On/)
+    await expect(fact(/设备授权|Device authorization/)).toHaveText(/已开启|On/, { timeout: 30_000 })
     await expect(fact(/Webhook/)).toHaveText(/已关闭|Off/)
     await expect(fact(/允许的数据键|Allowed data keys/)).toHaveText("3")
-    // Two of the four secrets are reported; the others are unknown, not "unset".
     await expect(fact(/密钥|Secrets/)).toHaveText(/^1 \/ 2 /)
+    await expect(status.locator("dl > div")).toHaveCount(4)
 
     const credentials = page.getByTestId("config-credentials")
+    await expect(credentials.locator("[data-secret]")).toHaveCount(2)
     await expect(credentials.locator("[data-secret=privateApiTokenConfigured]")).toContainText(/已配置|Set/)
-    await expect(credentials.locator("[data-secret=harukiProxySecretConfigured]")).toContainText(/未配置|Not set/)
-    await expect(credentials.locator("[data-secret=webhookJwtSecretConfigured]")).toContainText("—")
+    await expect(credentials.locator("[data-secret=webhookJwtSecretConfigured]")).toContainText(/未配置|Not set/)
+    await expect(credentials).toContainText("HarukiBot/3")
+    // HarukiProxy v3 signs in with OAuth2: the backend has no shared key,
+    // unpack key, user agent or version to report, and the page lists none.
+    await expect(page.getByText(/HarukiProxy/)).toHaveCount(0)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  })
+
+  test("a secret the backend does not report is unknown, not unset", async ({ page }) => {
+    const runtime = { current: { privateApiTokenConfigured: true } as Record<string, unknown> }
+    await openSystemConfig(page, runtime, () => undefined)
+
+    const credentials = page.getByTestId("config-credentials")
+    await expect(credentials.locator("[data-secret=privateApiTokenConfigured]")).toContainText(/已配置|Set/, { timeout: 30_000 })
+    await expect(credentials.locator("[data-secret=webhookJwtSecretConfigured]")).toContainText("—")
+    const secrets = page.getByTestId("config-status").locator("dl > div").filter({ hasText: /密钥|Secrets/ }).locator("dd")
+    await expect(secrets).toHaveText(/^1 \/ 1 /)
+  })
+
+  test("the runtime editor leaves the allowlist out, so saving another field does not send it", async ({ page }) => {
+    const runtime = { current: {
+      publicApiAllowedKeys: ["userCards", "userDecks"],
+      privateApiTokenConfigured: true,
+      privateApiUserAgent: "HarukiBot/3",
+      webhookJwtSecretConfigured: true,
+      webhookEnabled: true,
+      oauth2DeviceFlowEnabled: false,
+    } as Record<string, unknown> }
+    const calls = await openSystemConfig(page, runtime, (body) => {
+      runtime.current = { ...runtime.current, ...body }
+    }, { required: false }, { current: ["userCards", "userDecks"] })
+
+    // The code editor comes from a CDN the spec blocks: edit as plain text.
+    const group = page.getByTestId("config-runtime")
+    // (The toggle above the editor; the load-failure panel offers the same switch.)
+    await group.getByRole("button", { name: /纯文本编辑器|plain text editor/i }).first().click({ timeout: 30_000 })
+    const editor = page.locator("textarea#system-config-runtime")
+    await expect(editor).toBeVisible()
+    const shown = JSON.parse(await editor.inputValue()) as Record<string, unknown>
+    expect(Object.keys(shown).sort()).toEqual([
+      "oauth2DeviceFlowEnabled",
+      "privateApiTokenConfigured",
+      "privateApiUserAgent",
+      "webhookEnabled",
+      "webhookJwtSecretConfigured",
+    ])
+    // Loaded, nothing edited: not reported as changed.
+    await expect(group.getByRole("status")).toHaveCount(0)
+    // The list still shows the allowlist, in its own group.
+    await expect(page.getByTestId("config-allowed-keys").locator("[data-key]")).toHaveCount(2)
+
+    await editor.fill(JSON.stringify({ ...shown, webhookEnabled: false }, null, 2))
+    await group.getByRole("button", { name: /^(保存|Save)$/ }).click()
+    await page.getByRole("alertdialog").getByRole("button", { name: /^(应用|Apply)$/ }).click()
+    await expect(page.locator("[data-sonner-toast][data-type=\"success\"]").filter({ hasText: /运行时配置更新成功|Runtime configuration updated/ })).toBeVisible()
+
+    const puts = calls.filter((call) => call.method === "PUT")
+    expect(puts).toHaveLength(1)
+    expect(puts[0]?.path).toBe(`${CONFIG_PATH}/runtime`)
+    // The backend empties its game-data cache when a runtime PUT carries the allowlist.
+    expect(puts[0]?.body).not.toHaveProperty("publicApiAllowedKeys")
+    expect(puts[0]?.body).toMatchObject({ webhookEnabled: false })
   })
 
   test("edits the allowlist as a list and sends it only on save", async ({ page }) => {
@@ -340,7 +400,7 @@ test.describe("admin system config lists", () => {
 
   test("mobile settings list fits without sideways scrolling", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 })
-    const runtime = { current: { oauth2DeviceFlowEnabled: true, harukiProxyUserAgent: "HarukiProxy/3.2.1 (linux; amd64) with-a-long-suffix-for-wrapping" } as Record<string, unknown> }
+    const runtime = { current: { oauth2DeviceFlowEnabled: true, privateApiUserAgent: "HarukiBot/3.2.1 (linux; amd64) with-a-long-suffix-for-wrapping" } as Record<string, unknown> }
     await openSystemConfig(page, runtime, () => undefined, { required: false }, { current: ["userChallengeLiveSoloHighScoreRewardsAndMoreKeysThanFit", "userCards"] })
     await expect(page.getByTestId("config-allowed-keys").locator("[data-key]")).toHaveCount(2, { timeout: 30_000 })
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
