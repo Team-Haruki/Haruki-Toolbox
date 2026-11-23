@@ -12,7 +12,7 @@ import UploadStep from "@/modules/tools/components/upload/UploadStep.vue"
 
 // Downloads and guides follow the HarukiProxy pages of the HarukiBot docs
 // (docs/haruki-proxy/ in HarukiBot-Docs): bump the version there and here together.
-const HARUKI_PROXY_VERSION = "v3.0.0"
+const HARUKI_PROXY_VERSION = "v3.0.1"
 const DOWNLOAD_BASE = `https://haruki-dl-esa-cn.seiunx.com/HarukiProxy/${HARUKI_PROXY_VERSION}/HarukiProxy-${HARUKI_PROXY_VERSION}`
 const DOCS_BASE = "https://neo.haruki.seiunx.com/haruki-proxy"
 const GUIDE_INDEX_URL = `${DOCS_BASE}/`
@@ -27,22 +27,22 @@ const DEVICES: readonly { key: DeviceKey; icon: Component; downloadUrl: string; 
     downloadUrl: `${DOWNLOAD_BASE}-android-arm64.apk`,
     guides: [
       { key: "vphone", url: `${DOCS_BASE}/android` },
-      { key: "noRoot", url: `${DOCS_BASE}/android.india` },
+      { key: "noRoot", url: `${DOCS_BASE}/android-india` },
     ],
   },
   {
     key: "windows",
     icon: Monitor,
     downloadUrl: `${DOWNLOAD_BASE}-windows-x64.zip`,
-    guides: [{ key: "pc", url: `${DOCS_BASE}/pc.v3` }],
+    guides: [{ key: "pc", url: `${DOCS_BASE}/pc-v3` }],
   },
   {
     key: "mac",
     icon: Laptop,
     downloadUrl: `${DOWNLOAD_BASE}-macos-arm64.zip`,
     guides: [
-      { key: "pc", url: `${DOCS_BASE}/pc.v3` },
-      { key: "macNotes", url: `${DOCS_BASE}/pc.v3#macos` },
+      { key: "pc", url: `${DOCS_BASE}/pc-v3` },
+      { key: "macNotes", url: `${DOCS_BASE}/pc-v3#macos` },
     ],
   },
 ]
