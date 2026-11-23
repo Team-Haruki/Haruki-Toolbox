@@ -115,11 +115,19 @@ test("upload page switches methods from the picker and keeps the choice in the U
   await expect(page).toHaveURL(/[?&]tab=proxy/)
   await expect(page.getByTestId("harukiproxy-upgrade-warning")).toBeVisible()
 
-  // Every device has its v3.0.0 download and at least one guide from the docs.
-  for (const [device, file] of [["android", "android-arm64.apk"], ["windows", "windows-x64.zip"], ["mac", "macos-arm64.zip"]] as const) {
+  // Every device has its v3.0.1 download and at least one guide from the docs.
+  // The docs host cannot open a page with a dot in its name directly, so the guides use the dot-free addresses.
+  for (const [device, file, guides] of [
+    ["android", "android-arm64.apk", ["android", "android-india"]],
+    ["windows", "windows-x64.zip", ["pc-v3"]],
+    ["mac", "macos-arm64.zip", ["pc-v3", "pc-v3#macos"]],
+  ] as const) {
     const row = page.getByTestId(`harukiproxy-device-${device}`)
-    await expect(row.locator(`a[href$="HarukiProxy-v3.0.0-${file}"]`)).toHaveCount(1)
-    await expect(row.locator('a[href^="https://neo.haruki.seiunx.com/haruki-proxy/"]').first()).toBeVisible()
+    await expect(row.locator(`a[href$="HarukiProxy-v3.0.1-${file}"]`)).toHaveCount(1)
+    const guideLinks = row.locator('a[href^="https://neo.haruki.seiunx.com/haruki-proxy/"]')
+    await expect(guideLinks.first()).toBeVisible()
+    expect(await guideLinks.evaluateAll((links) => links.map((link) => link.getAttribute("href"))))
+      .toEqual(guides.map((guide) => `https://neo.haruki.seiunx.com/haruki-proxy/${guide}`))
   }
   await expect(page.getByTestId("harukiproxy-guide-index")).toHaveAttribute("href", "https://neo.haruki.seiunx.com/haruki-proxy/")
 
